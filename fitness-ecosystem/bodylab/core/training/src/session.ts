@@ -84,6 +84,13 @@ export interface BuildSessionInput {
   goal: SessionGoal;
   /** Families to leave alone today (still sore, trained yesterday…). */
   fatiguedFamilies?: MuscleFamily[];
+  /**
+   * When set, the session picks only movements whose primary family is in
+   * this list (the weekly planner's assignment for this day). Families here
+   * are still subject to every other rule — fatigue, gear, ceilings. An empty
+   * / undefined list keeps the old behaviour untouched.
+   */
+  focusFamilies?: MuscleFamily[];
   /** 0-100 conditioning score from BodyLab; low adds a cardio block. */
   conditioningScore?: number | null;
   /** Model-provided score per exercise id (see `decision.ts`). */
@@ -287,6 +294,7 @@ export function buildSession(input: BuildSessionInput): BuiltSession {
     level,
     goal,
     fatiguedFamilies = [],
+    focusFamilies,
     conditioningScore = null,
     modelScores = {},
     seed = 7,
@@ -368,6 +376,9 @@ export function buildSession(input: BuildSessionInput): BuiltSession {
     // the chest just as hard, and prescribing them for a sore chest would be
     // exactly the mistake this rule exists to prevent.
     if (families.some((fam) => fatiguedFamilies.includes(fam))) continue;
+    // Weekly-assignment mode: only the day's assigned families (by primary).
+    if (focusFamilies && focusFamilies.length > 0 && !focusFamilies.includes(primary))
+      continue;
     if (entry.cardio) continue; // cardio is handled separately below
 
     const wGap = weaknessGap(weakness, primary);

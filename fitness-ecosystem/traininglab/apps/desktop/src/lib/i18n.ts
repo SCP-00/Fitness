@@ -28,6 +28,21 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Sin importación de BodyLab",
   },
   "lang.toggle": { en: "ES", es: "EN" },
+  "settings.menu": {
+    en: "Settings & connections",
+    es: "Ajustes y conexiones",
+  },
+  "settings.menuHint": {
+    en: "Coach, BodyLab data, household history and phone — all optional.",
+    es: "Coach, datos de BodyLab, historial de casa y móvil — todo opcional.",
+  },
+  "settings.lanSwitch": { en: "Household network", es: "Red de casa" },
+  "settings.lanSwitchHint": {
+    en: "Sync sets with the shared history over Wi-Fi, on/off, right now",
+    es: "Sincroniza series con el historial compartido por Wi-Fi, sí/no, al instante",
+  },
+  "settings.lanOff": { en: "Off", es: "Apagado" },
+  "settings.lanOn": { en: "On", es: "Encendido" },
 
   // ── Setup / BodyLab link ──────────────────────────────────────────────────
   "setup.title": {

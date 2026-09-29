@@ -148,3 +148,72 @@ export function ScaleInput({
     </div>
   );
 }
+
+/**
+ * A real toggle switch — for settings that flip a live capability on/off
+ * (the LAN household sync, notifications, sounds), not for navigating.
+ *
+ * Accessibility: a real checkbox underneath, keyboard-operable, labelled by
+ * the caller. The knob animates 150 ms; `motion-safe:` turns the transition
+ * off for `prefers-reduced-motion`.
+ */
+export function Switch({
+  checked,
+  onChange,
+  label,
+  hint,
+  disabled = false,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  /** Accessible name; also rendered next to the switch when provided. */
+  label?: ReactNode;
+  /** One-line explanation under the label. */
+  hint?: ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <label
+      className={`inline-flex items-center gap-3 ${disabled ? "opacity-50 pointer-events-none" : ""}`}
+    >
+      <span className="relative inline-flex shrink-0">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={checked}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer sr-only tl-focusable"
+        />
+        <span
+          aria-hidden
+          className={`block w-11 h-6 rounded-full border transition-colors motion-safe:duration-150 peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--tl-accent)] ${
+            checked
+              ? "bg-[var(--tl-accent)] border-transparent"
+              : "bg-[var(--tl-surface-2)] border-[var(--tl-border)]"
+          }`}
+        />
+        <span
+          aria-hidden
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform motion-safe:duration-150 ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </span>
+      {(label || hint) && (
+        <span className="min-w-0">
+          {label && (
+            <span className="block text-sm font-medium leading-tight">
+              {label}
+            </span>
+          )}
+          {hint && (
+            <span className="block text-xs text-[var(--tl-text-muted)]">
+              {hint}
+            </span>
+          )}
+        </span>
+      )}
+    </label>
+  );
+}

@@ -5,11 +5,13 @@ import {
   Bike,
   Bot,
   Clock,
+  Cloud,
   Dumbbell,
   FileJson,
   Info,
   Moon,
   Settings2,
+  Smartphone,
   Sparkles,
   Trophy,
   Zap,
@@ -94,7 +96,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { CoachPanel, CoachResultView, type CoachResult } from "./CoachPanel";
 import { MobileCard } from "./MobileCard";
 import { SlotCard } from "./SlotCard";
-import { Badge, SectionCard, ScaleInput, StatCard } from "./ui";
+import { Badge, SectionCard, ScaleInput, StatCard, Switch } from "./ui";
 
 interface RestState {
   key: string;
@@ -1204,27 +1206,80 @@ export default function TodayPage() {
             }
           />
 
-          {/* Coach */}
-          <CoachPanel
-            llm={settings.llm}
-            onLlmChange={(llm) => patch({ llm })}
-            onAsk={askCoach}
-            busy={coachBusy}
-          />
           {coachResult && <CoachResultView result={coachResult} />}
 
-          {/* BodyLab link */}
+          {coachResult === null && null}
+
+          {/* ── Ajustes y conexiones: one dropdown, LAN switch on the header ── */}
           <SectionCard
-            title={t("setup.title")}
-            hint={t("setup.hint")}
-            icon={<FileJson className="w-4 h-4" />}
-            defaultOpen={payload === null}
+            title={t("settings.menu")}
+            hint={t("settings.menuHint")}
+            icon={<Settings2 className="w-4 h-4" />}
+            defaultOpen={false}
             actions={
-              <Badge tone={payload ? "success" : "neutral"}>
-                {payload ? t("setup.loaded") : t("today.noSource")}
-              </Badge>
+              <span onClick={(e) => e.stopPropagation()}>
+                <Switch
+                  checked={settings.shared.enabled}
+                  onChange={(enabled) =>
+                    patch({ shared: { ...settings.shared, enabled } })
+                  }
+                  label={t("settings.lanSwitch")}
+                />
+              </span>
             }
           >
+            <div className="flex flex-col gap-3">
+              {/* LAN quick status line (the switch above is the control). */}
+              <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--tl-text-muted)]">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-medium ${
+                    settings.shared.enabled
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : "bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] border-[var(--tl-border)]"
+                  }`}
+                >
+                  {settings.shared.enabled
+                    ? t("settings.lanOn")
+                    : t("settings.lanOff")}
+                </span>
+                {settings.shared.enabled && settings.shared.lastSyncAt && (
+                  <span>· {settings.shared.lastSyncAt.slice(0, 16).replace("T", " ")}</span>
+                )}
+              </div>
+
+              {/* Nested dropdown 1: coach */}
+              <details className="rounded-xl border border-[var(--tl-border)] overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer list-none">
+                  <span className="flex items-center gap-2 text-sm font-medium min-w-0">
+                    <Bot className="w-4 h-4 text-[var(--tl-accent)] shrink-0" />
+                    {t("coach.title")}
+                  </span>
+                  <Badge tone={settings.llm.enabled ? "success" : "neutral"}>
+                    {settings.llm.enabled ? t("settings.lanOn") : t("coach.off")}
+                  </Badge>
+                </summary>
+                <div className="px-4 pb-4 pt-0">
+                  <CoachPanel
+                    llm={settings.llm}
+                    onLlmChange={(llm) => patch({ llm })}
+                    onAsk={askCoach}
+                    busy={coachBusy}
+                  />
+                </div>
+              </details>
+
+              {/* Nested dropdown 2: BodyLab import */}
+              <details className="rounded-xl border border-[var(--tl-border)] overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer list-none">
+                  <span className="flex items-center gap-2 text-sm font-medium min-w-0">
+                    <FileJson className="w-4 h-4 text-[var(--tl-accent)] shrink-0" />
+                    {t("setup.title")}
+                  </span>
+                  <Badge tone={payload ? "success" : "neutral"}>
+                    {payload ? t("setup.loaded") : t("today.noSource")}
+                  </Badge>
+                </summary>
+                <div className="px-4 pb-4 pt-0">
             <div className="flex flex-wrap items-center gap-3">
               <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl tl-btn-ghost text-sm cursor-pointer">
                 {t("setup.chooseFile")}
@@ -1276,22 +1331,48 @@ export default function TodayPage() {
                 <span className="text-xs text-red-400">{loadError}</span>
               )}
             </div>
+                </div>
+              </details>
+
+              {/* Nested dropdown 3: shared household history */}
+              <details className="rounded-xl border border-[var(--tl-border)] overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer list-none">
+                  <span className="flex items-center gap-2 text-sm font-medium min-w-0">
+                    <Cloud className="w-4 h-4 text-[var(--tl-accent)] shrink-0" />
+                    {t("shared.title")}
+                  </span>
+                  <Badge tone={settings.shared.enabled ? "success" : "neutral"}>
+                    {settings.shared.enabled ? t("settings.lanOn") : t("settings.lanOff")}
+                  </Badge>
+                </summary>
+                <div className="px-4 pb-4 pt-0">
+                  <SharedPanel
+                    settings={settings.shared}
+                    health={health}
+                    syncing={syncing}
+                    lastError={sharedError}
+                    onSettings={(p) => patch({ shared: { ...settings.shared, ...p } })}
+                    onAddHealth={addHealthRecord}
+                    onRemoveHealth={removeHealthRecord}
+                    onSyncNow={() => void runSharedSync({ report: true })}
+                  />
+                </div>
+              </details>
+
+              {/* Nested dropdown 4: phone / LAN server */}
+              <details className="rounded-xl border border-[var(--tl-border)] overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer list-none">
+                  <span className="flex items-center gap-2 text-sm font-medium min-w-0">
+                    <Smartphone className="w-4 h-4 text-[var(--tl-accent)] shrink-0" />
+                    {t("mobile.title")}
+                  </span>
+                </summary>
+                <div className="px-4 pb-4 pt-0">
+                  <MobileCard />
+                </div>
+              </details>
+            </div>
           </SectionCard>
-
-        {/* Shared household history (optional) */}
-        <SharedPanel
-          settings={settings.shared}
-          health={health}
-          syncing={syncing}
-          lastError={sharedError}
-          onSettings={(p) => patch({ shared: { ...settings.shared, ...p } })}
-          onAddHealth={addHealthRecord}
-          onRemoveHealth={removeHealthRecord}
-          onSyncNow={() => void runSharedSync({ report: true })}
-        />
-
-        {/* Phone / LAN */}
-        <MobileCard />
         </div>
       </main>
 
