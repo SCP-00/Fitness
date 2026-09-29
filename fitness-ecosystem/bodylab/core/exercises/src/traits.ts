@@ -1,0 +1,1077 @@
+/**
+ * Exercise traits — the machine-checkable half of the catalog.
+ *
+ * `catalog.ts` says what an exercise IS (muscles, difficulty, media). This
+ * module says what it NEEDS and how it LOADS/TARGETS the body, which is what
+ * planning consumes: can the user perform it with the gear they declared,
+ * which movement pattern does it fill, how do you progress it when you own
+ * nothing but adjustable dumbbells, and how much does it beat up joints.
+ *
+ * Pure data + pure lookup: no DOM, no I/O. @module traits
+ */
+
+import type { Capability } from "./equipment";
+
+/** What the movement does, mechanically. Drives balance and swap logic. */
+export type MovementPattern =
+  | "horizontal_push"
+  | "vertical_push"
+  | "horizontal_pull"
+  | "vertical_pull"
+  | "squat"
+  | "hinge"
+  | "lunge"
+  | "hip_extension"
+  | "hip_abduction"
+  | "hip_adduction"
+  | "knee_flexion"
+  | "knee_extension"
+  | "plantar_flexion"
+  | "tibialis"
+  | "shoulder_abduction"
+  | "shoulder_extension"
+  | "elbow_flexion"
+  | "elbow_extension"
+  | "forearm_flexion"
+  | "forearm_extension"
+  | "core_flexion"
+  | "core_anti_extension"
+  | "core_anti_lateral"
+  | "core_rotation"
+  | "carry"
+  | "cardio_steady"
+  | "cardio_interval";
+
+/** How the movement is loaded — selects the progression and the load maths. */
+export type LoadType =
+  | "bodyweight"
+  | "dumbbell"
+  | "barbell"
+  | "kettlebell"
+  | "cable"
+  | "machine"
+  | "band"
+  | "time";
+
+/** Levers you can pull to make the movement harder. */
+export type ProgressionAxis =
+  "load" | "reps" | "leverage" | "time" | "tempo" | "range" | "volume";
+
+export interface ExerciseTraits {
+  /**
+   * Equipment requirement as OR-groups that are ANDed: `[['dumbbell'],
+   * ['bench','box']]` = needs dumbbells AND (bench or box). `[]` = bodyweight.
+   */
+  requires: Capability[][];
+  pattern: MovementPattern;
+  loadType: LoadType;
+  unilateral: boolean;
+  /** Tendon/joint stress 1-3 (3 = leave it out when joints are beat up). */
+  jointStress: 1 | 2 | 3;
+  /** Axial/spinal load 1-3 (3 = heavy compression/flexion, back-careful). */
+  spineLoad: 1 | 2 | 3;
+  /** Realistic levers to progress this specific movement. */
+  progression: ProgressionAxis[];
+  /** Minutes of setup + teardown (feeds the session time budget). */
+  setupMin: number;
+  /** Conditioning entry (not a strength slot) — steady or interval. */
+  cardio?: "steady" | "interval";
+}
+
+const t = (traits: ExerciseTraits): ExerciseTraits => traits;
+
+/** Every catalog exercise's traits, keyed by exercise id. */
+export const EXERCISE_TRAITS: Record<string, ExerciseTraits> = {
+  // ── Chest ────────────────────────────────────────────────────────────────
+  "barbell-bench-press": t({
+    requires: [["barbell"], ["bench"]],
+    pattern: "horizontal_push",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "incline-bench-press": t({
+    requires: [["barbell"], ["bench"]],
+    pattern: "horizontal_push",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "dumbbell-bench-press": t({
+    requires: [["dumbbell"], ["bench"]],
+    pattern: "horizontal_push",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps", "tempo"],
+    setupMin: 1,
+  }),
+  "dumbbell-fly": t({
+    requires: [["dumbbell"], ["bench"]],
+    pattern: "horizontal_push",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps", "range"],
+    setupMin: 1,
+  }),
+  "cable-crossover": t({
+    requires: [["cable"]],
+    pattern: "horizontal_push",
+    loadType: "cable",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "push-ups": t({
+    requires: [],
+    pattern: "horizontal_push",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "tempo"],
+    setupMin: 0,
+  }),
+  "machine-bench-press": t({
+    requires: [["machines"]],
+    pattern: "horizontal_push",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "incline-dumbbell-press": t({
+    requires: [["dumbbell"], ["bench"]],
+    pattern: "horizontal_push",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "machine-chest-fly": t({
+    requires: [["machines"]],
+    pattern: "horizontal_push",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "push-up-plus": t({
+    requires: [],
+    pattern: "horizontal_push",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "leverage"],
+    setupMin: 0,
+  }),
+  "dumbbell-pullover": t({
+    requires: [["dumbbell"], ["bench"]],
+    pattern: "shoulder_extension",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps", "range"],
+    setupMin: 1,
+  }),
+
+  // ── Shoulders ────────────────────────────────────────────────────────────
+  "overhead-press": t({
+    requires: [["barbell"]],
+    pattern: "vertical_push",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "lateral-raise": t({
+    requires: [["dumbbell"]],
+    pattern: "shoulder_abduction",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps", "tempo"],
+    setupMin: 0,
+  }),
+  "face-pulls": t({
+    requires: [["cable"]],
+    pattern: "horizontal_pull",
+    loadType: "cable",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "arnold-press": t({
+    requires: [["dumbbell"]],
+    pattern: "vertical_push",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 0,
+  }),
+  "reverse-fly": t({
+    requires: [["dumbbell"], ["bench"]],
+    pattern: "horizontal_pull",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps", "tempo"],
+    setupMin: 1,
+  }),
+  "machine-shoulder-press": t({
+    requires: [["machines"]],
+    pattern: "vertical_push",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "band-lateral-raise": t({
+    requires: [["bands"]],
+    pattern: "shoulder_abduction",
+    loadType: "band",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+
+  // ── Biceps ───────────────────────────────────────────────────────────────
+  "barbell-curl": t({
+    requires: [["barbell"]],
+    pattern: "elbow_flexion",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "incline-dumbbell-curl": t({
+    requires: [["dumbbell"], ["bench"]],
+    pattern: "elbow_flexion",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps", "range"],
+    setupMin: 1,
+  }),
+  "hammer-curl": t({
+    requires: [["dumbbell"]],
+    pattern: "elbow_flexion",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 0,
+  }),
+  "preacher-curl": t({
+    requires: [["barbell"], ["bench"]],
+    pattern: "elbow_flexion",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "chin-ups": t({
+    requires: [["pullup_bar", "rings"]],
+    pattern: "vertical_pull",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "volume"],
+    setupMin: 0,
+  }),
+
+  // ── Triceps ──────────────────────────────────────────────────────────────
+  "close-grip-bench": t({
+    requires: [["barbell"], ["bench"]],
+    pattern: "horizontal_push",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "overhead-tricep-extension": t({
+    requires: [["cable"]],
+    pattern: "elbow_extension",
+    loadType: "cable",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "skull-crushers": t({
+    requires: [["barbell"], ["bench"]],
+    pattern: "elbow_extension",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "tricep-pushdown": t({
+    requires: [["cable"]],
+    pattern: "elbow_extension",
+    loadType: "cable",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  dips: t({
+    requires: [["dip_bars", "rings"]],
+    pattern: "vertical_push",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "load"],
+    setupMin: 1,
+  }),
+
+  // ── Back ─────────────────────────────────────────────────────────────────
+  deadlift: t({
+    requires: [["barbell"]],
+    pattern: "hinge",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 3,
+    progression: ["load", "reps"],
+    setupMin: 3,
+  }),
+  "barbell-row": t({
+    requires: [["barbell"]],
+    pattern: "horizontal_pull",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "pull-ups": t({
+    requires: [["pullup_bar", "rings"]],
+    pattern: "vertical_pull",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "volume"],
+    setupMin: 0,
+  }),
+  "seated-cable-row": t({
+    requires: [["cable"]],
+    pattern: "horizontal_pull",
+    loadType: "cable",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "dumbbell-row": t({
+    requires: [["dumbbell"], ["bench", "box"]],
+    pattern: "horizontal_pull",
+    loadType: "dumbbell",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "lat-pulldown": t({
+    requires: [["cable"]],
+    pattern: "vertical_pull",
+    loadType: "cable",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "t-bar-row": t({
+    requires: [["machines"]],
+    pattern: "horizontal_pull",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "band-pull-apart": t({
+    requires: [["bands"]],
+    pattern: "horizontal_pull",
+    loadType: "band",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+
+  // ── Legs ─────────────────────────────────────────────────────────────────
+  "barbell-squat": t({
+    requires: [["barbell"], ["rack"]],
+    pattern: "squat",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 3,
+    progression: ["load", "reps"],
+    setupMin: 3,
+  }),
+  "front-squat": t({
+    requires: [["barbell"], ["rack"]],
+    pattern: "squat",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 3,
+    progression: ["load", "reps"],
+    setupMin: 3,
+  }),
+  "romanian-deadlift": t({
+    requires: [["barbell"]],
+    pattern: "hinge",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps", "tempo"],
+    setupMin: 2,
+  }),
+  "leg-press": t({
+    requires: [["machines"]],
+    pattern: "squat",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  lunges: t({
+    requires: [["dumbbell"]],
+    pattern: "lunge",
+    loadType: "dumbbell",
+    unilateral: true,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps", "volume"],
+    setupMin: 1,
+  }),
+  "leg-curl": t({
+    requires: [["machines"]],
+    pattern: "knee_flexion",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "leg-extension": t({
+    requires: [["machines"]],
+    pattern: "knee_extension",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "hip-thrust": t({
+    requires: [["barbell"], ["bench"]],
+    pattern: "hip_extension",
+    loadType: "barbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 2,
+    progression: ["load", "reps"],
+    setupMin: 2,
+  }),
+  "lying-hip-abduction": t({
+    requires: [],
+    pattern: "hip_abduction",
+    loadType: "bodyweight",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo", "volume"],
+    setupMin: 0,
+  }),
+  "calf-raises": t({
+    requires: [["machines"]],
+    pattern: "plantar_flexion",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "seated-calf-raise": t({
+    requires: [["machines"]],
+    pattern: "plantar_flexion",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "tibialis-raise": t({
+    requires: [["bands", "dumbbell", "bodyweight"]],
+    pattern: "tibialis",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "time"],
+    setupMin: 0,
+  }),
+  "goblet-squat": t({
+    requires: [["dumbbell", "kettlebell"]],
+    pattern: "squat",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps"],
+    setupMin: 0,
+  }),
+  "hack-squat": t({
+    requires: [["machines"]],
+    pattern: "squat",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "seated-leg-curl": t({
+    requires: [["machines"]],
+    pattern: "knee_flexion",
+    loadType: "machine",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "sumo-squat": t({
+    requires: [["barbell", "dumbbell"]],
+    pattern: "squat",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "banded-hip-abduction": t({
+    requires: [["bands"]],
+    pattern: "hip_abduction",
+    loadType: "band",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+  clamshells: t({
+    requires: [],
+    pattern: "hip_abduction",
+    loadType: "bodyweight",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+  "fire-hydrants": t({
+    requires: [],
+    pattern: "hip_abduction",
+    loadType: "bodyweight",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+  "standing-cable-adduction": t({
+    requires: [["cable"]],
+    pattern: "hip_adduction",
+    loadType: "cable",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+
+  // ── Forearms ─────────────────────────────────────────────────────────────
+  "wrist-curl": t({
+    requires: [["barbell", "dumbbell"]],
+    pattern: "forearm_flexion",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 0,
+  }),
+  "reverse-wrist-curl": t({
+    requires: [["barbell", "dumbbell"]],
+    pattern: "forearm_extension",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 0,
+  }),
+  "farmers-walk": t({
+    requires: [["dumbbell", "kettlebell"]],
+    pattern: "carry",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 2,
+    progression: ["load", "time", "volume"],
+    setupMin: 0,
+  }),
+
+  // ── Core ─────────────────────────────────────────────────────────────────
+  "cable-crunch": t({
+    requires: [["cable"]],
+    pattern: "core_flexion",
+    loadType: "cable",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps"],
+    setupMin: 1,
+  }),
+  "hanging-leg-raise": t({
+    requires: [["pullup_bar", "dip_bars"]],
+    pattern: "core_flexion",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "volume"],
+    setupMin: 0,
+  }),
+  "russian-twist": t({
+    requires: [],
+    pattern: "core_rotation",
+    loadType: "dumbbell",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["load", "reps", "tempo"],
+    setupMin: 0,
+  }),
+  plank: t({
+    requires: [],
+    pattern: "core_anti_extension",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["time", "leverage"],
+    setupMin: 0,
+  }),
+  "lying-leg-raise": t({
+    requires: [],
+    pattern: "core_flexion",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "leverage"],
+    setupMin: 0,
+  }),
+
+  // ── Home pull/push additions ─────────────────────────────────────────────
+  "inverted-row": t({
+    requires: [["dip_bars", "pullup_bar", "bench"]],
+    pattern: "horizontal_pull",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "volume"],
+    setupMin: 1,
+  }),
+  "pike-push-up": t({
+    requires: [],
+    pattern: "vertical_push",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "range"],
+    setupMin: 0,
+  }),
+  "bench-dip": t({
+    requires: [["bench", "box", "dip_bars"]],
+    pattern: "elbow_extension",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage"],
+    setupMin: 1,
+  }),
+  "diamond-push-up": t({
+    requires: [],
+    pattern: "elbow_extension",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "tempo"],
+    setupMin: 0,
+  }),
+  "band-chest-press": t({
+    requires: [["bands"]],
+    pattern: "horizontal_push",
+    loadType: "band",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo", "range"],
+    setupMin: 1,
+  }),
+  "band-row": t({
+    requires: [["bands"]],
+    pattern: "horizontal_pull",
+    loadType: "band",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 1,
+  }),
+  "band-triceps-pushdown": t({
+    requires: [["bands"]],
+    pattern: "elbow_extension",
+    loadType: "band",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 1,
+  }),
+  "band-curl": t({
+    requires: [["bands"]],
+    pattern: "elbow_flexion",
+    loadType: "band",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 1,
+  }),
+  "band-face-pull": t({
+    requires: [["bands"]],
+    pattern: "horizontal_pull",
+    loadType: "band",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 1,
+  }),
+  "scapular-pull-up": t({
+    requires: [["pullup_bar", "rings"]],
+    pattern: "vertical_pull",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "volume"],
+    setupMin: 0,
+  }),
+  "prone-y-raise": t({
+    requires: [],
+    pattern: "shoulder_abduction",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+  "suitcase-carry": t({
+    requires: [["dumbbell", "kettlebell"]],
+    pattern: "carry",
+    loadType: "dumbbell",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 2,
+    progression: ["load", "time"],
+    setupMin: 0,
+  }),
+
+  // ── Home leg additions ───────────────────────────────────────────────────
+  "single-leg-rdl": t({
+    requires: [["dumbbell", "kettlebell"]],
+    pattern: "hinge",
+    loadType: "dumbbell",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 2,
+    progression: ["load", "reps", "tempo"],
+    setupMin: 0,
+  }),
+  "bulgarian-split-squat": t({
+    requires: [["bodyweight"], ["bench", "box"]],
+    pattern: "lunge",
+    loadType: "dumbbell",
+    unilateral: true,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["load", "reps", "volume"],
+    setupMin: 1,
+  }),
+  "step-up": t({
+    requires: [["box", "bench"]],
+    pattern: "lunge",
+    loadType: "dumbbell",
+    unilateral: true,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["load", "reps", "volume"],
+    setupMin: 1,
+  }),
+  "nordic-curl": t({
+    requires: [["strap", "box", "bench"]],
+    pattern: "knee_flexion",
+    loadType: "bodyweight",
+    unilateral: true,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["reps", "leverage"],
+    setupMin: 2,
+  }),
+  "copenhagen-plank": t({
+    requires: [["bench", "box"]],
+    pattern: "hip_adduction",
+    loadType: "bodyweight",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["time", "leverage"],
+    setupMin: 1,
+  }),
+  "single-leg-calf-raise": t({
+    requires: [],
+    pattern: "plantar_flexion",
+    loadType: "bodyweight",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "volume", "tempo"],
+    setupMin: 0,
+  }),
+
+  // ── Home core additions ──────────────────────────────────────────────────
+  "hollow-body-hold": t({
+    requires: [],
+    pattern: "core_anti_extension",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["time", "leverage"],
+    setupMin: 0,
+  }),
+  "bicycle-crunch": t({
+    requires: [],
+    pattern: "core_rotation",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+  "ab-wheel-rollout": t({
+    requires: [["ab_wheel"]],
+    pattern: "core_anti_extension",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["reps", "leverage", "range"],
+    setupMin: 0,
+  }),
+  "dead-bug": t({
+    requires: [],
+    pattern: "core_anti_extension",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "tempo"],
+    setupMin: 0,
+  }),
+  "side-plank": t({
+    requires: [],
+    pattern: "core_anti_lateral",
+    loadType: "bodyweight",
+    unilateral: true,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["time", "leverage"],
+    setupMin: 0,
+  }),
+  "mountain-climber": t({
+    requires: [],
+    pattern: "core_flexion",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 1,
+    progression: ["time", "reps"],
+    setupMin: 0,
+    cardio: "interval",
+  }),
+
+  // ── Conditioning (real cardio entries, loadType 'time') ──────────────────
+  "mtb-steady-ride": t({
+    requires: [["bike"]],
+    pattern: "cardio_steady",
+    loadType: "time",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["time"],
+    setupMin: 2,
+    cardio: "steady",
+  }),
+  "mtb-hill-intervals": t({
+    requires: [["bike"]],
+    pattern: "cardio_interval",
+    loadType: "time",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["time", "volume"],
+    setupMin: 2,
+    cardio: "interval",
+  }),
+  "jump-rope-intervals": t({
+    requires: [["jump_rope"]],
+    pattern: "cardio_interval",
+    loadType: "time",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 1,
+    progression: ["time", "volume"],
+    setupMin: 1,
+    cardio: "interval",
+  }),
+  "burpee-circuit": t({
+    requires: [],
+    pattern: "cardio_interval",
+    loadType: "time",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 1,
+    progression: ["time", "volume"],
+    setupMin: 0,
+    cardio: "interval",
+  }),
+  "metcon-circuit": t({
+    requires: [],
+    pattern: "cardio_interval",
+    loadType: "time",
+    unilateral: false,
+    jointStress: 2,
+    spineLoad: 2,
+    progression: ["time", "volume"],
+    setupMin: 0,
+    cardio: "interval",
+  }),
+  "stair-intervals": t({
+    requires: [["stairs"]],
+    pattern: "cardio_interval",
+    loadType: "time",
+    unilateral: false,
+    jointStress: 3,
+    spineLoad: 1,
+    progression: ["time", "volume"],
+    setupMin: 0,
+    cardio: "interval",
+  }),
+};
+
+/** Conservative fallback so a catalog entry without traits never crashes. */
+const FALLBACK: ExerciseTraits = t({
+  requires: [],
+  pattern: "core_anti_extension",
+  loadType: "bodyweight",
+  unilateral: false,
+  jointStress: 1,
+  spineLoad: 1,
+  progression: ["reps"],
+  setupMin: 0,
+});
+
+/** Traits for an exercise id (fallback when unknown — forward compatible). */
+export function getTraits(exerciseId: string): ExerciseTraits {
+  return EXERCISE_TRAITS[exerciseId] ?? FALLBACK;
+}
+
+/** True when the catalog entry is a conditioning block rather than a lift. */
+export function isCardio(exerciseId: string): boolean {
+  return getTraits(exerciseId).cardio !== undefined;
+}

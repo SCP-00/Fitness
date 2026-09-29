@@ -1,0 +1,14 @@
+{
+  "name": "musclemapjs",
+  "repository": "https://github.com/abdofallah/MuscleMapJS",
+  "commit": "TODO_PIN_BEFORE_INTEGRATION",
+  "license": "MIT",
+  "asset_license": "MIT",
+  "source": "https://github.com/abdofallah/MuscleMapJS",
+  "integrity": "",
+  "required": true,
+  "status": "EVALUATING",
+  "purpose": "Interactive 2D human body muscle map",
+  "attribution": "abdofallah (MuscleMapJS) - MIT",
+  "notes": "Canvas 2D, zero dependencies, 86 body parts"
+}

@@ -1,0 +1,43 @@
+{
+  "id": "golden_male_average",
+  "name": "Golden Dataset - Average Male",
+  "description": "Standard male profile for regression testing",
+  "biological_sex": "male",
+  "height": 1.75,
+  "weight": 75.0,
+  "age": 30,
+  "units": "metric",
+  "measurements": {
+    "wrist": 17.0,
+    "neck": 39.0,
+    "shoulders": 115.0,
+    "chest": 100.0,
+    "waist": 80.0,
+    "hips": 95.0,
+    "biceps": 36.0,
+    "forearm": 28.0,
+    "thigh": 55.0,
+    "calf": 37.0
+  },
+  "expected_results": {
+    "mccallum": {
+      "chest": 110.5,
+      "waist": 77.35,
+      "hips": 93.925,
+      "biceps": 39.78,
+      "thigh": 58.565,
+      "neck": 40.885,
+      "calf": 37.57,
+      "forearm": 32.045
+    },
+    "adonis": {
+      "ratio": 1.4375,
+      "deviation": 0.1116,
+      "status": "near"
+    },
+    "whtr": {
+      "ratio": 0.4571,
+      "status": "healthy"
+    }
+  }
+}

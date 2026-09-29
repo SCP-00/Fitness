@@ -1,0 +1,14 @@
+{
+  "name": "oxihuman",
+  "repository": "https://github.com/cool-japan/oxihuman",
+  "commit": "TODO_PIN_BEFORE_INTEGRATION",
+  "license": "Apache-2.0",
+  "asset_license": "CC0-1.0",
+  "source": "https://github.com/cool-japan/oxihuman",
+  "integrity": "",
+  "required": true,
+  "status": "EVALUATING",
+  "purpose": "3D parametric body generator",
+  "attribution": "cool-japan (OxiHuman) - Apache-2.0",
+  "notes": "Body assets derived from MakeHuman (CC0)"
+}

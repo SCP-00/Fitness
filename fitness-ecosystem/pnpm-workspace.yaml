@@ -1,0 +1,10 @@
+packages:
+  - "bodylab/apps/*"
+  - "bodylab/packages/*"
+  - "bodylab/core/*"
+  - "traininglab/apps/*"
+  - "traininglab/packages/*"
+  - "traininglab/core/*"
+  - "corpus"
+allowBuilds:
+  esbuild: true

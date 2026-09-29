@@ -1,0 +1,476 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BodyLab Design System — Product v2 (spec §5, §6)
+   ─────────────────────────────────────────────────────────────────────────
+   Direction (spec §3.1): Scientific · Editorial · Instrument · Calm analytics.
+   Avoid: gym-bro neon, aggressive gamification, glassmorphism-everywhere.
+
+   System decisions implemented here:
+   1. LIGHT-FIRST, cool neutrals (spec §5.1), light theme is the primary canvas.
+   2. ONE brand ramp (indigo 50–950, Tailwind-compatible) used by every control —
+      the token layer and the Tailwind `indigo-*` utilities resolve to the same hue.
+   3. Dark mode = re-mapped semantic tokens (spec §5.2), not an inversion; surfaces
+      separate by elevation, text keeps warm-cool neutral hierarchy.
+   4. Radii per spec §6: cards 16px, buttons/inputs 10–12px, pills only where a
+      control is genuinely circular. No 20px-everywhere rounding.
+   5. Borders matter (spec §6): 1px #E2E8F0 hairline on light surfaces; dark uses
+      near-invisible borders and relies on surface elevation.
+   6. Fonts are SELF-HOSTED (public/fonts, OFL) → zero network dependency, so the
+      offline-first promise holds even for typography.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Self-hosted fonts (OFL) — no CDN round-trip ─────────────────────────── */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME TOKENS (spec §5.1)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light;
+
+  /* ── Brand (unified indigo ramp — matches Tailwind indigo-*) ─────────── */
+  --color-primary: #4f46e5;      /* indigo-600 */
+  --color-primary-hover: #4338ca; /* indigo-700 */
+  --color-primary-light: #eef2ff; /* indigo-50 */
+
+  /* ── Semantic ────────────────────────────────────────────────────────── */
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* ── Backgrounds — cool neutrals, surface over bg (spec §5.1) ────────── */
+  --color-bg: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f9fafc;
+  --color-surface-sunken: #eef1f6;
+
+  /* ── Text (spec §5.1) ────────────────────────────────────────────────── */
+  --color-text: #0f172a;         /* slate-900 */
+  --color-text-secondary: #475569; /* slate-600 */
+  --color-text-muted: #64748b;   /* slate-500, ~4.8:1 on #f6f7fb — WCAG AA */
+  --color-text-disabled: #94a3b8;
+
+  /* ── Borders — hairline, spec §6 ─────────────────────────────────────── */
+  --color-border: #e2e8f0;       /* slate-200 */
+  --color-border-subtle: #eef2f7;
+  --color-border-card: #e6eaf1;
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────── */
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-text: #475569;
+  --color-sidebar-text-active: #0f172a;
+  --color-sidebar-hover: #f1f5f9;
+  --color-sidebar-active: #eef2ff;
+  --color-sidebar-border: #e2e8f0;
+
+  /* ── Input ───────────────────────────────────────────────────────────── */
+  --color-input-bg: #ffffff;
+  --color-input-border: #cbd5e1; /* slate-300 — clearly an editable field */
+  --color-input-text: #0f172a;
+  --color-input-placeholder: #94a3b8;
+
+  /* ── Chip / Tag ──────────────────────────────────────────────────────── */
+  --color-chip-bg: #f1f5f9;
+  --color-chip-text: #475569;
+  --color-chip-active-bg: #4f46e5;
+  --color-chip-active-text: #ffffff;
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ── Radii (spec §6) — cards 16px, controls 10–12px ─────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+
+  /* ── Shadows — elevation is meaningful, not default (§6) ─────────────── */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK THEME TOKENS (spec §5.2 — semantic re-map, not inversion)
+   Neutral graphite ramp keeps Tailwind `slate-*` utilities (used all over the
+   components for chips, rows, table headers) coherent with the shell.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark {
+  color-scheme: dark;
+
+  /* ── Brand — lifted for dark contrast ────────────────────────────────── */
+  --color-primary: #818cf8;      /* indigo-400 */
+  --color-primary-hover: #a5b4fc;
+  --color-primary-light: rgba(129, 140, 248, 0.14);
+
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  /* ── Backgrounds — elevation hierarchy via lightness ─────────────────── */
+  --color-bg: #0f141b;
+  --color-surface: #161d27;
+  --color-surface-elevated: #1e2733;
+  --color-surface-sunken: #0a0e14;
+
+  /* ── Text — warm-ish neutral ramp ────────────────────────────────────── */
+  --color-text: #e6edf3;
+  --color-text-secondary: #b6c2cf;
+  --color-text-muted: #8b98a9;  /* ~4.9:1 on #0f141b — WCAG AA */
+  --color-text-disabled: #55606f;
+
+  /* ── Borders — nearly invisible; separation comes from surface ───────── */
+  --color-border: #232d3a;
+  --color-border-subtle: #1a222d;
+  --color-border-card: transparent;
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────── */
+  --color-sidebar-bg: #0c1119;
+  --color-sidebar-text: #9aa7b8;
+  --color-sidebar-text-active: #f0f4f8;
+  --color-sidebar-hover: #161d27;
+  --color-sidebar-active: rgba(129, 140, 248, 0.14);
+  --color-sidebar-border: #1c2430;
+
+  /* ── Input ───────────────────────────────────────────────────────────── */
+  --color-input-bg: #131a24;
+  --color-input-border: #2e3a4a;
+  --color-input-text: #e6edf3;
+  --color-input-placeholder: #6b7686;
+
+  /* ── Chip / Tag ──────────────────────────────────────────────────────── */
+  --color-chip-bg: #1e2733;
+  --color-chip-text: #b6c2cf;
+  --color-chip-active-bg: rgba(129, 140, 248, 0.22);
+  --color-chip-active-text: #a5b4fc;
+
+  /* ── Shadows ─────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Global styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The reset MUST live in @layer base: Tailwind v4 emits its utilities inside
+   the real cascade `@layer utilities`, and UNLAYERED css beats every layer.
+   A bare `* { margin:0; padding:0 }` here silently disabled ALL Tailwind
+   padding/margin utilities app-wide (chips/buttons with crushed padding and
+   text escaping its pill). Inside @layer base the reset still normalizes
+   defaults, but utilities correctly win when applied. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+}
+
+/* Numeric data always tabular (spec §5.3) */
+table,
+tbody,
+td,
+th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Typography helpers ───────────────────────────────────────────────── */
+
+.display-xl {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.display-lg {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 2.6vw, 1.875rem);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.numeric-xl {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.numeric-lg {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.numeric-md {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 1.125rem;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.numeric-sm {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Eyebrow / overline label — never below 11px for real content */
+.label-sm {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.label-md {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* ── Selection + caret ────────────────────────────────────────────────── */
+
+::selection {
+  background: rgba(79, 70, 229, 0.18);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-disabled);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* ── Animations (respect reduced motion below) ────────────────────────── */
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ── Mobile safe area ─────────────────────────────────────────────────── */
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Focus visible — keyboard users always see the target ─────────────── */
+
+/* NOTE: no `border-radius` here — it used to override the element's own radius
+ * on focus, so a pill button became a 4 px rounded rectangle for as long as it
+ * was focused. `outline` already follows whatever radius the element has. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Interaction polish ─────────────────────────────────────────────────
+ * One place for hover/focus/press transitions instead of hoping every
+ * component remembers `transition-colors`. Only colour/opacity properties are
+ * listed, so nothing animates layout; the reduced-motion block below zeroes
+ * these out again. Companion: `transition-colors duration-150` is already used
+ * inline in the nav, this just makes the rest of the app match.
+ * -------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  a,
+  button,
+  [role='button'],
+  input,
+  select,
+  textarea,
+  summary {
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      opacity 150ms ease;
+  }
+}
+
+/* Number inputs: hide spinners, keep the stepper off the measurement field */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ── Touch ergonomics (phones) ──────────────────────────────────────────
+ * BodyLab is desktop-first and dense: a lot of inline controls render at
+ * 20–36 px, which is fine with a mouse and below the ~44 px comfortable thumb
+ * target. Below the `sm` breakpoint we raise every real control to 40 px so the
+ * same screen works when the app is served over the LAN to a phone. The
+ * selector deliberately avoids `input[type='text']` — several inputs here omit
+ * the `type` attribute, and an attribute selector needs it to be present.
+ * -------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  button,
+  select,
+  textarea,
+  [role='button'],
+  input:not([type='checkbox']):not([type='radio']):not([type='file']) {
+    min-height: 2.5rem;
+  }
+
+  input[type='range'] {
+    height: 2.5rem;
+  }
+
+  /* The checkbox itself stays small; the label around it becomes the target. */
+  label:has(> input[type='checkbox']),
+  label:has(> input[type='radio']) {
+    min-height: 2.5rem;
+  }
+
+  /* Page gutters. Every page root hard-codes Tailwind's `p-6` (24 px per
+   * side), which is 15 % of a 325 px phone screen. Clamping the utility here
+   * fixes all page shells at once (and is welcome on inner `p-6` cards).
+   * Unlayered author CSS outranks Tailwind's `@layer utilities`, so this wins
+   * without `!important`; `sm:p-6` overrides are untouched above the breakpoint. */
+  .p-6 {
+    padding: 1rem;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

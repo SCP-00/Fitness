@@ -1,0 +1,15 @@
+{
+  "name": "z-anatomy",
+  "repository": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+  "commit": "TODO_PIN_BEFORE_INTEGRATION",
+  "license": "CC BY-SA-4.0",
+  "asset_license": "CC BY-SA-4.0",
+  "source": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+  "integrity": "",
+  "required": false,
+  "status": "DEFERRED",
+  "purpose": "Anatomical 3D models (Phase 4+)",
+  "attribution": "Z-Anatomy contributors - CC BY-SA 4.0",
+  "notes": "Adaptations must be shared under CC BY-SA 4.0. Additional upstream attributions required.",
+  "deferred_to": "Phase 4+"
+}

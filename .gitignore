@@ -1,0 +1,105 @@
+# ============================================================================
+#  Fitness — BodyLab + TrainingLab
+#
+#  Goal of this file: a clone should contain everything needed to *build* the
+#  apps, and nothing that is only needed to develop *on this machine*.
+#
+#  Two rules drove the exclusions:
+#    1. generated or vendored-by-a-tool directories (node_modules, dist, the
+#       Rust target dir) are reproducible from the lockfiles — never commit them;
+#    2. agent scratch, local diagnostics and machine-specific caches are not part
+#       of the product and only add noise to a public repository.
+# ============================================================================
+
+# ── Dependencies ────────────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# npm's lockfile is intentionally not used: this is a pnpm workspace, and two
+# lockfiles in a repo is a reliable way to install two different trees.
+package-lock.json
+
+# ── Build output ────────────────────────────────────────────────────────────
+dist/
+dist-ssr/
+build/
+out/
+*.tsbuildinfo
+.vite/
+
+# Rust / Tauri: the release binary is published as a GitHub Release asset, not
+# as a source file. `src-tauri/target` is routinely several GB.
+target/
+**/src-tauri/target/
+**/src-tauri/gen/
+src-tauri/gen/
+
+# ── Heavy working assets (NOT needed to build or run the shipped apps) ──────
+#
+# These are the interesting exclusions, and they are deliberate:
+#
+#   resources/anatomy/  ~410 MB of anatomy *working files* — the raw z-anatomy
+#                       download, its .blend source and the GLB exports the
+#                       pipeline produces. The app talks to the *compiled*
+#                       assets already committed under apps/web/public/anatomy,
+#                       so a clone builds and runs without any of this. The
+#                       upstream model is CC-BY-SA and downloadable if you want
+#                       to re-run the export pipeline (see the anatomy README).
+#   corpus/             an internal research playground. knowledge.md states it
+#                       is "not part of BodyLab's runtime"; its ~15 MB of
+#                       MakeHuman data and compiled assets only serve that
+#                       experiment, and its package is not needed for either app.
+#   *.gif-work/         scratch directory for the exercise-GIF pipeline.
+#
+# Anything a release needs is either in the lockfiles or committed as a runtime
+# asset (public/anatomy/*.glb, public/wasm/**, public/*.ohpk).
+fitness-ecosystem/resources/anatomy/
+fitness-ecosystem/corpus/
+**/.gif-work/
+
+# Rasterised brand artefacts: mastered from resources/brand/*.jpg and rebuilt by
+# `node scripts/render-brand-icons.mjs`, so they are outputs, not sources.
+**/*-icon-1024.png
+
+# ── Local scratch / diagnostics ─────────────────────────────────────────────
+.tmp-verify/
+*.local
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ── Scratch drop folder ─────────────────────────────────────────────────────
+# `/ICONS` holds the original artwork the brand masters were cut from. The
+# tracked copies live in `fitness-ecosystem/resources/brand/` (that is what the
+# icon pipeline reads), so keeping a second copy here only risks them drifting.
+/ICONS/
+
+# ── Agent / editor context ──────────────────────────────────────────────────
+.freebuff/
+.agents/
+skills-lock.json
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ── OS noise ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Local databases the LAN server writes ───────────────────────────────────
+# The shared store is per-network state (it holds real family data); only the
+# schema is source.
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+.lan-data/
+
+# ── Secrets ─────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.p12

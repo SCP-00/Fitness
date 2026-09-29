@@ -1,0 +1,104 @@
+name: Release desktop (exe + auto-update feed)
+
+# Cuts a signed Windows release: builds the Tauri NSIS installer, signs it with
+# the updater keypair, generates latest.json (the static update feed the
+# desktop app polls) and publishes both as a GitHub release.
+#
+# Trigger: push a tag like v1.0.0-beta.4
+#
+# REQUIRED REPO SECRETS (Settings → Secrets and variables → Actions):
+#   TAURI_SIGNING_PRIVATE_KEY          contents of bodylab/apps/desktop/src-tauri/.updater-key
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD the password stored next to it in .updater-key.password
+#
+# BEFORE THE FIRST RELEASE: replace OWNER/REPO in
+# bodylab/apps/desktop/src-tauri/tauri.conf.json ("plugins.updater.endpoints")
+# with the real GitHub slug — the desktop app polls
+# https://github.com/OWNER/REPO/releases/latest/download/latest.json
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust (stable, MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bodylab/apps/desktop/src-tauri
+
+      # tauri.conf.json has createUpdaterArtifacts: true → the CLI signs the
+      # bundle itself and emits .exe + .sig using the secrets below.
+      - name: Build signed installer
+        working-directory: bodylab/apps/desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: pnpm tauri build
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          $dir = "bodylab/apps/desktop/src-tauri/target/release/bundle"
+          New-Item -ItemType Directory -Force -Path bodylab/apps/desktop/release-artifacts | Out-Null
+          Get-ChildItem -Recurse -Include *.exe,*.sig,*.msi,*.msi.sig $dir |
+            Copy-Item -Destination bodylab/apps/desktop/release-artifacts -Force
+          Get-ChildItem bodylab/apps/desktop/release-artifacts
+
+      # Static updater feed: points "latest" at the x64 NSIS setup + signature.
+      - name: Generate latest.json
+        shell: pwsh
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $art = "bodylab/apps/desktop/release-artifacts"
+          $exe = Get-ChildItem "$art/*x64-setup.exe" | Select-Object -First 1
+          if (-not $exe) { $exe = Get-ChildItem "$art/*.exe" | Where-Object { $_.Name -notlike '*.sig' } | Select-Object -First 1 }
+          $sig = Get-Content "$($exe.FullName).sig" -Raw
+          $json = @{
+            version    = "${env:TAG}".TrimStart('v')
+            notes      = "BodyLab ${env:TAG}"
+            pub_date   = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+            platforms  = @{
+              "windows-x86_64" = @{
+                signature = $sig.Trim()
+                url       = "https://github.com/${env:REPO}/releases/download/${env:TAG}/$($exe.Name)"
+              }
+            }
+          }
+          $json | ConvertTo-Json -Depth 5 | Set-Content "$art/latest.json" -Encoding utf8
+          Get-Content "$art/latest.json"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bodylab/apps/desktop/release-artifacts/*.exe
+            bodylab/apps/desktop/release-artifacts/*.sig
+            bodylab/apps/desktop/release-artifacts/latest.json
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}

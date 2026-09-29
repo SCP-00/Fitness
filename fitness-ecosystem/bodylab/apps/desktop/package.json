@@ -1,0 +1,17 @@
+{
+  "name": "@fitness/bodylab-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BodyLab Desktop - Anthropometric Tracker",
+  "license": "Apache-2.0",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:windows": "tauri build --target x86_64-pc-windows-msvc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

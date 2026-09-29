@@ -1,0 +1,178 @@
+<!doctype html>
+<!-- Dev-only preview: calibrated anatomy GLBs (CC-BY-SA, see docs/3D_MODELING_PLAN.md).
+     Served by Vite at /anatomy-preview.html. Requires `pnpm dev` (import map reads node_modules). -->
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BodyLab · Vista previa de anatomía (F4/F5)</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0d1117; overflow: hidden;
+               font-family: system-ui, sans-serif; color: #e6edf3; }
+  #c { display: block; width: 100%; height: 100%; }
+  .panel { position: fixed; top: 14px; left: 14px; background: rgba(22,27,34,.88);
+           border: 1px solid #30363d; border-radius: 10px; padding: 14px 16px;
+           backdrop-filter: blur(6px); min-width: 230px; }
+  .panel h1 { font-size: 14px; margin: 0 0 10px; font-weight: 600; }
+  .panel h1 small { display: block; font-weight: 400; color: #8b949e; font-size: 11px; margin-top: 2px; }
+  label.row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 7px 0; cursor: pointer; }
+  input[type=range] { width: 100%; accent-color: #3fb950; }
+  .slider-row { margin-top: 10px; font-size: 12px; color: #8b949e; }
+  button { margin-top: 10px; width: 100%; padding: 7px; background: #21262d; color: #e6edf3;
+           border: 1px solid #30363d; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  button:hover { background: #30363d; }
+  #status { position: fixed; bottom: 12px; left: 14px; font-size: 12px; color: #8b949e; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/node_modules/three/build/three.module.js",
+    "three/addons/": "/node_modules/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="panel">
+  <h1>Anatomía humana · hombre estándar<small>175.3 cm calibrados · Z-Anatomy CC-BY-SA</small></h1>
+  <label class="row"><input type="checkbox" id="skel" checked /> Esqueleto (1,243 piezas)</label>
+  <label class="row"><input type="checkbox" id="musc" checked /> Músculos (788 piezas)</label>
+  <div class="slider-row">
+    Opacidad músculos (baja = rayos X)
+    <input type="range" id="muscOpacity" min="0" max="100" value="100" />
+  </div>
+  <label class="row"><input type="checkbox" id="orbit" /> Rotación automática</label>
+  <button id="reset">↺ Reiniciar vista</button>
+</div>
+<div id="status">Cargando modelos…</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d1117);
+
+// IBL from studio environment + a soft key light for shaping
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.5;
+
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(2.5, 3.5, 2.5);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x9ecbff, 0.5);
+rim.position.set(-3, 2, -2.5);
+scene.add(rim);
+
+// Subtle reference floor (model feet rest at Z=0 by calibration)
+const grid = new THREE.GridHelper(4, 20, 0x30363d, 0x21262d);
+grid.position.y = 0.001;
+scene.add(grid);
+
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.05, 50);
+const HOME = { pos: new THREE.Vector3(1.15, 1.05, 2.6), tgt: new THREE.Vector3(0, 0.9, 0) };
+camera.position.copy(HOME.pos);
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(HOME.tgt);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.55;
+
+const status = document.getElementById('status');
+const loader = new GLTFLoader();
+loader.setMeshoptDecoder(MeshoptDecoder); // required: EXT_meshopt_compression
+
+let skeleton, muscles;
+const muscMats = [];
+
+function load(name, url, onDone) {
+  loader.load(url, (gltf) => {
+    gltf.scene.name = name;
+    scene.add(gltf.scene);
+    onDone(gltf.scene);
+    checkReady();
+  }, undefined, (err) => {
+    status.textContent = 'Error cargando ' + url;
+    console.error(err);
+  });
+}
+
+load('skeleton', '/anatomy/anatomy-skeleton.glb', (root) => { skeleton = root; });
+load('muscles', '/anatomy/anatomy-muscles.glb', (root) => {
+  muscles = root;
+  root.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = false;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) if (!muscMats.includes(m)) muscMats.push(m);
+    }
+  });
+});
+
+let ready = false;
+function checkReady() {
+  if (skeleton && muscles && !ready) {
+    ready = true;
+    status.textContent = 'Listo — esqueleto 1.753 m · 277 huesos · 683 músculos';
+    window.__anatomyLoaded = true;
+  }
+}
+
+// UI wiring
+const $ = (id) => document.getElementById(id);
+$('skel').addEventListener('change', (e) => { if (skeleton) skeleton.visible = e.target.checked; });
+$('musc').addEventListener('change', (e) => { if (muscles) muscles.visible = e.target.checked; });
+
+function applyOpacity(v) {
+  for (const m of muscMats) {
+    m.transparent = v < 0.999;
+    m.opacity = v;
+    m.depthWrite = v > 0.6; // ghost/X-ray view lets the skeleton show through
+    m.needsUpdate = true;
+  }
+}
+$('muscOpacity').addEventListener('input', (e) => applyOpacity(e.target.value / 100));
+
+let orbitOn = false;
+$('orbit').addEventListener('change', (e) => { orbitOn = e.target.checked; });
+
+$('reset').addEventListener('click', () => {
+  camera.position.copy(HOME.pos);
+  controls.target.copy(HOME.tgt);
+});
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// Debug/QA hooks: freeze the render loop (headless screenshot tests need a quiet main thread)
+// and render a single frame on demand after changing UI state.
+window.__pauseLoop = () => renderer.setAnimationLoop(null);
+window.__renderOnce = () => { controls.update(); renderer.render(scene, camera); };
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = clock.getDelta();
+  if (orbitOn) controls.autoRotate = true, controls.autoRotateSpeed = 1.2;
+  else controls.autoRotate = false;
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>

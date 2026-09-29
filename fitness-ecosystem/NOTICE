@@ -1,0 +1,80 @@
+Fitness Ecosystem
+Copyright 2026 Fitness Ecosystem Contributors
+
+This product includes software developed by the Fitness Ecosystem project.
+
+This product includes third-party software and assets subject to the
+following licenses:
+
+==============================================================
+OxiHuman
+==============================================================
+Repository: https://github.com/cool-japan/oxihuman
+Author: cool-japan
+License: Apache-2.0
+Bundled body assets: CC0-1.0 (derived from MakeHuman)
+Usage: 3D parametric body generator engine
+
+==============================================================
+MuscleMapJS
+==============================================================
+Repository: https://github.com/abdofallah/MuscleMapJS
+Author: abdofallah
+License: MIT
+Usage: Interactive 2D human body muscle map
+
+==============================================================
+clad-body
+==============================================================
+Repository: https://github.com/datar-psa/clad-body
+Author: datar-psa
+License: Apache-2.0
+Usage: ISO 8559-1 body measurement validation
+
+==============================================================
+MakeHuman Community
+==============================================================
+Repository: https://github.com/makehumancommunity/makehuman
+Source code license: AGPL-3.0 (not used directly)
+Bundled assets license: CC0-1.0
+Usage: Base mesh, targets, textures (via OxiHuman)
+
+==============================================================
+Z-Anatomy
+==============================================================
+Repository: https://github.com/Z-Anatomy/Models-of-human-anatomy
+License: CC BY-SA 4.0
+Additional attribution: See upstream attribution file
+Usage: Anatomical 3D models (Phase 4+)
+Note: Adaptations must be shared under CC BY-SA 4.0
+
+==============================================================
+Three.js
+==============================================================
+Repository: https://github.com/mrdoob/three.js
+Author: mrdoob and contributors
+License: MIT
+Usage: 3D rendering engine
+
+==============================================================
+React
+==============================================================
+Repository: https://github.com/facebook/react
+Author: Meta Platforms, Inc.
+License: MIT
+Usage: UI framework
+
+==============================================================
+Tauri
+==============================================================
+Repository: https://github.com/tauri-apps/tauri
+Author: Tauri Programme within The Commons Conservancy
+License: MIT OR Apache-2.0
+Usage: Desktop application framework
+
+==============================================================
+SQLite
+==============================================================
+Author: D. Richard Hipp
+License: Public Domain
+Usage: Local database engine

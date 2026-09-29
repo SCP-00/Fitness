@@ -1,0 +1,67 @@
+name: Deploy web to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # base is derived from the repo name → correct asset URLs for
+      # https://<owner>.github.io/<repo>/ (skips for user/org pages repos).
+      - name: Build for Pages (repo-aware base)
+        working-directory: bodylab/apps/web
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          if [[ "$REPO_NAME" == *.github.io ]]; then
+            npx vite build
+          else
+            npx vite build --base="/$REPO_NAME/"
+          fi
+
+      # SPA fallback: GitHub Pages serves 404.html for unknown paths.
+      # With HashRouter this is only a safety net, but keep it future-proof.
+      - name: SPA fallback (404.html)
+        run: cp bodylab/apps/web/dist/index.html bodylab/apps/web/dist/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: bodylab/apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

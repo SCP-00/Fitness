@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BodyLab",
+  "version": "1.0.0-beta.4",
+  "identifier": "com.bodylab.desktop",
+  "build": {
+    "beforeDevCommand": "cd ../web && pnpm dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "cd ../web && pnpm build",
+    "frontendDist": "../../web/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "BodyLab",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 980,
+        "minHeight": 700,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' data:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRERjJDQjM3QjU1NjA4RjIKUldUeUNGYTFOOHZ5VGE0SVRlMDlnUkVPRjU0cm9Fc2ZYNjV2L1VJR29oUWtTY25zQVlVVEdVT00K",
+      "endpoints": [
+        "https://github.com/OWNER/REPO/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": ["nsis"],
+    "category": "Healthcare and Fitness",
+    "shortDescription": "BodyLab — anthropometry, body modeling & training",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

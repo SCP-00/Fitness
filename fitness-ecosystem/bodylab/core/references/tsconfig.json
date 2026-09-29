@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "../../..",
+    "paths": {
+      "@fitness/bodylab-*": ["bodylab/core/*/src"]
+    },
+    // The base enables these for the web app; core emits via `tsc` (build) so
+    // extension-less imports are the contract here.
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

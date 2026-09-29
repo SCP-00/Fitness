@@ -1,0 +1,15 @@
+{
+  "name": "makehuman",
+  "repository": "https://github.com/makehumancommunity/makehuman",
+  "commit": "TODO_PIN_BEFORE_INTEGRATION",
+  "license": "AGPL-3.0 (code, NOT used)",
+  "asset_license": "CC0-1.0 (assets only)",
+  "source": "https://github.com/makehumancommunity/makehuman",
+  "integrity": "",
+  "required": false,
+  "status": "DEFERRED",
+  "purpose": "Base mesh, targets, textures (via OxiHuman)",
+  "attribution": "MakeHuman Community - CC0 assets",
+  "notes": "Only assets used, not AGPL code. OxiHuman already provides independent path to use these.",
+  "deferred_to": "Phase 3+ (via OxiHuman)"
+}

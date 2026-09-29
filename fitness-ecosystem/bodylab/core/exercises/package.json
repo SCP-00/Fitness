@@ -1,0 +1,11 @@
+{
+  "name": "@fitness/bodylab-exercises",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Exercise catalog + equipment/pattern traits shared by BodyLab and TrainingLab",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

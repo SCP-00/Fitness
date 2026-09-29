@@ -1,0 +1,24 @@
+{
+  "name": "@fitness/traininglab-workouts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Construcción y registro de rutinas de entrenamiento",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@fitness/traininglab-exercises": "workspace:*",
+    "@fitness/traininglab-equipment": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}

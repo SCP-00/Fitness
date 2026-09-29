@@ -1,0 +1,40 @@
+{
+  "name": "fitness-ecosystem",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ecosistema open-source para antropometría, modelado corporal y entrenamiento",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "dev:desktop": "pnpm --filter @fitness/bodylab-desktop dev",
+    "lan": "node scripts/serve-lan.mjs",
+    "build": "pnpm --filter \"./bodylab/core/**\" --no-bail build && pnpm --filter web build",
+    "build:desktop": "pnpm --filter @fitness/bodylab-desktop build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "pnpm --filter web lint",
+    "lint:fix": "pnpm --filter web exec oxlint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter \"./bodylab/core/**\" --no-bail typecheck",
+    "clean": "pnpm -r exec rm -rf dist node_modules",
+    "check": "pnpm typecheck && pnpm test && pnpm --filter web test && pnpm --filter web test:e2e"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0",
+    "@vitest/coverage-v8": "^1.4.0"
+  }
+}

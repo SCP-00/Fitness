@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  check:
+    name: lint + typecheck + unit + browser E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (oxlint)
+        run: pnpm lint
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bodylab/apps/web/pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium
+        working-directory: bodylab/apps/web
+        run: npx playwright install --with-deps chromium
+
+      # The full quality pyramid in one command (see docs/TESTING.md):
+      #   web typecheck → root vitest (453) → web vitest (36) → browser E2E (22)
+      # E2E tests that need a GPU skip themselves gracefully on CI runners.
+      - name: Run the full check pyramid
+        run: pnpm check
+
+      # Production build proves the lazy-route chunks + WASM assets bundle cleanly
+      # and that the prod-only CSP injects into index.html.
+      - name: Production build
+        working-directory: bodylab/apps/web
+        run: npx vite build
+
+  desktop:
+    name: desktop shell compiles (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust (stable, MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bodylab/apps/desktop/src-tauri
+
+      # Compiling the Tauri shell on Windows proves the desktop target stays
+      # healthy (Cargo.toml, capabilities, icons) without shipping an installer
+      # from CI. Release artifacts are cut locally / by a release workflow.
+      - name: Compile desktop shell (debug)
+        working-directory: bodylab/apps/desktop
+        run: pnpm tauri build --no-bundle
+
+  e2e-desktop-smoke:
+    name: desktop binary smoke (Windows)
+    runs-on: windows-latest
+    needs: desktop
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust (stable, MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bodylab/apps/desktop/src-tauri
+
+      # Release build + the binary-level smoke test (launch, window, storage
+      # container, graceful exit). This is the job that would have caught the
+      # stale-beta.2 finding: it embeds the CURRENT frontend, not a cached one.
+      - name: Build release binary
+        working-directory: bodylab/apps/desktop
+        run: pnpm tauri build --no-bundle
+
+      - name: Smoke test the binary
+        shell: pwsh
+        run: >
+          powershell -NoProfile -ExecutionPolicy Bypass -File
+          "bodylab/apps/desktop/scripts/smoke-desktop.ps1"

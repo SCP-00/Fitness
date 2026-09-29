@@ -1,0 +1,50 @@
+# Project knowledge
+
+This file gives Freebuff context about your project: goals, commands, conventions, and gotchas.
+Detailed version: `knowledge.md` (repo root). Source of truth for architecture: `fitness-ecosystem/docs/ARCHITECTURE.md`.
+
+## Quickstart
+- The real codebase is the pnpm monorepo in `fitness-ecosystem/` — run commands from there. Requires Node >=20, pnpm >=9.
+- Install: `pnpm install`
+- Dev (web): `pnpm dev` (or `cd bodylab/apps/web && pnpm dev`) → http://localhost:5173
+- Test: `pnpm test` (752 root tests, 43 files: core + contract + data-integrity + adversarial + training + exercises) · `cd bodylab/apps/web && npx vitest run` (102 web tests) · `pnpm check` (typecheck + core + web + 21 Playwright e2e)
+- TrainingLab (own app): `cd traininglab/apps/desktop && pnpm dev` (→ http://localhost:5174) / `npx tsc -b` / `npx vite build`. Its root-suite tests live in `fitness-ecosystem/tests/training/` and import the app modules by relative path.
+- Typecheck: `pnpm typecheck` (web `tsc -b` is the effective whole-monorepo check)
+- Lint: `pnpm lint` (oxlint via the web app; currently 0 warnings / 0 errors)
+- Desktop (Tauri 2): `cd bodylab/apps/desktop && pnpm dev` / `pnpm build` (needs Rust + MSVC Build Tools). Root launchers: `BodyLab.bat` (prod) / `BodyLab Dev.bat` (dev menu incl. build + smoke test) / `TrainingLab.bat` (serves + opens the web app).
+- Desktop shortcuts: `install-shortcut.ps1` (idempotent) writes `BodyLab`, `BodyLab Dev`, `TrainingLab` and `LAN Server (Fitness)` onto the **real** desktop — which is `%OneDrive%\Desktop` when OneDrive redirects it, *not* `%USERPROFILE%\Desktop`. Every shortcut sets an explicit `IconLocation` pointing at `resources/brand/<app>-icon.ico`; never rely on the executable's embedded icon (a stale build then shows a stale mark).
+- Phone testing (LAN): `pnpm lan` (or double-click `LAN Server.bat`) runs `scripts/serve-lan.mjs` — it builds both apps with `vite build --base=./` and serves them from one port (default 8090) behind a hub page: `/bodylab/`, `/traininglab/`. Flags: `--port`, `--build`, `--no-build`, `--open [app]`. Each device keeps its own IndexedDB; there is no server-side session or sync.
+
+## Architecture
+- Two apps, one shared data contract: **BodyLab** (built: anthropometry, 2D/3D body modeling, exercise, progress) and **TrainingLab** (`traininglab/apps/desktop` — the "today" screen: time-budgeted session, readiness, gear inventory, keyboard-first logging, rest timer, optional local LLM coach; black+orange theme; own i18n/db; Tauri shell in F5).
+- `bodylab/core/<pkg>` — pure TS engine, zero UI/DOM deps (hard rule, enforced in review): anthropometry, measurements, composition, references, progress, validation, export, analytics, database, **conditioning**, **training**, **exercises**.
+  - `exercises` (2026-09-28): the shared catalog (94 entries) + `traits.ts` (equipment requirements, movement pattern, load type, joint/spine stress, progression axes) + `equipment.ts` (gear presets, capabilities, max load/increment). **Both apps plan against it; TrainingLab works standalone because of it.**
+  - `training`: plan/validator/generator (weekly) **plus** `session.ts` (day-level, time-budgeted, readiness-aware, never throws) and `decision.ts` (local contextual-bandit decision model, explainable + clamped).
+- `bodylab/integrations/` — oxihuman (3D WASM), musclemapjs (2D maps), clad-body (ISO 8559-1), z-anatomy (empty).
+- `bodylab/packages/contracts` (JSON schemas). The design system is **in-app** (Tailwind tokens in `apps/web/src/index.css` + components); the orphan `packages/ui` was removed 2026-09-11.
+- `bodylab/apps/web` — React 19 + Vite 8 + Tailwind v4; pages in `src/pages/`, domain logic in `src/lib/` (`db.ts` IndexedDB, `store.tsx`, `constants.ts` re-exports core).
+- `bodylab/apps/desktop` — Tauri 2 shell wrapping the web build (`src-tauri`), beta installer target (NSIS/MSI; current beta.3, CSP mirrored with the web build, smoke-tested).
+- Data flow: components → `useApp()` store (Context + useReducer) → `lib/queries.ts` → `lib/db.ts` → IndexedDB. 100% offline, no backend.
+
+## Conventions
+- Formatting: Prettier (`pnpm format`). Linting: oxlint in the web app (no ESLint config anywhere; the vendored `public/wasm/**` glue is ignored).
+- TypeScript strict everywhere; web adds `verbatimModuleSyntax` + `erasableSyntaxOnly`.
+- Code identifiers/comments: English. UI copy: Spanish (bilingual EN/ES onboarding via `i18n.ts`).
+- **Never parse user numeric input with bare `parseFloat`/`parseInt`** — use `parseNumberInput` (`lib/parse-num.ts`): the Spanish decimal comma (`"75,5"`) would be silently truncated to 75.
+- Core imports are **aliased, not relative**: `@fitness/bodylab-<pkg>` → core `<pkg>/src` for 11 packages (anthropometry, measurements, references, composition, progress, validation, export, analytics, conditioning, training, **exercises**). **`database` has no alias** — its tests import via relative paths (`../../bodylab/core/database/src/...`). A new alias must be added in **six** places, all of which are load-bearing: root `vitest.config.ts`, `bodylab/apps/web/vite.config.ts`, `bodylab/apps/web/vitest.config.ts`, `bodylab/apps/web/tsconfig.app.json` (`paths`), `traininglab/apps/desktop/vite.config.ts`, `traininglab/apps/desktop/tsconfig.app.json` (`paths`).
+- Core never imports React/Three/Tauri/DOM. Measurements keep full history; IDs are UUIDs; timestamps ISO-8601. Units: kg / cm.
+- Things to avoid: pnpm filters that name the wrong package (`@fitness/bodylab-web` doesn't exist — it's `web`); running web tests from the repo root (wrong vitest generation/config); relative imports into core packages (except `database`).
+
+## Product vision (owner-confirmed 2026-09-27)
+- **BodyLab = the scientific/educational half**: precise anthropometry, mathematical body-state analysis (men & women), how-to-train education (exercise mechanics, GIFs, mechanical movement types, progress impact), measurement guidance, and active suggestions for records & training. Originally a private, single-user analysis tool.
+- **TrainingLab = the logging/acting half** (inspired by Symmetry/Hevy-style loggers): sets, weights, reps, effort, duration, rest. One ecosystem: BodyLab's weakness map (anthropometric scores + undertrained volumes + conditioning axes via the `traininglab-export.ts` contract, **v2**) feeds TrainingLab's planner.
+- **TrainingLab AI = three levels, all local (2026-09-28)**: **(1) deterministic** (`session.ts` + `validator.ts`) is the floor and needs no AI at all; **(2) a model of the JEV class** — a small, private, locally-trained *decision* model (implemented: contextual bandit with a deterministic trainer prior, online updates from logged outcomes, clamped weights, `explain()`/`drift()`, persisted as JSON); **(3) an optional local LLM** speaking the OpenAI API over loopback (llama.cpp server / LM Studio / Ollama / Jan) with **real tool calling** and a bounded tool loop, whose only terminal tool (`propose_session`) is validated against gear, families and the time budget before it can reach the screen. **JEV is TypeSafe AI's commercial typed-decision model ("System One": decisions, not text) and is NOT JEPA** — our `decision.ts` is a local model *of that class*, so describe it as such and never call it JEV or JEPA. The LLM proposes; the maths and hard rules dispose. See `docs/ECOSYSTEM_STRATEGY.md` §2.
+- **Branding (2026-09-28)**: masters in `fitness-ecosystem/resources/brand/` (`bodylab-icon.jpg` / `traininglab-icon.jpg`, 1024²; SVG masters also supported), rasterised by `node scripts/render-brand-icons.mjs` (uses the Playwright chromium already installed → `favicon.png`, `favicon.svg` as a wrapper around an embedded PNG, `apple-touch-icon.png`, `icon-512.png`, `<app>-icon.ico`). The `.ico` is written by ~40 lines of Node (PNG-in-ICO, the Vista+ container format) — no ImageMagick, no `sharp`, and **not** via `npx tauri icon`, which only exists for apps that have a Tauri shell (TrainingLab does not yet). The Tauri launcher set is regenerated with `npx tauri icon ../../../resources/brand/bodylab-icon-1024.png` from `bodylab/apps/desktop`.
+- **Profile age (2026-09-28 c)**: `Profile.birthDate` (ISO `YYYY-MM-DD`, nullable) is the stored fact and the age is **derived** at the UI boundary by `bodylab/apps/web/src/lib/age.ts` (`profileAge`, `ageFromBirthDate`, `normalizeProfile`). `Profile.age` survives only as a deprecated field so old exports still import; `db.loadProfile()` migrates it once and writes the upgraded record back. Core APIs still take `age: number` — they are pure maths and must never see a date. Do not reintroduce a typed age field.
+- **Training feedback (2026-09-28 c)**: `traininglab/.../lib/sounds.ts` synthesises three Web-Audio cues (`bell` session finished, `achievement` prescription completed, `record` PR beaten) — audio files are deliberately avoided (no assets to license, nothing to mangle, offline-safe). `lib/records.ts` holds the pure PR/completion logic (Epley rounded exactly like BodyLab's `store.tsx`); it is tested from the root suite. `lib/notifications.ts` uses the Web Notification API for the rest countdown and only ever asks for permission from an explicit click. The hero moment is the visual banner; the sound is the garnish.
+- Desktop auto-update: **manual, opt-in check in Settings** (Tauri updater); releases/signing automated in `.github/workflows/release.yml`. Privacy model: no background downloads, no telemetry.
+
+Verified 2026-09-28 (c): **752 root tests (43 files) · 102 web tests · TrainingLab `tsc -b` + `vite build` OK**. Prefer fresh output over these numbers.
+
+## Mobile
+- Both apps must work on a phone (the owner tests on an iPhone over the LAN, no Mac). Rules learned the hard way: never use `input[type='text']` in a touch-target selector (many inputs here omit `type=`); give grid children an explicit `grid-cols-1` below `sm` so an `auto` column cannot overflow its parent; BodyLab's production CSP is fine under a subpath but **every JSX asset URL must go through `import.meta.env.BASE_URL`** (Vite only rewrites `<img src>` inside `index.html`).

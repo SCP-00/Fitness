@@ -1,0 +1,14 @@
+{
+  "name": "clad-body",
+  "repository": "https://github.com/datar-psa/clad-body",
+  "commit": "TODO_PIN_BEFORE_INTEGRATION",
+  "license": "Apache-2.0",
+  "asset_license": "Apache-2.0",
+  "source": "https://github.com/datar-psa/clad-body",
+  "integrity": "",
+  "required": true,
+  "status": "EVALUATING",
+  "purpose": "ISO 8559-1 body measurement validation",
+  "attribution": "datar-psa (clad-body) - Apache-2.0",
+  "notes": "25 measurements, PyTorch integration, validation engine"
+}

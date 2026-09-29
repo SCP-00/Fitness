@@ -1,0 +1,3 @@
+# This directory holds downloaded resources.
+# Do not commit downloaded files to git.
+# Use resources/scripts/fetch-resources.ts to populate this directory.
