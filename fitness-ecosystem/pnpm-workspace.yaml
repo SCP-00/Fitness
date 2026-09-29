@@ -1,3 +1,10 @@
+# Workspace members are exactly what the repository ships. `corpus/` used to be
+# listed here, but it is deliberately excluded from the repository (see the root
+# .gitignore): keeping it as a member made the lockfile record an importer whose
+# directory does not exist in a fresh clone, so every `pnpm install
+# --frozen-lockfile` — including CI — died with ERR_PNPM_OUTDATED_LOCKFILE. Its
+# research assets can still be installed on their own by running `pnpm install`
+# inside `corpus/`.
 packages:
   - "bodylab/apps/*"
   - "bodylab/packages/*"
@@ -5,6 +12,5 @@ packages:
   - "traininglab/apps/*"
   - "traininglab/packages/*"
   - "traininglab/core/*"
-  - "corpus"
 allowBuilds:
   esbuild: true
