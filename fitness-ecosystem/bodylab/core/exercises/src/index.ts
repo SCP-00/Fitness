@@ -13,3 +13,6 @@ export * from "./catalog";
 export * from "./traits";
 export * from "./equipment";
 export * from "./catalog-additions";
+export * from "./catalog-expansion";
+export * from "./demo";
+export * from "./technique";

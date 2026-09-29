@@ -11,6 +11,7 @@
  */
 
 import type { Capability } from "./equipment";
+import { EXPANSION_TRAITS } from "./traits-expansion";
 
 /** What the movement does, mechanically. Drives balance and swap logic. */
 export type MovementPattern =
@@ -29,6 +30,8 @@ export type MovementPattern =
   | "plantar_flexion"
   | "tibialis"
   | "shoulder_abduction"
+  /** Raising the arm forward (front raise): the pattern lateral raises never cover. */
+  | "shoulder_flexion"
   | "shoulder_extension"
   | "elbow_flexion"
   | "elbow_extension"
@@ -81,7 +84,7 @@ export interface ExerciseTraits {
 const t = (traits: ExerciseTraits): ExerciseTraits => traits;
 
 /** Every catalog exercise's traits, keyed by exercise id. */
-export const EXERCISE_TRAITS: Record<string, ExerciseTraits> = {
+const BASE_TRAITS: Record<string, ExerciseTraits> = {
   // ── Chest ────────────────────────────────────────────────────────────────
   "barbell-bench-press": t({
     requires: [["barbell"], ["bench"]],
@@ -1052,6 +1055,18 @@ export const EXERCISE_TRAITS: Record<string, ExerciseTraits> = {
     setupMin: 0,
     cardio: "interval",
   }),
+};
+
+/**
+ * Every catalog exercise's traits — the classics plus the expansion set.
+ *
+ * Two records merged rather than one giant literal: each file stays reviewable
+ * on its own, and the expansion can grow without touching hand-written entries
+ * that predate it.
+ */
+export const EXERCISE_TRAITS: Record<string, ExerciseTraits> = {
+  ...BASE_TRAITS,
+  ...EXPANSION_TRAITS,
 };
 
 /** Conservative fallback so a catalog entry without traits never crashes. */

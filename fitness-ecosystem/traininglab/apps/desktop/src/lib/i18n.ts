@@ -160,6 +160,49 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "High spine load — brace hard, no rounding.",
     es: "Alta carga de columna — bracea fuerte, sin curvar.",
   },
+  "slot.seeHow": { en: "See how it's done", es: "Ver cómo se hace" },
+  "slot.techniqueLvl": {
+    en: "Technique {n}/5",
+    es: "Técnica {n}/5",
+  },
+
+  // ── Technique demo (drawn, no licensed media) ───────────────────────────
+  "tech.demoAlt": {
+    en: "Animated drawing of the exercise movement",
+    es: "Dibujo animado del movimiento del ejercicio",
+  },
+  "tech.modalTitle": {
+    en: "How it's done",
+    es: "Cómo se hace",
+  },
+  "tech.close": { en: "Close", es: "Cerrar" },
+  "tech.watchOut": { en: "Watch", es: "Fíjate en" },
+  "tech.level": { en: "Technique", es: "Técnica" },
+  "tech.effort": { en: "Effort", es: "Esfuerzo" },
+  "tech.joint": { en: "Joint stress", es: "Estrés articular" },
+  "tech.tempo": { en: "Tempo", es: "Tempo" },
+  "tech.execution": { en: "Execution", es: "Ejecución" },
+  "tech.mistakes": { en: "Common mistakes", es: "Errores comunes" },
+  "tech.safety": { en: "Safety", es: "Seguridad" },
+  "tech.breathing": { en: "Breathing", es: "Respiración" },
+  "tech.effortNote": { en: "Effort:", es: "Esfuerzo:" },
+  "tech.stillPhoto": {
+    en: "Reference photo (public domain)",
+    es: "Foto de referencia (dominio público)",
+  },
+  "tech.stillPair": {
+    en: "Start · end position (public domain)",
+    es: "Posición inicial · final (dominio público)",
+  },
+  "tech.startPos": { en: "start position", es: "posición inicial" },
+  "tech.endPos": { en: "end position", es: "posición final" },
+  "tech.joint.ankle": { en: "ankle", es: "tobillo" },
+  "tech.joint.knee": { en: "knee", es: "rodilla" },
+  "tech.joint.hip": { en: "hip", es: "cadera" },
+  "tech.joint.spine": { en: "spine", es: "columna" },
+  "tech.joint.shoulder": { en: "shoulder", es: "hombro" },
+  "tech.joint.elbow": { en: "elbow", es: "codo" },
+  "tech.joint.wrist": { en: "wrist", es: "muñeca" },
 
   // ── Logging ───────────────────────────────────────────────────────────────
   "log.weight": { en: "Weight (kg)", es: "Peso (kg)" },

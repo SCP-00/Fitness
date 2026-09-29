@@ -85,12 +85,10 @@ const TRAINING_MUSCLE_IDS: MuscleGroup[] = [
 // ============================================================================
 
 describe('Integration: Exercise DB structure', () => {
-  it('contains exactly 94 exercises: the original 64 plus 30 home/conditioning entries', () => {
-    // 64 (full-gym catalog, 2026-09) + 30 added 2026-09-28 so a home athlete
-    // (pull-up bar, dip bars, adjustable dumbbells, bands, bike) is not left
-    // with an empty exercise list: 12 home push/pull, 6 home legs, 6 home core,
-    // 6 honest conditioning blocks.
-    expect(ALL_EXERCISES.length).toBe(94);
+  it('contains exactly 143 exercises: 64 gym + 30 home + 49 technique-expansion entries', () => {
+    // 64 (full-gym catalog, 2026-09) + 30 added 2026-09-28 (home athlete) +
+    // 49 added 2026-09-29 (catalog expansion: home focus, owner equipment).
+    expect(ALL_EXERCISES.length).toBe(143);
   });
 
   it('every exercise id is a unique, kebab-case slug', () => {
@@ -190,7 +188,9 @@ describe('Integration: exercise GIF assets (filesystem)', () => {
     const manifestKeys = Object.keys(manifest).sort();
     const fileBases = files.map(f => f.replace(/\.gif$/, '')).sort();
     expect(manifestKeys).toEqual([...fileBases, ...stillIds].sort());
-    expect(stillIds.length).toBe(21);
+    // 21 original Gym Visual stills + 43 public-domain free-exercise-db pairs
+    // (added 2026-09-29; see public/exercises/NOTICE.md).
+    expect(stillIds.length).toBe(64);
   });
 
   it('every manifest entry references real assets and has instructions', async () => {
@@ -209,22 +209,28 @@ describe('Integration: exercise GIF assets (filesystem)', () => {
         expect(entry.image.endsWith('.jpg')).toBe(true);
         expect(entry.source).toContain('public domain');
         expect(existsSync(path.join(publicDir, 'exercises', entry.image))).toBe(true);
+        if (entry.imageAlt) {
+          expect(entry.imageAlt.endsWith('.jpg')).toBe(true);
+          expect(existsSync(path.join(publicDir, 'exercises', entry.imageAlt))).toBe(true);
+        }
       }
     }
   });
 
   it('every image-only manifest entry is a real, non-trivial JPEG', async () => {
-    const imagesDir = path.join(publicDir, 'exercises', 'images');
+    const publicRoot = path.join(publicDir, 'exercises');
     for (const entry of Object.values(manifest)) {
       if (entry.gif !== undefined) continue; // only still entries
-      const data = await readFile(path.join(imagesDir, path.basename(entry.image)));
-      expect(data.length).toBeGreaterThan(20_000);
+      // Newer entries live in per-exercise folders (images/<id>/0.jpg);
+      // legacy stills are flat (images/<id>.jpg) — resolve both.
+      const data = await readFile(path.join(publicRoot, entry.image));
+      expect(data.length).toBeGreaterThan(10_000);
       // JPEG magic: FF D8 FF
       expect(data[0]).toBe(0xFF);
       expect(data[1]).toBe(0xD8);
       expect(data[2]).toBe(0xFF);
     }
-    void imagesDir;
+    void publicRoot;
   });
 
   it('every exercise is GIF-covered, still-covered, or explicitly media-less', () => {
@@ -238,12 +244,11 @@ describe('Integration: exercise GIF assets (filesystem)', () => {
     const stillCovered = ALL_EXERCISES.filter(e => stillIds.has(e.id));
     const mediaLess = ALL_EXERCISES.filter(e => !gifIds.has(e.id) && !stillIds.has(e.id)).map(e => e.id);
     expect(gifCovered.length).toBe(36);
-    expect(stillCovered.length).toBe(21);
-    // These seven legacy entries render the bilingual placeholder — no clean
-    // licensed animation/still exists for them in the public-domain dataset.
-    // The 2026-09-28 home/conditioning additions (30) also ship media-less
-    // until we record our own GIFs with OxiHuman (content backlog).
-    expect(mediaLess.length).toBe(37);
+    expect(stillCovered.length).toBe(64);
+    // 43 remain media-less after the 2026-09-29 free-exercise-db expansion.
+    // They fall back to the drawn stick-figure animation in the app until we
+    // record our own GIFs with OxiHuman (content backlog).
+    expect(mediaLess.length).toBe(43);
     expect(mediaLess).toEqual(expect.arrayContaining([
       'push-up-plus', 'lying-hip-abduction', 'tibialis-raise', 'sumo-squat',
       'banded-hip-abduction', 'clamshells', 'fire-hydrants',

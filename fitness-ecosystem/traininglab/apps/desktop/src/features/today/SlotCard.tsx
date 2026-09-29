@@ -19,6 +19,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { parseNumberInput } from "../../lib/parse-num";
+import {
+  getExerciseTechnique,
+  type MovementPattern,
+} from "@fitness/bodylab-exercises";
 import { t, tInterp, getLanguage } from "../../lib/i18n";
 import type {
   PlannedRow,
@@ -28,6 +32,7 @@ import type {
 import { formatReason } from "../../lib/format";
 import type { TLSet } from "../../lib/types";
 import { Badge } from "./ui";
+import { ExerciseDemoModal } from "./ExerciseDemo";
 
 export function SlotCard({
   row,
@@ -56,6 +61,8 @@ export function SlotCard({
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [swapping, setSwapping] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const techLvl = getExerciseTechnique(row.exerciseId)?.techniqueLevel ?? null;
 
   const isCardio = row.cardioMin !== undefined;
   const done = todaySets.length;
@@ -78,9 +85,23 @@ export function SlotCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="font-semibold leading-tight truncate">
-            {row.name[lang]}
+            <button
+              onClick={() => setDemoOpen(true)}
+              title={t("slot.seeHow")}
+              className="hover:text-[var(--tl-accent)] transition-colors tl-focusable rounded"
+            >
+              {row.name[lang]}
+            </button>
           </h3>
           <div className="flex flex-wrap items-center gap-1.5 mt-2">
+            <button
+              onClick={() => setDemoOpen(true)}
+              title={t("slot.seeHow")}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-medium tl-focusable bg-[var(--tl-accent)]/10 text-[var(--tl-accent)] border-transparent hover:bg-[var(--tl-accent)]/20 transition-colors"
+            >
+              ▶ {t("slot.seeHow")}
+              {techLvl !== null && ` · T${techLvl}`}
+            </button>
             <Badge tone="neutral">{row.pattern.replace(/_/g, " ")}</Badge>
             {row.unilateral && (
               <Badge tone="neutral">{t("slot.unilateral")}</Badge>
@@ -119,6 +140,15 @@ export function SlotCard({
           )}
         </div>
       </div>
+
+      {demoOpen && (
+        <ExerciseDemoModal
+          exerciseId={row.exerciseId}
+          pattern={row.pattern as MovementPattern}
+          name={row.name[lang]}
+          onClose={() => setDemoOpen(false)}
+        />
+      )}
 
       {/* Prescription */}
       <p className="text-sm mt-3 tabular-nums text-[var(--tl-text-secondary)]">

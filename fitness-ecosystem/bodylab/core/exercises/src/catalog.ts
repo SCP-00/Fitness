@@ -22,6 +22,7 @@ import {
   HOME_LEG_EXERCISES,
   HOME_PUSH_PULL_EXERCISES,
 } from "./catalog-additions";
+import { EXPANSION_EXERCISES } from "./catalog-expansion";
 
 export type MuscleGroup =
   // Upper body - Push
@@ -1601,6 +1602,8 @@ export const ALL_EXERCISES: Exercise[] = [
   ...HOME_LEG_EXERCISES,
   ...HOME_CORE_EXERCISES,
   ...CARDIO_EXERCISES,
+  // The expansion set (home ladders, unilateral work, free conditioning).
+  ...EXPANSION_EXERCISES,
 ];
 
 // ============================================================================

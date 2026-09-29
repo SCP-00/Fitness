@@ -1,0 +1,8748 @@
+{
+  "$schema": "traininglab-llm-knowledge/1.0",
+  "generatedFrom": "@fitness/bodylab-exercises",
+  "counts": {
+    "exercises": 143,
+    "families": 34,
+    "patterns": 28,
+    "withMedia": 100
+  },
+  "families": [
+    "adductors",
+    "anterior_deltoid",
+    "biceps_long",
+    "biceps_short",
+    "brachioradialis",
+    "calves",
+    "chest_lower",
+    "chest_upper",
+    "erector_spinae",
+    "forearm_extensors",
+    "forearm_flexors",
+    "gluteus_maximus",
+    "gluteus_medius",
+    "hamstrings",
+    "iliopsoas",
+    "lateral_deltoid",
+    "lats_lower",
+    "lats_mid",
+    "lats_upper",
+    "obliques",
+    "pectoralis_minor",
+    "posterior_deltoid",
+    "quadriceps",
+    "rectus_abdominis",
+    "rhomboids",
+    "serratus_anterior",
+    "soleus",
+    "tibialis_anterior",
+    "traps_lower",
+    "traps_mid",
+    "traps_upper",
+    "triceps_lateral",
+    "triceps_long",
+    "triceps_medial"
+  ],
+  "patterns": [
+    "cardio_interval",
+    "cardio_steady",
+    "carry",
+    "core_anti_extension",
+    "core_anti_lateral",
+    "core_flexion",
+    "core_rotation",
+    "elbow_extension",
+    "elbow_flexion",
+    "forearm_extension",
+    "forearm_flexion",
+    "hinge",
+    "hip_abduction",
+    "hip_adduction",
+    "hip_extension",
+    "horizontal_pull",
+    "horizontal_push",
+    "knee_extension",
+    "knee_flexion",
+    "lunge",
+    "plantar_flexion",
+    "shoulder_abduction",
+    "shoulder_extension",
+    "shoulder_flexion",
+    "squat",
+    "tibialis",
+    "vertical_pull",
+    "vertical_push"
+  ],
+  "equipment": [
+    [
+      "ab_wheel"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands"
+    ],
+    [
+      "bands",
+      "cable"
+    ],
+    [
+      "bands",
+      "dumbbell",
+      "bodyweight"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell"
+    ],
+    [
+      "barbell",
+      "dumbbell"
+    ],
+    [
+      "barbell",
+      "dumbbell"
+    ],
+    [
+      "barbell",
+      "dumbbell"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench"
+    ],
+    [
+      "bench",
+      "box"
+    ],
+    [
+      "bench",
+      "box"
+    ],
+    [
+      "bench",
+      "box"
+    ],
+    [
+      "bench",
+      "box"
+    ],
+    [
+      "bench",
+      "box",
+      "dip_bars"
+    ],
+    [
+      "bike"
+    ],
+    [
+      "bike"
+    ],
+    [
+      "bike"
+    ],
+    [
+      "bodyweight"
+    ],
+    [
+      "box"
+    ],
+    [
+      "box",
+      "bench"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "cable"
+    ],
+    [
+      "dip_bars",
+      "pullup_bar",
+      "bench"
+    ],
+    [
+      "dip_bars",
+      "rings"
+    ],
+    [
+      "dip_bars",
+      "rings"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell",
+      "kettlebell"
+    ],
+    [
+      "dumbbell",
+      "kettlebell"
+    ],
+    [
+      "dumbbell",
+      "kettlebell"
+    ],
+    [
+      "dumbbell",
+      "kettlebell"
+    ],
+    [
+      "jump_rope"
+    ],
+    [
+      "jump_rope"
+    ],
+    [
+      "kettlebell"
+    ],
+    [
+      "kettlebell"
+    ],
+    [
+      "kettlebell"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "pullup_bar",
+      "dip_bars"
+    ],
+    [
+      "pullup_bar",
+      "rings"
+    ],
+    [
+      "pullup_bar",
+      "rings"
+    ],
+    [
+      "pullup_bar",
+      "rings"
+    ],
+    [
+      "pullup_bar",
+      "rings"
+    ],
+    [
+      "pullup_bar",
+      "rings"
+    ],
+    [
+      "pullup_bar",
+      "rings"
+    ],
+    [
+      "rack"
+    ],
+    [
+      "rack"
+    ],
+    [
+      "stairs"
+    ],
+    [
+      "stairs"
+    ],
+    [
+      "strap",
+      "box",
+      "bench"
+    ]
+  ],
+  "hardRules": [
+    "Only propose exercises that exist in this knowledge base, by exact id.",
+    "Never program equipment the user does not own.",
+    "Respect the time budget: sum of slot minutes (setup + sets × (work + rest)) must fit.",
+    "Never repeat the same primary muscle family twice in one session.",
+    "Lower readiness ⇒ higher RIR (fewer reps in reserve), never lower.",
+    "Weakest muscle family first.",
+    "The deterministic plan is the baseline; improve it, do not replace it wholesale."
+  ],
+  "exercises": [
+    {
+      "id": "barbell-bench-press",
+      "name": {
+        "en": "Barbell Bench Press",
+        "es": "Press con Barra"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Barbell + Flat Bench",
+        "es": "Barra + Banca Plana"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "incline-bench-press",
+      "name": {
+        "en": "Incline Bench Press",
+        "es": "Press Inclinado"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Barbell + Incline Bench",
+        "es": "Barra + Banca Inclinada"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dumbbell-bench-press",
+      "name": {
+        "en": "Dumbbell Bench Press",
+        "es": "Press con Mancuernas"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Flat Bench",
+        "es": "Mancuernas + Banca Plana"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dumbbell-fly",
+      "name": {
+        "en": "Dumbbell Fly",
+        "es": "Aperturas con Mancuernas"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Bench",
+        "es": "Mancuernas + Banca"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "range"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "cable-crossover",
+      "name": {
+        "en": "Cable Crossover",
+        "es": "Cruces en Polea"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine",
+        "es": "Máquina de Poleas"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "push-ups",
+      "name": {
+        "en": "Push-ups",
+        "es": "Flexiones"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "machine-bench-press",
+      "name": {
+        "en": "Machine Chest Press",
+        "es": "Press de Pecho en Máquina"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Chest Press Machine",
+        "es": "Máquina de Press de Pecho"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "incline-dumbbell-press",
+      "name": {
+        "en": "Incline Dumbbell Press",
+        "es": "Press Inclinado con Mancuernas"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Incline Bench",
+        "es": "Mancuernas + Banca Inclinada"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "machine-chest-fly",
+      "name": {
+        "en": "Machine Chest Fly (Pec Deck)",
+        "es": "Aperturas en Máquina (Pec Deck)"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Pec Deck / Butterfly Machine",
+        "es": "Máquina de Aperturas (Butterfly)"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "push-up-plus",
+      "name": {
+        "en": "Push-Up Plus (Serratus Push-Up)",
+        "es": "Flexión Plus (Flexión de Serrato)"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "serratus_anterior",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "dumbbell-pullover",
+      "name": {
+        "en": "Dumbbell Pullover",
+        "es": "Pullover con Mancuerna"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "pectoralis_minor",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "lats_upper",
+          "intensity": 1
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbell + Bench",
+        "es": "Mancuerna + Banca"
+      },
+      "pattern": "shoulder_extension",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "range"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-0-2",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "overhead-press",
+      "name": {
+        "en": "Overhead Press",
+        "es": "Press Militar"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 1
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "vertical_push",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "lateral-raise",
+      "name": {
+        "en": "Lateral Raise",
+        "es": "Elevaciones Laterales"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "shoulder_abduction",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "face-pulls",
+      "name": {
+        "en": "Face Pulls",
+        "es": "Jalones a la Cara"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine + Rope",
+        "es": "Máquina de Poleas + Cuerda"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "arnold-press",
+      "name": {
+        "en": "Arnold Press",
+        "es": "Press Arnold"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 1
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "vertical_push",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "reverse-fly",
+      "name": {
+        "en": "Reverse Fly",
+        "es": "Aperturas Inversas"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Incline Bench",
+        "es": "Mancuernas + Banca Inclinada"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "machine-shoulder-press",
+      "name": {
+        "en": "Machine Shoulder Press",
+        "es": "Press de Hombros en Máquina"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Shoulder Press Machine",
+        "es": "Máquina de Press de Hombros"
+      },
+      "pattern": "vertical_push",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-lateral-raise",
+      "name": {
+        "en": "Band Lateral Raise",
+        "es": "Elevaciones Laterales con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band",
+        "es": "Banda de Resistencia"
+      },
+      "pattern": "shoulder_abduction",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "barbell-curl",
+      "name": {
+        "en": "Barbell Curl",
+        "es": "Curl con Barra"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "biceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 3
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "incline-dumbbell-curl",
+      "name": {
+        "en": "Incline Dumbbell Curl",
+        "es": "Curl Inclinado con Mancuernas"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "biceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 2
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Incline Bench",
+        "es": "Mancuernas + Banca Inclinada"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "range"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "hammer-curl",
+      "name": {
+        "en": "Hammer Curl",
+        "es": "Curl Martillo"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "biceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "preacher-curl",
+      "name": {
+        "en": "Preacher Curl",
+        "es": "Curl en Predicador"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "biceps_short",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Preacher Bench + EZ Bar",
+        "es": "Banco de Predicador + Barra EZ"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "chin-ups",
+      "name": {
+        "en": "Chin-ups",
+        "es": "Dominadas Supinas"
+      },
+      "category": "bodyweight",
+      "difficulty": 4,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "biceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Pull-up Bar",
+        "es": "Barra de Dominadas"
+      },
+      "pattern": "vertical_pull",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "pullup_bar",
+          "rings"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 4,
+      "tempo": "1-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "close-grip-bench",
+      "name": {
+        "en": "Close-Grip Bench Press",
+        "es": "Press agarre cerrado"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Barbell + Flat Bench",
+        "es": "Barra + Banca Plana"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "overhead-tricep-extension",
+      "name": {
+        "en": "Overhead Cable Extension",
+        "es": "Extensión de Tríceps en Polea"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine + Rope",
+        "es": "Máquina de Poleas + Cuerda"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "skull-crushers",
+      "name": {
+        "en": "Skull Crushers",
+        "es": "Francesas"
+      },
+      "category": "isolation",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "EZ Bar + Flat Bench",
+        "es": "Barra EZ + Banca Plana"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "tricep-pushdown",
+      "name": {
+        "en": "Tricep Pushdown",
+        "es": "Extensiones de Tríceps"
+      },
+      "category": "cable",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine + Bar/Rope",
+        "es": "Máquina de Poleas + Barra/Cuerda"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dips",
+      "name": {
+        "en": "Dips",
+        "es": "Fondos"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dip Bars",
+        "es": "Barras de Fondos"
+      },
+      "pattern": "vertical_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "dip_bars",
+          "rings"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "load"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "deadlift",
+      "name": {
+        "en": "Deadlift",
+        "es": "Peso Muerto"
+      },
+      "category": "compound",
+      "difficulty": 5,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "erector_spinae",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "hinge",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 3,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 3,
+      "techniqueLevel": 4,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "barbell-row",
+      "name": {
+        "en": "Barbell Row",
+        "es": "Remo con Barra"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "pull-ups",
+      "name": {
+        "en": "Pull-ups",
+        "es": "Dominadas Pronadas"
+      },
+      "category": "bodyweight",
+      "difficulty": 4,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Pull-up Bar",
+        "es": "Barra de Dominadas"
+      },
+      "pattern": "vertical_pull",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "pullup_bar",
+          "rings"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 4,
+      "tempo": "1-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "seated-cable-row",
+      "name": {
+        "en": "Seated Cable Row",
+        "es": "Remo en Polea Sentado"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine",
+        "es": "Máquina de Poleas"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dumbbell-row",
+      "name": {
+        "en": "Single-Arm Dumbbell Row",
+        "es": "Remo con Mancuerna a Un Brazo"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbell + Bench",
+        "es": "Mancuerna + Banca"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench",
+          "box"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "lat-pulldown",
+      "name": {
+        "en": "Lat Pulldown",
+        "es": "Jalón al Pecho"
+      },
+      "category": "machine",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_lower",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine",
+        "es": "Máquina de Poleas"
+      },
+      "pattern": "vertical_pull",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 4,
+      "tempo": "1-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "t-bar-row",
+      "name": {
+        "en": "T-Bar Row",
+        "es": "Remo T-Bar"
+      },
+      "category": "machine",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "T-Bar Row Machine",
+        "es": "Máquina de Remo T-Bar"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-pull-apart",
+      "name": {
+        "en": "Band Pull-Apart",
+        "es": "Aperturas con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "rhomboids",
+          "intensity": 3
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band",
+        "es": "Banda de Resistencia"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "barbell-squat",
+      "name": {
+        "en": "Barbell Back Squat",
+        "es": "Sentadilla con Barra"
+      },
+      "category": "compound",
+      "difficulty": 4,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell + Squat Rack",
+        "es": "Barra + Rack de Sentadilla"
+      },
+      "pattern": "squat",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "rack"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 3,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 3,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "front-squat",
+      "name": {
+        "en": "Front Squat",
+        "es": "Sentadilla Frontal"
+      },
+      "category": "compound",
+      "difficulty": 5,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell + Squat Rack",
+        "es": "Barra + Rack de Sentadilla"
+      },
+      "pattern": "squat",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "rack"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 3,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 3,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "romanian-deadlift",
+      "name": {
+        "en": "Romanian Deadlift",
+        "es": "Peso Muerto Rumano"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "hinge",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 4,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "leg-press",
+      "name": {
+        "en": "Leg Press",
+        "es": "Prensa de Piernas"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Leg Press Machine",
+        "es": "Máquina de Prensa"
+      },
+      "pattern": "squat",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "lunges",
+      "name": {
+        "en": "Walking Lunges",
+        "es": "Zancadas Caminando"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "lunge",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "leg-curl",
+      "name": {
+        "en": "Lying Leg Curl",
+        "es": "Curl de Piernas Acostado"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Leg Curl Machine",
+        "es": "Máquina de Curl de Piernas"
+      },
+      "pattern": "knee_flexion",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "leg-extension",
+      "name": {
+        "en": "Leg Extension",
+        "es": "Extensión de Piernas"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        }
+      ],
+      "equipment": {
+        "en": "Leg Extension Machine",
+        "es": "Máquina de Extensión"
+      },
+      "pattern": "knee_extension",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "hip-thrust",
+      "name": {
+        "en": "Barbell Hip Thrust",
+        "es": "Empuje de Cadera con Barra"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell + Bench",
+        "es": "Barra + Banca"
+      },
+      "pattern": "hip_extension",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 2,
+      "tempo": "2-2-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "lying-hip-abduction",
+      "name": {
+        "en": "Side-Lying Hip Abduction",
+        "es": "Abducción de Cadera Acostado"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Mat (ankle weight optional)",
+        "es": "Colchoneta (tobillera opcional)"
+      },
+      "pattern": "hip_abduction",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "calf-raises",
+      "name": {
+        "en": "Standing Calf Raises",
+        "es": "Elevación de Talones de Pie"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "calves",
+          "intensity": 3
+        },
+        {
+          "muscle": "tibialis_anterior",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Calf Raise Machine",
+        "es": "Máquina de Elevación de Talones"
+      },
+      "pattern": "plantar_flexion",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "1-2-1",
+      "rir": "0-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "ankle"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "seated-calf-raise",
+      "name": {
+        "en": "Seated Calf Raise",
+        "es": "Elevación de Talones Sentado"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "soleus",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Seated Calf Raise Machine",
+        "es": "Máquina de Elevación Sentado"
+      },
+      "pattern": "plantar_flexion",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "1-2-1",
+      "rir": "0-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "ankle"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "tibialis-raise",
+      "name": {
+        "en": "Tibialis Raise",
+        "es": "Elevación de Tibial Anterior"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "tibialis_anterior",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band / Plate",
+        "es": "Banda de Resistencia / Disco"
+      },
+      "pattern": "tibialis",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands",
+          "dumbbell",
+          "bodyweight"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "time"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "ankle"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "goblet-squat",
+      "name": {
+        "en": "Goblet Squat",
+        "es": "Sentadilla Copa"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbell / Kettlebell",
+        "es": "Mancuerna / Pesa Rusa"
+      },
+      "pattern": "squat",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell",
+          "kettlebell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "hack-squat",
+      "name": {
+        "en": "Hack Squat",
+        "es": "Sentadilla en Máquina (Hack)"
+      },
+      "category": "machine",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Hack Squat Machine",
+        "es": "Máquina Hack de Sentadilla"
+      },
+      "pattern": "squat",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "seated-leg-curl",
+      "name": {
+        "en": "Seated Leg Curl",
+        "es": "Curl de Piernas Sentado"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Seated Leg Curl Machine",
+        "es": "Máquina de Curl Sentado"
+      },
+      "pattern": "knee_flexion",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "sumo-squat",
+      "name": {
+        "en": "Sumo Squat",
+        "es": "Sentadilla Sumo"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "adductors",
+          "intensity": 3
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell / Dumbbell",
+        "es": "Barra / Mancuerna"
+      },
+      "pattern": "squat",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell",
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "banded-hip-abduction",
+      "name": {
+        "en": "Standing Band Hip Abduction",
+        "es": "Abducción de Cadera con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band (ankle)",
+        "es": "Banda de Resistencia (tobillo)"
+      },
+      "pattern": "hip_abduction",
+      "loadType": "band",
+      "unilateral": true,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "clamshells",
+      "name": {
+        "en": "Clamshells",
+        "es": "Almejas"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Mat (band optional)",
+        "es": "Colchoneta (banda opcional)"
+      },
+      "pattern": "hip_abduction",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "fire-hydrants",
+      "name": {
+        "en": "Fire Hydrants",
+        "es": "Bomberos"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Mat (band optional)",
+        "es": "Colchoneta (banda opcional)"
+      },
+      "pattern": "hip_abduction",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "standing-cable-adduction",
+      "name": {
+        "en": "Standing Cable Adduction",
+        "es": "Aducción de Cadera en Polea"
+      },
+      "category": "cable",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "adductors",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine + Ankle Strap",
+        "es": "Máquina de Poleas + Tobillera"
+      },
+      "pattern": "hip_adduction",
+      "loadType": "cable",
+      "unilateral": true,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "lying-leg-raise",
+      "name": {
+        "en": "Lying Leg Raise",
+        "es": "Elevación de Piernas Acostado"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "iliopsoas",
+          "intensity": 3
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Mat",
+        "es": "Colchoneta"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "wrist-curl",
+      "name": {
+        "en": "Wrist Curl",
+        "es": "Curl de Muñeca"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "forearm_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell",
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "2-1-2",
+      "rir": "0-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "wrist"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "reverse-wrist-curl",
+      "name": {
+        "en": "Reverse Wrist Curl",
+        "es": "Curl Inverso de Muñeca"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "forearm_extensors",
+          "intensity": 3
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "forearm_extension",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell",
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "2-1-2",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "wrist"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "farmers-walk",
+      "name": {
+        "en": "Farmer's Walk",
+        "es": "Caminata del Granjero"
+      },
+      "category": "compound",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 3
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Heavy Dumbbells/Kettlebells",
+        "es": "Mancuernas/Pesos Rusos Pesados"
+      },
+      "pattern": "carry",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell",
+          "kettlebell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "walk 30-60 s",
+      "rir": "n/a (distance or time)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "cable-crunch",
+      "name": {
+        "en": "Cable Crunch",
+        "es": "Abdominales en Polea"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine + Kneeling Pad",
+        "es": "Máquina de Poleas + Rodillera"
+      },
+      "pattern": "core_flexion",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "hanging-leg-raise",
+      "name": {
+        "en": "Hanging Leg Raise",
+        "es": "Elevación de Piernas Colgado"
+      },
+      "category": "bodyweight",
+      "difficulty": 4,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Pull-up Bar",
+        "es": "Barra de Dominadas"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "pullup_bar",
+          "dip_bars"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "russian-twist",
+      "name": {
+        "en": "Russian Twist",
+        "es": "Giros Rusos"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "obliques",
+          "intensity": 3
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight / Weight",
+        "es": "Peso corporal / Peso"
+      },
+      "pattern": "core_rotation",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "spine",
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "plank",
+      "name": {
+        "en": "Plank",
+        "es": "Plancha"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_anti_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "leverage"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "hold 20-60 s",
+      "rir": "n/a (isometric)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "hip"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "inverted-row",
+      "name": {
+        "en": "Inverted Row (Australian Pull-up)",
+        "es": "Remo Invertido (Dominada Australiana)"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Low bar / Dip Bars / Table edge",
+        "es": "Barra baja / Paralelas / Borde de mesa"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "dip_bars",
+          "pullup_bar",
+          "bench"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "pike-push-up",
+      "name": {
+        "en": "Pike Push-up",
+        "es": "Flexión Pike (Vertical)"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "chest_upper",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight (wall optional)",
+        "es": "Peso corporal (pared opcional)"
+      },
+      "pattern": "vertical_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "diamond-push-up",
+      "name": {
+        "en": "Diamond Push-up",
+        "es": "Flexión Diamante"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 2
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "chest_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "bench-dip",
+      "name": {
+        "en": "Bench Dip",
+        "es": "Fondos en Banco"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bench / Box / Chair",
+        "es": "Banco / Cajón / Silla"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "bench",
+          "box",
+          "dip_bars"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-chest-press",
+      "name": {
+        "en": "Band Chest Press",
+        "es": "Press de Pecho con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band (door anchor)",
+        "es": "Banda de Resistencia (anclaje a puerta)"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo",
+        "range"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "band-row",
+      "name": {
+        "en": "Band Row",
+        "es": "Remo con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 3
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band",
+        "es": "Banda de Resistencia"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "band-face-pull",
+      "name": {
+        "en": "Band Face Pull",
+        "es": "Jalón a la Cara con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band",
+        "es": "Banda de Resistencia"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-triceps-pushdown",
+      "name": {
+        "en": "Band Triceps Pushdown",
+        "es": "Extensión de Tríceps con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band",
+        "es": "Banda de Resistencia"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-curl",
+      "name": {
+        "en": "Band Curl",
+        "es": "Curl con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "biceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 3
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Band",
+        "es": "Banda de Resistencia"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "scapular-pull-up",
+      "name": {
+        "en": "Scapular Pull-up",
+        "es": "Dominada Escapular"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Pull-up Bar",
+        "es": "Barra de Dominadas"
+      },
+      "pattern": "vertical_pull",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "pullup_bar",
+          "rings"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 4,
+      "tempo": "1-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "prone-y-raise",
+      "name": {
+        "en": "Prone Y-Raise",
+        "es": "Elevación en Y Boca Abajo"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "traps_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 2
+        },
+        {
+          "muscle": "serratus_anterior",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight (mat optional)",
+        "es": "Peso corporal (colchoneta opcional)"
+      },
+      "pattern": "shoulder_abduction",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "shoulder"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "suitcase-carry",
+      "name": {
+        "en": "Suitcase Carry",
+        "es": "Paseo del Maletín"
+      },
+      "category": "compound",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "obliques",
+          "intensity": 3
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbell / Kettlebell",
+        "es": "Mancuerna / Pesa Rusa"
+      },
+      "pattern": "carry",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "dumbbell",
+          "kettlebell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "time"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "walk 30-60 s",
+      "rir": "n/a (distance or time)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "single-leg-rdl",
+      "name": {
+        "en": "Single-Leg Romanian Deadlift",
+        "es": "Peso Muerto Rumano a Una Pierna"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 2
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbell / Kettlebell",
+        "es": "Mancuerna / Pesa Rusa"
+      },
+      "pattern": "hinge",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "dumbbell",
+          "kettlebell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 4,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "bulgarian-split-squat",
+      "name": {
+        "en": "Bulgarian Split Squat",
+        "es": "Sentadilla Búlgara"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 5,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 2
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Bench/Box",
+        "es": "Mancuernas + Banco/Cajón"
+      },
+      "pattern": "lunge",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "bodyweight"
+        ],
+        [
+          "bench",
+          "box"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "step-up",
+      "name": {
+        "en": "Step-up",
+        "es": "Subida al Cajón"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 2
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Box / Bench + Dumbbells",
+        "es": "Cajón / Banco + Mancuernas"
+      },
+      "pattern": "lunge",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "box",
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "nordic-curl",
+      "name": {
+        "en": "Nordic Hamstring Curl",
+        "es": "Curl Nórdico de Isquios"
+      },
+      "category": "compound",
+      "difficulty": 5,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Nordic strap / anchored feet",
+        "es": "Correa nórdica / pies anclados"
+      },
+      "pattern": "knee_flexion",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [
+        [
+          "strap",
+          "box",
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "knee"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "copenhagen-plank",
+      "name": {
+        "en": "Copenhagen Plank",
+        "es": "Plancha Copenhague"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "adductors",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bench / Box",
+        "es": "Banco / Cajón"
+      },
+      "pattern": "hip_adduction",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [
+        [
+          "bench",
+          "box"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "leverage"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "single-leg-calf-raise",
+      "name": {
+        "en": "Single-Leg Calf Raise",
+        "es": "Elevación de Talones a Una Pierna"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "calves",
+          "intensity": 3
+        },
+        {
+          "muscle": "soleus",
+          "intensity": 2
+        },
+        {
+          "muscle": "tibialis_anterior",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight (step optional)",
+        "es": "Peso corporal (escalón opcional)"
+      },
+      "pattern": "plantar_flexion",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "volume",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-2-1",
+      "rir": "0-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "ankle"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "hollow-body-hold",
+      "name": {
+        "en": "Hollow Body Hold",
+        "es": "Hueco (Hollow Body)"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 2
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_anti_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "leverage"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "hold 20-60 s",
+      "rir": "n/a (isometric)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "bicycle-crunch",
+      "name": {
+        "en": "Bicycle Crunch",
+        "es": "Crunch Bicicleta"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "obliques",
+          "intensity": 3
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_rotation",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "spine",
+          "shoulder"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "ab-wheel-rollout",
+      "name": {
+        "en": "Ab Wheel Rollout",
+        "es": "Rueda Abdominal"
+      },
+      "category": "bodyweight",
+      "difficulty": 4,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 2
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "serratus_anterior",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Ab Wheel",
+        "es": "Rueda Abdominal"
+      },
+      "pattern": "core_anti_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "ab_wheel"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "reps",
+        "leverage",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "hold 20-60 s",
+      "rir": "n/a (isometric)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "dead-bug",
+      "name": {
+        "en": "Dead Bug",
+        "es": "Bicho Muerto"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight (mat optional)",
+        "es": "Peso corporal (colchoneta opcional)"
+      },
+      "pattern": "core_anti_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "hold 20-60 s",
+      "rir": "n/a (isometric)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "hip"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "side-plank",
+      "name": {
+        "en": "Side Plank",
+        "es": "Plancha Lateral"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "obliques",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_anti_lateral",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "leverage"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "1-2-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "mountain-climber",
+      "name": {
+        "en": "Mountain Climber",
+        "es": "Escalador (Mountain Climber)"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "mtb-steady-ride",
+      "name": {
+        "en": "MTB / Bike — Steady Ride (Z2)",
+        "es": "Bici de Montaña — Rodada Continua (Z2)"
+      },
+      "category": "cardio",
+      "difficulty": 1,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "calves",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bike (MTB / road / spin)",
+        "es": "Bicicleta (MTB / ruta / estática)"
+      },
+      "pattern": "cardio_steady",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [
+        [
+          "bike"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 1,
+      "tempo": "20-45 min continuous",
+      "rir": "n/a (pace)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "mtb-hill-intervals",
+      "name": {
+        "en": "MTB / Bike — Hill Intervals",
+        "es": "Bici de Montaña — Intervalos de Subida"
+      },
+      "category": "cardio",
+      "difficulty": 3,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 2
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bike + hill / resistance",
+        "es": "Bicicleta + cuesta / resistencia"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [
+        [
+          "bike"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "stair-intervals",
+      "name": {
+        "en": "Stair / Hill Intervals",
+        "es": "Intervalos de Escaleras o Cuesta"
+      },
+      "category": "cardio",
+      "difficulty": 3,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 3
+        },
+        {
+          "muscle": "soleus",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Stairs / hill",
+        "es": "Escaleras / cuesta"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [
+        [
+          "stairs"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "jump-rope-intervals",
+      "name": {
+        "en": "Jump Rope Intervals",
+        "es": "Intervalos de Cuerda"
+      },
+      "category": "cardio",
+      "difficulty": 3,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "calves",
+          "intensity": 3
+        },
+        {
+          "muscle": "soleus",
+          "intensity": 3
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Jump Rope",
+        "es": "Cuerda de Saltar"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [
+        [
+          "jump_rope"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "burpee-circuit",
+      "name": {
+        "en": "Burpee Circuit",
+        "es": "Circuito de Burpees"
+      },
+      "category": "cardio",
+      "difficulty": 3,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "metcon-circuit",
+      "name": {
+        "en": "Metabolic Bodyweight Circuit",
+        "es": "Circuito Metabólico"
+      },
+      "category": "cardio",
+      "difficulty": 2,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "dumbbell-floor-press",
+      "name": {
+        "en": "Dumbbell Floor Press",
+        "es": "Press en Suelo con Mancuernas"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "deficit-push-up",
+      "name": {
+        "en": "Deficit Push-Up",
+        "es": "Flexión con Déficit"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight + books/blocks",
+        "es": "Peso corporal + libros/bloques"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "range",
+        "leverage"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "decline-push-up",
+      "name": {
+        "en": "Decline Push-Up",
+        "es": "Flexión Declinada"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "serratus_anterior",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight (feet elevated)",
+        "es": "Peso corporal (pies elevados)"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "pseudo-planche-push-up",
+      "name": {
+        "en": "Pseudo Planche Push-Up",
+        "es": "Flexión Pseudo Plancha"
+      },
+      "category": "bodyweight",
+      "difficulty": 5,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "serratus_anterior",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "leverage",
+        "reps",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "archer-push-up",
+      "name": {
+        "en": "Archer Push-Up",
+        "es": "Flexión Arquero"
+      },
+      "category": "bodyweight",
+      "difficulty": 4,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 3
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "dumbbell-squeeze-press",
+      "name": {
+        "en": "Dumbbell Squeeze Press",
+        "es": "Press de Apretón con Mancuernas"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "chest_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "horizontal_push",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "seated-dumbbell-press",
+      "name": {
+        "en": "Seated Dumbbell Press",
+        "es": "Press de Hombro Sentado"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Bench",
+        "es": "Mancuernas + Banco"
+      },
+      "pattern": "vertical_push",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench",
+          "box"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dumbbell-front-raise",
+      "name": {
+        "en": "Dumbbell Front Raise",
+        "es": "Elevación Frontal con Mancuernas"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "pectoralis_minor",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "shoulder_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "tempo",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dumbbell-upright-row",
+      "name": {
+        "en": "Dumbbell Upright Row",
+        "es": "Remo al Mentón con Mancuernas"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "shoulder_abduction",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-overhead-press",
+      "name": {
+        "en": "Band Overhead Press",
+        "es": "Press sobre la Cabeza con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Bands",
+        "es": "Bandas elásticas"
+      },
+      "pattern": "vertical_push",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "kettlebell-push-press",
+      "name": {
+        "en": "Kettlebell Push Press",
+        "es": "Push Press con Pesa Rusa"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Kettlebell",
+        "es": "Pesa rusa"
+      },
+      "pattern": "vertical_push",
+      "loadType": "kettlebell",
+      "unilateral": false,
+      "requires": [
+        [
+          "kettlebell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "wall-handstand-push-up",
+      "name": {
+        "en": "Wall Handstand Push-Up",
+        "es": "Flexión en Pino con Pared"
+      },
+      "category": "bodyweight",
+      "difficulty": 5,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lateral_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight + wall",
+        "es": "Peso corporal + pared"
+      },
+      "pattern": "vertical_push",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 3,
+      "spineLoad": 2,
+      "progression": [
+        "leverage",
+        "reps",
+        "range"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-0-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "assisted-pull-up",
+      "name": {
+        "en": "Band-Assisted Pull-Up",
+        "es": "Dominada Asistida con Banda"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Pull-up Bar + Bands",
+        "es": "Barra de dominadas + Bandas"
+      },
+      "pattern": "vertical_pull",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "pullup_bar",
+          "rings"
+        ],
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "leverage",
+        "reps",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 4,
+      "tempo": "1-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-lat-pulldown",
+      "name": {
+        "en": "Band Lat Pulldown",
+        "es": "Jalón Dorsal con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "lats_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Bands",
+        "es": "Bandas elásticas"
+      },
+      "pattern": "vertical_pull",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 4,
+      "tempo": "1-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "shoulder",
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "inverted-row-feet-elevated",
+      "name": {
+        "en": "Elevated Inverted Row",
+        "es": "Remo Invertido con Pies Elevados"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_short",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dip Bars (+ chair)",
+        "es": "Paralelas (+ silla)"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "dip_bars",
+          "rings"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "leverage",
+        "reps",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dumbbell-renegade-row",
+      "name": {
+        "en": "Renegade Row",
+        "es": "Remo Renegado"
+      },
+      "category": "compound",
+      "difficulty": 4,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "chest-supported-dumbbell-row",
+      "name": {
+        "en": "Chest-Supported Dumbbell Row",
+        "es": "Remo con Mancuernas Apoyado en Banco"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Bench",
+        "es": "Mancuernas + Banco"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "straight-arm-pulldown",
+      "name": {
+        "en": "Straight-Arm Pulldown",
+        "es": "Pull-over en Polea"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "lats_lower",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "serratus_anterior",
+          "intensity": 2
+        },
+        {
+          "muscle": "triceps_long",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable",
+        "es": "Polea"
+      },
+      "pattern": "shoulder_extension",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-0-2",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "shoulder",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "kettlebell-row",
+      "name": {
+        "en": "Kettlebell Row",
+        "es": "Remo con Pesa Rusa"
+      },
+      "category": "compound",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Kettlebell",
+        "es": "Pesa rusa"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "kettlebell",
+      "unilateral": true,
+      "requires": [
+        [
+          "kettlebell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dead-hang",
+      "name": {
+        "en": "Dead Hang",
+        "es": "Colgado Muerto en Barra"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "traps_upper",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Pull-up Bar",
+        "es": "Barra de dominadas"
+      },
+      "pattern": "carry",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "pullup_bar",
+          "rings"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "walk 30-60 s",
+      "rir": "n/a (distance or time)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "shoulder"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "dumbbell-curl",
+      "name": {
+        "en": "Dumbbell Curl",
+        "es": "Curl con Mancuernas"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "biceps_short",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "concentration-curl",
+      "name": {
+        "en": "Concentration Curl",
+        "es": "Curl Concentrado"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "biceps_short",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Bench",
+        "es": "Mancuernas + Banco"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "spider-curl",
+      "name": {
+        "en": "Spider Curl",
+        "es": "Curl Araña"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "biceps_short",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Bench",
+        "es": "Mancuernas + Banco"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "incline-hammer-curl",
+      "name": {
+        "en": "Incline Hammer Curl",
+        "es": "Curl Martillo Inclinado"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "brachioradialis",
+          "intensity": 3
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells + Bench",
+        "es": "Mancuernas + Banco"
+      },
+      "pattern": "elbow_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ],
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "2-1-3",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "band-overhead-triceps-extension",
+      "name": {
+        "en": "Band Overhead Triceps Extension",
+        "es": "Extensión de Tríceps sobre la Cabeza con Banda"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_medial",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Bands",
+        "es": "Bandas elásticas"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "band",
+      "unilateral": false,
+      "requires": [
+        [
+          "bands"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "tempo",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "tate-press",
+      "name": {
+        "en": "Tate Press",
+        "es": "Press Tate"
+      },
+      "category": "isolation",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "triceps_medial",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 3
+        },
+        {
+          "muscle": "chest_lower",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "dumbbell-split-squat",
+      "name": {
+        "en": "Dumbbell Split Squat",
+        "es": "Sentadilla Dividida con Mancuernas"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "adductors",
+          "intensity": 2
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "lunge",
+      "loadType": "dumbbell",
+      "unilateral": true,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "range"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "reverse-lunge",
+      "name": {
+        "en": "Reverse Lunge",
+        "es": "Zancada Inversa"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "lunge",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "walking-lunge",
+      "name": {
+        "en": "Walking Lunge",
+        "es": "Zancada Caminando"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 2
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "lunge",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "volume",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "pistol-squat",
+      "name": {
+        "en": "Pistol Squat",
+        "es": "Sentadilla Pistol"
+      },
+      "category": "bodyweight",
+      "difficulty": 5,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "squat",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "leverage",
+        "reps",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "sissy-squat",
+      "name": {
+        "en": "Sissy Squat",
+        "es": "Sentadilla Sissy"
+      },
+      "category": "bodyweight",
+      "difficulty": 4,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight (support to hold)",
+        "es": "Peso corporal (apoyo para agarrarse)"
+      },
+      "pattern": "knee_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 3,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "range",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "knee"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "glute-bridge",
+      "name": {
+        "en": "Glute Bridge",
+        "es": "Puente de Glúteo"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "hip_extension",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-2-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "single-leg-glute-bridge",
+      "name": {
+        "en": "Single-Leg Glute Bridge",
+        "es": "Puente de Glúteo a Una Pierna"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 2
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "hip_extension",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "leverage",
+        "reps",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-2-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "cable-glute-kickback",
+      "name": {
+        "en": "Cable Glute Kickback",
+        "es": "Patada de Glúteo en Polea"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 1
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable",
+        "es": "Polea"
+      },
+      "pattern": "hip_extension",
+      "loadType": "cable",
+      "unilateral": true,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-2-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "good-morning",
+      "name": {
+        "en": "Good Morning",
+        "es": "Buenos Días con Barra"
+      },
+      "category": "compound",
+      "difficulty": 4,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Barbell",
+        "es": "Barra"
+      },
+      "pattern": "hinge",
+      "loadType": "barbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "barbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 3,
+      "progression": [
+        "load",
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 2,
+      "techniqueLevel": 4,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "kettlebell-swing",
+      "name": {
+        "en": "Kettlebell Swing",
+        "es": "Swing con Pesa Rusa"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 3
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 2
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Kettlebell",
+        "es": "Pesa rusa"
+      },
+      "pattern": "hinge",
+      "loadType": "kettlebell",
+      "unilateral": false,
+      "requires": [
+        [
+          "kettlebell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 2,
+      "progression": [
+        "load",
+        "volume",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 4,
+      "tempo": "2-1-1",
+      "rir": "2-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "box-jump",
+      "name": {
+        "en": "Box Jump",
+        "es": "Salto al Cajón"
+      },
+      "category": "compound",
+      "difficulty": 3,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 2
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Box / step",
+        "es": "Cajón / escalón"
+      },
+      "pattern": "squat",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "box"
+        ]
+      ],
+      "jointStress": 3,
+      "spineLoad": 2,
+      "progression": [
+        "leverage",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 3,
+      "tempo": "2-1-1",
+      "rir": "1-3",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "hip",
+          "knee",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "donkey-calf-raise",
+      "name": {
+        "en": "Donkey Calf Raise",
+        "es": "Elevación de Gemelos Burro"
+      },
+      "category": "isolation",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "calves",
+          "intensity": 3
+        },
+        {
+          "muscle": "soleus",
+          "intensity": 2
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bench (+ step)",
+        "es": "Banco (+ escalón)"
+      },
+      "pattern": "plantar_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "range",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "1-2-1",
+      "rir": "0-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "ankle"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "hanging-knee-raise",
+      "name": {
+        "en": "Hanging Knee Raise",
+        "es": "Elevación de Rodillas Colgado"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 3
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Pull-up Bar",
+        "es": "Barra de dominadas"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "pullup_bar",
+          "rings"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "range",
+        "tempo"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "hollow-rock",
+      "name": {
+        "en": "Hollow Rock",
+        "es": "Roca Hueca"
+      },
+      "category": "bodyweight",
+      "difficulty": 3,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 2
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "leverage",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "v-up",
+      "name": {
+        "en": "V-Up",
+        "es": "V-Up (Navaja)"
+      },
+      "category": "bodyweight",
+      "difficulty": 4,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 1
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "reps",
+        "tempo",
+        "range"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "bird-dog",
+      "name": {
+        "en": "Bird Dog",
+        "es": "Bird Dog (Cuadrupedia Alterna)"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "erector_spinae",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_anti_extension",
+      "loadType": "bodyweight",
+      "unilateral": true,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "hold 20-60 s",
+      "rir": "n/a (isometric)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "spine",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "pallof-press",
+      "name": {
+        "en": "Pallof Press",
+        "es": "Pallof Press"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "obliques",
+          "intensity": 3
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "erector_spinae",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Resistance Bands",
+        "es": "Bandas elásticas"
+      },
+      "pattern": "core_anti_lateral",
+      "loadType": "band",
+      "unilateral": true,
+      "requires": [
+        [
+          "bands",
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "time",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "1-2-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "sit-up",
+      "name": {
+        "en": "Sit-Up",
+        "es": "Abdominales (Sit-Up)"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 2,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 2
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "reps",
+        "tempo",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": true
+    },
+    {
+      "id": "shadow-boxing-intervals",
+      "name": {
+        "en": "Shadow Boxing Intervals",
+        "es": "Intervalos de Sombra (Boxeo)"
+      },
+      "category": "cardio",
+      "difficulty": 2,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "anterior_deltoid",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "quadriceps",
+          "intensity": 1
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "tabata-bodyweight",
+      "name": {
+        "en": "Bodyweight Tabata",
+        "es": "Tabata con Peso Corporal"
+      },
+      "category": "cardio",
+      "difficulty": 3,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "calves",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "jump-rope-steady",
+      "name": {
+        "en": "Jump Rope (Steady)",
+        "es": "Cuerda Continua"
+      },
+      "category": "cardio",
+      "difficulty": 2,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "calves",
+          "intensity": 3
+        },
+        {
+          "muscle": "tibialis_anterior",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Jump Rope",
+        "es": "Cuerda de saltar"
+      },
+      "pattern": "cardio_steady",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [
+        [
+          "jump_rope"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "20-45 min continuous",
+      "rir": "n/a (pace)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "bike-sprint-intervals",
+      "name": {
+        "en": "Bike Sprint Intervals",
+        "es": "Sprints en Bici"
+      },
+      "category": "cardio",
+      "difficulty": 3,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        },
+        {
+          "muscle": "hamstrings",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bike (MTB / road / spin)",
+        "es": "Bicicleta (MTB / ruta / estática)"
+      },
+      "pattern": "cardio_interval",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [
+        [
+          "bike"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "20-40 s hard, 60-120 s easy",
+      "rir": "n/a (intervals)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "stair-climb-steady",
+      "name": {
+        "en": "Stair Climb (Steady)",
+        "es": "Escaleras Continuas"
+      },
+      "category": "cardio",
+      "difficulty": 2,
+      "hypertrophy": 1,
+      "muscles": [
+        {
+          "muscle": "quadriceps",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 3
+        },
+        {
+          "muscle": "calves",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Stairs",
+        "es": "Escaleras"
+      },
+      "pattern": "cardio_steady",
+      "loadType": "time",
+      "unilateral": false,
+      "requires": [
+        [
+          "stairs"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "time",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 1,
+      "tempo": "20-45 min continuous",
+      "rir": "n/a (pace)",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "knee",
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    }
+  ]
+}
