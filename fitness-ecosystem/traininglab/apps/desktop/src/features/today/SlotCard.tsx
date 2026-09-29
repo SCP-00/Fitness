@@ -19,6 +19,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { parseNumberInput } from "../../lib/parse-num";
+import { fromKg, toKg, type WeightUnit } from "../../lib/units";
 import {
   getExerciseTechnique,
   type MovementPattern,
@@ -40,6 +41,7 @@ export function SlotCard({
   lastSession,
   suggestion,
   swapOptions,
+  unit = "kg",
   onAddSet,
   onRemoveSet,
   onSwap,
@@ -51,6 +53,8 @@ export function SlotCard({
   lastSession: string | null;
   suggestion: LoadSuggestion;
   swapOptions: PlannerExercise[];
+  /** Display unit — storage and suggestion math stay kg. */
+  unit?: WeightUnit;
   onAddSet: (row: PlannedRow, weight: number | null, reps: number) => void;
   onRemoveSet: (id: string) => void;
   onSwap: (fromId: string, toId: string) => void;
@@ -71,10 +75,12 @@ export function SlotCard({
   const submit = () => {
     const w = parseNumberInput(weight);
     const r = parseNumberInput(reps);
-    const effectiveWeight = w ?? suggestion.weight;
+    // The input speaks the display unit; the log speaks kg.
+    const effectiveKg =
+      w !== null ? toKg(w, unit) : (suggestion.weight ?? null);
     const effectiveReps = r ?? row.repsMin;
     if (effectiveReps === null || effectiveReps <= 0) return;
-    onAddSet(row, isCardio ? null : effectiveWeight, effectiveReps);
+    onAddSet(row, isCardio ? null : effectiveKg, effectiveReps);
     setWeight("");
     setReps("");
     weightRef.current?.focus();
@@ -189,7 +195,9 @@ export function SlotCard({
           ) : (
             <span className="inline-flex items-center gap-1.5 text-[var(--tl-accent)] font-medium">
               <TrendingUp className="w-3.5 h-3.5" />
-              {tInterp("log.suggested", { w: suggestion.weight })}
+              {tInterp("log.suggested", {
+                w: Math.round(fromKg(suggestion.weight, unit) * 10) / 10,
+              })}
               <span className="text-[var(--tl-text-muted)] font-normal">
                 · {suggestion.reason}
               </span>
@@ -210,7 +218,10 @@ export function SlotCard({
                 #{i + 1}
               </span>
               <span className="font-medium tabular-nums">
-                {s.weight === null ? "—" : `${s.weight} kg`} × {s.reps ?? "—"}
+                {s.weight === null
+                  ? "—"
+                  : `${Math.round(fromKg(s.weight, unit) * 10) / 10} ${unit}`}{" "}
+                × {s.reps ?? "—"}
               </span>
               <button
                 onClick={() => onRemoveSet(s.id)}
@@ -241,7 +252,9 @@ export function SlotCard({
                 }
               }}
               placeholder={
-                suggestion.weight !== null ? String(suggestion.weight) : "kg"
+                suggestion.weight !== null
+                  ? String(Math.round(fromKg(suggestion.weight, unit) * 10) / 10)
+                  : unit
               }
               aria-label={t("log.weight")}
               className="tl-input w-24 px-3 py-2 text-sm tabular-nums"

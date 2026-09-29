@@ -67,6 +67,71 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Sin programar: {fams}",
   },
 
+  // ── ZEN session ──────────────────────────────────────────────────────
+  "zen.title": { en: "ZEN session", es: "Sesión ZEN" },
+  "zen.progress": {
+    en: "{done} / {total} working sets",
+    es: "{done} / {total} series de trabajo",
+  },
+  "zen.exit": { en: "Exit ZEN", es: "Salir de ZEN" },
+  "zen.setOf": {
+    en: "Set {done} of {total}",
+    es: "Serie {done} de {total}",
+  },
+  "zen.warmup": { en: "Warm-up", es: "Calentamiento" },
+  "zen.emptyBar": {
+    en: "Empty bar",
+    es: "Barra vacía",
+  },
+  "zen.mobilityLine": {
+    en: "Mobility",
+    es: "Movilidad",
+  },
+  "zen.warmupReps": {
+    en: "{reps} reps · {w} {unit}",
+    es: "{reps} reps · {w} {unit}",
+  },
+  "zen.doneWarmup": {
+    en: "Warm-up done",
+    es: "Calentamiento hecho",
+  },
+  "zen.logSet": { en: "Log set", es: "Registrar serie" },
+  "zen.fatigue": {
+    en: "How hard was that set?",
+    es: "¿Qué tan duro fue esa serie?",
+  },
+  "zen.fatigueHint": {
+    en: "1 easy · 5 at the limit — one tap, no numbers to type",
+    es: "1 fácil · 5 al límite — un toque, sin escribir números",
+  },
+  "zen.less": { en: "Less weight", es: "Menos peso" },
+  "zen.more": { en: "More weight", es: "Más peso" },
+  "zen.next": {
+    en: "Next: {name}",
+    es: "Siguiente: {name}",
+  },
+  "zen.upNext": { en: "Up next", es: "Después va" },
+  "zen.finish": { en: "Finish session", es: "Terminar sesión" },
+  "zen.start": {
+    en: "Start ZEN",
+    es: "Empezar ZEN",
+  },
+
+  // ── Units ────────────────────────────────────────────────────────────
+  "settings.unit": { en: "Weight unit", es: "Unidad de peso" },
+  "settings.unitHint": {
+    en: "Storage stays kg; the screen shows your choice. Exact: 1 kg = 2.2046226218488 lb",
+    es: "El almacenaje sigue en kg; la pantalla muestra tu elección. Exacto: 1 kg = 2.2046226218488 lb",
+  },
+  "settings.daysPerWeek": {
+    en: "Training days per week",
+    es: "Días de entrenamiento por semana",
+  },
+  "settings.daysPerWeekHint": {
+    en: "Rebuilds the weekly plan with this frequency",
+    es: "Regenera el plan semanal con esta frecuencia",
+  },
+
   // ── Setup / BodyLab link ──────────────────────────────────────────────────
   "setup.title": {
     en: "Connect your BodyLab data (optional)",

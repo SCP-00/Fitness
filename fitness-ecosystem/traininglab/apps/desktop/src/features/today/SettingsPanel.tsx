@@ -44,6 +44,8 @@ export function SettingsPanel({
   goal,
   level,
   budgetMin,
+  daysPerWeek,
+  unit,
   useModel,
   model,
   sound,
@@ -51,6 +53,8 @@ export function SettingsPanel({
   onGoal,
   onLevel,
   onBudget,
+  onDaysPerWeek,
+  onUnit,
   onToggleModel,
   onResetModel,
   onSound,
@@ -59,6 +63,8 @@ export function SettingsPanel({
   goal: TlGoal;
   level: TlLevel;
   budgetMin: number;
+  daysPerWeek: number;
+  unit: "kg" | "lb";
   useModel: boolean;
   model: DecisionModel;
   sound: TlSoundSettings;
@@ -66,6 +72,8 @@ export function SettingsPanel({
   onGoal: (g: TlGoal) => void;
   onLevel: (l: TlLevel) => void;
   onBudget: (n: number) => void;
+  onDaysPerWeek: (n: number) => void;
+  onUnit: (u: "kg" | "lb") => void;
   onToggleModel: (v: boolean) => void;
   onResetModel: () => void;
   onSound: (patch: Partial<TlSoundSettings>) => void;
@@ -182,6 +190,58 @@ export function SettingsPanel({
               aria-label={t("setup.budget")}
             />
           </div>
+        </div>
+
+        {/* Training days per week → drives the weekly plan */}
+        <div>
+          <p className="text-xs font-medium text-[var(--tl-text-secondary)] mb-2">
+            {t("settings.daysPerWeek")}
+          </p>
+          <div className="flex items-center gap-2">
+            {[2, 3, 4, 5, 6].map((n) => (
+              <button
+                key={n}
+                onClick={() => onDaysPerWeek(n)}
+                aria-pressed={daysPerWeek === n}
+                className={`w-11 py-2 rounded-xl text-xs border tabular-nums tl-focusable ${
+                  daysPerWeek === n
+                    ? "tl-chip border-transparent"
+                    : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-[var(--tl-text-muted)] mt-1">
+            {t("settings.daysPerWeekHint")}
+          </p>
+        </div>
+
+        {/* Weight unit — exact conversion, storage stays kg */}
+        <div>
+          <p className="text-xs font-medium text-[var(--tl-text-secondary)] mb-2">
+            {t("settings.unit")}
+          </p>
+          <div className="flex items-center gap-2">
+            {(["kg", "lb"] as const).map((u) => (
+              <button
+                key={u}
+                onClick={() => onUnit(u)}
+                aria-pressed={unit === u}
+                className={`px-5 py-2 rounded-xl text-xs border font-semibold tl-focusable ${
+                  unit === u
+                    ? "tl-chip border-transparent"
+                    : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
+                }`}
+              >
+                {u === "kg" ? "kg" : "lb (USA)"}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-[var(--tl-text-muted)] mt-1">
+            {t("settings.unitHint")}
+          </p>
         </div>
 
         <div>

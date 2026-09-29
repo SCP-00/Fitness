@@ -44,6 +44,11 @@ export interface TLSet {
   reps: number | null;
   rpe?: number;
   notes?: string;
+  /**
+   * Warm-up ramp set: lives in the log for history, but is excluded from
+   * every volume aggregate, PR detection and the weekly ledger.
+   */
+  warmup?: boolean;
 }
 
 /** A training session = the sets logged between start and finish. */
@@ -111,6 +116,10 @@ export interface TLSettingsData {
   level: TlLevel;
   /** The owner's daily limit — the session builder never exceeds it. */
   timeBudgetMin: number;
+  /** Training days per week for the horizontalised plan (2–6). */
+  daysPerWeek: number;
+  /** Display/log unit. Storage stays kg (canonical); this is presentation. */
+  unit: "kg" | "lb";
   /** Gear the user declared, item by item. */
   inventory: OwnedEquipment[];
   /** Local decision model settings. */
@@ -135,6 +144,8 @@ export const DEFAULT_SETTINGS: TLSettingsData = {
   goal: "hypertrophy",
   level: "intermediate",
   timeBudgetMin: 90,
+  daysPerWeek: 4,
+  unit: "kg",
   inventory: [],
   useDecisionModel: true,
   sound: { ...DEFAULT_SOUND },

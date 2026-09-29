@@ -251,6 +251,21 @@ body {
   line-height: 1.5;
   font-size: 15px;
   text-rendering: optimizeLegibility;
+  /* iPhone notch / home indicator (viewport-fit=cover in index.html). */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overscroll-behavior-x: none;
+}
+
+/*
+ * iOS Safari auto-zooms any input rendered below 16px on focus. 15px body
+ * text is a deliberate density choice, so the floor applies to form controls
+ * only — the same rule as TrainingLab (see docs/UI_DESIGN.md).
+ */
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
 }
 
 /* Numeric data always tabular (spec §5.3) */
@@ -442,18 +457,20 @@ input[type='number'] {
   select,
   textarea,
   [role='button'],
+  summary,
   input:not([type='checkbox']):not([type='radio']):not([type='file']) {
-    min-height: 2.5rem;
+    /* Apple HIG minimum hit target: 44 × 44 pt (was 40 px). */
+    min-height: 2.75rem;
   }
 
   input[type='range'] {
-    height: 2.5rem;
+    height: 2.75rem;
   }
 
   /* The checkbox itself stays small; the label around it becomes the target. */
   label:has(> input[type='checkbox']),
   label:has(> input[type='radio']) {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
   }
 
   /* Page gutters. Every page root hard-codes Tailwind's `p-6` (24 px per

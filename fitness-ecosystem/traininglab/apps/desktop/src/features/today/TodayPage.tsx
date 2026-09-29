@@ -97,6 +97,7 @@ import { CoachPanel, CoachResultView, type CoachResult } from "./CoachPanel";
 import { MobileCard } from "./MobileCard";
 import { SlotCard } from "./SlotCard";
 import { WeekCard } from "./WeekCard";
+import { ZenSession } from "./ZenSession";
 import { buildWeekPlan, type WeekPlan } from "../../lib/plan";
 import { Badge, SectionCard, ScaleInput, StatCard, Switch } from "./ui";
 
@@ -388,6 +389,8 @@ export default function TodayPage() {
    * `weekSeed` bumps via the card's regenerate button.
    */
   const [weekSeed, setWeekSeed] = useState(0);
+  /** ZEN session overlay state (null = normal screen). */
+  const [zenOpen, setZenOpen] = useState(false);
   const weekPlan: WeekPlan | null = useMemo(() => {
     if (!settings) return null;
     // Monday-first index: JS Sunday=0 → our Monday=0.
@@ -401,7 +404,7 @@ export default function TodayPage() {
       goal: settings.goal,
       logStats,
       payload,
-      daysPerWeek: 4,
+      daysPerWeek: settings.daysPerWeek ?? 4,
       todayIndex,
       lang: settings.language,
     });
@@ -434,8 +437,13 @@ export default function TodayPage() {
     });
   }, [plan, overrides, coachRows]);
 
+  // Working sets only: the warm-up ramp lives in the log but is invisible to
+  // every aggregate (volume, counters, finish gate) by contract.
   const todaySets = useMemo(
-    () => sets.filter((s) => s.timestamp.startsWith(todayPrefix)),
+    () =>
+      sets.filter(
+        (s) => s.timestamp.startsWith(todayPrefix) && !s.warmup,
+      ),
     [sets, todayPrefix],
   );
   const todayVolume = useMemo(
@@ -466,7 +474,12 @@ export default function TodayPage() {
   }, []);
 
   const addSet = useCallback(
-    (row: PlannedRow, weight: number | null, reps: number) => {
+    (
+      row: PlannedRow,
+      weight: number | null,
+      reps: number,
+      opts?: { warmup?: boolean; rpe?: number },
+    ) => {
       const set: TLSet = {
         id: crypto.randomUUID(),
         exerciseId: row.exerciseId,
@@ -474,10 +487,17 @@ export default function TodayPage() {
         timestamp: new Date().toISOString(),
         weight,
         reps,
+        ...(opts?.warmup ? { warmup: true } : {}),
+        ...(opts?.rpe !== undefined ? { rpe: opts.rpe } : {}),
       };
       // Snapshot the exercise's history *before* this set lands, so "previous
-      // best" means what it says.
-      const before = sets.filter((s) => s.exerciseId === row.exerciseId);
+      // best" means what it says. Warm-up sets never enter that history: a
+      // 50% ramp rep can't be a PR, and the completion math must not see it.
+      const before = opts?.warmup
+        ? []
+        : sets.filter(
+            (s) => s.exerciseId === row.exerciseId && !s.warmup,
+          );
 
       setSets((prev) => {
         void saveSet(set);
@@ -485,17 +505,20 @@ export default function TodayPage() {
       });
       pushSetQuietly(set);
       setFinished(null);
-      // Bodyweight and conditioning work does not need a rest countdown beyond
-      // the prescribed time; everything else does.
+      // Warm-up rests are their own (short) thing — see lib/warmup.ts.
       setRest({
         key: row.exerciseId,
-        seconds: row.restSec || 60,
+        seconds: opts?.warmup
+          ? Math.min(45, Math.max(30, Math.round((row.restSec || 60) / 3)))
+          : row.restSec || 60,
         nonce: Date.now(),
       });
 
       // ── Cues ──────────────────────────────────────────────────────────
       // Duration work has no load to beat, so only real sets get a verdict.
       if (row.cardioMin !== undefined) return;
+      // Warm-up sets have no verdicts either: no PR fanfare for a ramp set.
+      if (opts?.warmup) return;
 
       const previous = mergeMarks(
         marksOf(before),
@@ -1042,6 +1065,14 @@ export default function TodayPage() {
                 </button>
               )}
               <button
+                onClick={() => setZenOpen(true)}
+                disabled={rows.length === 0}
+                className="px-4 py-2 rounded-xl tl-btn-ghost text-sm disabled:opacity-40"
+                title={t("zen.title")}
+              >
+                {t("zen.start")}
+              </button>
+              <button
                 onClick={finishSession}
                 disabled={totalSetsToday === 0 || finished !== null}
                 className="px-4 py-2 rounded-xl tl-btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1080,6 +1111,7 @@ export default function TodayPage() {
                   <SlotCard
                     key={row.exerciseId}
                     row={row}
+                    unit={settings.unit}
                     todaySets={rowToday}
                     lastSession={lastSession}
                     suggestion={suggestLoadFor({
@@ -1221,6 +1253,8 @@ export default function TodayPage() {
             goal={settings.goal}
             level={settings.level}
             budgetMin={settings.timeBudgetMin}
+            daysPerWeek={settings.daysPerWeek}
+            unit={settings.unit}
             useModel={settings.useDecisionModel}
             model={model}
             sound={settings.sound}
@@ -1232,6 +1266,10 @@ export default function TodayPage() {
                 timeBudgetMin: Math.max(10, Math.min(240, timeBudgetMin || 30)),
               })
             }
+            onDaysPerWeek={(daysPerWeek) =>
+              patch({ daysPerWeek: Math.max(2, Math.min(6, daysPerWeek)) })
+            }
+            onUnit={(unit) => patch({ unit })}
             onToggleModel={(useDecisionModel) => patch({ useDecisionModel })}
             onResetModel={() => {
               const fresh = emptyModel();
@@ -1415,6 +1453,45 @@ export default function TodayPage() {
           </SectionCard>
         </div>
       </main>
+
+      {/* ── ZEN: the whole session, nothing else ────────────────────────── */}
+      {zenOpen && plan && (
+        <ZenSession
+          rows={rows}
+          unit={settings.unit}
+          suggestionFor={(exerciseId) => {
+            const history = sets.filter(
+              (s) => s.exerciseId === exerciseId && !s.warmup,
+            );
+            const row = rows.find((r) => r.exerciseId === exerciseId);
+            if (!row || row.cardioMin !== undefined) return null;
+            return suggestLoadFor({
+              loadType: row.loadType,
+              repsMin: row.repsMin,
+              repsMax: row.repsMax,
+              history: history.map((s) => ({ weight: s.weight, reps: s.reps })),
+              pr: prFor(exerciseId),
+              inventory: settings.inventory,
+              readiness,
+            }).weight;
+          }}
+          onLogSet={(row, weightKg, reps, opts) => {
+            // ZEN edits weights in the display unit; convert back to kg.
+            const kg =
+              weightKg === null
+                ? null
+                : settings.unit === "lb"
+                  ? weightKg / 2.2046226218488
+                  : weightKg;
+            addSet(row, kg, reps, opts);
+          }}
+          onFinish={() => {
+            setZenOpen(false);
+            finishSession();
+          }}
+          onExit={() => setZenOpen(false)}
+        />
+      )}
 
       {/* The visual half of the cues — shown whether or not audio played, so
           a muted device still gets the confirmation. */}
