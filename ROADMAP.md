@@ -23,9 +23,11 @@
 
 | Frente | Estado | Verificación |
 |---|---|---|
-| BodyLab web | Beta pública de alta calidad | **708 root · 82 web · 21 e2e · lint 0/0 · build OK** (2026-09-28) |
-| BodyLab desktop | beta.4 construida + smoke PASS; **iconos de launcher regenerados** (con el bug del `128x128@2x.png` inexistente corregido) | 2026-09-28 |
-| TrainingLab | **app propia con plan del día** (`traininglab/apps/desktop`): sesión de 90 min, readiness, inventario de equipo, coach local opcional, modelo de decisión aprendiendo | 2026-09-28 |
+| BodyLab web | Beta pública de alta calidad | **775 root · 110 web · lint 0/0 · typecheck OK · build OK** (2026-09-29) |
+| BodyLab desktop | **beta.6 construida y publicada** (primera con el arreglo del Historial); iconos de launcher regenerados | 2026-09-29 |
+| TrainingLab | **app de escritorio propia** (`traininglab/apps/desktop`): plan del día de 90 min, readiness, inventario de equipo, coach local opcional, modelo de decisión aprendiendo, **shell Tauri 2 + instalador NSIS publicados** | 2026-09-29 |
+| Historial compartido | **mini servidor SQLite** (`scripts/lan-store.mjs` + `lan-api.mjs`, `pnpm lan --shared`): miembros/sesiones/series/registros de salud, login no estricto en LAN, aviso de que no es privado | 2026-09-29 |
+| Plataforma pública | **Release en GitHub** con los dos instaladores y alias estables (`releases/latest/download/<app>-setup.exe`), **README con vitrina**, **capturas generadas** y **Pages sirviendo ambas apps** | 2026-09-29 |
 | Catálogo de ejercicios | **paquete core compartido `@fitness/bodylab-exercises`**: 94 ejercicios + traits de equipamiento/patrón/carga/progresión | 2026-09-28 |
 | Puente de datos | `bodylab-traininglab-link` **v2** (+ campos aditivos: `conditioning`, `personalRecords`, `trainingLog`) — TrainingLab ya **no lo necesita** para funcionar | 2026-09-28 |
 | IA local | Determinista + **modelo de decisión clase JEV implementado** + **puente LLM llama.cpp con tool calling** (opt-in) | 2026-09-28 |
@@ -41,9 +43,15 @@ que el ciclo medir→entrenar→re-medir se sienta completo.
 
 **Pendiente inmediato declarado por el dueño (2026-09-28 c):** planificador
 semanal automático con **cadencia 0-6 días/semana** y **TAGs de entrenamientos
-planeados**; **registros de salud**; **registro de entrenamiento personalizado**;
-notificaciones nativas de Tauri (requieren reconstruir el shell) y el workspace
-público `Fitness` en GitHub (bloqueado por `gh auth login`).
+planeados**; **menús desplegables** (Chatbot Planner, Agregar Equipamiento,
+Registrar Entrenamiento personalizado); pasada de QoL; **registro de
+entrenamiento personalizado**.
+
+**Resuelto el 2026-09-29:** el workspace público `Fitness` ya está en GitHub (con
+release, Pages y CI corriendo), TrainingLab ya es app de escritorio y el historial
+compartido por LAN existe. **Sigue pendiente:** el feed de auto-actualización
+(la contraseña guardada de la clave del updater no coincide con la clave, así que
+las builds salen sin firma y sin `latest.json`).
 
 ---
 
@@ -303,6 +311,16 @@ altavoz de un teléfono a distancia de brazo.
   sonoros** sintetizados + banner de celebración; **notificaciones locales** del
   descanso con permiso bajo demanda; **752 root · 102 web · lint 0/0 ·
   TrainingLab typecheck + build OK**.
+- **2026-09-29** — **Primera publicación pública** de `SCP-00/Fitness`: release con
+  **los dos instaladores** (BodyLab beta.6 y TrainingLab 0.1.0, alias estables para
+  los links del README), vitrina con capturas generadas y **Pages sirviendo ambas
+  apps**; TrainingLab pasa a ser **app de escritorio** con su propio shell Tauri 2;
+  **historial compartido por LAN con SQLite** (login no estricto, aviso de que no
+  es privado) y su cliente en la app; los workflows se mueven a la raíz del repo
+  (ahora CI y Pages **sí corren**); `corpus/` fuera del workspace pnpm (rompía el
+  `--frozen-lockfile` de cualquier clone); **arreglado el Historial en blanco**
+  (TDZ en `Measurements.tsx`) + test de humo que monta todas las páginas.
+  **775 root · 110 web · lint 0/0 · builds OK.**
 - **2026-09-28 (b)** — **Catálogo a core compartido** (`@fitness/bodylab-exercises`,
   94 ejercicios con traits) + **30 ejercicios de casa/cardio**; **constructor de
   la sesión del día** (90 min + readiness + ledger semanal) que resuelve la

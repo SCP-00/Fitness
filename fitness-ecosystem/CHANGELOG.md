@@ -5,6 +5,44 @@ All notable changes to BodyLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1-training] - 2026-09-29 (TrainingLab desktop, shared LAN history, public release)
+
+### Fixed
+- **The measurement history rendered as a blank page in production builds.**
+  `pages/Measurements.tsx` read `symGroup` one line *above* the `useState` that declares
+  it, so the component threw a temporal-dead-zone `ReferenceError` on mount — invisible in
+  review, and once minified it only read `Cannot access 'H' before initialization`. Every
+  test passed because the web suite covers pure logic and the Playwright suite never
+  visited `/history`. A new `src/__tests__/page-smoke.test.tsx` mounts every routed page
+  (all but the WebGL one) so this class of failure is now a red test.
+- **A fresh clone could not install.** The lockfile recorded an importer for `corpus/`, a
+  directory the repository deliberately excludes, so `pnpm install --frozen-lockfile` — CI,
+  the release workflow, any contributor — stopped at `ERR_PNPM_OUTDATED_LOCKFILE` before
+  running a single test. The playground is no longer a workspace member; it installs on
+  its own where it lives.
+- **The CI/release/Pages workflows never ran**: they sat in `fitness-ecosystem/.github/`,
+  and GitHub only reads `.github/workflows/` from the repository root. They moved, and the
+  jobs now start inside the monorepo.
+
+### Added
+- **TrainingLab is a desktop application** (`traininglab/apps/desktop/src-tauri`): its own
+  Tauri 2 shell with NSIS bundling, a capability set limited to `core:default`, `opener`
+  and `notification`, and a CSP that allows only loopback for the optional local LLM.
+- **Shared household history over the LAN** (`scripts/lan-store.mjs`, `scripts/lan-api.mjs`,
+  `pnpm lan --shared`): one SQLite file (node:sqlite, no dependencies) holding members,
+  sessions, sets and health records, served behind a small JSON API. Claiming a first name
+  is the whole of the login, and the apps themselves need none. The store is explicit about
+  being unencrypted within your own network.
+- **TrainingLab's client for that history** (`lib/shared.ts`, `SharedPanel.tsx`): connect,
+  see the family's last seven days, sync sets/sessions/health, with merge helpers that keep
+  local data when the server is unreachable.
+- **Generated documentation**: `scripts/capture-screenshots.mjs` and five screenshots in
+  `docs/screenshots/`, a root `README.md` with permanent installer links, and a GitHub
+  Pages hub (`docs/site/index.html`) that serves both apps live.
+- **Permanent download links**: the release workflow publishes each installer under its
+  versioned name *and* a stable alias (`BodyLab-setup.exe`), so
+  `releases/latest/download/BodyLab-setup.exe` keeps working across versions.
+
 ## [0.3.0-training] - 2026-09-28 (launcher icon, born date, sound cues, rest notifications)
 
 ### Fixed
