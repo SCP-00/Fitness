@@ -96,6 +96,8 @@ import { SettingsPanel } from "./SettingsPanel";
 import { CoachPanel, CoachResultView, type CoachResult } from "./CoachPanel";
 import { MobileCard } from "./MobileCard";
 import { SlotCard } from "./SlotCard";
+import { WeekCard } from "./WeekCard";
+import { buildWeekPlan, type WeekPlan } from "../../lib/plan";
 import { Badge, SectionCard, ScaleInput, StatCard, Switch } from "./ui";
 
 interface RestState {
@@ -378,6 +380,34 @@ export default function TodayPage() {
       fatiguedFamilies: soreFamilies,
     });
   }, [settings, readiness, logStats, model, payload, soreFamilies]);
+
+  /**
+   * This week — horizontalised plan. Recomputed only when the inputs that
+   * change the week change (not on every logged set; `logStats.weeklyVolume`
+   * is the week's own ledger, so it is the one part that does flow through).
+   * `weekSeed` bumps via the card's regenerate button.
+   */
+  const [weekSeed, setWeekSeed] = useState(0);
+  const weekPlan: WeekPlan | null = useMemo(() => {
+    if (!settings) return null;
+    // Monday-first index: JS Sunday=0 → our Monday=0.
+    const jsDay = new Date().getDay();
+    const todayIndex = (jsDay + 6) % 7;
+    return buildWeekPlan({
+      inventory: settings.inventory,
+      readiness,
+      timeBudgetMin: settings.timeBudgetMin,
+      level: settings.level,
+      goal: settings.goal,
+      logStats,
+      payload,
+      daysPerWeek: 4,
+      todayIndex,
+      lang: settings.language,
+    });
+    // weekSeed intentionally unused inside: it only forces recompute.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings, readiness, logStats, payload, weekSeed]);
 
   /** Deterministic rows with the user's swaps (and the coach's plan) applied. */
   const rows: PlannedRow[] = useMemo(() => {
@@ -1163,6 +1193,16 @@ export default function TodayPage() {
             </div>
           </SectionCard>
         </div>
+
+        {/* ── This week (read-mostly; visible on both panes) ──────────────── */}
+        {weekPlan && (
+          <div className="sm:order-4">
+            <WeekCard
+              weekPlan={weekPlan}
+              onRegenerate={() => setWeekSeed((s) => s + 1)}
+            />
+          </div>
+        )}
 
         {/* ── Pane 3: setup (gear, preferences, coach, import, phone) ─────── */}
         <div

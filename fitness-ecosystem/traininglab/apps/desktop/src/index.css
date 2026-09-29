@@ -32,7 +32,9 @@
 html,
 body,
 #root {
-  height: 100%;
+  /* 100dvh, not 100vh: Safari iOS keeps the URL bar in the 100vh figure, so
+     the bottom of the app would sit behind it. dvh tracks the real viewport. */
+  min-height: 100dvh;
 }
 
 body {
@@ -46,6 +48,26 @@ body {
     Roboto,
     sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Safe areas (iPhone notch + home indicator) when running standalone or
+     with viewport-fit=cover: keep thumbs and content out of the corners. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Prevent horizontal rubber-banding on iOS Safari. */
+  overscroll-behavior-x: none;
+  /* Momentum scrolling tuned for long cards. */
+  -webkit-overflow-scrolling: touch;
+}
+
+/*
+ * Inputs never zoom Safari on focus: iOS auto-zooms any input with
+ * font-size < 16px. Our compact inputs are 14px on desktop, so the phone
+ * media query below restores 16px (and keeps the same visual size via
+ * tighter line-height).
+ */
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
 }
 
 /* Shared building blocks (mirrors BodyLab's rounded-2xl card language) */
@@ -138,11 +160,22 @@ body {
   label:has(> input[type="checkbox"]),
   label:has(> input[type="radio"]),
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
-    min-height: 2.5rem;
+    /* Apple HIG minimum hit target: 44 × 44 pt. */
+    min-height: 2.75rem;
+  }
+
+  /* The log button is the most-tapped control in the app: thumb-sized. */
+  .tl-set-row button {
+    min-height: 2.75rem;
   }
 
   input[type="range"] {
-    height: 2.5rem;
+    height: 2.75rem;
+  }
+
+  /* Summary rows of collapsible cards are full-width tap targets too. */
+  summary {
+    min-height: 2.75rem;
   }
 
   /* Logging row: weight × reps + action must never push the card sideways. */

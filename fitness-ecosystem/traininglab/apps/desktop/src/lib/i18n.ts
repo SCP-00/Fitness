@@ -44,6 +44,29 @@ const DICT: Record<string, { en: string; es: string }> = {
   "settings.lanOff": { en: "Off", es: "Apagado" },
   "settings.lanOn": { en: "On", es: "Encendido" },
 
+  // ── This week (horizontalised plan) ──────────────────────────────────
+  "week.title": { en: "This week", es: "Esta semana" },
+  "week.hint": {
+    en: "Volume spread across {n} days — weakest muscles first, 48 h between hits.",
+    es: "Volumen repartido en {n} días — débiles primero, 48 h entre golpes.",
+  },
+  "week.rest": { en: "Rest", es: "Descanso" },
+  "week.today": { en: "Today", es: "Hoy" },
+  "week.sets": { en: "{n} sets", es: "{n} series" },
+  "week.families": { en: "Families", es: "Familias" },
+  "week.regenerate": {
+    en: "Regenerate week",
+    es: "Regenerar semana",
+  },
+  "week.summary": {
+    en: "{sets} sets · {min} min/week",
+    es: "{sets} series · {min} min/semana",
+  },
+  "week.uncovered": {
+    en: "Not scheduled: {fams}",
+    es: "Sin programar: {fams}",
+  },
+
   // ── Setup / BodyLab link ──────────────────────────────────────────────────
   "setup.title": {
     en: "Connect your BodyLab data (optional)",

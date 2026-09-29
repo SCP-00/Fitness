@@ -24,9 +24,11 @@ import {
 } from "@fitness/bodylab-exercises";
 import {
   buildSession,
+  buildWeek,
   muscleFamilyOf,
   scoreExercise,
   type BuiltSession,
+  type BuiltWeek,
   type DecisionFeatures,
   type DecisionModel,
   type ExperienceLevel,
@@ -37,6 +39,7 @@ import {
   type SessionCatalogEntry,
   type SessionGoal,
   type SessionReason,
+  type WeekDaySpec,
 } from "@fitness/bodylab-training";
 import { fuseWeakness, type ImportPayload } from "./adapter";
 import { t, tInterp } from "./i18n";
@@ -476,4 +479,150 @@ export function suggestLoadFor(input: LoadSuggestionInput): LoadSuggestion {
     stepKg,
     capKg,
   };
+}
+
+// ── The week: horizontalisation of today's engine ──────────────────────────
+
+/** Weekday labels in the app language; Monday-first (index 0 = Monday). */
+const WEEKDAY_LABELS: Record<"en" | "es", string[]> = {
+  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  es: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+};
+
+export interface WeekPlanInput {
+  inventory: OwnedEquipment[];
+  readiness: Readiness;
+  /** Budget that applies to every training day. */
+  timeBudgetMin: number;
+  level: ExperienceLevel;
+  goal: SessionGoal;
+  logStats: FamilyLogStats;
+  payload: ImportPayload | null | undefined;
+  /** 0-4: how many days a week the user actually trains. */
+  daysPerWeek: number;
+  /** Monday-first index of "today" (0 = Mon … 6 = Sun). */
+  todayIndex: number;
+  lang: "en" | "es";
+}
+
+export interface WeekPlan {
+  week: BuiltWeek;
+  /** Flat view for the UI: one row per day. */
+  rows: {
+    label: string;
+    isRest: boolean;
+    isToday: boolean;
+    assigned: MuscleFamily[];
+    sets: number;
+    minutes: number;
+    /** First exercise names per assigned family (preview, display only). */
+    preview: string[];
+  }[];
+  totalSets: number;
+  totalMinutes: number;
+  uncovered: BuiltWeek["uncovered"];
+}
+
+/**
+ * Build this week with the same personalisation as today (weakness from
+ * BodyLab, gear inventory). The daily readiness applies to all days — the
+ * week is a plan, today's self-report is the one truth available.
+ */
+export function buildWeekPlan(input: WeekPlanInput): WeekPlan {
+  const owned = ownedCapabilities(input.inventory) as unknown as Set<string>;
+  const all = plannerCatalog();
+  const usable = all.filter((entry) => isUsable(entry, owned));
+
+  const weakness = input.payload
+    ? fuseWeakness(
+        input.payload.muscleScores ?? [],
+        input.payload.muscleLoad ?? [],
+        {
+          hasTrainingData:
+            (input.payload.trainingLog?.length ?? 0) > 0 ||
+            (input.payload.muscleLoad ?? []).some((l) => l.totalSets > 0),
+        },
+      )
+    : {};
+
+  const catalog: SessionCatalogEntry[] = usable.map((entry) => ({
+    id: entry.exercise.id,
+    muscles: entry.directMuscles,
+    pattern: entry.traits.pattern,
+    loadType: entry.traits.loadType,
+    unilateral: entry.traits.unilateral,
+    jointStress: entry.traits.jointStress,
+    spineLoad: entry.traits.spineLoad,
+    hypertrophy: entry.exercise.hypertrophy,
+    difficulty: entry.exercise.difficulty,
+    setupMin: entry.traits.setupMin,
+    cardio: entry.traits.cardio,
+  }));
+
+  // Monday-first specs: the first `daysPerWeek` non-rest slots spread across
+  // the week with rest after each training day (spacing beats clustering for
+  // recovery, and the core assignment rule enforces it too).
+  const labels = WEEKDAY_LABELS[input.lang];
+  const specs: WeekDaySpec[] = labels.map(() => ({
+    label: "",
+    budgetMin: 0,
+  }));
+  const spread = spreadTrainingDays(input.daysPerWeek, 7);
+  for (const idx of spread) {
+    specs[idx] = { label: labels[idx]!, budgetMin: input.timeBudgetMin };
+  }
+  for (const [i, spec] of specs.entries()) {
+    if (spec.budgetMin > 0 && spec.label === "") spec.label = labels[i]!;
+  }
+
+  const week = buildWeek({
+    days: specs,
+    weakness,
+    weeklyVolume: input.logStats.weeklyVolume,
+    readiness: input.readiness,
+    level: input.level,
+    goal: input.goal,
+    catalog,
+  });
+
+  const byId = new Map(usable.map((entry) => [entry.exercise.id, entry]));
+  const rows = week.days.map((day, i) => ({
+    label: day.label || labels[i]!,
+    isRest: day.isRest,
+    isToday: i === input.todayIndex,
+    assigned: day.assigned,
+    sets: day.session.slots.reduce((a, s) => a + s.sets, 0),
+    minutes: Math.round(day.session.totalMinutes),
+    preview: day.session.slots
+      .slice(0, 3)
+      .map((s) =>
+        byId.has(s.exerciseId)
+          ? byId.get(s.exerciseId)!.exercise.name[input.lang]
+          : s.exerciseId,
+      ),
+  }));
+
+  return {
+    week,
+    rows,
+    totalSets: week.totalSets,
+    totalMinutes: Math.round(week.totalMinutes),
+    uncovered: week.uncovered,
+  };
+}
+
+/**
+ * Spread N training days across a 7-day week as evenly as the calendar
+ * allows (e.g. 3 → Mon/Wed/Fri, 4 → Mon/Tue/Thu/Fri is avoided in favour of
+ * Mon/Wed/Fri/Sat when possible). Deterministic, Monday-first indices.
+ */
+export function spreadTrainingDays(n: number, total = 7): number[] {
+  const count = Math.max(0, Math.min(n, total));
+  if (count === 0) return [];
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    out.push(Math.round((i * total) / count));
+  }
+  // De-duplicate while keeping order (rounding can collide at high n).
+  return [...new Set(out)];
 }
