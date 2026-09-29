@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fitness — BodyLab + TrainingLab</title>
+    <meta
+      name="description"
+      content="Dos apps locales y offline para medir tu cuerpo (BodyLab) y entrenar con un plan derivado de esas medidas (TrainingLab)."
+    />
+    <link rel="icon" href="./bodylab/favicon.svg" />
+    <!--
+      Hub page for GitHub Pages: it is served from the repository root of the
+      published site, next to the two built apps, and links into them. Everything
+      is inline (no external fonts, no CDN) so the page makes exactly one origin's
+      worth of requests and works offline once cached.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0d10;
+        --panel: #14181d;
+        --line: #262c34;
+        --text: #e7ecf2;
+        --muted: #9aa6b2;
+        --orange: #ff7a1a;
+        --orange-soft: #2a1a0c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      a {
+        color: var(--orange);
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 40px 20px 72px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .mark {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(140deg, var(--orange), #b34a00);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 20px;
+        color: #14100b;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 38px);
+        margin: 0;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        color: var(--muted);
+        margin: 6px 0 0;
+        max-width: 70ch;
+      }
+      .grid {
+        display: grid;
+        gap: 18px;
+        margin-top: 34px;
+      }
+      @media (min-width: 780px) {
+        .grid.two {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .card h2 {
+        margin: 0;
+        font-size: 20px;
+      }
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 2px 0 0;
+      }
+      .tag {
+        font-size: 12px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 9px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: auto;
+        padding-top: 6px;
+      }
+      .btn {
+        display: inline-block;
+        text-decoration: none;
+        font-weight: 650;
+        font-size: 14px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+      .btn.primary {
+        background: var(--orange);
+        border-color: var(--orange);
+        color: #14100b;
+      }
+      figure {
+        margin: 0;
+      }
+      figure img {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        display: block;
+      }
+      figcaption {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 8px;
+      }
+      .note {
+        margin-top: 34px;
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--orange);
+        background: var(--orange-soft);
+        border-radius: 12px;
+        padding: 14px 16px;
+        color: var(--text);
+        font-size: 15px;
+      }
+      footer {
+        margin-top: 42px;
+        color: var(--muted);
+        font-size: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+      }
+      code {
+        background: #1b2027;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="mark" aria-hidden="true">F</div>
+        <div>
+          <h1>Fitness — BodyLab + TrainingLab</h1>
+          <p class="sub">
+            Mide tu cuerpo y entrena con un plan que sale de esas medidas. Dos apps locales: sin cuenta,
+            sin nube, sin telemetría. Todo se queda en tu dispositivo.
+          </p>
+        </div>
+      </header>
+
+      <div class="grid two">
+        <section class="card">
+          <h2>BodyLab</h2>
+          <p>
+            La mitad científica: antropometría con protocolos explicados, análisis matemático del estado
+            corporal (hombres y mujeres), modelado 2D/3D, educación de ejercicios y progreso.
+          </p>
+          <div class="tags">
+            <span class="tag">perímetros y pliegues</span>
+            <span class="tag">JP3 · Navy · Cooper</span>
+            <span class="tag">modelo 3D</span>
+            <span class="tag">progreso</span>
+          </div>
+          <div class="actions">
+            <a class="btn primary" href="./bodylab/">Abrir BodyLab</a>
+            <a
+              class="btn"
+              href="https://github.com/SCP-00/Fitness/releases/latest/download/BodyLab-setup.exe"
+              >Descargar .exe</a
+            >
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>TrainingLab</h2>
+          <p>
+            La mitad que se entrena: la sesión de hoy ajustada a tu tiempo y a tu equipamiento real,
+            registro de series con teclado, descansos, récords y avisos.
+          </p>
+          <div class="tags">
+            <span class="tag">sesión por tiempo</span>
+            <span class="tag">readiness</span>
+            <span class="tag">inventario de equipo</span>
+            <span class="tag">récords</span>
+          </div>
+          <div class="actions">
+            <a class="btn primary" href="./traininglab/">Abrir TrainingLab</a>
+            <a
+              class="btn"
+              href="https://github.com/SCP-00/Fitness/releases/latest/download/TrainingLab-setup.exe"
+              >Descargar .exe</a
+            >
+          </div>
+        </section>
+      </div>
+
+      <div class="grid two" style="margin-top: 18px">
+        <figure>
+          <img src="./screenshots/bodylab-overview.png" alt="Pantalla de resumen de BodyLab" loading="lazy" />
+          <figcaption>BodyLab — resumen con análisis del estado corporal.</figcaption>
+        </figure>
+        <figure>
+          <img
+            src="./screenshots/traininglab-today.png"
+            alt="Pantalla de hoy de TrainingLab"
+            loading="lazy"
+          />
+          <figcaption>TrainingLab — la sesión de hoy, con su presupuesto de tiempo.</figcaption>
+        </figure>
+        <figure>
+          <img src="./screenshots/bodylab-history.png" alt="Historial de mediciones de BodyLab" loading="lazy" />
+          <figcaption>BodyLab — historial de mediciones.</figcaption>
+        </figure>
+        <figure>
+          <img src="./screenshots/traininglab-phone.png" alt="TrainingLab en un móvil" loading="lazy" />
+          <figcaption>TrainingLab en el móvil: la misma app, la misma URL.</figcaption>
+        </figure>
+      </div>
+
+      <p class="note">
+        <strong>Version web:</strong> estas dos apps se ejecutan íntegramente en tu navegador y guardan sus
+        datos en el IndexedDB de este sitio. Si quieres compartir el historial con tu familia en la red de
+        casa, el repositorio incluye un mini servidor con SQLite:
+        <code>pnpm lan --shared</code>.
+      </p>
+
+      <footer>
+        Código Apache-2.0 · assets anatómicos derivados de Z-Anatomy (CC BY-SA 4.0) ·
+        <a href="https://github.com/SCP-00/Fitness">código fuente y descargas</a>.
+      </footer>
+    </div>
+  </body>
+</html>

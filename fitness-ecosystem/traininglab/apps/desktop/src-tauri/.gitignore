@@ -1,0 +1,4 @@
+# Rust/Tauri build output — the release binary ships as a GitHub Release asset,
+# not as a source file, and `target/` is routinely several GB.
+/target/
+/gen/

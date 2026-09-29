@@ -58,6 +58,8 @@ import {
   saveDecisionModel,
   loadReadiness,
   saveReadiness,
+  loadHealthRecords,
+  saveHealthRecords,
 } from "../../lib/db";
 import { t, tInterp, setLanguage, getLanguage } from "../../lib/i18n";
 import {
@@ -74,6 +76,17 @@ import {
   type RecordEvent,
 } from "../../lib/records";
 import { configureNotifications } from "../../lib/notifications";
+import {
+  deleteRemoteSet,
+  mergeSets,
+  normalizeBaseUrl,
+  pullMemberData,
+  pushHealth,
+  pushSessions,
+  pushSets,
+  type HealthRecord,
+} from "../../lib/shared";
+import { SharedPanel } from "./SharedPanel";
 import type { TLSession, TLSet, TLSettingsData } from "../../lib/types";
 import RestTimer from "./RestTimer";
 import { GearPanel } from "./GearPanel";
@@ -141,6 +154,11 @@ export default function TodayPage() {
   const [pane, setPane] = useState<"train" | "setup">("train");
   /** Transient banner for a record / finished exercise / finished session. */
   const [celebration, setCelebration] = useState<Celebration | null>(null);
+  /** Sessions are kept in state so the shared sync can push them. */
+  const [sessions, setSessions] = useState<TLSession[]>([]);
+  const [health, setHealth] = useState<HealthRecord[]>([]);
+  const [syncing, setSyncing] = useState(false);
+  const [sharedError, setSharedError] = useState<string | null>(null);
 
   // ── Boot ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -153,24 +171,25 @@ export default function TodayPage() {
       const [
         storedPayload,
         storedSets,
-        _storedSessions,
+        storedSessions,
         storedModel,
         storedReadiness,
+        storedHealth,
       ] = await Promise.all([
         loadPayload(),
         loadSets(),
         loadSessions(),
         loadDecisionModel(),
         loadReadiness(),
+        loadHealthRecords(),
       ]);
       if (cancelled) return;
       if (storedPayload && isV2Payload(storedPayload))
         setPayload(storedPayload);
       setSets(storedSets);
-      // Sessions are persisted (and counted by the weekly ledger) — the screen
-      // itself only needs today's sets, so they are not held in state.
-      void _storedSessions;
+      setSessions(storedSessions);
       setModel(normalizeModel(storedModel));
+      setHealth(storedHealth);
       if (storedReadiness) setReadiness(storedReadiness.readiness);
     })();
     return () => {
@@ -231,6 +250,86 @@ export default function TodayPage() {
     setLanguage(next.language);
     void saveSettings(next);
   }, []);
+
+  // ── Shared household history ────────────────────────────────────────────
+  /**
+   * Push what is local, pull what is remote, merge by id.
+   *
+   * Deliberately a *full* round trip rather than an incremental one: the dataset
+   * is a household's training log (thousands of rows at most), every write is an
+   * idempotent upsert, and "send everything, then reconcile" is the version of
+   * this that cannot drift. Failure is silent by design when it is an automatic
+   * sync — being told the Wi-Fi dropped mid-set is not useful — but an explicit
+   * "Sync now" reports the reason.
+   */
+  const runSharedSync = useCallback(
+    async ({ report = false }: { report?: boolean } = {}) => {
+      if (!settings) return;
+      const base = normalizeBaseUrl(settings.shared.baseUrl);
+      const memberId = settings.shared.memberId;
+      if (!base || !memberId) return;
+
+      setSyncing(true);
+      if (report) setSharedError(null);
+      try {
+        const pulled = await pullMemberData(base, memberId);
+
+        // Remote rows this device has never seen become local ones. Everything
+        // is keyed by the UUID the logging device generated, so this cannot
+        // duplicate a set that came from here.
+        const known = new Set(sets.map((s) => s.id));
+        const fresh = pulled.sets.filter((s) => !known.has(s.id));
+        for (const set of fresh) void saveSet(set);
+        const merged = mergeSets(sets, pulled.sets);
+        if (fresh.length > 0) setSets(merged);
+
+        await pushSets(base, memberId, merged);
+        if (sessions.length > 0) await pushSessions(base, memberId, sessions);
+        if (health.length > 0) await pushHealth(base, memberId, health);
+
+        // `applySettings` (not `patch`) on purpose: the sync has no opinion about
+        // the UI, it only stamps when it last succeeded.
+        applySettings({
+          ...settings,
+          shared: { ...settings.shared, lastSyncAt: new Date().toISOString() },
+        });
+      } catch (error) {
+        if (report) {
+          setSharedError(error instanceof Error ? error.message : "sync failed");
+        }
+      } finally {
+        setSyncing(false);
+      }
+    },
+    [settings, sets, sessions, health, applySettings],
+  );
+
+  /** Push one freshly logged set without blocking the input row. */
+  const pushSetQuietly = useCallback(
+    (set: TLSet) => {
+      if (!settings?.shared.enabled || !settings.shared.memberId) return;
+      const base = normalizeBaseUrl(settings.shared.baseUrl);
+      if (!base) return;
+      void pushSets(base, settings.shared.memberId, [set]).catch(() => {
+        // Offline at the gym is the normal case; the next full sync catches up.
+      });
+    },
+    [settings],
+  );
+
+  // Sync once per launch, and again whenever the app comes back to the
+  // foreground — the moment a phone rejoins the Wi-Fi.
+  useEffect(() => {
+    if (!settings?.shared.enabled || !settings.shared.memberId) return;
+    void runSharedSync();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void runSharedSync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+    // Intentionally keyed on the connection identity, not on every data change:
+    // an effect on `sets` would re-sync on every logged set.
+  }, [settings?.shared.enabled, settings?.shared.memberId, settings?.shared.baseUrl, runSharedSync]);
 
   const patch = useCallback(
     (over: Partial<TLSettingsData>) => {
@@ -352,6 +451,7 @@ export default function TodayPage() {
         void saveSet(set);
         return [...prev, set];
       });
+      pushSetQuietly(set);
       setFinished(null);
       // Bodyweight and conditioning work does not need a rest countdown beyond
       // the prescribed time; everything else does.
@@ -382,13 +482,46 @@ export default function TodayPage() {
         );
       }
     },
-    [todayPrefix, sets, importedMarksFor, celebrate, describeRecord],
+    [todayPrefix, sets, importedMarksFor, celebrate, describeRecord, pushSetQuietly],
   );
 
-  const removeSet = useCallback((id: string) => {
-    setSets((prev) => {
-      void deleteSet(id);
-      return prev.filter((s) => s.id !== id);
+  const removeSet = useCallback(
+    (id: string) => {
+      setSets((prev) => {
+        void deleteSet(id);
+        return prev.filter((s) => s.id !== id);
+      });
+      // Removing a mistake should also remove it from the household history,
+      // otherwise the family view keeps counting a set nobody logged.
+      if (settings?.shared.enabled && settings.shared.memberId) {
+        const base = normalizeBaseUrl(settings.shared.baseUrl);
+        if (base) void deleteRemoteSet(base, settings.shared.memberId, id).catch(() => {});
+      }
+    },
+    [settings],
+  );
+
+  // ── Health records ──────────────────────────────────────────────────────
+  const addHealthRecord = useCallback(
+    (record: HealthRecord) => {
+      setHealth((prev) => {
+        const next = [...prev, record];
+        void saveHealthRecords(next);
+        return next;
+      });
+      if (settings?.shared.enabled && settings.shared.memberId) {
+        const base = normalizeBaseUrl(settings.shared.baseUrl);
+        if (base) void pushHealth(base, settings.shared.memberId, [record]).catch(() => {});
+      }
+    },
+    [settings],
+  );
+
+  const removeHealthRecord = useCallback((id: string) => {
+    setHealth((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      void saveHealthRecords(next);
+      return next;
     });
   }, []);
 
@@ -410,6 +543,7 @@ export default function TodayPage() {
       budgetMin: settings?.timeBudgetMin,
     };
     void saveSession(session);
+    setSessions((prev) => [...prev, session]);
     setFinished(session);
 
     // The bell closes the session — the one cue that also fires when the user
@@ -1144,8 +1278,20 @@ export default function TodayPage() {
             </div>
           </SectionCard>
 
-          {/* Phone / LAN */}
-          <MobileCard />
+        {/* Shared household history (optional) */}
+        <SharedPanel
+          settings={settings.shared}
+          health={health}
+          syncing={syncing}
+          lastError={sharedError}
+          onSettings={(p) => patch({ shared: { ...settings.shared, ...p } })}
+          onAddHealth={addHealthRecord}
+          onRemoveHealth={removeHealthRecord}
+          onSyncNow={() => void runSharedSync({ report: true })}
+        />
+
+        {/* Phone / LAN */}
+        <MobileCard />
         </div>
       </main>
 

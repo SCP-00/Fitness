@@ -29,6 +29,12 @@
  *   node scripts/serve-lan.mjs --no-build      # fail instead of building
  *   node scripts/serve-lan.mjs --open          # also open the hub in a browser
  *   node scripts/serve-lan.mjs --open traininglab   # …or jump straight to one app
+ *   node scripts/serve-lan.mjs --shared        # also run the shared SQLite store
+ *   node scripts/serve-lan.mjs --shared --data C:\path\to\store
+ *
+ * `--shared` is the only mode with a database, and it needs the built-in
+ * `node:sqlite` (Node 22.5+). Without it the server is exactly what it has always
+ * been: a static file server that stores nothing.
  *
  * Privacy note printed on the hub: everything served is public on that Wi-Fi
  * and every device keeps its own data (IndexedDB is per-browser, per-origin).
@@ -43,6 +49,8 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createLanStore } from "./lan-store.mjs";
+import { createApiHandler } from "./lan-api.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -66,6 +74,16 @@ const NO_BUILD = flag("no-build");
  */
 const OPEN_INDEX = argv.indexOf("--open");
 const OPEN_APP = OPEN_INDEX >= 0 ? argv[OPEN_INDEX + 1] : undefined;
+
+/**
+ * `--shared` turns on the household database, and `--data` moves it.
+ *
+ * Off by default: a server that suddenly starts accepting writes (and printing a
+ * database file) would be a surprising change for someone who just wanted to open
+ * the app on their phone.
+ */
+const SHARED = flag("shared");
+const DATA_DIR = valueOf("data", path.join(ROOT, ".lan-data"));
 
 const APPS = [
   {
@@ -216,7 +234,7 @@ function localAddresses() {
   });
 }
 
-function hubHtml(primaryUrl, ips) {
+function hubHtml(primaryUrl, ips, shared = false) {
   const cards = APPS.map(
     (app) => `
       <a class="app" href="${app.mount}" style="--accent:${app.accent}">
@@ -300,7 +318,11 @@ function hubHtml(primaryUrl, ips) {
       <ul>
         <li>El teléfono y la laptop tienen que estar en la <b>misma Wi-Fi</b>.</li>
         <li>Cualquiera en esa red puede abrir estas URLs mientras el servidor esté encendido. Pulsa <code>Ctrl+C</code> en la terminal para apagarlo.</li>
-        <li>Los datos viven en el navegador de cada dispositivo (IndexedDB). Lo que registres en el iPhone <b>no</b> aparece en la laptop: exporta el JSON de BodyLab y súbelo en TrainingLab del otro dispositivo, o al revés.</li>
+        ${
+          shared
+            ? `<li><b>Historial compartido activo.</b> Los registros que subas se guardan en la base de datos de esta laptop y los ve todo el grupo. Elige tu nombre en TrainingLab → <b>Ajustes → Historial compartido</b>. Cualquiera en esta Wi-Fi puede leer y escribir: úsalo en casa, no en una red pública.</li>`
+            : `<li>Los datos viven en el navegador de cada dispositivo (IndexedDB). Lo que registres en el iPhone <b>no</b> aparece en la laptop: exporta el JSON de BodyLab y súbelo en TrainingLab del otro dispositivo, o al revés.</li>`
+        }
         <li>El <b>coach local</b> de TrainingLab apunta a <code>127.0.0.1</code> por defecto; desde el iPhone cámbialo a la IP de la laptop y arranca llama.cpp con <code>--host 0.0.0.0 --port 8080</code>.</li>
       </ul>
 
@@ -327,14 +349,33 @@ const roots = new Map(
   APPS.map((app) => [app.id, path.join(ROOT, app.dir, "dist")]),
 );
 
+// ── Optional shared store ─────────────────────────────────────────────────
+// Opened before the server so a missing node:sqlite fails loudly at startup
+// instead of turning every /api call into a 500 later.
+let store = null;
+let handleApi = null;
+if (SHARED) {
+  try {
+    store = createLanStore({ dir: DATA_DIR });
+    handleApi = createApiHandler({ store });
+  } catch (error) {
+    console.error(`\n✖ ${error.message}\n`);
+    process.exit(1);
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");
   const pathname = decodeURIComponent(url.pathname);
 
+  // The API lives under /api/ and gets first refusal; everything else falls
+  // through to the static server below.
+  if (handleApi && (await handleApi(req, res, url))) return;
+
   if (pathname === "/" || pathname === "/index.html") {
     const ips = localAddresses();
     const host = ips[0] ?? "localhost";
-    const html = hubHtml(`http://${host}:${PORT}/`, ips);
+    const html = hubHtml(`http://${host}:${PORT}/`, ips, Boolean(store));
     res.writeHead(200, {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
@@ -385,6 +426,17 @@ server.listen(PORT, "0.0.0.0", () => {
   }
   console.log(`\n  En esta laptop:  http://localhost:${PORT}/`);
   console.log(`  Parar:           Ctrl+C`);
+
+  if (store) {
+    console.log(`\n  Base de datos compartida (SQLite): ${store.file}`);
+    console.log(`  Miembros dados de alta: ${store.members().length}`);
+    console.log("  ⚠ Este modo NO es privado: cualquiera en esta Wi-Fi puede leer y");
+    console.log("    escribir los registros de todos. Perfecto en casa, no lo dejes");
+    console.log("    abierto en una red pública.");
+  } else {
+    console.log(`\n  Sin base de datos (modo normal). Para compartir historial entre`);
+    console.log(`  dispositivos:  node scripts/serve-lan.mjs --shared`);
+  }
   console.log(`${line}\n`);
 
   if (OPEN_INDEX >= 0) {

@@ -88,6 +88,13 @@ skills-lock.json
 Thumbs.db
 desktop.ini
 
+# ── Build output that CI assembles ──────────────────────────────────────────
+# `release-artifacts/` is where the release workflow stages installers, and
+# `.pages/` is the GitHub Pages bundle (hub + both apps + screenshots).
+release-artifacts/
+fitness-ecosystem/release-artifacts/
+fitness-ecosystem/.pages/
+
 # ── Local databases the LAN server writes ───────────────────────────────────
 # The shared store is per-network state (it holds real family data); only the
 # schema is source.

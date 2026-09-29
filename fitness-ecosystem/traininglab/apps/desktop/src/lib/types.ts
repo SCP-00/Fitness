@@ -11,6 +11,7 @@
 
 import type { OwnedEquipment } from "@fitness/bodylab-exercises";
 import type { Readiness, SessionGoal } from "@fitness/bodylab-training";
+import { DEFAULT_SHARED, type SharedSettings } from "./shared";
 
 /** A plan slot resolved for display (name + prescription from core). */
 export interface PlannedSlot {
@@ -118,6 +119,12 @@ export interface TLSettingsData {
   sound: TlSoundSettings;
   /** Local notification preferences. */
   notifications: TlNotificationSettings;
+  /**
+   * Optional shared household history (see `lib/shared.ts`). Off by default: the
+   * app is complete and private without it, and turning it on is a deliberate
+   * choice about a server on the LAN that stores your logs in the clear.
+   */
+  shared: SharedSettings;
   llm: LlmSettings;
 }
 
@@ -132,5 +139,6 @@ export const DEFAULT_SETTINGS: TLSettingsData = {
   useDecisionModel: true,
   sound: { ...DEFAULT_SOUND },
   notifications: { ...DEFAULT_NOTIFICATIONS },
+  shared: { ...DEFAULT_SHARED },
   llm: { ...DEFAULT_LLM },
 };

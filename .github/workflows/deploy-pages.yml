@@ -1,0 +1,94 @@
+name: Deploy both apps to GitHub Pages
+
+# Publishes a live demo: a small hub page plus BodyLab and TrainingLab side by
+# side under the same origin (`/<repo>/bodylab/`, `/<repo>/traininglab/`). Both
+# apps are 100% client-side, so Pages can host them fully — data stays in the
+# visitor's own IndexedDB and nothing is uploaded anywhere.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: fitness-ecosystem
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: fitness-ecosystem/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The base is derived from the repo name so asset URLs resolve under
+      # https://<owner>.github.io/<repo>/<app>/ (skipped for user/org pages repos).
+      - name: Build BodyLab for Pages
+        working-directory: fitness-ecosystem/bodylab/apps/web
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          if [[ "$REPO_NAME" == *.github.io ]]; then
+            npx vite build --outDir ../../../.pages/bodylab
+          else
+            npx vite build --base="/$REPO_NAME/bodylab/" --outDir ../../../.pages/bodylab
+          fi
+
+      - name: Build TrainingLab for Pages
+        working-directory: fitness-ecosystem/traininglab/apps/desktop
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          if [[ "$REPO_NAME" == *.github.io ]]; then
+            npx vite build --outDir ../../../.pages/traininglab
+          else
+            npx vite build --base="/$REPO_NAME/traininglab/" --outDir ../../../.pages/traininglab
+          fi
+
+      # The hub is a hand-written page (docs/site/index.html) so the landing
+      # copy is reviewed like any other source; the screenshots it shows are the
+      # same PNGs the README uses.
+      - name: Assemble the hub
+        run: |
+          mkdir -p .pages/screenshots
+          cp docs/site/index.html .pages/index.html
+          cp docs/screenshots/*.png .pages/screenshots/
+          ls -R .pages | head -40
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: fitness-ecosystem/.pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

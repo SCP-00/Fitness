@@ -1,0 +1,155 @@
+name: Release desktop apps (exe installers)
+
+# Cuts a Windows release containing BOTH installers and, when the signing key is
+# available, the static auto-update feed BodyLab polls.
+#
+# Trigger: push a tag like v1.0.0-beta.6 (or run it manually from the Actions tab).
+# The tag names the release; BodyLab's own version comes from
+# bodylab/apps/desktop/src-tauri/tauri.conf.json, TrainingLab's from its own.
+#
+# OPTIONAL REPO SECRETS (Settings → Secrets and variables → Actions):
+#   TAURI_SIGNING_PRIVATE_KEY          contents of bodylab/apps/desktop/src-tauri/.updater-key
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD the password stored beside it in .updater-key.password
+#
+# Without those secrets the run still publishes installers — just unsigned, and
+# without latest.json, because an updater feed whose signature cannot be verified
+# is worse than no feed at all (the app would offer a broken update instead of
+# simply reporting that it is up to date).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: fitness-ecosystem/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: fitness-ecosystem
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust (stable, MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build (BodyLab)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fitness-ecosystem/bodylab/apps/desktop/src-tauri
+
+      - name: Cache Rust build (TrainingLab)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fitness-ecosystem/traininglab/apps/desktop/src-tauri
+
+      # BodyLab: tauri.conf.json has createUpdaterArtifacts: true, so with the
+      # secrets present the CLI signs the bundle itself and emits .exe + .sig.
+      - name: Build BodyLab installer
+        shell: pwsh
+        working-directory: fitness-ecosystem/bodylab/apps/desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            Write-Host "No signing key secret → building an UNSIGNED BodyLab installer."
+            "SIGNED=false" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
+          } else {
+            Write-Host "Signing key present → building a signed BodyLab installer."
+            "SIGNED=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            pnpm tauri build
+          }
+
+      - name: Build TrainingLab installer
+        working-directory: fitness-ecosystem/traininglab/apps/desktop
+        run: pnpm tauri build
+
+      - name: Collect artifacts
+        shell: pwsh
+        working-directory: fitness-ecosystem
+        run: |
+          $out = "release-artifacts"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item -Recurse -Force -Path @(
+            "bodylab/apps/desktop/src-tauri/target/release/bundle/nsis/*setup.exe",
+            "bodylab/apps/desktop/src-tauri/target/release/bundle/nsis/*.sig",
+            "traininglab/apps/desktop/src-tauri/target/release/bundle/nsis/*setup.exe"
+          ) -Destination $out
+
+          # Stable asset names. A "latest/download/<file>" URL only resolves for the
+          # exact filename that release carries, so the versioned installers get a
+          # version-less twin: the README can then link
+          # releases/latest/download/BodyLab-setup.exe once and it keeps working
+          # forever. The installer's own version is inside the bundle, not in its
+          # filename, so renaming a copy is harmless.
+          Copy-Item "$out/BodyLab_*_x64-setup.exe" "$out/BodyLab-setup.exe" -Force
+          Copy-Item "$out/TrainingLab_*_x64-setup.exe" "$out/TrainingLab-setup.exe" -Force
+          Get-ChildItem $out
+
+      # Static updater feed: points "latest" at the BodyLab NSIS setup + signature.
+      - name: Generate latest.json
+        if: env.SIGNED == 'true'
+        shell: pwsh
+        working-directory: fitness-ecosystem
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $art = "release-artifacts"
+          $exe = Get-ChildItem "$art/*BodyLab*x64-setup.exe" | Select-Object -First 1
+          if (-not $exe) { throw "no BodyLab setup found in $art" }
+          $sig = Get-Content "$($exe.FullName).sig" -Raw
+          $json = @{
+            version   = "${env:TAG}".TrimStart('v')
+            notes     = "BodyLab ${env:TAG}"
+            pub_date  = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+            platforms = @{
+              "windows-x86_64" = @{
+                signature = $sig.Trim()
+                url       = "https://github.com/${env:REPO}/releases/download/${env:TAG}/$($exe.Name)"
+              }
+            }
+          }
+          $json | ConvertTo-Json -Depth 5 | Set-Content "$art/latest.json" -Encoding utf8
+          Get-Content "$art/latest.json"
+
+      - name: Release (signed, with update feed)
+        if: env.SIGNED == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            fitness-ecosystem/release-artifacts/*.exe
+            fitness-ecosystem/release-artifacts/*.sig
+            fitness-ecosystem/release-artifacts/latest.json
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+
+      - name: Release (unsigned installers)
+        if: env.SIGNED != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            fitness-ecosystem/release-artifacts/*.exe
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}

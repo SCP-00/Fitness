@@ -15,6 +15,7 @@ import {
   DEFAULT_SETTINGS,
   DEFAULT_SOUND,
 } from "./types";
+import { DEFAULT_SHARED, type HealthRecord } from "./shared";
 
 const DB_NAME = "traininglab";
 const DB_VERSION = 1;
@@ -129,6 +130,7 @@ export async function loadSettings(): Promise<TLSettingsData> {
       ...DEFAULT_NOTIFICATIONS,
       ...(value.notifications ?? {}),
     },
+    shared: { ...DEFAULT_SHARED, ...(value.shared ?? {}) },
     llm: { ...DEFAULT_LLM, ...(value.llm ?? {}) },
   };
 }
@@ -169,6 +171,32 @@ export async function loadDecisionModel(): Promise<unknown | null> {
 
 export async function saveDecisionModel(model: DecisionModel): Promise<void> {
   await put(STORES.meta, { id: "decision-model", value: model });
+}
+
+// ── Health records (local first; pushed to the shared store when enabled) ───
+
+/**
+ * Health measurements live in one array in the meta store.
+ *
+ * Not a dedicated object store on purpose: a household logs a handful of these a
+ * week, the whole set is read on every boot, and the DB version bump that a new
+ * store would require is the one thing that can break an existing install.
+ */
+export async function loadHealthRecords(): Promise<HealthRecord[]> {
+  const db = await openDB();
+  return new Promise((resolve) => {
+    const tx = db.transaction(STORES.meta, "readonly");
+    const req = tx.objectStore(STORES.meta).get("health-records");
+    req.onsuccess = () => {
+      const rows = (req.result as { value?: HealthRecord[] } | undefined)?.value;
+      resolve(Array.isArray(rows) ? rows : []);
+    };
+    req.onerror = () => resolve([]);
+  });
+}
+
+export async function saveHealthRecords(rows: HealthRecord[]): Promise<void> {
+  await put(STORES.meta, { id: "health-records", value: rows });
 }
 
 // ── Today's readiness self-report (kept per calendar day) ───────────────────

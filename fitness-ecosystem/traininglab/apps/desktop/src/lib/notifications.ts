@@ -1,20 +1,21 @@
 /**
  * Local notifications — the rest timer keeps talking when the tab does not.
  *
- * Why the Web Notification API
- * ----------------------------
- * TrainingLab is a static, offline, zero-backend app that runs both in a browser
- * and inside a desktop shell. The Web Notification API is the only mechanism
- * that covers every one of those surfaces with one code path, needs no service
- * worker, no push server and no network — which is what "100 % local" has to mean
- * here. Nothing is ever *pushed*: every notification is raised by an event the
- * user just caused (a rest countdown reaching zero).
+ * Two channels, one API
+ * ---------------------
+ * TrainingLab is a static, offline, zero-backend app that runs in a browser *and*
+ * inside its Tauri desktop shell, and those two hosts need different mechanisms:
  *
- * The honest limitation, stated rather than hidden: on Windows the toast comes
- * from the browser (or the WebView host), and a desktop shell that wants its own
- * native notification channel needs the Tauri notification plugin wired into the
- * Rust side. `isDesktopShell()` below marks the one branch that would change; the
- * permission and payload logic stays identical.
+ *   * **browser** → the Web Notification API. No service worker, no push server,
+ *     no network — which is what "100 % local" has to mean here.
+ *   * **desktop shell** → `tauri-plugin-notification`. A WebView has no usable
+ *     `Notification` global, so the plugin is what turns the alert into a real
+ *     Windows toast. It is imported dynamically, so the browser build never
+ *     bundles it and never fails to resolve it.
+ *
+ * Either way nothing is ever *pushed*: every notification is raised by an event
+ * the user just caused (a rest countdown reaching zero). `isDesktopShell()`
+ * decides the branch; permission and payload logic are shared.
  *
  * @module lib/notifications
  */
@@ -22,6 +23,29 @@
 import { t, tInterp } from "./i18n";
 
 export type NotifyPermission = "default" | "granted" | "denied" | "unsupported";
+
+/**
+ * The subset of `@tauri-apps/plugin-notification` this module uses.
+ *
+ * Imported dynamically and typed by hand, so the web build neither bundles the
+ * plugin nor fails to resolve it: in a browser `isDesktopShell()` is false and
+ * the import never runs.
+ */
+interface TauriNotificationApi {
+  isPermissionGranted(): Promise<boolean>;
+  requestPermission(): Promise<string>;
+  sendNotification(options: { title: string; body?: string }): void;
+}
+
+async function loadTauriNotifications(): Promise<TauriNotificationApi | null> {
+  try {
+    const mod = (await import("@tauri-apps/plugin-notification")) as unknown as TauriNotificationApi;
+    return typeof mod.sendNotification === "function" ? mod : null;
+  } catch {
+    // The plugin is missing (web build, or a shell built before it was added).
+    return null;
+  }
+}
 
 interface NotificationConfig {
   enabled: boolean;
@@ -49,14 +73,13 @@ export function configureNotifications(
 
 export function notificationConfig(): Readonly<NotificationConfig> {
   return { ...config };
-}
-
-/** True when the runtime exposes the API at all (independent of permission). */
+}/** True when the runtime can show a notification at all (permission aside). */
 export function notificationsSupported(): boolean {
+  // The shell always can: the plugin is compiled into the binary.
+  if (isDesktopShell()) return true;
   return (
     typeof globalThis !== "undefined" &&
-    typeof (globalThis as { Notification?: unknown }).Notification ===
-      "function"
+    typeof (globalThis as { Notification?: unknown }).Notification === "function"
   );
 }
 
@@ -74,8 +97,16 @@ export function isDesktopShell(): boolean {
   );
 }
 
-/** Current permission, collapsed to a value the UI can switch on. */
+/**
+ * Current permission, collapsed to a value the UI can switch on.
+ *
+ * Synchronous on purpose — the Settings panel reads it while rendering. Inside
+ * the desktop shell the plugin only answers asynchronously, so this reports
+ * `default` ("not asked yet"), which is both true at first launch and the state
+ * whose UI affordance — a button — is the right one to show.
+ */
 export function notificationPermission(): NotifyPermission {
+  if (isDesktopShell()) return "default";
   if (!notificationsSupported()) return "unsupported";
   const state = Notification.permission;
   return state === "granted" || state === "denied" ? state : "default";
@@ -89,6 +120,17 @@ export function notificationPermission(): NotifyPermission {
  * `unsupported`.
  */
 export async function requestNotificationPermission(): Promise<NotifyPermission> {
+  if (isDesktopShell()) {
+    const api = await loadTauriNotifications();
+    if (!api) return "unsupported";
+    try {
+      if (await api.isPermissionGranted()) return "granted";
+      return (await api.requestPermission()) === "granted" ? "granted" : "denied";
+    } catch {
+      return "unsupported";
+    }
+  }
+
   if (!notificationsSupported()) return "unsupported";
   if (Notification.permission === "granted") return "granted";
   try {
@@ -124,7 +166,6 @@ export function notify({
 }: NotifyOptions): boolean {
   if (!config.enabled) return false;
   if (!notificationsSupported()) return false;
-  if (Notification.permission !== "granted") return false;
 
   // Foreground: the on-screen timer is the notification.
   if (
@@ -134,6 +175,28 @@ export function notify({
   ) {
     return false;
   }
+
+  // ── Desktop shell ────────────────────────────────────────────────────────
+  // A WebView has no usable Notification API, so the plugin is the only channel
+  // that produces a real OS toast. It is async and `notify` is called from a
+  // 1-second interval that must not block, so this is dispatched rather than
+  // awaited: the return value means "handed to a channel", not "already
+  // painted".
+  if (isDesktopShell()) {
+    void (async () => {
+      const api = await loadTauriNotifications();
+      if (!api) return;
+      try {
+        if (!(await api.isPermissionGranted())) return;
+        api.sendNotification({ title, body });
+      } catch {
+        /* a denied permission is not worth surfacing mid-set */
+      }
+    })();
+    return true;
+  }
+
+  if (Notification.permission !== "granted") return false;
 
   try {
     const shown = new Notification(title, { body, tag, silent });

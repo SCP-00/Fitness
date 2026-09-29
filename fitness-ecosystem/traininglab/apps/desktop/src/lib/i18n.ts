@@ -320,6 +320,56 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Descanso terminado — siguiente: {name}",
   },
 
+  // ── Shared household history (optional LAN store) ───────────────────────
+  "shared.title": { en: "Shared history", es: "Historial compartido" },
+  "shared.hint": {
+    en: "Optional: log your household into one history on your own Wi-Fi. Off by default, and the app never needs it.",
+    es: "Opcional: que todos en casa registren en un mismo historial dentro de tu Wi-Fi. Apagado por defecto y la app nunca lo necesita.",
+  },
+  "shared.server": { en: "Server address", es: "Dirección del servidor" },
+  "shared.yourName": { en: "Your name", es: "Tu nombre" },
+  "shared.connect": { en: "Connect", es: "Conectar" },
+  "shared.reconnect": { en: "Reconnect", es: "Reconectar" },
+  "shared.disconnect": { en: "Turn off", es: "Desconectar" },
+  "shared.syncNow": { en: "Sync now", es: "Sincronizar ahora" },
+  "shared.family": { en: "Your household", es: "Tu grupo" },
+  "shared.familyWeek": {
+    en: "{sets} sets · {vol} kg this week",
+    es: "{sets} series · {vol} kg esta semana",
+  },
+  "shared.health": { en: "Health records", es: "Registros de salud" },
+  "shared.healthHint": {
+    en: "Resting heart rate, weight, sleep, blood pressure, mood. Kept on this device and, if shared history is on, synced with your household. Recording is not medical advice.",
+    es: "FC en reposo, peso, sueño, presión arterial, ánimo. Se guardan en este dispositivo y, si el historial compartido está activo, se sincronizan con tu grupo. Registrarlo no es consejo médico.",
+  },
+  "shared.healthValue": { en: "Value", es: "Valor" },
+  "shared.healthLocal": {
+    en: "{n} records on this device",
+    es: "{n} registros en este dispositivo",
+  },
+  "shared.healthSynced": { en: "synced", es: "sincronizados" },
+  "shared.notPrivate": {
+    en: "Not private: everyone on this Wi-Fi can read and write the shared history. Perfect at home, never switch it on in a public network.",
+    es: "No es privado: cualquiera en esta Wi-Fi puede leer y escribir el historial compartido. Perfecto en casa; nunca lo actives en una red pública.",
+  },
+  "shared.lastSync": { en: "Last sync: {when}", es: "Última sincronización: {when}" },
+  "shared.badUrl": {
+    en: "The address must look like http://192.168.1.7:8090",
+    es: "La dirección debe ser del tipo http://192.168.1.7:8090",
+  },
+  "shared.needName": { en: "Type a name first", es: "Escribe un nombre primero" },
+  "shared.unreachable": {
+    en: "No server answered. Is it running with --shared?",
+    es: "Ningún servidor respondió. ¿Está arrancado con --shared?",
+  },
+  "shared.serverError": { en: "The server refused the request", es: "El servidor rechazó la petición" },
+  "shared.status.off": { en: "Off", es: "Apagado" },
+  "shared.status.unconfigured": { en: "Not connected", es: "Sin conectar" },
+  "shared.status.never-synced": { en: "Pending sync", es: "Sin sincronizar" },
+  "shared.status.ok": { en: "Synced", es: "Sincronizado" },
+  "shared.status.stale": { en: "Out of date", es: "Desactualizado" },
+  "shared.status.error": { en: "Error", es: "Error" },
+
   // ── Celebration banner ──────────────────────────────────────────────────
   "cue.record": { en: "New personal record", es: "Nuevo récord personal" },
   "cue.achievement": { en: "Exercise completed", es: "Ejercicio completado" },

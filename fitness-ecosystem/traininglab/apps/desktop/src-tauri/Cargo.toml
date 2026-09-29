@@ -1,0 +1,31 @@
+[package]
+name = "traininglab"
+version = "0.1.0"
+description = "TrainingLab desktop host (Tauri v2) — the gym-logging half of the fitness ecosystem"
+authors = ["TrainingLab"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "traininglab_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# Opening external links (the BodyLab LAN URL, the docs) in the system browser.
+tauri-plugin-opener = "2"
+# Native OS notifications — the one thing the web Notification API cannot do
+# inside a WebView. This is what makes the rest-timer alert a real Windows toast.
+tauri-plugin-notification = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

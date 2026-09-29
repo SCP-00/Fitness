@@ -140,13 +140,16 @@ export default function Measurements() {
   const lang = state.language;
   // Display units (BL-MEAS-005) — inputs take in/lb, storage stays cm/kg
   const unitSystem = state.profile?.units ?? 'metric';
-  const symUnit = UNIT_LABELS[displayUnitFor((SYMMETRY_PAIRS.find(p => p.group === symGroup)?.leftType ?? 'biceps_left') as AllMeasurementType, unitSystem)][lang];
   const tapeUnit = UNIT_LABELS[displayUnitFor('neck', unitSystem)][lang];
 
   // Symmetry state
   const [symGroup, setSymGroup] = useState<string>(SYMMETRY_PAIRS[0]?.group ?? 'biceps');
   const [symLeft, setSymLeft] = useState('');
   const [symRight, setSymRight] = useState('');
+  // Declared *after* `symGroup`: reading a `const` from the line above its own
+  // `useState` is a temporal-dead-zone ReferenceError that blanks the whole page
+  // (the minified binding is why the crash read `Cannot access 'H'`).
+  const symUnit = UNIT_LABELS[displayUnitFor((SYMMETRY_PAIRS.find(p => p.group === symGroup)?.leftType ?? 'biceps_left') as AllMeasurementType, unitSystem)][lang];
 
   // Navy tape-form state (Conditioning tab): tape circumferences → estimated %BF
   const [navyOpen, setNavyOpen] = useState(false);
