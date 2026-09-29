@@ -71,6 +71,12 @@ fitness-ecosystem/corpus/
 # is what actually ships. The folder is permanent locally, invisible to git.
 fitness-ecosystem/docs/reference/
 
+# ── Local toolchain ─────────────────────────────────────────────────────────
+# `.tools/` holds portable binaries that a task needs but that must not live in
+# the repository: today the LaTeX engine used to build `docs/ieee/*.pdf`
+# (tectonic, one executable, no installation and no admin rights).
+.tools/
+
 # ── Local scratch / diagnostics ─────────────────────────────────────────────
 .tmp-verify/
 # Staging for locally generated exercise images: they are reviewed by hand and

@@ -49,6 +49,7 @@ Verified 2026-09-29: **775 root tests (44 files) · 110 web tests · lint 0/0 ·
 
 ## Reference material & audits (2026-09-29 c)
 - **`fitness-ecosystem/docs/reference/` is gitignored on purpose**: it holds screenshots and exports of *other* training apps, kept locally to study interface patterns. Never commit, ship or redistribute anything in it — the conclusions are what ships, as prose in `docs/UI_DESIGN.md`, `docs/TRAININGLAB_UI_PLAN.md` and `docs/EXERCISE_DATA_AUDIT.md`.
+- **`docs/ieee/` holds the two professional technical reports** (`bodylab.tex`, `traininglab.tex`), written in IEEE conference format in Spanish with English identifiers, and their committed PDFs. Rebuild with **`node scripts/build-ieee-docs.mjs [--check]`**: the engine is *tectonic*, a portable executable looked up in the gitignored `.tools/tectonic/` first (no install, no admin rights, packages fetched on demand). The build reports `Overfull \hbox` counts — a non-zero count is a cosmetic regression, zero is the expected state.
 - **`node scripts/audit-exercise-coverage.mjs [sheet.xlsx] [--json]`** is the zero-dependency audit that reads a third-party `.xlsx` (its own zip reader, no new deps) and compares it with the **real** catalog loaded through the web app's Vite (so the `@fitness/*` aliases resolve exactly like in the app). It reports catalog health, per-muscle coverage and the exercises we lack; re-run it whenever the sheet changes. It is the guard for "no exercise without a primary muscle / no orphan media manifest entry".
 
 ## Publishing (2026-09-29)
