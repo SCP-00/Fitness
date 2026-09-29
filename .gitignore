@@ -61,6 +61,16 @@ fitness-ecosystem/corpus/
 # `node scripts/render-brand-icons.mjs`, so they are outputs, not sources.
 **/*-icon-1024.png
 
+# ── Third-party reference material (study only — never redistributed) ───────
+#
+# `docs/reference/` holds screenshots of *other* training apps (and any data
+# exported from them) that we keep on this machine purely to study interface
+# patterns. They are somebody else's copyrighted artwork, so they must never
+# end up in a commit or in a release: the design decisions they inspired are
+# recorded as prose in docs/UI_DESIGN.md and docs/TRAININGLAB_UI_PLAN.md, which
+# is what actually ships. The folder is permanent locally, invisible to git.
+fitness-ecosystem/docs/reference/
+
 # ── Local scratch / diagnostics ─────────────────────────────────────────────
 .tmp-verify/
 *.local

@@ -4,6 +4,13 @@
 > the owner's say-so (ember orange `#f97316` on near-black; it mirrors the
 > brand mark). Everything below was verified on real devices / viewports —
 > the numbers are promises, not vibes. Last audit: 2026-09-29.
+>
+> This file is the **contract**; the redesign that will exercise it is
+> [TRAININGLAB_UI_PLAN.md](TRAININGLAB_UI_PLAN.md) (navigation, library, ZEN v2,
+> progress), and the content it presents is audited in
+> [EXERCISE_DATA_AUDIT.md](EXERCISE_DATA_AUDIT.md). Section 9 of the plan
+> extends the breakpoint table below — when a rule here changes, both files move
+> in the same commit.
 
 ## Tokens (do not invent new ones without adding them here)
 

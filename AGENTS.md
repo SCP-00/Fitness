@@ -47,6 +47,10 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
 
 Verified 2026-09-29: **775 root tests (44 files) · 110 web tests · lint 0/0 · typechecks OK · TrainingLab `tsc -b` + `vite build` OK · both NSIS installers built**. Prefer fresh output over these numbers.
 
+## Reference material & audits (2026-09-29 c)
+- **`fitness-ecosystem/docs/reference/` is gitignored on purpose**: it holds screenshots and exports of *other* training apps, kept locally to study interface patterns. Never commit, ship or redistribute anything in it — the conclusions are what ships, as prose in `docs/UI_DESIGN.md`, `docs/TRAININGLAB_UI_PLAN.md` and `docs/EXERCISE_DATA_AUDIT.md`.
+- **`node scripts/audit-exercise-coverage.mjs [sheet.xlsx] [--json]`** is the zero-dependency audit that reads a third-party `.xlsx` (its own zip reader, no new deps) and compares it with the **real** catalog loaded through the web app's Vite (so the `@fitness/*` aliases resolve exactly like in the app). It reports catalog health, per-muscle coverage and the exercises we lack; re-run it whenever the sheet changes. It is the guard for "no exercise without a primary muscle / no orphan media manifest entry".
+
 ## Publishing (2026-09-29)
 - **Screenshots are generated, never hand-taken**: `node scripts/capture-screenshots.mjs [--base URL]` seeds realistic fixtures into the built bundle through Playwright and writes `docs/screenshots/*.png`. Each shot gets a **fresh browser context** and asserts an expected string is on screen (plus a `reject` string for the empty state), because the first version silently produced five byte-identical PNGs of the onboarding wizard. BodyLab is seeded through the **legacy localStorage payload** so the run also exercises the IndexedDB migration; `Profile.height` is in **metres** (178 makes the app validator throw and the shot comes out blank). Routes are HashRouter: a hash-only `goto` is a same-document navigation, so the script sets the hash and then reloads.
 - **Pages hosts a live demo of both apps** plus a hub (`docs/site/index.html`) at `/<repo>/bodylab/` and `/<repo>/traininglab/`; the workflow derives the base from the repo name.
