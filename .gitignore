@@ -73,6 +73,10 @@ fitness-ecosystem/docs/reference/
 
 # ── Local scratch / diagnostics ─────────────────────────────────────────────
 .tmp-verify/
+# Staging for locally generated exercise images: they are reviewed by hand and
+# only then copied into the apps (`generate.mjs --install`). The pose maps that
+# feed the model ARE committed — they are our own rig's output and a build input.
+fitness-ecosystem/tools/ai-media/out/
 *.local
 *.log
 npm-debug.log*

@@ -1,0 +1,875 @@
+{
+  "patterns": {
+    "horizontal_push": {
+      "view": "side",
+      "anchor": "hip",
+      "watch": [
+        "shoulder",
+        "elbow"
+      ],
+      "frames": [
+        "horizontal_push.png"
+      ]
+    },
+    "vertical_push": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "shoulder",
+        "elbow",
+        "spine"
+      ],
+      "frames": [
+        "vertical_push.png"
+      ]
+    },
+    "shoulder_flexion": {
+      "view": "front",
+      "anchor": "hip",
+      "watch": [
+        "shoulder"
+      ],
+      "frames": [
+        "shoulder_flexion.png"
+      ]
+    },
+    "shoulder_abduction": {
+      "view": "front",
+      "anchor": "hip",
+      "watch": [
+        "shoulder"
+      ],
+      "frames": [
+        "shoulder_abduction.png"
+      ]
+    },
+    "shoulder_extension": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "shoulder",
+        "spine"
+      ],
+      "frames": [
+        "shoulder_extension.png"
+      ]
+    },
+    "horizontal_pull": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "elbow",
+        "spine"
+      ],
+      "frames": [
+        "horizontal_pull.png"
+      ]
+    },
+    "vertical_pull": {
+      "view": "side",
+      "anchor": "hip",
+      "watch": [
+        "shoulder",
+        "elbow"
+      ],
+      "frames": [
+        "vertical_pull.png"
+      ]
+    },
+    "squat": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "hip",
+        "knee",
+        "spine"
+      ],
+      "frames": [
+        "squat.png"
+      ]
+    },
+    "hinge": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "hip",
+        "spine"
+      ],
+      "frames": [
+        "hinge.png"
+      ]
+    },
+    "lunge": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "hip",
+        "knee"
+      ],
+      "frames": [
+        "lunge.png"
+      ]
+    },
+    "hip_extension": {
+      "view": "side",
+      "anchor": "hip",
+      "watch": [
+        "hip"
+      ],
+      "frames": [
+        "hip_extension.png"
+      ]
+    },
+    "hip_abduction": {
+      "view": "front",
+      "anchor": "hip",
+      "watch": [
+        "hip"
+      ],
+      "frames": [
+        "hip_abduction.png"
+      ]
+    },
+    "hip_adduction": {
+      "view": "front",
+      "anchor": "hip",
+      "watch": [
+        "hip"
+      ],
+      "frames": [
+        "hip_adduction.png"
+      ]
+    },
+    "knee_flexion": {
+      "view": "side",
+      "anchor": "hip",
+      "watch": [
+        "knee"
+      ],
+      "frames": [
+        "knee_flexion.png"
+      ]
+    },
+    "knee_extension": {
+      "view": "side",
+      "anchor": "hip",
+      "watch": [
+        "knee"
+      ],
+      "frames": [
+        "knee_extension.png"
+      ]
+    },
+    "plantar_flexion": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "ankle"
+      ],
+      "frames": [
+        "plantar_flexion.png"
+      ]
+    },
+    "tibialis": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "ankle"
+      ],
+      "frames": [
+        "tibialis.png"
+      ]
+    },
+    "elbow_flexion": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "elbow"
+      ],
+      "frames": [
+        "elbow_flexion.png"
+      ]
+    },
+    "elbow_extension": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "elbow"
+      ],
+      "frames": [
+        "elbow_extension.png"
+      ]
+    },
+    "forearm_flexion": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "wrist"
+      ],
+      "frames": [
+        "forearm_flexion.png"
+      ]
+    },
+    "forearm_extension": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "wrist"
+      ],
+      "frames": [
+        "forearm_extension.png"
+      ]
+    },
+    "core_flexion": {
+      "view": "side",
+      "anchor": "hip",
+      "watch": [
+        "hip",
+        "spine"
+      ],
+      "frames": [
+        "core_flexion.png"
+      ]
+    },
+    "core_anti_extension": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "spine",
+        "hip"
+      ],
+      "frames": [
+        "core_anti_extension.png"
+      ]
+    },
+    "core_anti_lateral": {
+      "view": "front",
+      "anchor": "hip",
+      "watch": [
+        "spine"
+      ],
+      "frames": [
+        "core_anti_lateral.png"
+      ]
+    },
+    "core_rotation": {
+      "view": "front",
+      "anchor": "hip",
+      "watch": [
+        "spine",
+        "shoulder"
+      ],
+      "frames": [
+        "core_rotation.png"
+      ]
+    },
+    "carry": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "spine",
+        "shoulder"
+      ],
+      "frames": [
+        "carry.png"
+      ]
+    },
+    "cardio_steady": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "knee",
+        "hip"
+      ],
+      "frames": [
+        "cardio_steady.png"
+      ]
+    },
+    "cardio_interval": {
+      "view": "side",
+      "anchor": "ankle",
+      "watch": [
+        "knee",
+        "hip"
+      ],
+      "frames": [
+        "cardio_interval.png"
+      ]
+    }
+  },
+  "exercises": {
+    "barbell-bench-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "incline-bench-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "dumbbell-bench-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "dumbbell-fly": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "cable-crossover": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "push-ups": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "machine-bench-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "incline-dumbbell-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "machine-chest-fly": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "push-up-plus": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "dumbbell-pullover": {
+      "pattern": "shoulder_extension",
+      "pose": "shoulder_extension.png"
+    },
+    "overhead-press": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "lateral-raise": {
+      "pattern": "shoulder_abduction",
+      "pose": "shoulder_abduction.png"
+    },
+    "face-pulls": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "arnold-press": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "reverse-fly": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "machine-shoulder-press": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "band-lateral-raise": {
+      "pattern": "shoulder_abduction",
+      "pose": "shoulder_abduction.png"
+    },
+    "barbell-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "incline-dumbbell-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "hammer-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "preacher-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "chin-ups": {
+      "pattern": "vertical_pull",
+      "pose": "vertical_pull.png"
+    },
+    "close-grip-bench": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "overhead-tricep-extension": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "skull-crushers": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "tricep-pushdown": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "dips": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "deadlift": {
+      "pattern": "hinge",
+      "pose": "hinge.png"
+    },
+    "barbell-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "pull-ups": {
+      "pattern": "vertical_pull",
+      "pose": "vertical_pull.png"
+    },
+    "seated-cable-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "dumbbell-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "lat-pulldown": {
+      "pattern": "vertical_pull",
+      "pose": "vertical_pull.png"
+    },
+    "t-bar-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "band-pull-apart": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "barbell-squat": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "front-squat": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "romanian-deadlift": {
+      "pattern": "hinge",
+      "pose": "hinge.png"
+    },
+    "leg-press": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "lunges": {
+      "pattern": "lunge",
+      "pose": "lunge.png"
+    },
+    "leg-curl": {
+      "pattern": "knee_flexion",
+      "pose": "knee_flexion.png"
+    },
+    "leg-extension": {
+      "pattern": "knee_extension",
+      "pose": "knee_extension.png"
+    },
+    "hip-thrust": {
+      "pattern": "hip_extension",
+      "pose": "hip_extension.png"
+    },
+    "lying-hip-abduction": {
+      "pattern": "hip_abduction",
+      "pose": "hip_abduction.png"
+    },
+    "calf-raises": {
+      "pattern": "plantar_flexion",
+      "pose": "plantar_flexion.png"
+    },
+    "seated-calf-raise": {
+      "pattern": "plantar_flexion",
+      "pose": "plantar_flexion.png"
+    },
+    "tibialis-raise": {
+      "pattern": "tibialis",
+      "pose": "tibialis.png"
+    },
+    "goblet-squat": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "hack-squat": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "seated-leg-curl": {
+      "pattern": "knee_flexion",
+      "pose": "knee_flexion.png"
+    },
+    "sumo-squat": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "banded-hip-abduction": {
+      "pattern": "hip_abduction",
+      "pose": "hip_abduction.png"
+    },
+    "clamshells": {
+      "pattern": "hip_abduction",
+      "pose": "hip_abduction.png"
+    },
+    "fire-hydrants": {
+      "pattern": "hip_abduction",
+      "pose": "hip_abduction.png"
+    },
+    "standing-cable-adduction": {
+      "pattern": "hip_adduction",
+      "pose": "hip_adduction.png"
+    },
+    "lying-leg-raise": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "wrist-curl": {
+      "pattern": "forearm_flexion",
+      "pose": "forearm_flexion.png"
+    },
+    "reverse-wrist-curl": {
+      "pattern": "forearm_extension",
+      "pose": "forearm_extension.png"
+    },
+    "farmers-walk": {
+      "pattern": "carry",
+      "pose": "carry.png"
+    },
+    "cable-crunch": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "hanging-leg-raise": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "russian-twist": {
+      "pattern": "core_rotation",
+      "pose": "core_rotation.png"
+    },
+    "plank": {
+      "pattern": "core_anti_extension",
+      "pose": "core_anti_extension.png"
+    },
+    "inverted-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "pike-push-up": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "diamond-push-up": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "bench-dip": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "band-chest-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "band-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "band-face-pull": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "band-triceps-pushdown": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "band-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "scapular-pull-up": {
+      "pattern": "vertical_pull",
+      "pose": "vertical_pull.png"
+    },
+    "prone-y-raise": {
+      "pattern": "shoulder_abduction",
+      "pose": "shoulder_abduction.png"
+    },
+    "suitcase-carry": {
+      "pattern": "carry",
+      "pose": "carry.png"
+    },
+    "single-leg-rdl": {
+      "pattern": "hinge",
+      "pose": "hinge.png"
+    },
+    "bulgarian-split-squat": {
+      "pattern": "lunge",
+      "pose": "lunge.png"
+    },
+    "step-up": {
+      "pattern": "lunge",
+      "pose": "lunge.png"
+    },
+    "nordic-curl": {
+      "pattern": "knee_flexion",
+      "pose": "knee_flexion.png"
+    },
+    "copenhagen-plank": {
+      "pattern": "hip_adduction",
+      "pose": "hip_adduction.png"
+    },
+    "single-leg-calf-raise": {
+      "pattern": "plantar_flexion",
+      "pose": "plantar_flexion.png"
+    },
+    "hollow-body-hold": {
+      "pattern": "core_anti_extension",
+      "pose": "core_anti_extension.png"
+    },
+    "bicycle-crunch": {
+      "pattern": "core_rotation",
+      "pose": "core_rotation.png"
+    },
+    "ab-wheel-rollout": {
+      "pattern": "core_anti_extension",
+      "pose": "core_anti_extension.png"
+    },
+    "dead-bug": {
+      "pattern": "core_anti_extension",
+      "pose": "core_anti_extension.png"
+    },
+    "side-plank": {
+      "pattern": "core_anti_lateral",
+      "pose": "core_anti_lateral.png"
+    },
+    "mountain-climber": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "mtb-steady-ride": {
+      "pattern": "cardio_steady",
+      "pose": "cardio_steady.png"
+    },
+    "mtb-hill-intervals": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "stair-intervals": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "jump-rope-intervals": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "burpee-circuit": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "metcon-circuit": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "dumbbell-floor-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "deficit-push-up": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "decline-push-up": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "pseudo-planche-push-up": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "archer-push-up": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "dumbbell-squeeze-press": {
+      "pattern": "horizontal_push",
+      "pose": "horizontal_push.png"
+    },
+    "seated-dumbbell-press": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "dumbbell-front-raise": {
+      "pattern": "shoulder_flexion",
+      "pose": "shoulder_flexion.png"
+    },
+    "dumbbell-upright-row": {
+      "pattern": "shoulder_abduction",
+      "pose": "shoulder_abduction.png"
+    },
+    "band-overhead-press": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "kettlebell-push-press": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "wall-handstand-push-up": {
+      "pattern": "vertical_push",
+      "pose": "vertical_push.png"
+    },
+    "assisted-pull-up": {
+      "pattern": "vertical_pull",
+      "pose": "vertical_pull.png"
+    },
+    "band-lat-pulldown": {
+      "pattern": "vertical_pull",
+      "pose": "vertical_pull.png"
+    },
+    "inverted-row-feet-elevated": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "dumbbell-renegade-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "chest-supported-dumbbell-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "straight-arm-pulldown": {
+      "pattern": "shoulder_extension",
+      "pose": "shoulder_extension.png"
+    },
+    "kettlebell-row": {
+      "pattern": "horizontal_pull",
+      "pose": "horizontal_pull.png"
+    },
+    "dead-hang": {
+      "pattern": "carry",
+      "pose": "carry.png"
+    },
+    "dumbbell-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "concentration-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "spider-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "incline-hammer-curl": {
+      "pattern": "elbow_flexion",
+      "pose": "elbow_flexion.png"
+    },
+    "band-overhead-triceps-extension": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "tate-press": {
+      "pattern": "elbow_extension",
+      "pose": "elbow_extension.png"
+    },
+    "dumbbell-split-squat": {
+      "pattern": "lunge",
+      "pose": "lunge.png"
+    },
+    "reverse-lunge": {
+      "pattern": "lunge",
+      "pose": "lunge.png"
+    },
+    "walking-lunge": {
+      "pattern": "lunge",
+      "pose": "lunge.png"
+    },
+    "pistol-squat": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "sissy-squat": {
+      "pattern": "knee_extension",
+      "pose": "knee_extension.png"
+    },
+    "glute-bridge": {
+      "pattern": "hip_extension",
+      "pose": "hip_extension.png"
+    },
+    "single-leg-glute-bridge": {
+      "pattern": "hip_extension",
+      "pose": "hip_extension.png"
+    },
+    "cable-glute-kickback": {
+      "pattern": "hip_extension",
+      "pose": "hip_extension.png"
+    },
+    "good-morning": {
+      "pattern": "hinge",
+      "pose": "hinge.png"
+    },
+    "kettlebell-swing": {
+      "pattern": "hinge",
+      "pose": "hinge.png"
+    },
+    "box-jump": {
+      "pattern": "squat",
+      "pose": "squat.png"
+    },
+    "donkey-calf-raise": {
+      "pattern": "plantar_flexion",
+      "pose": "plantar_flexion.png"
+    },
+    "hanging-knee-raise": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "hollow-rock": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "v-up": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "bird-dog": {
+      "pattern": "core_anti_extension",
+      "pose": "core_anti_extension.png"
+    },
+    "pallof-press": {
+      "pattern": "core_anti_lateral",
+      "pose": "core_anti_lateral.png"
+    },
+    "sit-up": {
+      "pattern": "core_flexion",
+      "pose": "core_flexion.png"
+    },
+    "shadow-boxing-intervals": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "tabata-bodyweight": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "jump-rope-steady": {
+      "pattern": "cardio_steady",
+      "pose": "cardio_steady.png"
+    },
+    "bike-sprint-intervals": {
+      "pattern": "cardio_interval",
+      "pose": "cardio_interval.png"
+    },
+    "stair-climb-steady": {
+      "pattern": "cardio_steady",
+      "pose": "cardio_steady.png"
+    }
+  },
+  "generator": "tools/ai-media/render-poses.mjs"
+}
