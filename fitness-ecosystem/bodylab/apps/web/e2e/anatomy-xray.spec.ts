@@ -8,7 +8,7 @@
  * @module e2e/anatomy-xray
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 /** Skip the onboarding gate and give the 3D view a real profile to fit. */
 async function seed(page: Page): Promise<void> {
@@ -55,6 +55,27 @@ async function gotoRoute(page: Page, route: string): Promise<void> {
 }
 
 /**
+ * Move one of the x-ray sliders to a value.
+ *
+ * Not `locator.fill()`: Playwright polls actionability on `requestAnimationFrame`,
+ * and this test renders ~400k triangles of anatomy through software WebGL on a
+ * GPU-less runner — a couple of frames per *second* at best. The atlas, the
+ * sliders and the mode all work; what expired was the wait for the renderer to
+ * hand back frames, which is why this suite was red only on Linux CI (it passes
+ * in ~11 s locally on real hardware). Setting the value and dispatching `input`
+ * + `change` is exactly the contract React receives from a real drag, minus the
+ * dependence on frame pacing.
+ */
+async function setRange(locator: Locator, value: number): Promise<void> {
+  await locator.evaluate((el, next) => {
+    const input = el as HTMLInputElement;
+    input.value = String(next);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
+/**
  * Reach the live 3D viewer. /body defaults to the 2D tab — the 3D tab must be
  * clicked explicitly (same as the product suite). First dev-server hit compiles
  * the three.js graph on the fly, hence the generous 90 s wait.
@@ -68,6 +89,12 @@ async function openBody3D(page: Page, lang: 'en' | 'es'): Promise<void> {
 
 for (const lang of ['en', 'es'] as const) {
   test.describe(`x-ray mode (${lang})`, () => {
+    // Parsing two 8 MB GLBs and drawing them in software takes an order of
+    // magnitude longer than on a GPU: the default 90 s is not the product's
+    // budget, it is the runner's. `slow()` triples it so a slow box cannot
+    // report a working feature as broken.
+    test.slow();
+
     test('loads the anatomy atlas and toggles x-ray layer controls', async ({ page }) => {
       await seed(page);
       await gotoRoute(page, '/body');
@@ -88,9 +115,10 @@ for (const lang of ['en', 'es'] as const) {
 
       // Sliders are wired to real state: set to 0 and back
       const slider = page.getByLabel(musclesLabel);
-      await slider.fill('0');
+      await setRange(slider, 0);
       await expect(page.getByLabel(musclesLabel)).toHaveValue('0');
-      await slider.fill('70');
+      await setRange(slider, 70);
+      await expect(page.getByLabel(musclesLabel)).toHaveValue('70');
 
       // Toggle off → controls disappear, toggle returns to off state
       await page.getByRole('button', { name: /X-ray|Rayos X/ }).click();
