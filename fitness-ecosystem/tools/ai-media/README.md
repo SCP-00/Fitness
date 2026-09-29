@@ -61,10 +61,20 @@ we want to add the memory flags.
 
 ### Route A — portable (recommended)
 
-1. Download `ComfyUI_windows_portable_nvidia.7z` from
-   <https://github.com/comfyanonymous/ComfyUI/releases> (Assets → the portable
-   build).
-2. Extract to a short path, e.g. `D:\ComfyUI_windows_portable` (avoid OneDrive).
+This machine has **no `D:` drive**, so the path used here is
+`C:\ComfyUI_windows_portable` (short, outside OneDrive).
+
+1. Download the portable build — this exact link is stable and was verified
+   (`200`) while writing this:
+   <https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia.7z>
+   (≈1.5 GB; the `…_nvidia.7z` suffix matters — the plain `…portable.7z` name is
+   a 404.)
+2. Extract it at `C:\` with 7-Zip. It unpacks its own root folder,
+   `ComfyUI_windows_portable`, so extracting **is safe even after the models are
+   downloaded**: the archive only ships empty `models/` folders with
+   `put_*_here` placeholders, and our file names (`sd15-base.safetensors`, …)
+   do not collide. That is why `fetch-models.mjs` can run in parallel with the
+   download and extraction.
 3. Add the flags for 6 GB — open `run_nvidia_gpu.bat` and edit the last line:
 
 ```bat

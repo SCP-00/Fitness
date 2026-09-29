@@ -37,7 +37,13 @@ const only = args.includes("--only") ? args[args.indexOf("--only") + 1] : null;
  *  default they stay on the fallback unless the owner explicitly wants them. */
 const strengthOnly = args.includes("--strength-only");
 const tier = args.includes("--tier") ? args[args.indexOf("--tier") + 1] : "sd15";
-const workflowFile = `workflow-${tier === "sdxl" ? "sdxl" : "sd15"}-silhouette.json`;
+/** A style LoRA is what makes 32 images look like one set; name it and the
+ *  LoRA variant of the workflow is used, with its trigger word prepended. */
+const lora = args.includes("--lora") ? args[args.indexOf("--lora") + 1] : null;
+const trigger = args.includes("--trigger") ? args[args.indexOf("--trigger") + 1] : null;
+const workflowFile = lora
+  ? "workflow-sd15-lora-silhouette.json"
+  : `workflow-${tier === "sdxl" ? "sdxl" : "sd15"}-silhouette.json`;
 
 const APPS = [
   "bodylab/apps/web/public/exercises",
@@ -112,13 +118,16 @@ async function run(job) {
   const graph = JSON.parse(
     (await readFile(path.join(__dirname, workflowFile), "utf8"))
   );
-  const positive = job.pattern ? `${POSITIVE}, ${job.pattern.replace(/_/g, " ")} movement` : POSITIVE;
+  const positive =
+    (trigger ? `${trigger}, ` : "") +
+    (job.pattern ? `${POSITIVE}, ${job.pattern.replace(/_/g, " ")} movement` : POSITIVE);
   const filled = JSON.parse(
     JSON.stringify(graph)
       .replaceAll("__POSE__", uploaded)
       .replaceAll("__SEED__", String(seedFor(job.id)))
       .replaceAll("__POSITIVE__", positive)
       .replaceAll("__NEGATIVE__", NEGATIVE)
+      .replaceAll("__LORA__", lora ?? "")
       // SDXL keeps the workflow's 1024²; SD1.5 is declared at 768² there too,
       // so the placeholders are only used when a workflow asks for them.
       .replaceAll('"__W__"', "768")
