@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TrainingLab</title>
+
+    <style>
+        :root {
+            --bg: #080b0e;
+            --surface: #10151a;
+            --surface-2: #151b21;
+            --surface-3: #1b2229;
+
+            --border: #29313a;
+
+            --text: #f3f5f7;
+            --text-soft: #9ba5af;
+            --text-muted: #68727d;
+
+            --orange: #ff7300;
+            --orange-light: #ff9447;
+            --orange-dark: #c75200;
+
+            --green: #39d98a;
+            --yellow: #ffc857;
+            --red: #ff4f4f;
+            --blue: #46a8ff;
+
+            --radius: 16px;
+            --radius-small: 10px;
+
+            --sidebar-width: 245px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+
+            background:
+                radial-gradient(
+                    circle at 70% 10%,
+                    rgba(255, 115, 0, 0.08),
+                    transparent 35%
+                ),
+                var(--bg);
+
+            color: var(--text);
+
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+        }
+
+        /* ================================
+           LAYOUT
+        ================================= */
+
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+
+            width: var(--sidebar-width);
+            height: 100vh;
+
+            padding: 24px 18px;
+
+            border-right: 1px solid var(--border);
+
+            background:
+                linear-gradient(
+                    180deg,
+                    #0d1217 0%,
+                    #090d11 100%
+                );
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            padding: 10px 12px 28px;
+
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .brand-mark {
+            width: 28px;
+            height: 28px;
+
+            display: grid;
+            place-items: center;
+
+            color: var(--orange);
+
+            font-weight: 900;
+        }
+
+        .brand span {
+            color: var(--orange);
+        }
+
+        .nav {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .nav-item {
+            width: 100%;
+
+            display: flex;
+            align-items: center;
+            gap: 13px;
+
+            padding: 13px 14px;
+
+            border-radius: 11px;
+
+            color: var(--text-soft);
+
+            background: transparent;
+
+            text-align: left;
+
+            transition: 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: var(--surface-2);
+            color: white;
+        }
+
+        .nav-item.active {
+            color: white;
+            background: linear-gradient(
+                90deg,
+                var(--orange),
+                #ff5d00
+            );
+
+            box-shadow:
+                0 8px 30px rgba(255, 115, 0, 0.18);
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .offline-card {
+            padding: 14px;
+
+            border: 1px solid var(--border);
+            border-radius: var(--radius-small);
+
+            background: rgba(17, 23, 29, 0.75);
+        }
+
+        .offline-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            font-weight: 700;
+            color: var(--green);
+
+            margin-bottom: 5px;
+        }
+
+        .offline-dot {
+            width: 8px;
+            height: 8px;
+
+            border-radius: 50%;
+
+            background: var(--green);
+
+            box-shadow:
+                0 0 10px rgba(57, 217, 138, 0.8);
+        }
+
+        .sidebar-quote {
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* ================================
+           MAIN
+        ================================= */
+
+        .main {
+            width: 100%;
+
+            margin-left: var(--sidebar-width);
+
+            padding: 25px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            margin-bottom: 24px;
+        }
+
+        .welcome h1 {
+            font-size: 30px;
+            margin-bottom: 5px;
+        }
+
+        .welcome p {
+            color: var(--text-soft);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chip {
+            padding: 9px 13px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 999px;
+
+            background: var(--surface);
+
+            color: var(--text-soft);
+
+            font-size: 13px;
+        }
+
+        .chip.orange {
+            color: var(--orange-light);
+            border-color: rgba(255, 115, 0, 0.4);
+        }
+
+        /* ================================
+           GRID
+        ================================= */
+
+        .dashboard {
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 2.1fr)
+                minmax(300px, 0.9fr);
+
+            gap: 18px;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* ================================
+           CARD
+        ================================= */
+
+        .card {
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(22, 28, 34, 0.94),
+                    rgba(13, 17, 21, 0.96)
+                );
+
+            box-shadow:
+                0 15px 45px rgba(0, 0, 0, 0.22);
+
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding: 18px 20px 0;
+        }
+
+        .card-header h2 {
+            font-size: 17px;
+        }
+
+        .card-header span {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .card-body {
+            padding: 18px 20px 20px;
+        }
+
+        /* ================================
+           HERO
+        ================================= */
+
+        .hero {
+            min-height: 330px;
+
+            padding: 28px;
+
+            position: relative;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: "";
+
+            position: absolute;
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(8, 11, 14, 0.97) 0%,
+                    rgba(8, 11, 14, 0.82) 45%,
+                    rgba(8, 11, 14, 0.25) 100%
+                );
+
+            pointer-events: none;
+        }
+
+        .hero-background {
+            position: absolute;
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    120deg,
+                    #111820,
+                    #1d252c 50%,
+                    #281707
+                );
+        }
+
+        .hero-decoration {
+            position: absolute;
+
+            width: 330px;
+            height: 430px;
+
+            right: -80px;
+            top: -50px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    transparent 35%,
+                    rgba(255, 115, 0, 0.86) 36%,
+                    rgba(255, 115, 0, 0.72) 57%,
+                    transparent 58%
+                );
+
+            transform: rotate(-5deg);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+
+            max-width: 600px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+
+            padding: 6px 10px;
+
+            margin-bottom: 14px;
+
+            border-radius: 999px;
+
+            background: rgba(255, 115, 0, 0.13);
+
+            border: 1px solid rgba(255, 115, 0, 0.35);
+
+            color: var(--orange-light);
+
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .hero h2 {
+            font-size: 31px;
+            margin-bottom: 8px;
+        }
+
+        .hero-subtitle {
+            color: var(--text-soft);
+
+            margin-bottom: 20px;
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 18px;
+
+            color: var(--text-soft);
+
+            font-size: 13px;
+
+            margin-bottom: 23px;
+        }
+
+        .hero-meta strong {
+            color: var(--text);
+        }
+
+        .primary-btn {
+            padding: 13px 18px;
+
+            border-radius: 11px;
+
+            background: var(--orange);
+
+            color: #090b0d;
+
+            font-weight: 800;
+
+            transition: 0.2s ease;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-1px);
+
+            background: var(--orange-light);
+
+            box-shadow:
+                0 8px 25px rgba(255, 115, 0, 0.3);
+        }
+
+        /* ================================
+           METRICS
+        ================================= */
+
+        .metrics {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 15px;
+        }
+
+        .metric-card {
+            padding: 18px;
+
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            background: var(--surface);
+
+            min-height: 125px;
+        }
+
+        .metric-icon {
+            width: 35px;
+            height: 35px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 9px;
+
+            margin-bottom: 13px;
+
+            background:
+                rgba(255, 115, 0, 0.12);
+
+            color: var(--orange);
+
+            font-size: 18px;
+        }
+
+        .metric-label {
+            color: var(--text-soft);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .metric-info {
+            margin-top: 5px;
+
+            color: var(--text-muted);
+
+            font-size: 11px;
+        }
+
+        /* ================================
+           WEEK
+        ================================= */
+
+        .week-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(7, 1fr);
+
+            gap: 9px;
+        }
+
+        .day {
+            padding: 13px 9px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 12px;
+
+            text-align: center;
+
+            background: rgba(10, 14, 18, 0.8);
+        }
+
+        .day.completed {
+            border-color: rgba(57, 217, 138, 0.25);
+        }
+
+        .day.today {
+            border-color: var(--orange);
+
+            background:
+                rgba(255, 115, 0, 0.08);
+        }
+
+        .day-name {
+            color: var(--text-muted);
+
+            font-size: 11px;
+
+            margin-bottom: 10px;
+        }
+
+        .day-icon {
+            width: 27px;
+            height: 27px;
+
+            display: grid;
+            place-items: center;
+
+            margin: 0 auto 8px;
+
+            border-radius: 50%;
+
+            background: var(--surface-3);
+
+            font-size: 12px;
+        }
+
+        .day.completed .day-icon {
+            color: var(--green);
+        }
+
+        .day.today .day-icon {
+            color: var(--orange);
+        }
+
+        .day-status {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* ================================
+           BADGES
+        ================================= */
+
+        .badges-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 11px;
+        }
+
+        .badge-item {
+            padding: 15px;
+
+            border-radius: 13px;
+
+            border: 1px solid var(--border);
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(255, 115, 0, 0.08),
+                    rgba(15, 20, 25, 0.8)
+                );
+
+            text-align: center;
+        }
+
+        .badge-icon {
+            width: 50px;
+            height: 50px;
+
+            display: grid;
+            place-items: center;
+
+            margin: 0 auto 10px;
+
+            border-radius: 50%;
+
+            background: rgba(255, 115, 0, 0.12);
+
+            border: 1px solid rgba(255, 115, 0, 0.22);
+
+            color: var(--orange);
+
+            font-size: 22px;
+        }
+
+        .badge-title {
+            font-size: 12px;
+
+            font-weight: 700;
+
+            margin-bottom: 4px;
+        }
+
+        .badge-description {
+            font-size: 10px;
+
+            color: var(--text-muted);
+        }
+
+        /* ================================
+           PROGRESS
+        ================================= */
+
+        .progress-ring-container {
+            display: flex;
+            align-items: center;
+
+            gap: 18px;
+        }
+
+        .progress-ring {
+            width: 112px;
+            height: 112px;
+
+            flex-shrink: 0;
+
+            border-radius: 50%;
+
+            display: grid;
+            place-items: center;
+
+            background:
+                conic-gradient(
+                    var(--orange) 0 72%,
+                    #252d35 72% 100%
+                );
+
+            position: relative;
+        }
+
+        .progress-ring::before {
+            content: "";
+
+            position: absolute;
+
+            width: 80px;
+            height: 80px;
+
+            border-radius: 50%;
+
+            background: var(--surface);
+        }
+
+        .progress-ring strong {
+            position: relative;
+
+            z-index: 1;
+
+            font-size: 20px;
+        }
+
+        .progress-details {
+            flex: 1;
+        }
+
+        .progress-details h3 {
+            margin-bottom: 4px;
+        }
+
+        .progress-details p {
+            color: var(--text-soft);
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+        .mini-chart {
+            display: flex;
+
+            align-items: flex-end;
+
+            gap: 7px;
+
+            height: 55px;
+
+            margin-top: 15px;
+        }
+
+        .bar {
+            width: 11px;
+
+            border-radius: 4px 4px 1px 1px;
+
+            background: var(--orange);
+
+            opacity: 0.85;
+        }
+
+        /* ================================
+           BODY ANALYSIS
+        ================================= */
+
+        .analysis-map {
+            display: grid;
+
+            grid-template-columns:
+                1.2fr
+                1fr;
+
+            gap: 20px;
+        }
+
+        .body-map {
+            min-height: 410px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 14px;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(255,115,0,0.05),
+                    transparent 60%
+                );
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            position: relative;
+        }
+
+        .body-map::before {
+            content: "MAPA 2D";
+
+            position: absolute;
+
+            top: 15px;
+            left: 15px;
+
+            color: var(--text-muted);
+
+            font-size: 11px;
+
+            letter-spacing: 0.12em;
+        }
+
+        .body-grid {
+            display: grid;
+
+            grid-template-columns:
+                100px
+                100px;
+
+            gap: 22px;
+        }
+
+        .body-view {
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 7px;
+
+            align-items: center;
+        }
+
+        .body-head {
+            width: 35px;
+            height: 35px;
+
+            border-radius: 50%;
+
+            background: #d8793b;
+        }
+
+        .body-part {
+            border-radius: 50%;
+
+            border: 2px solid rgba(255,255,255,0.08);
+        }
+
+        .body-torso {
+            width: 72px;
+            height: 110px;
+
+            border-radius: 40%;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    var(--red),
+                    var(--orange),
+                    var(--green)
+                );
+
+            position: relative;
+        }
+
+        .body-arms {
+            position: absolute;
+
+            top: 10px;
+            left: -24px;
+
+            width: 120px;
+            height: 65px;
+
+            border-radius: 50%;
+
+            border:
+                11px solid var(--yellow);
+
+            border-top-color: var(--green);
+
+            border-bottom-color: var(--orange);
+
+            z-index: -1;
+        }
+
+        .body-legs {
+            width: 58px;
+            height: 105px;
+
+            margin-top: -10px;
+
+            border-radius: 40%;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    var(--yellow),
+                    var(--orange),
+                    var(--green)
+                );
+        }
+
+        .body-label {
+            color: var(--text-muted);
+
+            font-size: 10px;
+        }
+
+        .legend {
+            margin-top: 20px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 7px;
+        }
+
+        .legend-row {
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            color: var(--text-soft);
+
+            font-size: 11px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+
+            border-radius: 50%;
+        }
+
+        .muscle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .muscle-row {
+            padding: 10px 11px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 9px;
+
+            background: rgba(12, 17, 21, 0.7);
+
+            display: grid;
+
+            grid-template-columns:
+                1fr
+                45px
+                55px;
+
+            gap: 10px;
+
+            align-items: center;
+        }
+
+        .muscle-name {
+            font-size: 12px;
+        }
+
+        .muscle-score {
+            font-size: 11px;
+
+            text-align: right;
+
+            color: var(--text-soft);
+        }
+
+        .trend-up {
+            color: var(--green);
+        }
+
+        .trend-down {
+            color: var(--red);
+        }
+
+        /* ================================
+           EXERCISE CARD
+        ================================= */
+
+        .next-workout {
+            display: flex;
+
+            align-items: center;
+
+            gap: 14px;
+        }
+
+        .exercise-thumb {
+            width: 100px;
+            height: 70px;
+
+            border-radius: 11px;
+
+            border: 1px solid var(--border);
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #161c21,
+                    #322015
+                );
+
+            display: grid;
+
+            place-items: center;
+
+            color: var(--orange);
+
+            font-size: 26px;
+        }
+
+        .exercise-info {
+            flex: 1;
+        }
+
+        .exercise-info h3 {
+            font-size: 14px;
+
+            margin-bottom: 4px;
+        }
+
+        .exercise-info p {
+            color: var(--text-muted);
+
+            font-size: 11px;
+        }
+
+        .arrow-button {
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+
+            background: var(--orange);
+
+            color: #090b0d;
+
+            font-size: 18px;
+        }
+
+        /* ================================
+           ZEN
+        ================================= */
+
+        .zen-panel {
+            padding: 18px;
+
+            background:
+                radial-gradient(
+                    circle at 80% 20%,
+                    rgba(255, 115, 0, 0.11),
+                    transparent 45%
+                );
+
+            border-radius: var(--radius);
+        }
+
+        .zen-label {
+            color: var(--orange-light);
+
+            font-size: 11px;
+
+            letter-spacing: 0.12em;
+
+            text-transform: uppercase;
+
+            margin-bottom: 8px;
+        }
+
+        .zen-panel h3 {
+            font-size: 20px;
+
+            margin-bottom: 7px;
+        }
+
+        .zen-panel p {
+            color: var(--text-soft);
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+        .zen-progress {
+            height: 4px;
+
+            margin-top: 15px;
+
+            border-radius: 4px;
+
+            background: #292f35;
+
+            overflow: hidden;
+        }
+
+        .zen-progress span {
+            display: block;
+
+            width: 62%;
+
+            height: 100%;
+
+            background: var(--orange);
+        }
+
+        /* ================================
+           RESPONSIVE
+        ================================= */
+
+        @media (max-width: 1200px) {
+
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .right-column {
+                display: grid;
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .metrics {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 850px) {
+
+            .sidebar {
+                position: fixed;
+
+                top: auto;
+                bottom: 0;
+
+                left: 0;
+
+                width: 100%;
+
+                height: 72px;
+
+                z-index: 100;
+
+                padding: 7px 10px;
+
+                border-top: 1px solid var(--border);
+                border-right: none;
+
+                flex-direction: row;
+
+                background: rgba(8, 11, 14, 0.96);
+
+                backdrop-filter: blur(14px);
+            }
+
+            .brand,
+            .sidebar-bottom {
+                display: none;
+            }
+
+            .nav {
+                width: 100%;
+
+                flex-direction: row;
+
+                justify-content: space-around;
+            }
+
+            .nav-item {
+                flex: 1;
+
+                justify-content: center;
+
+                flex-direction: column;
+
+                gap: 3px;
+
+                padding: 7px 4px;
+
+                font-size: 10px;
+            }
+
+            .main {
+                margin-left: 0;
+
+                padding:
+                    17px
+                    17px
+                    92px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+            }
+
+            .topbar-actions .chip:nth-child(1) {
+                display: none;
+            }
+
+            .welcome h1 {
+                font-size: 24px;
+            }
+
+            .hero {
+                min-height: 310px;
+
+                padding: 22px;
+            }
+
+            .hero h2 {
+                font-size: 25px;
+            }
+
+            .hero-meta {
+                gap: 9px;
+
+                flex-direction: column;
+            }
+
+            .metrics {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .analysis-map {
+                grid-template-columns: 1fr;
+            }
+
+            .week-grid {
+                overflow-x: auto;
+
+                grid-template-columns:
+                    repeat(7, 90px);
+            }
+        }
+
+        @media (max-width: 540px) {
+
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .badges-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .right-column {
+                display: flex;
+            }
+
+            .hero {
+                min-height: 350px;
+            }
+
+            .progress-ring-container {
+                flex-direction: column;
+
+                align-items: flex-start;
+            }
+
+            .analysis-map {
+                gap: 12px;
+            }
+
+            .body-map {
+                min-height: 350px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-mark">
+                ✦
+            </div>
+
+            Training<span>Lab</span>
+
+        </div>
+
+        <nav class="nav">
+
+            <button
+                class="nav-item active"
+                onclick="showSection('inicio')"
+            >
+                <span class="nav-icon">⌂</span>
+                <span>Inicio</span>
+            </button>
+
+            <button
+                class="nav-item"
+                onclick="showSection('ejercicios')"
+            >
+                <span class="nav-icon">⚒</span>
+                <span>Ejercicios</span>
+            </button>
+
+            <button
+                class="nav-item"
+                onclick="showSection('entrenamiento')"
+            >
+                <span class="nav-icon">▷</span>
+                <span>Entrenamiento</span>
+            </button>
+
+            <button
+                class="nav-item"
+                onclick="showSection('progreso')"
+            >
+                <span class="nav-icon">◫</span>
+                <span>Progreso</span>
+            </button>
+
+            <button
+                class="nav-item"
+                onclick="showSection('ajustes')"
+            >
+                <span class="nav-icon">⚙</span>
+                <span>Ajustes</span>
+            </button>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <div class="offline-card">
+
+                <div class="offline-status">
+
+                    <span class="offline-dot"></span>
+
+                    Modo local
+
+                </div>
+
+                <div class="sidebar-quote">
+                    Todo funciona sin conexión.
+                </div>
+
+            </div>
+
+            <div class="sidebar-quote">
+
+                Disciplina hoy,
+                resultados mañana.
+
+            </div>
+
+        </div>
+
+    </aside>
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
+    <main class="main">
+
+        <!-- HEADER -->
+
+        <header class="topbar">
+
+            <div class="welcome">
+
+                <h1>
+                    Hola, Alejandro 👋
+                </h1>
+
+                <p>
+                    Tu entrenamiento de hoy está listo.
+                </p>
+
+            </div>
+
+            <div class="topbar-actions">
+
+                <div class="chip">
+                    📅 Sáb, 19 Jul 2026
+                </div>
+
+                <div class="chip orange">
+                    ☼ ZEN
+                </div>
+
+                <div class="chip">
+                    ⏱ 34:21
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             DASHBOARD
+        ================================================== -->
+
+        <section
+            id="inicio"
+            class="dashboard"
+        >
+
+            <!-- LEFT -->
+
+            <div class="left-column">
+
+                <!-- HERO -->
+
+                <section class="card hero">
+
+                    <div class="hero-background"></div>
+
+                    <div class="hero-decoration"></div>
+
+                    <div class="hero-content">
+
+                        <div class="badge">
+                            HOY
+                        </div>
+
+                        <h2>
+                            Entrenamiento de hoy
+                        </h2>
+
+                        <p class="hero-subtitle">
+                            Fuerza · Tren superior
+                        </p>
+
+                        <div class="hero-meta">
+
+                            <span>
+                                ⏱
+                                <strong>45 min</strong>
+                            </span>
+
+                            <span>
+                                ⌂
+                                <strong>Casa / Gimnasio</strong>
+                            </span>
+
+                            <span>
+                                ⚒
+                                <strong>Equipo disponible</strong>
+                            </span>
+
+                        </div>
+
+                        <button
+                            class="primary-btn"
+                            onclick="startWorkout()"
+                        >
+                            Iniciar entrenamiento →
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+                <!-- METRICS -->
+
+                <section class="metrics">
+
+                    <div class="metric-card">
+
+                        <div class="metric-icon">
+                            🔥
+                        </div>
+
+                        <div class="metric-label">
+                            Racha actual
+                        </div>
+
+                        <div class="metric-value">
+                            5 días
+                        </div>
+
+                        <div class="metric-info">
+                            ¡Buen trabajo!
+                        </div>
+
+                    </div>
+
+
+                    <div class="metric-card">
+
+                        <div class="metric-icon">
+                            ♥
+                        </div>
+
+                        <div class="metric-label">
+                            Recuperación
+                        </div>
+
+                        <div class="metric-value">
+                            Listo
+                        </div>
+
+                        <div class="metric-info">
+                            Energía suficiente
+                        </div>
+
+                    </div>
+
+
+                    <div class="metric-card">
+
+                        <div class="metric-icon">
+                            ◎
+                        </div>
+
+                        <div class="metric-label">
+                            Volumen semanal
+                        </div>
+
+                        <div class="metric-value">
+                            28 / 39
+                        </div>
+
+                        <div class="metric-info">
+                            Series planificadas
+                        </div>
+
+                    </div>
+
+
+                    <div class="metric-card">
+
+                        <div class="metric-icon">
+                            ⚡
+                        </div>
+
+                        <div class="metric-label">
+                            Peso corporal
+                        </div>
+
+                        <div class="metric-value">
+                            70 kg
+                        </div>
+
+                        <div class="metric-info">
+                            Estable
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- WEEK -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            Resumen de la semana
+                        </h2>
+
+                        <span>
+                            Ver detalle →
+                        </span>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="week-grid">
+
+                            <div class="day completed">
+
+                                <div class="day-name">
+                                    Lun
+                                </div>
+
+                                <div class="day-icon">
+                                    ✓
+                                </div>
+
+                                <div class="day-status">
+                                    Completado
+                                </div>
+
+                            </div>
+
+
+                            <div class="day completed">
+
+                                <div class="day-name">
+                                    Mar
+                                </div>
+
+                                <div class="day-icon">
+                                    ✓
+                                </div>
+
+                                <div class="day-status">
+                                    Completado
+                                </div>
+
+                            </div>
+
+
+                            <div class="day completed">
+
+                                <div class="day-name">
+                                    Mié
+                                </div>
+
+                                <div class="day-icon">
+                                    ✓
+                                </div>
+
+                                <div class="day-status">
+                                    Completado
+                                </div>
+
+                            </div>
+
+
+                            <div class="day completed">
+
+                                <div class="day-name">
+                                    Jue
+                                </div>
+
+                                <div class="day-icon">
+                                    ✓
+                                </div>
+
+                                <div class="day-status">
+                                    Completado
+                                </div>
+
+                            </div>
+
+
+                            <div class="day completed">
+
+                                <div class="day-name">
+                                    Vie
+                                </div>
+
+                                <div class="day-icon">
+                                    ✓
+                                </div>
+
+                                <div class="day-status">
+                                    Completado
+                                </div>
+
+                            </div>
+
+
+                            <div class="day today">
+
+                                <div class="day-name">
+                                    Sáb
+                                </div>
+
+                                <div class="day-icon">
+                                    ▶
+                                </div>
+
+                                <div class="day-status">
+                                    Hoy
+                                </div>
+
+                            </div>
+
+
+                            <div class="day">
+
+                                <div class="day-name">
+                                    Dom
+                                </div>
+
+                                <div class="day-icon">
+                                    ○
+                                </div>
+
+                                <div class="day-status">
+                                    Pendiente
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- NEXT WORKOUT -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            Siguiente ejercicio
+                        </h2>
+
+                        <span>
+                            Sesión actual
+                        </span>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="next-workout">
+
+                            <div class="exercise-thumb">
+                                🏋
+                            </div>
+
+                            <div class="exercise-info">
+
+                                <h3>
+                                    Press de banca con barra
+                                </h3>
+
+                                <p>
+                                    Pecho · Empuje · Fuerza
+                                </p>
+
+                                <p style="margin-top:7px;">
+                                    3 / 4 series · 8–12 reps · 70 kg
+                                </p>
+
+                            </div>
+
+                            <button
+                                class="arrow-button"
+                                onclick="startWorkout()"
+                            >
+                                →
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- RIGHT -->
+
+            <aside class="right-column">
+
+                <!-- PROGRESS -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            Tu progreso
+                        </h2>
+
+                        <span>
+                            Última semana
+                        </span>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="progress-ring-container">
+
+                            <div class="progress-ring">
+                                <strong>72%</strong>
+                            </div>
+
+                            <div class="progress-details">
+
+                                <h3>
+                                    Constancia
+                                </h3>
+
+                                <p>
+                                    28 de 39 series completadas.
+                                    Mantienes una tendencia estable.
+                                </p>
+
+                                <div class="mini-chart">
+
+                                    <span
+                                        class="bar"
+                                        style="height:20%;"
+                                    ></span>
+
+                                    <span
+                                        class="bar"
+                                        style="height:35%;"
+                                    ></span>
+
+                                    <span
+                                        class="bar"
+                                        style="height:50%;"
+                                    ></span>
+
+                                    <span
+                                        class="bar"
+                                        style="height:68%;"
+                                    ></span>
+
+                                    <span
+                                        class="bar"
+                                        style="height:82%;"
+                                    ></span>
+
+                                    <span
+                                        class="bar"
+                                        style="height:65%;"
+                                    ></span>
+
+                                    <span
+                                        class="bar"
+                                        style="height:92%;"
+                                    ></span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- BADGES -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            Tus badges
+                        </h2>
+
+                        <span>
+                            Ver todos →
+                        </span>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="badges-grid">
+
+                            <div class="badge-item">
+
+                                <div class="badge-icon">
+                                    🔥
+                                </div>
+
+                                <div class="badge-title">
+                                    Constancia
+                                </div>
+
+                                <div class="badge-description">
+                                    5 días
+                                </div>
+
+                            </div>
+
+
+                            <div class="badge-item">
+
+                                <div class="badge-icon">
+                                    🏋
+                                </div>
+
+                                <div class="badge-title">
+                                    Fuerza
+                                </div>
+
+                                <div class="badge-description">
+                                    +12%
+                                </div>
+
+                            </div>
+
+
+                            <div class="badge-item">
+
+                                <div class="badge-icon">
+                                    ⛰
+                                </div>
+
+                                <div class="badge-title">
+                                    Disciplina
+                                </div>
+
+                                <div class="badge-description">
+                                    4 semanas
+                                </div>
+
+                            </div>
+
+
+                            <div class="badge-item">
+
+                                <div class="badge-icon">
+                                    ★
+                                </div>
+
+                                <div class="badge-title">
+                                    Progreso
+                                </div>
+
+                                <div class="badge-description">
+                                    Nivel 2
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ZEN -->
+
+                <section class="card">
+
+                    <div class="zen-panel">
+
+                        <div class="zen-label">
+                            MODO ZEN
+                        </div>
+
+                        <h3>
+                            Enfócate
+                        </h3>
+
+                        <p>
+                            Tu única tarea ahora es
+                            completar la siguiente repetición.
+                        </p>
+
+                        <div class="zen-progress">
+                            <span></span>
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </aside>
+
+        </section>
+
+
+        <!-- =================================================
+             BODY ANALYSIS
+        ================================================== -->
+
+        <section
+            id="progreso"
+            style="margin-top: 20px;"
+        >
+
+            <div class="card">
+
+                <div class="card-header">
+
+                    <div>
+                        <h2>
+                            Análisis corporal
+                        </h2>
+
+                        <span>
+                            Mapa 2D · Peso · Ejercicios · Progreso
+                        </span>
+                    </div>
+
+                    <div class="chip orange">
+                        Últimos 12 meses
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="analysis-map">
+
+                        <!-- BODY MAP -->
+
+                        <div class="body-map">
+
+                            <div>
+
+                                <div class="body-grid">
+
+                                    <!-- FRONT -->
+
+                                    <div class="body-view">
+
+                                        <div class="body-head"></div>
+
+                                        <div
+                                            class="body-torso"
+                                        >
+                                            <div class="body-arms"></div>
+                                        </div>
+
+                                        <div class="body-legs"></div>
+
+                                        <div class="body-label">
+                                            Vista frontal
+                                        </div>
+
+                                    </div>
+
+
+                                    <!-- BACK -->
+
+                                    <div class="body-view">
+
+                                        <div class="body-head"></div>
+
+                                        <div
+                                            class="body-torso"
+                                            style="
+                                                background:
+                                                linear-gradient(
+                                                    180deg,
+                                                    var(--green),
+                                                    var(--yellow),
+                                                    var(--orange)
+                                                );
+                                            "
+                                        >
+                                            <div
+                                                class="body-arms"
+                                                style="
+                                                    border-top-color:
+                                                        var(--green);
+                                                    border-bottom-color:
+                                                        var(--yellow);
+                                                "
+                                            ></div>
+                                        </div>
+
+                                        <div class="body-legs"></div>
+
+                                        <div class="body-label">
+                                            Vista posterior
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- LEGEND -->
+
+                                <div class="legend">
+
+                                    <div class="legend-row">
+                                        <span
+                                            class="legend-dot"
+                                            style="
+                                                background:
+                                                var(--green);
+                                            "
+                                        ></span>
+
+                                        Excelente · 80–100%
+                                    </div>
+
+                                    <div class="legend-row">
+                                        <span
+                                            class="legend-dot"
+                                            style="
+                                                background:
+                                                #9ce847;
+                                            "
+                                        ></span>
+
+                                        Fuerte · 60–79%
+                                    </div>
+
+                                    <div class="legend-row">
+                                        <span
+                                            class="legend-dot"
+                                            style="
+                                                background:
+                                                var(--yellow);
+                                            "
+                                        ></span>
+
+                                        Moderado · 40–59%
+                                    </div>
+
+                                    <div class="legend-row">
+                                        <span
+                                            class="legend-dot"
+                                            style="
+                                                background:
+                                                var(--orange);
+                                            "
+                                        ></span>
+
+                                        Débil · 20–39%
+                                    </div>
+
+                                    <div class="legend-row">
+                                        <span
+                                            class="legend-dot"
+                                            style="
+                                                background:
+                                                var(--red);
+                                            "
+                                        ></span>
+
+                                        Muy bajo · 0–19%
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- MUSCLES -->
+
+                        <div>
+
+                            <div style="
+                                margin-bottom: 12px;
+                                color: var(--text-soft);
+                                font-size: 12px;
+                            ">
+                                Resumen por grupo muscular
+                            </div>
+
+                            <div class="muscle-list">
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        🫀 Pecho
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        68%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Espalda
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        54%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Hombros
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        62%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Bíceps
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        48%
+                                    </span>
+
+                                    <span>
+                                        —
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Tríceps
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        55%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Cuádriceps
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        71%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Isquiotibiales
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        46%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Glúteos
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        58%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Pantorrillas
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        40%
+                                    </span>
+
+                                    <span>
+                                        —
+                                    </span>
+
+                                </div>
+
+                                <div class="muscle-row">
+
+                                    <span class="muscle-name">
+                                        ◈ Core
+                                    </span>
+
+                                    <span class="muscle-score">
+                                        63%
+                                    </span>
+
+                                    <span class="trend-up">
+                                        ↑
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script>
+
+    /*
+     * ------------------------------------------------------
+     * Navegación
+     * ------------------------------------------------------
+     */
+
+    function showSection(section) {
+
+        console.log(
+            "Navegando a:",
+            section
+        );
+
+        const items =
+            document.querySelectorAll(".nav-item");
+
+        items.forEach(
+            item => item.classList.remove("active")
+        );
+
+        event.currentTarget.classList.add("active");
+
+        /*
+         * Boseto:
+         * posteriormente aquí se integraría
+         * el router real:
+         *
+         * #/hoy
+         * #/ejercicios
+         * #/entrenamiento
+         * #/progreso
+         * #/ajustes
+         */
+    }
+
+
+    /*
+     * ------------------------------------------------------
+     * Iniciar entrenamiento
+     * ------------------------------------------------------
+     */
+
+    function startWorkout() {
+
+        alert(
+            "Aquí comenzaría la sesión inmersiva ZEN."
+        );
+
+        /*
+         * Implementación futura:
+         *
+         * 1. Cargar sesión determinista.
+         * 2. Mostrar ejercicio.
+         * 3. Mostrar columna "Anterior".
+         * 4. Registrar peso y repeticiones.
+         * 5. Registrar RIR.
+         * 6. Activar temporizador.
+         * 7. Actualizar progreso.
+         */
+    }
+
+
+    /*
+     * ------------------------------------------------------
+     * Datos de ejemplo
+     * ------------------------------------------------------
+     *
+     * Estos datos NO representan datos reales.
+     * Son únicamente datos visuales para el prototipo.
+     */
+
+    const trainingData = {
+
+        user: {
+            name: "Alejandro",
+            weight: 70
+        },
+
+        weeklyVolume: {
+            completed: 28,
+            planned: 39
+        },
+
+        recovery: {
+            energy: 4,
+            motivation: 4,
+            freshness: 4
+        },
+
+        muscles: {
+
+            pecho: 68,
+            espalda: 54,
+            hombros: 62,
+            biceps: 48,
+            triceps: 55,
+            quadriceps: 71,
+            hamstrings: 46,
+            glutes: 58,
+            calves: 40,
+            core: 63
+
+        }
+
+    };
+
+    /*
+     * El siguiente paso sería reemplazar los datos
+     * estáticos por el estado real almacenado en IndexedDB.
+     */
+
+    console.log(
+        "TrainingLab prototype:",
+        trainingData
+    );
+
+</script>
+
+</body>
+</html>

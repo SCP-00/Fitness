@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Mapa muscular 2D · Prototipo TrainingLab</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080b0e;
+        --surface: #10151a;
+        --surface-2: #151b21;
+        --surface-3: #1b2229;
+        --border: #29313a;
+        --border-strong: #3b4651;
+        --text: #f3f5f7;
+        --soft: #a8b1bb;
+        --muted: #82909d;
+        --accent: #ff7908;
+        --accent-soft: rgba(255, 121, 8, 0.13);
+        --green: #41d69a;
+        --cyan: #50c5d6;
+        --radius: 18px;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(ellipse at 75% 0%, rgba(255, 121, 8, .08), transparent 34rem),
+          radial-gradient(ellipse at 9% 34%, rgba(50, 116, 132, .08), transparent 28rem),
+          var(--bg);
+      }
+      button, input, select { font: inherit; }
+      button { color: inherit; }
+      button:focus-visible, input:focus-visible, select:focus-visible, .muscle:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      button:disabled { opacity: .42; cursor: not-allowed; }
+      .app { width: min(1500px, 100%); margin: 0 auto; padding: 26px 34px 44px; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 34px; }
+      .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid rgba(255,121,8,.3); border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+      .brand-mark svg { width: 21px; height: 21px; }
+      .brand-name { font-size: 15px; font-weight: 760; letter-spacing: -.02em; }
+      .brand-sub { margin-top: 2px; color: var(--muted); font-size: 11px; }
+      .local-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 999px; background: rgba(16,21,26,.7); color: var(--soft); font-size: 11px; white-space: nowrap; }
+      .local-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px rgba(65,214,154,.65); }
+      .intro { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 22px; }
+      .eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+      .eyebrow::before { content: ""; width: 18px; height: 1px; background: currentColor; }
+      h1 { margin: 0; font-size: clamp(25px, 3vw, 37px); line-height: 1.07; letter-spacing: -.045em; }
+      .intro-copy { max-width: 660px; margin: 10px 0 0; color: var(--soft); font-size: 14px; line-height: 1.6; }
+      .mode-switch { display: inline-flex; flex: 0 0 auto; padding: 4px; border: 1px solid var(--border); border-radius: 999px; background: rgba(16,21,26,.9); }
+      .seg { min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 690; cursor: pointer; transition: .18s ease; }
+      .seg[aria-pressed="true"] { background: linear-gradient(135deg, #ff8b1a, #e95d00); color: #17110b; box-shadow: 0 5px 18px rgba(255,121,8,.2); }
+      .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 15px; background: rgba(16,21,26,.78); }
+      .period-group, .toolbar-actions { display: flex; align-items: center; gap: 7px; }
+      .period-label { margin-right: 4px; color: var(--muted); font-size: 11px; }
+      .period { min-width: 58px; height: 33px; padding: 0 12px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--soft); font-size: 11px; font-weight: 680; cursor: pointer; }
+      .period[aria-pressed="true"] { border-color: rgba(255,121,8,.28); background: var(--accent-soft); color: #ffad62; }
+      .tool-btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--soft); font-size: 11px; font-weight: 690; cursor: pointer; transition: .18s ease; }
+      .tool-btn:hover { border-color: var(--border-strong); color: var(--text); }
+      .tool-btn svg { width: 15px; height: 15px; }
+      .workspace { display: grid; grid-template-columns: minmax(0, 1.36fr) minmax(350px, .84fr); gap: 14px; align-items: stretch; }
+      .panel { border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(145deg, rgba(18,24,30,.96), rgba(12,17,21,.96)); box-shadow: var(--shadow); }
+      .map-panel { min-width: 0; overflow: hidden; }
+      .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px 0; }
+      .panel-title { margin: 0; font-size: 14px; font-weight: 760; letter-spacing: -.01em; }
+      .panel-sub { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+      .relative-note { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+      .relative-note svg { width: 14px; height: 14px; color: var(--cyan); }
+      .map-stage { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 6px; align-items: center; padding: 14px 22px 8px; }
+      .figures { display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: clamp(4px, 2vw, 28px); align-items: end; justify-items: center; min-width: 0; }
+      .figure-wrap { width: min(100%, 245px); min-width: 0; text-align: center; }
+      .figure { width: 100%; height: auto; max-height: 510px; overflow: visible; }
+      .figure-caption { display: inline-flex; align-items: center; gap: 7px; margin-top: 4px; color: var(--soft); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+      .figure-caption::before, .figure-caption::after { content: ""; width: 13px; height: 1px; background: var(--border-strong); }
+      .body-outline { fill: url(#bodyShade); stroke: #52616d; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+      .body-detail { fill: none; stroke: rgba(179,194,202,.19); stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+      .body-shadow { fill: rgba(0,0,0,.18); }
+      .muscle { stroke: rgba(8,11,14,.68); stroke-width: 1.05; stroke-linejoin: round; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .38s ease, filter .18s ease, opacity .18s ease; }
+      .muscle:hover, .muscle:focus-visible, .muscle.is-selected { filter: brightness(1.24) drop-shadow(0 0 5px rgba(255,154,66,.55)); stroke: #fff0dd; stroke-width: 1.55; }
+      .muscle[data-level="0"] { fill: #28313a; }
+      .map-stage[data-mode="groups"] .muscle[data-level="1"] { fill: #315b66; }
+      .map-stage[data-mode="groups"] .muscle[data-level="2"] { fill: #397d82; }
+      .map-stage[data-mode="groups"] .muscle[data-level="3"] { fill: #a79d48; }
+      .map-stage[data-mode="groups"] .muscle[data-level="4"] { fill: #e58531; }
+      .map-stage[data-mode="groups"] .muscle[data-level="5"] { fill: #ef5735; }
+      .map-stage[data-mode="individual"] .muscle[data-level="1"] { fill: #315b66; }
+      .map-stage[data-mode="individual"] .muscle[data-level="2"] { fill: #397d82; }
+      .map-stage[data-mode="individual"] .muscle[data-level="3"] { fill: #a79d48; }
+      .map-stage[data-mode="individual"] .muscle[data-level="4"] { fill: #e58531; }
+      .map-stage[data-mode="individual"] .muscle[data-level="5"] { fill: #ef5735; }
+      .legend { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+      .legend-title { margin-bottom: 2px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+      .legend-row { display: grid; grid-template-columns: 13px 1fr; gap: 8px; align-items: start; color: var(--soft); font-size: 10px; line-height: 1.35; }
+      .legend-dot { width: 10px; height: 10px; margin-top: 1px; border-radius: 50%; box-shadow: 0 0 10px color-mix(in srgb, var(--swatch), transparent 55%); background: var(--swatch); }
+      .legend-row strong { display: block; color: var(--text); font-size: 10px; font-weight: 700; }
+      .legend-row span { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+      .map-foot { display: flex; justify-content: space-between; gap: 16px; margin: 2px 22px 20px; padding-top: 14px; border-top: 1px solid rgba(41,49,58,.8); color: var(--muted); font-size: 10px; line-height: 1.5; }
+      .map-foot strong { color: var(--soft); font-weight: 700; }
+      .detail-panel { display: flex; flex-direction: column; min-width: 0; }
+      .detail-top { padding: 20px 21px 16px; border-bottom: 1px solid rgba(41,49,58,.8); }
+      .detail-kicker { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; }
+      .period-date { font-variant-numeric: tabular-nums; }
+      .detail-name-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; }
+      .detail-name { margin: 0; font-size: 23px; letter-spacing: -.04em; }
+      .heat-badge { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+      .heat-badge strong { font-size: 17px; font-variant-numeric: tabular-nums; }
+      .heat-badge span { display: block; color: var(--muted); font-size: 9px; }
+      .trend-line { display: flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--soft); font-size: 10px; }
+      .trend-icon { color: var(--green); font-size: 14px; font-weight: 900; }
+      .trend-icon.down { color: #ef8561; }
+      .trend-icon.flat { color: var(--muted); }
+      .detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 0 21px; }
+      .detail-stat { padding: 15px 7px 14px 0; }
+      .detail-stat + .detail-stat { padding-left: 14px; border-left: 1px solid var(--border); }
+      .detail-stat strong { display: block; font-size: 17px; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+      .detail-stat span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+      .volume-box { margin: 0 21px 17px; padding: 13px 14px 11px; border: 1px solid var(--border); border-radius: 13px; background: rgba(8,11,14,.5); }
+      .volume-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+      .volume-head strong { font-size: 11px; }
+      .volume-head span { color: var(--muted); font-size: 9px; }
+      .stacked-bar { display: flex; width: 100%; height: 9px; overflow: hidden; border-radius: 999px; background: #252d35; }
+      .stacked-bar span { height: 100%; transition: width .35s ease; }
+      .bar-effective { background: #ff7625; }
+      .bar-complementary { background: #ffbd55; }
+      .bar-accessory { background: #56aebb; }
+      .stack-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 9px; color: var(--muted); font-size: 9px; }
+      .stack-legend i { display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; vertical-align: 1px; }
+      .exercise-list-wrap { padding: 0 21px; }
+      .subhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+      .subhead h3 { margin: 0; font-size: 11px; }
+      .subhead span { color: var(--muted); font-size: 9px; }
+      .exercise-list { display: flex; flex-direction: column; }
+      .exercise-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; min-height: 34px; border-bottom: 1px solid rgba(41,49,58,.62); }
+      .exercise-label { min-width: 0; overflow: hidden; color: var(--soft); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+      .exercise-label::before { content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 8px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
+      .exercise-value { color: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .micro-chart-wrap { margin: 15px 21px 0; }
+      .micro-chart { display: flex; align-items: end; gap: 4px; height: 48px; padding-top: 4px; }
+      .micro-col { display: flex; flex: 1; height: 100%; align-items: end; justify-content: center; gap: 2px; }
+      .micro-col span { display: block; flex: 1; min-height: 2px; border-radius: 3px 3px 1px 1px; background: linear-gradient(180deg, #ffa342, #e75e18); }
+      .micro-col span.prev { background: #35424d; }
+      .micro-axis { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 8px; }
+      .detail-note { margin: auto 21px 18px; padding: 10px 11px; border: 1px solid rgba(80,197,214,.14); border-radius: 11px; background: rgba(80,197,214,.045); color: var(--muted); font-size: 9px; line-height: 1.5; }
+      .detail-note strong { color: var(--soft); }
+      .group-list-panel { margin-top: 14px; padding: 18px 20px; }
+      .list-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 13px; }
+      .list-head h2 { margin: 0; font-size: 13px; }
+      .list-head span { color: var(--muted); font-size: 10px; }
+      .family-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+      .family-chip { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 49px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: rgba(8,11,14,.44); text-align: left; cursor: pointer; transition: .16s ease; }
+      .family-chip:hover, .family-chip.is-selected { border-color: rgba(255,121,8,.42); background: rgba(255,121,8,.065); }
+      .family-swatch { width: 8px; height: 27px; flex: 0 0 8px; border-radius: 999px; background: var(--swatch); box-shadow: 0 0 12px color-mix(in srgb, var(--swatch), transparent 54%); }
+      .family-info { min-width: 0; flex: 1; }
+      .family-info strong { display: block; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+      .family-info span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+      .family-pct { color: var(--soft); font-size: 10px; font-variant-numeric: tabular-nums; }
+      .prototype-section { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(280px,.8fr); gap: 14px; margin-top: 14px; }
+      .form-panel, .method-panel { padding: 18px 20px; }
+      .section-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+      .section-title-row h2 { margin: 0; font-size: 13px; }
+      .demo-tag { padding: 5px 8px; border: 1px solid rgba(255,121,8,.25); border-radius: 999px; background: var(--accent-soft); color: #ffad62; font-size: 9px; font-weight: 760; letter-spacing: .04em; text-transform: uppercase; }
+      .section-copy { margin: 0 0 14px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+      .log-form { display: grid; grid-template-columns: minmax(190px,1.6fr) repeat(3,minmax(82px,.62fr)) auto; gap: 8px; align-items: end; }
+      .field { min-width: 0; }
+      .field label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 9px; font-weight: 700; }
+      .field select, .field input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text); font-size: 11px; }
+      .field input[type="number"] { font-variant-numeric: tabular-nums; }
+      .add-btn { display: inline-flex; justify-content: center; align-items: center; gap: 7px; height: 38px; padding: 0 15px; border: 0; border-radius: 10px; background: linear-gradient(135deg, #ff8b1a, #ef6507); color: #160f09; font-size: 10px; font-weight: 800; white-space: nowrap; cursor: pointer; box-shadow: 0 6px 16px rgba(255,121,8,.16); }
+      .add-btn:hover { filter: brightness(1.08); }
+      .add-btn svg { width: 14px; height: 14px; }
+      .form-hint { margin: 9px 0 0; color: var(--muted); font-size: 9px; }
+      .method-panel { display: flex; flex-direction: column; }
+      .method-panel h2 { margin: 0 0 9px; font-size: 13px; }
+      .method-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .method-list li { display: grid; grid-template-columns: 21px 1fr; gap: 8px; color: var(--soft); font-size: 9px; line-height: 1.45; }
+      .method-number { width: 19px; height: 19px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 7px; color: var(--accent); font-size: 9px; font-weight: 800; }
+      .method-list strong { color: var(--text); }
+      .method-bottom { display: flex; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 12px; }
+      .quiet-btn { border: 0; background: transparent; color: var(--muted); font-size: 9px; text-decoration: underline; text-decoration-color: rgba(130,144,157,.35); text-underline-offset: 3px; cursor: pointer; }
+      .quiet-btn:hover { color: var(--soft); }
+      .file-input { display: none; }
+      .toast { position: fixed; right: 24px; bottom: 22px; z-index: 5; max-width: min(390px,calc(100vw - 32px)); padding: 12px 15px; border: 1px solid var(--border-strong); border-radius: 12px; background: #172027; color: var(--text); box-shadow: var(--shadow); font-size: 11px; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease; }
+      .toast.is-visible { opacity: 1; transform: translateY(0); }
+      .empty-state { padding: 16px 10px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+      @media (max-width: 1120px) {
+        .workspace { grid-template-columns: minmax(0,1fr) minmax(310px,.76fr); }
+        .map-stage { grid-template-columns: minmax(0,1fr) 104px; padding-inline: 16px; }
+        .family-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      }
+      @media (max-width: 860px) {
+        .app { padding: 20px 20px 34px; }
+        .intro { align-items: start; flex-direction: column; gap: 17px; }
+        .mode-switch { align-self: stretch; }
+        .seg { flex: 1; }
+        .workspace { grid-template-columns: minmax(0,1fr); }
+        .map-stage { grid-template-columns: minmax(0,1fr) 120px; }
+        .figure-wrap { width: min(100%,270px); }
+        .detail-panel { min-height: 520px; }
+        .prototype-section { grid-template-columns: minmax(0,1fr); }
+      }
+      @media (max-width: 580px) {
+        .app { padding: 15px 12px 26px; }
+        .topbar { margin-bottom: 25px; }
+        .local-pill { padding: 8px 9px; font-size: 9px; }
+        .intro-copy { font-size: 12px; }
+        .toolbar { align-items: flex-start; flex-direction: column; padding: 11px; }
+        .period-group { width: 100%; justify-content: space-between; }
+        .period-label { display: none; }
+        .period { min-width: 0; flex: 1; padding-inline: 8px; }
+        .toolbar-actions { width: 100%; }
+        .toolbar-actions .tool-btn { flex: 1; }
+        .panel-head { padding: 16px 15px 0; }
+        .relative-note { font-size: 0; }
+        .relative-note svg { width: 17px; height: 17px; }
+        .map-stage { grid-template-columns: minmax(0,1fr); padding: 12px 8px 4px; }
+        .figures { gap: 0; }
+        .figure-wrap { width: min(49vw,220px); }
+        .figure-caption { font-size: 8px; }
+        .legend { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px 12px; padding: 8px 10px; }
+        .legend-title { width: 100%; text-align: center; }
+        .legend-row { grid-template-columns: 10px auto; gap: 5px; font-size: 9px; }
+        .legend-row span { display: none; }
+        .legend-dot { width: 8px; height: 8px; }
+        .map-foot { flex-direction: column; gap: 5px; margin-inline: 15px; }
+        .detail-top { padding: 17px 15px 14px; }
+        .detail-stats { padding-inline: 15px; }
+        .volume-box, .exercise-list-wrap, .micro-chart-wrap { margin-inline: 15px; }
+        .detail-note { margin-inline: 15px; }
+        .family-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+        .group-list-panel, .form-panel, .method-panel { padding: 15px 13px; }
+        .log-form { grid-template-columns: repeat(3,minmax(0,1fr)); }
+        .field.exercise-field { grid-column: 1 / -1; }
+        .add-btn { grid-column: 1 / -1; height: 44px; }
+        .method-bottom { flex-wrap: wrap; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
+          </span>
+          <div><div class="brand-name">TrainingLab <span style="color:var(--muted);font-weight:550">/ laboratorio</span></div><div class="brand-sub">Prototipo autónomo · no conectado a la app</div></div>
+        </div>
+        <div class="local-pill"><span class="local-dot"></span> Datos locales en este navegador</div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <div class="eyebrow">Modelo de entrenamiento 2D</div>
+          <h1 id="page-title">Tu carga, dibujada sobre el cuerpo.</h1>
+          <p class="intro-copy">El mapa se recalcula desde las series que registras: ejercicio, peso, repeticiones y esfuerzo. Toca una zona para entender qué datos la están pintando.</p>
+        </div>
+        <div class="mode-switch" role="group" aria-label="Nivel de detalle del mapa">
+          <button class="seg" type="button" data-mode="groups" aria-pressed="true">Grupos musculares</button>
+          <button class="seg" type="button" data-mode="individual" aria-pressed="false">Músculos individuales</button>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Controles del mapa">
+        <div class="period-group" role="group" aria-label="Periodo de análisis">
+          <span class="period-label">PERIODO</span>
+          <button class="period" type="button" data-days="7" aria-pressed="false">7 días</button>
+          <button class="period" type="button" data-days="28" aria-pressed="true">28 días</button>
+          <button class="period" type="button" data-days="90" aria-pressed="false">90 días</button>
+          <button class="period" type="button" data-days="0" aria-pressed="false">Todo</button>
+        </div>
+        <div class="toolbar-actions">
+          <label class="tool-btn" for="import-json" title="Importa un arreglo de series TLSet o un objeto con la propiedad sets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M5 14v5h14v-5"/></svg> Importar series
+          </label>
+          <input id="import-json" class="file-input" type="file" accept="application/json,.json" />
+          <button class="tool-btn" id="reset-demo" type="button" title="Volver a los datos de demostración">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg> Reiniciar demo
+          </button>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Mapa de carga y resumen del grupo seleccionado">
+        <article class="panel map-panel">
+          <div class="panel-head">
+            <div><h2 class="panel-title">Mapa de exposición muscular</h2><p class="panel-sub" id="map-subtitle">Frontal y posterior · respuesta directa a tus series del periodo</p></div>
+            <div class="relative-note" title="El color compara la exposición relativa entre grupos en el periodo seleccionado; no estima masa muscular ni salud.">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg> Índice relativo
+            </div>
+          </div>
+          <div class="map-stage" id="map-stage" data-mode="groups">
+            <div class="figures">
+              <div class="figure-wrap">
+                <svg class="figure" viewBox="0 0 240 440" role="group" aria-label="Vista frontal del mapa muscular">
+                  <defs>
+                    <linearGradient id="bodyShade" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#202a32"/><stop offset=".5" stop-color="#151e25"/><stop offset="1" stop-color="#0e151b"/></linearGradient>
+                    <linearGradient id="limbShade" x1="0" x2="1"><stop stop-color="#26323a"/><stop offset=".5" stop-color="#1c262e"/><stop offset="1" stop-color="#121a20"/></linearGradient>
+                    <filter id="softGlow" x="-30%" y="-20%" width="160%" height="150%"><feGaussianBlur stdDeviation="5"/></filter>
+                  </defs>
+                  <ellipse cx="120" cy="425" rx="55" ry="5" fill="#000" opacity=".35"/>
+                  <g class="anatomy">
+                    <!-- silhouette and limb foundations -->
+                    <path class="body-outline" d="M104 61c-5-7-9-17-8-28 1-18 10-27 24-27s23 9 24 27c1 11-3 21-8 28l-2 12H106z"/>
+                    <path class="body-outline" d="M106 67c-13 3-24 9-35 18-8 7-13 17-17 32l-15 54c-4 15-9 33-11 48l-8 69c-1 7 2 13 7 14 5 0 8-5 9-12l12-61 16-52 10-22-5 57-8 62c-2 9-2 19 2 26l18 44 8 47c2 8 8 12 12 8 3-3 3-9 2-15l-7-49-9-44-1-35 9-39 13-7 13 7 9 39-1 35-9 44-7 49c-1 6-1 12 2 15 4 4 10 0 12-8l8-47 18-44c4-7 4-17 2-26l-8-62-5-57 10 22 16 52 12 61c1 7 4 12 9 12 5-1 8-7 7-14l-8-69c-2-15-7-33-11-48l-15-54c-4-15-9-25-17-32-11-9-22-15-35-18l-2 12h-31z"/>
+                    <path class="body-shadow" d="M109 75h22v22h-22z"/>
+                    <!-- clavicles, deltoids, chest -->
+                    <path class="muscle" data-muscle="anterior_deltoid" data-group="shoulders" d="M87 91c-10 1-20 7-25 16-5 8-5 18 1 24 8 6 20 1 28-7l12-18-5-12z"/>
+                    <path class="muscle" data-muscle="anterior_deltoid" data-group="shoulders" d="M153 91c10 1 20 7 25 16 5 8 5 18-1 24-8 6-20 1-28-7l-12-18 5-12z"/>
+                    <path class="muscle" data-muscle="chest_upper" data-group="chest" d="M101 105c-11-4-22-1-29 5-7 7-8 18-3 27 7 12 20 19 33 19l15-7v-36z"/>
+                    <path class="muscle" data-muscle="chest_upper" data-group="chest" d="M139 105c11-4 22-1 29 5 7 7 8 18 3 27-7 12-20 19-33 19l-15-7v-36z"/>
+                    <path class="muscle" data-muscle="chest_lower" data-group="chest" d="M102 151c-13 1-24-4-32-13-2 10 3 20 11 26 7 6 16 9 26 9l13-7v-17z"/>
+                    <path class="muscle" data-muscle="chest_lower" data-group="chest" d="M138 151c13 1 24-4 32-13 2 10-3 20-11 26-7 6-16 9-26 9l-13-7v-17z"/>
+                    <!-- arms -->
+                    <path class="muscle" data-muscle="biceps_long" data-group="biceps" d="M61 132c-7 8-11 22-13 37l-7 43 12 5 12-40 11-37-5-13z"/>
+                    <path class="muscle" data-muscle="biceps_long" data-group="biceps" d="M179 132c7 8 11 22 13 37l7 43-12 5-12-40-11-37 5-13z"/>
+                    <path class="muscle" data-muscle="forearm_flexors" data-group="forearms" d="M42 216l12 1-8 42-12 24-5-5 4-35z"/>
+                    <path class="muscle" data-muscle="forearm_flexors" data-group="forearms" d="M198 216l-12 1 8 42 12 24 5-5-4-35z"/>
+                    <!-- core -->
+                    <path class="muscle" data-muscle="rectus_abdominis" data-group="core" d="M115 166h10v66h-10z"/>
+                    <path class="muscle" data-muscle="rectus_abdominis" data-group="core" d="M125 166h10v66h-10z"/>
+                    <path class="muscle" data-muscle="obliques" data-group="core" d="M103 168l12-3v65l-11 16-8-12z"/>
+                    <path class="muscle" data-muscle="obliques" data-group="core" d="M137 165l12 3 7 66-8 12-11-16z"/>
+                    <!-- quadriceps and lower legs -->
+                    <path class="muscle" data-muscle="quadriceps" data-group="quadriceps" d="M97 241c7-4 16-5 22-4l-2 40-11 56-14-7-4-38z"/>
+                    <path class="muscle" data-muscle="quadriceps" data-group="quadriceps" d="M143 237c-7-4-16-5-22-4l2 40 11 56 14-7 4-38z"/>
+                    <path class="muscle" data-muscle="quadriceps" data-group="quadriceps" d="M112 240h8l-4 75-12 16-12-12 10-44z"/>
+                    <path class="muscle" data-muscle="quadriceps" data-group="quadriceps" d="M128 240h-8l4 75 12 16 12-12-10-44z"/>
+                    <path class="muscle" data-muscle="calves" data-group="calves" d="M97 337l12-2 9 52-7 27-9-4-8-41z"/>
+                    <path class="muscle" data-muscle="calves" data-group="calves" d="M143 337l-12-2-9 52 7 27 9-4 8-41z"/>
+                    <!-- hands and feet -->
+                    <path class="body-detail" d="M23 300q-3 7 1 12l3 7 6-1 4-8m180-10q3 7-1 12l-3 7-6-1-4-8M102 415l-2 8-15 9q-5 4 2 5l21-1 7-8m25-13 2 8 15 9q5 4-2 5l-21-1-7-8"/>
+                    <path class="body-detail" d="M101 94q19-9 38 0M120 72v23M102 233q18 13 36 0M112 275h8m8 0h8M110 302h10m10 0h10"/>
+                  </g>
+                </svg>
+                <div class="figure-caption">Frontal</div>
+              </div>
+              <div class="figure-wrap">
+                <svg class="figure" viewBox="0 0 240 440" role="group" aria-label="Vista posterior del mapa muscular">
+                  <defs><linearGradient id="bodyShadeBack" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#202a32"/><stop offset=".5" stop-color="#151e25"/><stop offset="1" stop-color="#0e151b"/></linearGradient></defs>
+                  <ellipse cx="120" cy="425" rx="55" ry="5" fill="#000" opacity=".35"/>
+                  <path class="body-outline" style="fill:url(#bodyShadeBack)" d="M104 61c-5-7-9-17-8-28 1-18 10-27 24-27s23 9 24 27c1 11-3 21-8 28l-2 12H106z"/>
+                  <path class="body-outline" style="fill:url(#bodyShadeBack)" d="M106 67c-13 3-24 9-35 18-8 7-13 17-17 32l-15 54c-4 15-9 33-11 48l-8 69c-1 7 2 13 7 14 5 0 8-5 9-12l12-61 16-52 10-22-5 57-8 62c-2 9-2 19 2 26l18 44 8 47c2 8 8 12 12 8 3-3 3-9 2-15l-7-49-9-44-1-35 9-39 13-7 13 7 9 39-1 35-9 44-7 49c-1 6-1 12 2 15 4 4 10 0 12-8l8-47 18-44c4-7 4-17 2-26l-8-62-5-57 10 22 16 52 12 61c1 7 4 12 9 12 5-1 8-7 7-14l-8-69c-2-15-7-33-11-48l-15-54c-4-15-9-25-17-32-11-9-22-15-35-18l-2 12h-31z"/>
+                  <!-- rear deltoids / trapezius -->
+                  <path class="muscle" data-muscle="posterior_deltoid" data-group="shoulders" d="M87 91c-10 1-20 7-25 16-5 8-5 18 1 24 8 6 20 1 28-7l12-18-5-12z"/>
+                  <path class="muscle" data-muscle="posterior_deltoid" data-group="shoulders" d="M153 91c10 1 20 7 25 16 5 8 5 18-1 24-8 6-20 1-28-7l-12-18 5-12z"/>
+                  <path class="muscle" data-muscle="traps_upper" data-group="back" d="M108 77h24l-3 21-9 13-9-13z"/>
+                  <path class="muscle" data-muscle="traps_middle" data-group="back" d="M120 110l9-12 23-4 12 15-21 26h-23z"/>
+                  <path class="muscle" data-muscle="traps_middle" data-group="back" d="M120 110l-9-12-23-4-12 15 21 26h23z"/>
+                  <!-- back -->
+                  <path class="muscle" data-muscle="lats_upper" data-group="back" d="M89 111l21 5 10-5v61l-17 19-18-26-2-30z"/>
+                  <path class="muscle" data-muscle="lats_upper" data-group="back" d="M151 111l-21 5-10-5v61l17 19 18-26 2-30z"/>
+                  <path class="muscle" data-muscle="lats_lower" data-group="back" d="M103 190l17-18v51l-14 14-12-18z"/>
+                  <path class="muscle" data-muscle="lats_lower" data-group="back" d="M137 190l-17-18v51l14 14 12-18z"/>
+                  <path class="muscle" data-muscle="rhomboids" data-group="back" d="M109 127l11-14 11 14-11 32z"/>
+                  <path class="muscle" data-muscle="rhomboids" data-group="back" d="M131 127l-11-14-11 14 11 32z"/>
+                  <!-- arms and spine -->
+                  <path class="muscle" data-muscle="triceps_long" data-group="triceps" d="M61 132c-7 8-11 22-13 37l-7 43 12 5 12-40 11-37-5-13z"/>
+                  <path class="muscle" data-muscle="triceps_long" data-group="triceps" d="M179 132c7 8 11 22 13 37l7 43-12 5-12-40-11-37 5-13z"/>
+                  <path class="muscle" data-muscle="forearm_extensors" data-group="forearms" d="M42 216l12 1-8 42-12 24-5-5 4-35z"/>
+                  <path class="muscle" data-muscle="forearm_extensors" data-group="forearms" d="M198 216l-12 1 8 42 12 24 5-5-4-35z"/>
+                  <path class="muscle" data-muscle="erector_spinae" data-group="core" d="M116 160h4v71h-4z"/>
+                  <path class="muscle" data-muscle="erector_spinae" data-group="core" d="M120 160h4v71h-4z"/>
+                  <!-- glutes -->
+                  <path class="muscle" data-muscle="gluteus_maximus" data-group="glutes" d="M96 224l24-3v36c-6 14-14 18-23 9l-12-18z"/>
+                  <path class="muscle" data-muscle="gluteus_maximus" data-group="glutes" d="M144 224l-24-3v36c6 14 14 18 23 9l12-18z"/>
+                  <!-- hamstrings / calves -->
+                  <path class="muscle" data-muscle="hamstrings" data-group="hamstrings" d="M97 263c8 5 16 7 23 4l-4 48-11 33-14-9-4-38z"/>
+                  <path class="muscle" data-muscle="hamstrings" data-group="hamstrings" d="M143 263c-8 5-16 7-23 4l4 48 11 33 14-9 4-38z"/>
+                  <path class="muscle" data-muscle="calves" data-group="calves" d="M98 350l12-3 8 42-8 27-9-4-8-35z"/>
+                  <path class="muscle" data-muscle="calves" data-group="calves" d="M142 350l-12-3-8 42 8 27 9-4 8-35z"/>
+                  <path class="body-detail" d="M23 300q-3 7 1 12l3 7 6-1 4-8m180-10q3 7-1 12l-3 7-6-1-4-8M102 415l-2 8-15 9q-5 4 2 5l21-1 7-8m25-13 2 8 15 9q5 4-2 5l-21-1-7-8"/>
+                  <path class="body-detail" d="M101 94q19-9 38 0M120 72v158M97 239q23 9 46 0M104 279h12m8 0h12M109 311h9m4 0h9"/>
+                </svg>
+                <div class="figure-caption">Posterior</div>
+              </div>
+            </div>
+            <div class="legend" aria-label="Leyenda de exposición relativa">
+              <div class="legend-title">Exposición relativa</div>
+              <div class="legend-row"><i class="legend-dot" style="--swatch:#28313a"></i><div><strong>Sin registro</strong><span>0 estímulo</span></div></div>
+              <div class="legend-row"><i class="legend-dot" style="--swatch:#315b66"></i><div><strong>Muy baja</strong><span>1–20 % del máximo</span></div></div>
+              <div class="legend-row"><i class="legend-dot" style="--swatch:#397d82"></i><div><strong>Baja</strong><span>21–40 %</span></div></div>
+              <div class="legend-row"><i class="legend-dot" style="--swatch:#a79d48"></i><div><strong>Media</strong><span>41–60 %</span></div></div>
+              <div class="legend-row"><i class="legend-dot" style="--swatch:#e58531"></i><div><strong>Alta</strong><span>61–80 %</span></div></div>
+              <div class="legend-row"><i class="legend-dot" style="--swatch:#ef5735"></i><div><strong>Muy alta</strong><span>81–100 %</span></div></div>
+            </div>
+          </div>
+          <div class="map-foot"><span><strong>Cómo leerlo:</strong> color más cálido = mayor carga acumulada respecto al grupo más cargado del mismo periodo.</span><span>Selecciona una zona para ver su desglose.</span></div>
+        </article>
+
+        <aside class="panel detail-panel" aria-live="polite">
+          <div class="detail-top">
+            <div class="detail-kicker"><span id="detail-kicker">RESUMEN DEL GRUPO</span><span class="period-date" id="date-range"></span></div>
+            <div class="detail-name-row"><h2 class="detail-name" id="detail-name">Pecho</h2><div class="heat-badge"><div><strong id="detail-index">—</strong><span>índice relativo</span></div></div></div>
+            <div class="trend-line"><span class="trend-icon flat" id="trend-symbol">—</span><span id="trend-copy">Cargando periodo anterior</span></div>
+          </div>
+          <div class="detail-stats">
+            <div class="detail-stat"><strong id="stat-sets">0</strong><span>series con participación</span></div>
+            <div class="detail-stat"><strong id="stat-load">0</strong><span>toneladas × repeticiones</span></div>
+            <div class="detail-stat"><strong id="stat-exercises">0</strong><span>ejercicios distintos</span></div>
+          </div>
+          <div class="volume-box">
+            <div class="volume-head"><strong>Participación en las series</strong><span>según intensidad del catálogo</span></div>
+            <div class="stacked-bar" aria-label="Distribución de series por intensidad"><span class="bar-effective" id="bar-effective"></span><span class="bar-complementary" id="bar-complementary"></span><span class="bar-accessory" id="bar-accessory"></span></div>
+            <div class="stack-legend"><span><i style="background:#ff7625"></i>Principal</span><span><i style="background:#ffbd55"></i>Complementaria</span><span><i style="background:#56aebb"></i>Auxiliar</span></div>
+          </div>
+          <div class="exercise-list-wrap"><div class="subhead"><h3>Qué está aportando</h3><span id="exercise-count-label">0 ejercicios</span></div><div class="exercise-list" id="exercise-list"></div></div>
+          <div class="micro-chart-wrap"><div class="subhead"><h3>Actividad por semana</h3><span>actual / periodo anterior</span></div><div class="micro-chart" id="micro-chart" role="img" aria-label="Comparación semanal de exposición"></div><div class="micro-axis"><span id="chart-start">Inicio del periodo</span><span>Hoy</span></div></div>
+          <p class="detail-note"><strong>Lectura honesta.</strong> El índice resume carga externa y participación estimada del ejercicio. No mide hipertrofia, activación EMG, dolor, recuperación ni calidad técnica.</p>
+        </aside>
+      </section>
+
+      <section class="panel group-list-panel">
+        <div class="list-head"><h2 id="family-list-title">Resumen por grupo muscular</h2><span id="family-list-hint">Toca una fila o zona para inspeccionar</span></div>
+        <div class="family-grid" id="family-grid"></div>
+      </section>
+
+      <section class="prototype-section">
+        <article class="panel form-panel">
+          <div class="section-title-row"><h2>Prueba el modelo con cargas distintas</h2><span class="demo-tag" id="data-mode-label">Datos de demostración</span></div>
+          <p class="section-copy">Añade una serie y mira cómo cambia el mapa al instante. Los registros de demostración y los cambios se guardan solo en este navegador.</p>
+          <form class="log-form" id="log-form">
+            <div class="field exercise-field"><label for="exercise">EJERCICIO</label><select id="exercise" required></select></div>
+            <div class="field"><label for="load">PESO · KG</label><input id="load" type="number" min="0" max="1000" step="0.5" value="60" inputmode="decimal" required /></div>
+            <div class="field"><label for="reps">REPS</label><input id="reps" type="number" min="1" max="100" step="1" value="10" inputmode="numeric" required /></div>
+            <div class="field"><label for="rir">Esfuerzo</label><select id="rir"><option value="1">1 · fácil</option><option value="2" selected>2 · cómodo</option><option value="3">3 · moderado</option><option value="4">4 · duro</option><option value="5">5 · al límite</option></select></div>
+            <button class="add-btn" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Añadir serie</button>
+          </form>
+          <p class="form-hint">Una pulsación añade una serie de trabajo. Puedes importar series reales en JSON (campos `exerciseId`, `timestamp`, `weight`, `reps`, opcional `rpe` y `warmup`).</p>
+        </article>
+        <article class="panel method-panel">
+          <h2>De la serie al color</h2>
+          <ul class="method-list">
+            <li><span class="method-number">1</span><span><strong>Volumen externo:</strong> peso × repeticiones por serie; para ejercicios sin carga externa usa el crédito de series, sin inventar kilos.</span></li>
+            <li><span class="method-number">2</span><span><strong>Participación muscular:</strong> intensidad 3 / 2 / 1 del catálogo compartido = principal / complementaria / auxiliar. Se evita duplicar músculos de la misma familia dentro del ejercicio.</span></li>
+            <li><span class="method-number">3</span><span><strong>Esfuerzo:</strong> el esfuerzo percibido del registro (1–5) pondera suavemente el crédito. El calentamiento queda fuera de los totales de trabajo.</span></li>
+            <li><span class="method-number">4</span><span><strong>Color:</strong> normaliza cada grupo frente al de mayor exposición en el mismo periodo. El número exacto se conserva en el resumen.</span></li>
+          </ul>
+          <div class="method-bottom"><button class="quiet-btn" id="export-json" type="button">Exportar datos del prototipo</button><button class="quiet-btn" id="clear-log" type="button">Borrar mis cambios</button></div>
+        </article>
+      </section>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script>
+      "use strict";
+
+      // The catalog entries below mirror the IDs and muscle intensity groups used by
+      // TrainingLab's shared exercise catalog. This prototype intentionally has no imports.
+      const EXERCISES = {
+        "barbell-bench-press": { name: "Press con barra", muscles: { chest_upper: 3, chest_lower: 3, anterior_deltoid: 2, triceps_long: 2 } },
+        "overhead-press": { name: "Press militar", muscles: { anterior_deltoid: 3, lateral_deltoid: 2, triceps_long: 2, traps_upper: 1, rectus_abdominis: 1 } },
+        "lateral-raise": { name: "Elevaciones laterales", muscles: { lateral_deltoid: 3, traps_upper: 1 } },
+        "barbell-curl": { name: "Curl con barra", muscles: { biceps_long: 3, forearm_flexors: 2 } },
+        "tricep-pushdown": { name: "Extensión de tríceps", muscles: { triceps_long: 2, triceps_lateral: 3 } },
+        "barbell-row": { name: "Remo con barra", muscles: { lats_upper: 3, lats_lower: 3, biceps_long: 2, traps_middle: 2, forearm_flexors: 2 } },
+        "lat-pulldown": { name: "Jalón al pecho", muscles: { lats_upper: 3, lats_lower: 3, biceps_long: 2, traps_lower: 1 } },
+        "barbell-squat": { name: "Sentadilla con barra", muscles: { quadriceps: 3, gluteus_maximus: 3, hamstrings: 2, erector_spinae: 2, rectus_abdominis: 1 } },
+        "romanian-deadlift": { name: "Peso muerto rumano", muscles: { hamstrings: 3, gluteus_maximus: 3, erector_spinae: 2, forearm_flexors: 1 } },
+        "calf-raises": { name: "Elevación de pantorrillas", muscles: { calves: 3 } },
+        "reverse-fly": { name: "Pájaros / reverse fly", muscles: { posterior_deltoid: 3, traps_middle: 2, rhomboids: 2 } },
+        "plank": { name: "Plancha", muscles: { rectus_abdominis: 3, obliques: 2 } }
+      };
+
+      const MUSCLES = {
+        chest_upper: { name: "Pectoral superior", group: "chest" }, chest_lower: { name: "Pectoral medio e inferior", group: "chest" },
+        anterior_deltoid: { name: "Deltoide anterior", group: "shoulders" }, lateral_deltoid: { name: "Deltoide lateral", group: "shoulders" }, posterior_deltoid: { name: "Deltoide posterior", group: "shoulders" },
+        biceps_long: { name: "Bíceps", group: "biceps" }, triceps_long: { name: "Tríceps largo", group: "triceps" }, triceps_lateral: { name: "Tríceps lateral", group: "triceps" }, forearm_flexors: { name: "Flexores del antebrazo", group: "forearms" }, forearm_extensors: { name: "Extensores del antebrazo", group: "forearms" },
+        lats_upper: { name: "Dorsal ancho superior", group: "back" }, lats_lower: { name: "Dorsal ancho inferior", group: "back" }, traps_upper: { name: "Trapecio superior", group: "back" }, traps_lower: { name: "Trapecio inferior", group: "back" }, traps_middle: { name: "Trapecio medio", group: "back" }, rhomboids: { name: "Romboides", group: "back" },
+        rectus_abdominis: { name: "Recto abdominal", group: "core" }, obliques: { name: "Oblicuos", group: "core" }, erector_spinae: { name: "Erectores espinales", group: "core" },
+        gluteus_maximus: { name: "Glúteo mayor", group: "glutes" }, quadriceps: { name: "Cuádriceps", group: "quadriceps" }, hamstrings: { name: "Isquiotibiales", group: "hamstrings" }, calves: { name: "Gemelos y sóleo", group: "calves" }
+      };
+
+      const GROUPS = {
+        chest: { name: "Pecho", muscles: ["chest_upper", "chest_lower"] },
+        back: { name: "Espalda", muscles: ["lats_upper", "lats_lower", "traps_upper", "traps_lower", "traps_middle", "rhomboids"] },
+        shoulders: { name: "Hombros", muscles: ["anterior_deltoid", "lateral_deltoid", "posterior_deltoid"] },
+        biceps: { name: "Bíceps", muscles: ["biceps_long"] },
+        triceps: { name: "Tríceps", muscles: ["triceps_long", "triceps_lateral"] },
+        forearms: { name: "Antebrazos", muscles: ["forearm_flexors", "forearm_extensors"] },
+        core: { name: "Core", muscles: ["rectus_abdominis", "obliques", "erector_spinae"] },
+        quadriceps: { name: "Cuádriceps", muscles: ["quadriceps"] },
+        hamstrings: { name: "Isquiotibiales", muscles: ["hamstrings"] },
+        glutes: { name: "Glúteos", muscles: ["gluteus_maximus"] },
+        calves: { name: "Pantorrillas", muscles: ["calves"] }
+      };
+
+      const CREDITS = { 3: 1, 2: 0.66, 1: 0.33 };
+      const STORAGE_KEY = "traininglab.muscle-map-prototype.v1";
+      const today = new Date();
+      const isoDate = (date) => {
+        const y = date.getFullYear(); const m = String(date.getMonth() + 1).padStart(2, "0"); const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      };
+      const ago = (days) => { const d = new Date(); d.setDate(d.getDate() - days); return `${isoDate(d)}T${String(9 + (days % 8)).padStart(2,"0")}:15:00`; };
+      const demoRows = [
+        ["barbell-bench-press", 60, 10, 2, 2], ["barbell-row", 52.5, 10, 2, 3], ["barbell-squat", 82.5, 8, 2, 5],
+        ["overhead-press", 35, 8, 2, 7], ["romanian-deadlift", 75, 10, 2, 9], ["lat-pulldown", 48, 12, 1, 11],
+        ["barbell-bench-press", 62.5, 9, 1, 13], ["lateral-raise", 10, 14, 1, 14], ["calf-raises", 55, 15, 2, 16],
+        ["barbell-squat", 85, 8, 1, 18], ["barbell-row", 55, 9, 1, 19], ["tricep-pushdown", 24, 12, 1, 20],
+        ["romanian-deadlift", 77.5, 9, 1, 22], ["barbell-curl", 25, 10, 1, 23], ["barbell-bench-press", 65, 8, 1, 25],
+        ["lat-pulldown", 50, 11, 1, 27], ["overhead-press", 37.5, 7, 1, 29], ["reverse-fly", 8, 15, 2, 31],
+        ["barbell-squat", 80, 8, 2, 35], ["barbell-row", 50, 10, 2, 37], ["calf-raises", 50, 15, 2, 39],
+        ["barbell-bench-press", 57.5, 10, 2, 42], ["romanian-deadlift", 70, 10, 2, 44], ["barbell-curl", 22.5, 12, 2, 46],
+        ["overhead-press", 32.5, 8, 2, 49], ["lat-pulldown", 45, 12, 2, 51], ["tricep-pushdown", 22, 12, 2, 53],
+        ["barbell-squat", 77.5, 8, 2, 57], ["barbell-row", 47.5, 10, 2, 59], ["lateral-raise", 8, 15, 2, 61],
+        ["calf-raises", 45, 15, 2, 63], ["barbell-bench-press", 55, 10, 2, 66], ["reverse-fly", 7, 15, 2, 69],
+        ["romanian-deadlift", 67.5, 10, 2, 72], ["barbell-curl", 20, 12, 2, 75], ["overhead-press", 30, 8, 2, 78],
+        ["barbell-squat", 75, 8, 2, 81]
+      ];
+      const makeDemo = () => demoRows.map(([exerciseId, weight, reps, rpe, days]) => ({ id: crypto.randomUUID(), exerciseId, timestamp: ago(days), weight, reps, rpe, warmup: false }));
+      let sets = makeDemo();
+      let periodDays = 28;
+      let mode = "groups";
+      let selected = { kind: "group", id: "chest" };
+      let customData = false;
+      let toastTimer;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        if (Array.isArray(saved?.sets)) { sets = saved.sets; customData = !!saved.customData; }
+      } catch { /* invalid stored prototype data falls back to the embedded demo */ }
+
+      const node = (id) => document.getElementById(id);
+      const fmt = (value, maxDigits = 1) => new Intl.NumberFormat("es-CO", { maximumFractionDigits: maxDigits }).format(value);
+      const localDay = (stamp) => String(stamp || "").slice(0,10);
+      const within = (stamp, from, to) => { const day = localDay(stamp); return day >= from && day <= to; };
+      const periodBounds = () => {
+        if (periodDays === 0) return { from: "0000-01-01", to: isoDate(today), start: new Date(2000,0,1) };
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()); start.setDate(start.getDate() - periodDays + 1);
+        return { from: isoDate(start), to: isoDate(today), start };
+      };
+      const previousBounds = (days) => {
+        if (days === 0) return null;
+        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate()); end.setDate(end.getDate() - days);
+        const start = new Date(end); start.setDate(start.getDate() - days + 1);
+        return { from: isoDate(start), to: isoDate(end), start };
+      };
+      const effortFactor = (effort) => {
+        const score = Number.isFinite(Number(effort)) ? Math.max(1, Math.min(5, Number(effort))) : 3;
+        return 0.72 + (score - 1) * 0.07;
+      };
+      const contribution = (set, intensity) => {
+        const reps = Math.max(1, Number(set.reps) || 1);
+        const rirFactor = effortFactor(set.rpe);
+        const intensityFactor = CREDITS[intensity] || 0;
+        const externalKg = Number(set.weight);
+        // Weighted set credits remain available for bodyweight/unweighted movements.
+        const mechanicalWork = Number.isFinite(externalKg) && externalKg > 0 ? externalKg * reps / 1000 : 0;
+        const effectiveCredit = intensityFactor * rirFactor;
+        return { load: mechanicalWork * effectiveCredit, credit: effectiveCredit, intensityFactor, rirFactor };
+      };
+      const activeSets = (bounds) => sets.filter((s) => !s.warmup && (!bounds || within(s.timestamp, bounds.from, bounds.to)) && EXERCISES[s.exerciseId]);
+      const musclesFor = (entity) => entity.kind === "muscle" ? [entity.id] : (GROUPS[entity.id]?.muscles || []);
+      const namesFor = (entity) => entity.kind === "muscle" ? MUSCLES[entity.id]?.name || entity.id : GROUPS[entity.id]?.name || entity.id;
+
+      function summarize(entity, bounds) {
+        const ids = new Set(musclesFor(entity));
+        const exercises = new Map();
+        const intensityCounts = { effective: 0, complementary: 0, accessory: 0 };
+        let load = 0; let creditSets = 0; let volumeStimulus = 0;
+        const included = activeSets(bounds);
+        for (const set of included) {
+          const mapping = EXERCISES[set.exerciseId].muscles;
+          const local = new Map();
+          for (const [muscle, intensity] of Object.entries(mapping)) {
+            if (!ids.has(muscle)) continue;
+            local.set(muscle, Math.max(local.get(muscle) || 0, intensity));
+          }
+          if (!local.size) continue;
+          const strongest = Math.max(...local.values());
+          intensityCounts[strongest === 3 ? "effective" : strongest === 2 ? "complementary" : "accessory"] += 1;
+          creditSets += 1;
+          const dose = contribution(set, strongest);
+          load += dose.load;
+          volumeStimulus += dose.credit;
+          const prior = exercises.get(set.exerciseId) || { name: EXERCISES[set.exerciseId].name, sets: 0, load: 0, stimulus: 0 };
+          prior.sets += 1; prior.load += dose.load; prior.stimulus += dose.credit;
+          exercises.set(set.exerciseId, prior);
+        }
+        return { sets: creditSets, load, exercises: [...exercises.values()].sort((a,b) => b.stimulus - a.stimulus), intensityCounts, stimulus: volumeStimulus };
+      }
+
+      function allEntityStats(bounds) {
+        const stats = {};
+        for (const id of Object.keys(GROUPS)) stats[id] = summarize({ kind: "group", id }, bounds);
+        const peak = Math.max(0, ...Object.values(stats).map((x) => x.load));
+        for (const s of Object.values(stats)) s.index = peak ? Math.round((s.load / peak) * 100) : 0;
+        const musclePeak = Math.max(0, ...Object.keys(MUSCLES).map((id) => summarize({ kind: "muscle", id }, bounds).load));
+        for (const id of Object.keys(MUSCLES)) {
+          const summary = summarize({ kind: "muscle", id }, bounds);
+          summary.index = musclePeak ? Math.round((summary.load / musclePeak) * 100) : 0;
+          stats[`muscle:${id}`] = summary;
+        }
+        return stats;
+      }
+
+      function entityStats(entity, bounds, stats) {
+        return stats[entity.kind === "muscle" ? `muscle:${entity.id}` : entity.id] || summarize(entity, bounds);
+      }
+
+      function levelFor(index) {
+        if (!index) return 0;
+        return Math.max(1, Math.min(5, Math.ceil(index / 20)));
+      }
+
+      function colorFor(index) {
+        const level = levelFor(index);
+        return ["#28313a", "#315b66", "#397d82", "#a79d48", "#e58531", "#ef5735"][level];
+      }
+
+      function save() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ sets, customData })); }
+        catch { showToast("No se pudo guardar en este navegador. El mapa sigue funcionando durante esta sesión."); }
+      }
+
+      function showToast(message) {
+        const el = node("toast"); el.textContent = message; el.classList.add("is-visible");
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("is-visible"), 3000);
+      }
+
+      function updateDateRange(bounds) {
+        if (periodDays === 0) { node("date-range").textContent = "Todo el historial"; return; }
+        const from = new Date(`${bounds.from}T00:00:00`); const to = new Date(`${bounds.to}T00:00:00`);
+        const short = (d) => d.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+        node("date-range").textContent = `${short(from)} – ${short(to)}`;
+      }
+
+      function renderMap(stats) {
+        node("map-stage").dataset.mode = mode;
+        document.querySelectorAll(".muscle").forEach((zone) => {
+          const id = zone.dataset.muscle; const group = zone.dataset.group;
+          const current = mode === "groups" ? stats[group] : stats[`muscle:${id}`];
+          const index = current?.index || 0;
+          zone.dataset.level = String(levelFor(index));
+          zone.classList.toggle("is-selected", mode === "groups" ? selected.kind === "group" && selected.id === group : selected.kind === "muscle" && selected.id === id);
+          const title = mode === "groups" ? GROUPS[group]?.name : MUSCLES[id]?.name;
+          zone.setAttribute("aria-label", `${title || id}: índice relativo ${index} de 100`);
+          zone.setAttribute("tabindex", "0");
+          let titleNode = zone.querySelector("title");
+          if (!titleNode) { titleNode = document.createElementNS("http://www.w3.org/2000/svg", "title"); zone.appendChild(titleNode); }
+          titleNode.textContent = `${title || id} · ${index}/100 relativo`;
+        });
+      }
+
+      function renderFamilyGrid(stats) {
+        const items = mode === "groups" ? Object.entries(GROUPS).map(([id,g]) => ({ kind: "group", id, name: g.name })) : Object.entries(MUSCLES).map(([id,m]) => ({ kind: "muscle", id, name: m.name }));
+        const sorted = items.sort((a,b) => entityStats(b, null, stats).load - entityStats(a, null, stats).load);
+        node("family-list-title").textContent = mode === "groups" ? "Resumen por grupo muscular" : "Resumen por músculo individual";
+        node("family-list-hint").textContent = mode === "groups" ? "Toca una fila o zona para inspeccionar" : "Valores agregados por porción anatómica";
+        node("family-grid").innerHTML = sorted.map((item) => {
+          const s = entityStats(item, null, stats); const selectedNow = item.id === selected.id && item.kind === selected.kind;
+          const amount = s.load > 0 ? `${fmt(s.load,1)} t` : `${s.sets} series`;
+          return `<button class="family-chip ${selectedNow ? "is-selected" : ""}" type="button" data-select-kind="${item.kind}" data-select-id="${item.id}" aria-pressed="${selectedNow}" style="--swatch:${colorFor(s.index)}"><i class="family-swatch"></i><span class="family-info"><strong>${item.name}</strong><span>${amount} · ${s.sets} series</span></span><span class="family-pct">${s.index}%</span></button>`;
+        }).join("");
+      }
+
+      function renderTrend(entity, bounds) {
+        const chart = node("micro-chart");
+        if (periodDays === 0) { chart.innerHTML = ""; node("chart-start").textContent = "Selecciona un periodo"; return; }
+        const days = periodDays; const n = Math.min(7, Math.max(4, Math.ceil(days / 7)));
+        const span = Math.ceil(days / n); const previous = previousBounds(days);
+        const currentSets = activeSets(bounds); const previousSets = activeSets(previous);
+        const bucketValues = (source, window) => Array.from({length:n}, (_,i) => {
+          const start = new Date(window.start); start.setDate(start.getDate() + i * span);
+          const end = new Date(start); end.setDate(end.getDate() + span - 1);
+          const from = isoDate(start); const to = isoDate(end);
+          let bucketLoad = 0;
+          for (const set of source) {
+            if (!within(set.timestamp, from, to)) continue;
+            const involved = Object.entries(EXERCISES[set.exerciseId].muscles).filter(([m]) => map.has(m));
+            const best = new Map(); for (const [m,intensity] of involved) best.set(m, Math.max(best.get(m)||0,intensity));
+            if (best.size) bucketLoad += contribution(set,Math.max(...best.values())).load;
+          }
+          return bucketLoad;
+        });
+        const cur = bucketValues(currentSets,bounds); const prev = previous ? bucketValues(previousSets,previous) : new Array(n).fill(0);
+        const peak = Math.max(1,...cur,...prev);
+        chart.innerHTML = cur.map((value,i) => `<div class="micro-col" title="Bloque ${i+1}: periodo anterior ${fmt(prev[i],2)} t-eq · actual ${fmt(value,2)} t-eq"><span class="prev" style="height:${Math.max(3,prev[i]/peak*100)}%"></span><span style="height:${Math.max(3,value/peak*100)}%"></span></div>`).join("");
+        node("chart-start").textContent = `${span} días por bloque`;
+      }
+
+      function renderDetail(entity, bounds, stats, prevStats) {
+        const current = entityStats(entity,bounds,stats); const previous = previousBounds(periodDays);
+        const old = previous ? entityStats(entity,previous,prevStats) : null;
+        node("detail-kicker").textContent = entity.kind === "group" ? "RESUMEN DEL GRUPO" : "RESUMEN DEL MÚSCULO";
+        node("detail-name").textContent = namesFor(entity);
+        node("detail-index").textContent = `${current.index || 0}%`;
+        const delta = old ? current.load - old.load : null;
+        const symbol = node("trend-symbol"); symbol.className = "trend-icon " + (delta === null || Math.abs(delta) < 0.0001 ? "flat" : delta > 0 ? "" : "down");
+        symbol.textContent = delta === null || Math.abs(delta) < .0001 ? "—" : delta > 0 ? "↑" : "↓";
+        node("trend-copy").textContent = old ? (Math.abs(delta) < .0001 ? "Exposición similar al periodo anterior" : `${delta > 0 ? "+" : "−"}${fmt(Math.abs(delta),2)} t frente al periodo anterior`) : "Sin comparación histórica para este periodo";
+        node("stat-sets").textContent = String(current.sets);
+        node("stat-load").textContent = current.load > 0 ? fmt(current.load,2) : "—";
+        node("stat-exercises").textContent = String(current.exercises.length);
+        const count = current.intensityCounts; const total = Math.max(1,count.effective+count.complementary+count.accessory);
+        node("bar-effective").style.width = `${count.effective/total*100}%`;
+        node("bar-complementary").style.width = `${count.complementary/total*100}%`;
+        node("bar-accessory").style.width = `${count.accessory/total*100}%`;
+        node("exercise-count-label").textContent = `${current.exercises.length} ${current.exercises.length === 1 ? "ejercicio" : "ejercicios"}`;
+        const list = node("exercise-list");
+        list.innerHTML = current.exercises.slice(0,5).map((ex) => `<div class="exercise-row"><span class="exercise-label">${ex.name}</span><span class="exercise-value">${ex.sets} series · ${ex.load ? `${fmt(ex.load,2)} t` : `${fmt(ex.stimulus,1)} cr`}</span></div>`).join("") || `<div class="empty-state">Sin series de trabajo para este grupo en el periodo. Registra o importa una serie para activarlo.</div>`;
+        if (current.exercises.length > 5) list.insertAdjacentHTML("beforeend", `<div class="exercise-row"><span class="exercise-label">Otros ejercicios</span><span class="exercise-value">+${current.exercises.length-5}</span></div>`);
+        renderTrend(entity,bounds);
+      }
+
+      function render() {
+        const bounds = periodBounds(); const previous = previousBounds(periodDays);
+        const stats = allEntityStats(bounds); const prevStats = previous ? allEntityStats(previous) : {};
+        updateDateRange(bounds); renderMap(stats); renderFamilyGrid(stats); renderDetail(selected,bounds,stats,prevStats);
+        node("data-mode-label").textContent = customData ? "Datos propios / importados" : "Datos de demostración";
+        node("map-subtitle").textContent = `${periodDays ? `Últimos ${periodDays} días` : "Historial completo"} · respuesta directa a tus series`;
+      }
+
+      function selectEntity(kind,id) {
+        const exists = kind === "group" ? GROUPS[id] : MUSCLES[id];
+        if (!exists) return;
+        selected = { kind, id }; render();
+      }
+
+      function normalizeImportedSet(item) {
+        if (!item || typeof item !== "object" || typeof item.exerciseId !== "string" || !EXERCISES[item.exerciseId]) return null;
+        const timestamp = typeof item.timestamp === "string" ? item.timestamp : new Date().toISOString();
+        const weight = item.weight === null || item.weight === undefined ? null : Number(item.weight);
+        const reps = item.reps === null || item.reps === undefined ? null : Number(item.reps);
+        if (weight !== null && (!Number.isFinite(weight) || weight < 0)) return null;
+        if (reps !== null && (!Number.isFinite(reps) || reps <= 0)) return null;
+        const effort = Number(item.rpe);
+        return { id: String(item.id || crypto.randomUUID()), exerciseId: item.exerciseId, timestamp, weight, reps, rpe: Number.isFinite(effort) && effort >= 1 && effort <= 5 ? effort : 3, warmup: Boolean(item.warmup) };
+      }
+
+      function populateExercises() {
+        node("exercise").innerHTML = Object.entries(EXERCISES).map(([id,ex]) => `<option value="${id}">${ex.name}</option>`).join("");
+        node("exercise").value = "barbell-bench-press";
+      }
+
+      document.querySelectorAll(".seg[data-mode]").forEach((button) => button.addEventListener("click", () => {
+        mode = button.dataset.mode;
+        document.querySelectorAll(".seg[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+        if (mode === "groups" && selected.kind === "muscle") selected = { kind: "group", id: MUSCLES[selected.id].group };
+        if (mode === "individual" && selected.kind === "group") selected = { kind: "muscle", id: GROUPS[selected.id].muscles[0] };
+        render();
+      }));
+
+      document.querySelectorAll("[data-days]").forEach((button) => button.addEventListener("click", () => {
+        periodDays = Number(button.dataset.days);
+        document.querySelectorAll("[data-days]").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+        render();
+      }));
+
+      document.addEventListener("click", (event) => {
+        const chip = event.target.closest("[data-select-id]");
+        if (chip) selectEntity(chip.dataset.selectKind,chip.dataset.selectId);
+      });
+
+      document.querySelectorAll(".muscle").forEach((zone) => {
+        const activate = () => selectEntity(mode === "groups" ? "group" : "muscle", mode === "groups" ? zone.dataset.group : zone.dataset.muscle);
+        zone.addEventListener("click",activate);
+        zone.addEventListener("keydown",(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(); } });
+      });
+
+      node("log-form").addEventListener("submit",(event) => {
+        event.preventDefault();
+        const weight = Number(node("load").value); const reps = Number(node("reps").value);
+        if (!Number.isFinite(weight) || weight < 0 || !Number.isFinite(reps) || reps < 1) { showToast("Revisa el peso y las repeticiones antes de añadir la serie."); return; }
+        sets.push({ id: crypto.randomUUID(), exerciseId: node("exercise").value, timestamp: new Date().toISOString(), weight, reps, rpe: Number(node("rir").value), warmup: false });
+        customData = true; save(); render(); showToast("Serie añadida. El mapa y el resumen ya reflejan la nueva carga.");
+      });
+
+      node("reset-demo").addEventListener("click",() => { sets = makeDemo(); customData = false; save(); render(); showToast("Datos de demostración restaurados."); });
+      node("clear-log").addEventListener("click",() => { sets = []; customData = true; save(); render(); showToast("Historial de este prototipo borrado."); });
+      node("export-json").addEventListener("click",() => {
+        const blob = new Blob([JSON.stringify({ sets },null,2)],{type:"application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "traininglab-muscle-map-sets.json"; a.click(); URL.revokeObjectURL(url); showToast("JSON exportado desde este prototipo.");
+      });
+      node("import-json").addEventListener("change",async (event) => {
+        const file = event.target.files?.[0]; if (!file) return;
+        try {
+          const parsed = JSON.parse(await file.text()); const rows = Array.isArray(parsed) ? parsed : parsed.sets;
+          if (!Array.isArray(rows)) throw new Error("El archivo debe ser un arreglo de series o incluir la propiedad sets.");
+          const normalized = rows.map(normalizeImportedSet).filter(Boolean);
+          if (!normalized.length) throw new Error("No encontré series de los ejercicios incluidos en este prototipo.");
+          sets = normalized; customData = true; save(); render(); showToast(`${normalized.length} series importadas. ${rows.length-normalized.length ? `${rows.length-normalized.length} filas no compatibles fueron omitidas.` : ""}`);
+        } catch (error) { showToast(error instanceof Error ? error.message : "No se pudo leer el JSON."); }
+        event.target.value = "";
+      });
+
+      populateExercises(); render();
+    </script>
+  </body>
+</html>
