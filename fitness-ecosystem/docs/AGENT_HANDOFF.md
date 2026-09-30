@@ -72,3 +72,39 @@ unfinished work and approval gates. This log is status—not user authorization.
 - **Siguiente paso seguro:** al aprobarse §5, implementar los campos del onboarding con
   tests de tramo de edad (15–19/20–59/60–94) y conectar la primera fuente (Cooper ♀
   20–59 o salto ACE) a la lente ideal en un PR separado.
+
+## 2026-09-30 (c) — §5 implementado: lente de condición física + onboarding Deporte/Atractivo; estatura resuelta con FFMI/WHtR
+
+- **Resultado:** las tres órdenes del dueño (2026-09-30) quedaron implementadas y en
+  `main` (`5897cc6..f0bf976`): (1) la decisión de estatura está **documentada y cerrada**
+  en §3 de `RESEARCH_IDEALS_BY_SPORT.md` — FFMI (Kouri 1995) y WHtR (Ashwell) tienen la
+  estatura **en su definición publicada**, así que no hay ajuste inventado; para Cooper/
+  %BF la brecha se declara por fuente. (2) TrainingLab Progreso muestra la **lente
+  "Condición física"**: cuatro ejes (cardio Cooper por sexo+edad vía core, %BF ACE por
+  sexo vía core, WHtR, FFMI) con banda, fuente y rango visibles; sin dato → "sin dato +
+  cómo medirlo", nunca 0. (3) El onboarding de BodyLab incluye **Deporte** (general/
+  correr/baloncesto/patinaje con enfoque), **Objetivo** (deporte/atractivo/salud) y
+  presets estéticos con el aviso "meta personal, no estándar médico"; el paso muestra la
+  fuente publicada correspondiente al tramo de edad derivado (15–19/20–59/60–94).
+- **Cambios:** `traininglab/.../src/features/stats/condition.ts` (nuevo, puro),
+  `features/today/ConditionCard.tsx` (nuevo), `screens/ProgressScreen.tsx`, `lib/i18n.ts`,
+  `lib/adapter.ts` (+`indicators` aditivo), `index.css`, `tsconfig.app.json`/`vite.config.ts`
+  (alias `@fitness/bodylab-conditioning`), `bodylab/apps/web/src/lib/onboarding-context.ts`
+  (nuevo), `components/Onboarding.tsx`, `lib/types.ts`, `lib/traininglab-export.ts`
+  (campos aditivos sport/sportFocus/objective/aestheticPreset),
+  `docs/RESEARCH_IDEALS_BY_SPORT.md`; tests nuevos `tests/training/test_condition.test.ts`
+  (19) y `src/__tests__/onboarding-context.test.ts` (5). Fix CSS `f0bf976` (regla
+  `.tl-muscle-row` restaurada tras un insert que rompió el build).
+- **Verificación:** root suite **871/871**, web **115/115** (re-run tras un flake puntual),
+  lint 0/0, `tsc -b` TrainingLab 0 (binario local), `tsc -b` web 0, **ambos `vite build`
+  EXIT 0**, Prettier aplicado a los archivos tocados. Tauri installer no reconstruido en
+  esta sesión (sin cambios en `src-tauri`).
+- **Pendiente / decisión del dueño:** (a) el mapa per-family por fuerza externa sigue
+  gated — esta lente es whole-body y no lo sustituye; (b) deportes adicionales del
+  catálogo Deporte se añaden sin tocar ids existentes; (c) si quiere percentiles reales
+  de FFMI (no referencias descriptivas), hace falta una fuente poblacional con licencia
+  clara antes de implementarla.
+- **Siguiente paso seguro:** reconstruir el instalador TrainingLab 0.2.1 y regenerar
+  capturas cuando el dueño pida release; conectar `sport`/`objective` a la selección de
+  eje por defecto de la lente (hoy son datos + UI, el efecto en la lente es el paso
+  siguiente aprobado).
