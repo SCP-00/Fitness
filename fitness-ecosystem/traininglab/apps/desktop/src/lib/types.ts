@@ -135,6 +135,52 @@ export interface TLSettingsData {
    */
   shared: SharedSettings;
   llm: LlmSettings;
+  /**
+   * Which lens the Progreso body map paints (2026-09-29 e): `training` = how
+   * much each family was worked, `goal` = how close it is to a target.
+   * Absent in old records → the training lens, which needs no extra data.
+   */
+  bodyMapMode?: "training" | "goal";
+  /**
+   * Which goal source feeds the goal lens (when `bodyMapMode` is `goal`):
+   * the BodyLab assessment (`measures`), per-family user targets
+   * (`targets`), or the classical golden-ratio preset (`golden`).
+   */
+  bodyMapGoalSource?: "measures" | "targets" | "golden";
+  /**
+   * A waist the user declared by hand, in cm. It anchors the golden-ratio
+   * preset when there is no BodyLab measurement; `null` = derive it from the
+   * imported payload only.
+   */
+  waistCm?: number | null;
+  /**
+   * Per-family circumference targets in cm (the `targets` source of the goal
+   * lens). A family without an entry simply has no target yet.
+   */
+  goalTargets?: Partial<
+    Record<
+      | "chest"
+      | "shoulders"
+      | "biceps"
+      | "triceps"
+      | "forearms"
+      | "lats"
+      | "traps"
+      | "rhomboids"
+      | "core"
+      | "glutes"
+      | "quadriceps"
+      | "hamstrings"
+      | "calves",
+      number
+    >
+  >;
+  /**
+   * Per-exercise rep-range overrides (2026-09-29 e): the user's chosen
+   * `repsMin`/`repsMax` for one exercise, replacing the planner's default for
+   * as long as the override exists. Never persisted into the plan itself.
+   */
+  repOverrides?: Record<string, { min: number; max: number }>;
 }
 
 /** Sensible defaults: 90 minutes, a real home setup, no network of any kind. */

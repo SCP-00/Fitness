@@ -180,6 +180,9 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "How do you feel today?",
     es: "¿Cómo te sientes hoy?",
   },
+  // The rail is 245 px wide: the full question does not fit a collapsed summary
+  // there, and truncating it ("¿Cómo te sientes h…") looks broken.
+  "readiness.titleShort": { en: "Today's shape", es: "Estado de hoy" },
   "readiness.hint": {
     en: "This changes today’s volume, rest and exercise choice — not your plan.",
     es: "Esto cambia el volumen, el descanso y la elección de ejercicios de hoy — no tu plan.",
@@ -264,6 +267,8 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Alta carga de columna — bracea fuerte, sin curvar.",
   },
   "slot.seeHow": { en: "See how it's done", es: "Ver cómo se hace" },
+  "slot.expand": { en: "Log set", es: "Registrar" },
+  "slot.collapse": { en: "Hide log", es: "Ocultar" },
   "slot.techniqueLvl": {
     en: "Technique {n}/5",
     es: "Técnica {n}/5",
@@ -498,17 +503,26 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Not private: everyone on this Wi-Fi can read and write the shared history. Perfect at home, never switch it on in a public network.",
     es: "No es privado: cualquiera en esta Wi-Fi puede leer y escribir el historial compartido. Perfecto en casa; nunca lo actives en una red pública.",
   },
-  "shared.lastSync": { en: "Last sync: {when}", es: "Última sincronización: {when}" },
+  "shared.lastSync": {
+    en: "Last sync: {when}",
+    es: "Última sincronización: {when}",
+  },
   "shared.badUrl": {
     en: "The address must look like http://192.168.1.7:8090",
     es: "La dirección debe ser del tipo http://192.168.1.7:8090",
   },
-  "shared.needName": { en: "Type a name first", es: "Escribe un nombre primero" },
+  "shared.needName": {
+    en: "Type a name first",
+    es: "Escribe un nombre primero",
+  },
   "shared.unreachable": {
     en: "No server answered. Is it running with --shared?",
     es: "Ningún servidor respondió. ¿Está arrancado con --shared?",
   },
-  "shared.serverError": { en: "The server refused the request", es: "El servidor rechazó la petición" },
+  "shared.serverError": {
+    en: "The server refused the request",
+    es: "El servidor rechazó la petición",
+  },
   "shared.status.off": { en: "Off", es: "Apagado" },
   "shared.status.unconfigured": { en: "Not connected", es: "Sin conectar" },
   "shared.status.never-synced": { en: "Pending sync", es: "Sin sincronizar" },
@@ -580,6 +594,577 @@ const DICT: Record<string, { en: string; es: string }> = {
   "common.cancel": { en: "Cancel", es: "Cancelar" },
   "common.close": { en: "Close", es: "Cerrar" },
   "common.save": { en: "Save", es: "Guardar" },
+
+  // ── Shell / navigation ────────────────────────────────────────────────
+  "nav.label": { en: "Main navigation", es: "Navegación principal" },
+  "nav.today": { en: "Home", es: "Inicio" },
+  "nav.exercises": { en: "Exercises", es: "Ejercicios" },
+  "nav.session": { en: "Train", es: "Entrenar" },
+  "nav.progress": { en: "Progress", es: "Progreso" },
+  "nav.settings": { en: "Settings", es: "Ajustes" },
+  "nav.offline": { en: "Local mode", es: "Modo local" },
+  "nav.offlineHint": {
+    en: "Everything works without a connection.",
+    es: "Todo funciona sin conexión.",
+  },
+  "nav.motto": {
+    en: "Discipline today, results tomorrow.",
+    es: "Disciplina hoy, resultados mañana.",
+  },
+
+  // ── Exercise library ──────────────────────────────────────────────────
+  "ex.title": { en: "Exercises", es: "Ejercicios" },
+  "ex.count": {
+    en: "{total} exercises · {guide} with extra variant cues",
+    es: "{total} ejercicios · {guide} con indicaciones propias de variante",
+  },
+  "ex.variant": { en: "Variant", es: "Variante" },
+  "ex.search": {
+    en: "Search exercise, muscle or equipment…",
+    es: "Buscar ejercicio, músculo o equipo…",
+  },
+  "ex.clear": { en: "Clear search", es: "Borrar búsqueda" },
+  "ex.clearFilters": { en: "Clear filters", es: "Quitar filtros" },
+  "ex.none": { en: "No exercise matches", es: "Ningún ejercicio coincide" },
+  "ex.noneHint": {
+    en: "Try a shorter word, or drop one of the filters — the catalog has {n} entries.",
+    es: "Prueba con una palabra más corta o quita un filtro — el catálogo tiene 143 entradas.",
+  },
+  "ex.showing": { en: "{n} shown", es: "{n} a la vista" },
+  "ex.guide": { en: "Guide", es: "Guía" },
+  "ex.cardio": { en: "Cardio", es: "Cardio" },
+  "ex.back": { en: "Back to the library", es: "Volver a la biblioteca" },
+  "ex.missing": {
+    en: "That exercise is not in the catalog",
+    es: "Ese ejercicio no está en el catálogo",
+  },
+  "ex.missingHint": {
+    en: "It may have been renamed or removed since the link was saved.",
+    es: "Puede que se renombrara o se quitara desde que se guardó el enlace.",
+  },
+  "ex.level": { en: "Level", es: "Nivel" },
+  "ex.unilateral": { en: "One side at a time", es: "Un lado a la vez" },
+  "ex.noCues": {
+    en: "We have no extra notes for this movement yet.",
+    es: "Aún no tenemos notas extra para este movimiento.",
+  },
+  "ex.techniqueLevel": {
+    en: "Skill required",
+    es: "Técnica exigida",
+  },
+  "ex.cat.compound": { en: "Compound", es: "Compuesto" },
+  "ex.cat.isolation": { en: "Isolation", es: "Aislamiento" },
+  "ex.cat.bodyweight": { en: "Bodyweight", es: "Peso corporal" },
+  "ex.cat.cable": { en: "Cable", es: "Polea" },
+  "ex.cat.machine": { en: "Machine", es: "Máquina" },
+  "ex.cat.cardio": { en: "Cardio", es: "Cardio" },
+  "ex.sort.az": { en: "A–Z", es: "A–Z" },
+  "ex.sort.level": { en: "By level", es: "Por nivel" },
+  "ex.tab.guide": { en: "Guide", es: "Guía" },
+  "ex.tab.summary": { en: "Summary", es: "Resumen" },
+  "ex.tab.rank": { en: "Rank", es: "Rango" },
+  "ex.tab.history": { en: "History", es: "Historial" },
+  "ex.rankLockedWhy": {
+    en: "Needs your sex, age and bodyweight in Settings, and cited strength standards we have not validated yet",
+    es: "Necesita tu sexo, edad y peso en Ajustes, y estándares de fuerza citados que aún no hemos validado",
+  },
+  "ex.rank.title": {
+    en: "Rank: not shipped yet, on purpose",
+    es: "Rango: aún no disponible, a propósito",
+  },
+  "ex.rank.body": {
+    en: "Comparing you with other people needs normative data with a source we can name and check. We will not invent a percentile. Until the standards pass validation, the only honest comparison is with yourself — and that lives in History.",
+    es: "Compararte con otras personas exige datos normativos con una fuente que podamos nombrar y comprobar. No vamos a inventar un percentil. Hasta que los estándares pasen la validación, la única comparación honesta es contigo mismo — y esa está en Historial.",
+  },
+  "ex.history.empty": {
+    en: "No sets logged for this exercise",
+    es: "Sin series registradas de este ejercicio",
+  },
+  "ex.history.emptyHint": {
+    en: "Log it once and this tab becomes the most useful one: your best set, your estimated 1RM over time and what you did the last time.",
+    es: "Regístralo una vez y esta pestaña pasa a ser la más útil: tu mejor serie, tu 1RM estimado en el tiempo y lo que hiciste la última vez.",
+  },
+  "ex.guide.quick": { en: "Quick steps", es: "Pasos rápidos" },
+  "ex.guide.setup": { en: "Setup", es: "Preparación" },
+  "ex.guide.execution": { en: "Execution", es: "Ejecución" },
+  "ex.guide.mistakes": { en: "Common mistakes", es: "Errores típicos" },
+  "ex.guide.mistakesHint": {
+    en: "Where the movement usually breaks down",
+    es: "Dónde se suele romper el movimiento",
+  },
+  "ex.guide.safety": { en: "Safety", es: "Seguridad" },
+  "ex.guide.breathing": { en: "Breathing", es: "Respiración" },
+  "ex.guide.tempo": { en: "Tempo", es: "Tempo" },
+  "ex.guide.effort": { en: "Effort (RIR)", es: "Esfuerzo (RIR)" },
+  "ex.guide.variant": {
+    en: "This variant carries its own extra cues on top of the pattern.",
+    es: "Esta variante añade indicaciones propias sobre las del patrón.",
+  },
+  "ex.guide.provenance": {
+    en: "Coaching from the shared pattern library — not generated text.",
+    es: "Técnica de la biblioteca compartida por patrón — no es texto generado.",
+  },
+  "ex.summary.muscles": { en: "Muscles", es: "Músculos" },
+  "ex.summary.equipment": { en: "Equipment", es: "Equipo" },
+  "ex.summary.joint": { en: "Joint load", es: "Carga articular" },
+  "ex.summary.spine": { en: "Spinal load", es: "Carga espinal" },
+  "ex.summary.progression": {
+    en: "Ways to progress it",
+    es: "Formas de progresar",
+  },
+
+  // ── Screens still being built ─────────────────────────────────────────
+  "phase.badge": { en: "Next phase", es: "Próxima fase" },
+  "phase.body": {
+    en: "This destination is already in the shell. Its content arrives in phase {phase} of the redesign.",
+    es: "Este destino ya está en la estructura. Su contenido llega en la fase {phase} del rediseño.",
+  },
+  "phase.goToday": { en: "Go to Home", es: "Ir a Inicio" },
+  "phase.session.1": {
+    en: "The set table with the PREVIOUS column, set types and effort per set",
+    es: "La tabla de series con columna ANTERIOR, tipos de serie y esfuerzo por serie",
+  },
+  "phase.session.2": {
+    en: "A sticky rest bar with +15 s and skip, owned by the timer",
+    es: "Barra de descanso fija con +15 s y saltar, gobernada por el temporizador",
+  },
+  "phase.session.3": {
+    en: "Collapsible side rails: focus, quick guide, current log and notes",
+    es: "Rails laterales plegables: enfoque, guía rápida, registro actual y notas",
+  },
+  "phase.progress.1": {
+    en: "Muscle map painted with the volume you actually logged",
+    es: "Mapa muscular pintado con el volumen que tú registras",
+  },
+  "phase.progress.2": {
+    en: "Volume per muscle family, split into effective, complementary and accessory sets",
+    es: "Volumen por familia, separando series efectivas, complementarias y accesorias",
+  },
+  "phase.progress.3": {
+    en: "Trend chart, records and the coach's proposals as real actions",
+    es: "Gráfica de tendencia, marcas y las propuestas del asistente como acciones reales",
+  },
+  "phase.settings.1": {
+    en: "Profile: name, birth date (the age is derived), sex, height and weight",
+    es: "Perfil: nombre, fecha de nacimiento (la edad se deriva), sexo, altura y peso",
+  },
+  "phase.settings.2": {
+    en: "Goal, level, days per week, time budget and unit (kg / lb USA)",
+    es: "Objetivo, nivel, días por semana, presupuesto de tiempo y unidad (kg / lb USA)",
+  },
+  "phase.settings.3": {
+    en: "Gear inventory, coach, household network, import/export and erasing local data",
+    es: "Inventario de equipo, asistente, red de casa, importar/exportar y borrar datos locales",
+  },
+
+  // ── Inicio ────────────────────────────────────────────────────────────
+  "home.greeting": { en: "Hey 👋", es: "Hola 👋" },
+  "home.ready": {
+    en: "Today's session is ready.",
+    es: "Tu entrenamiento de hoy está listo.",
+  },
+  "home.restDay": {
+    en: "A recovery day — the plan already took it into account.",
+    es: "Hoy toca recuperar. El plan ya lo tiene en cuenta.",
+  },
+  "home.badge.zen": { en: "ZEN", es: "ZEN" },
+  "home.today": { en: "Today", es: "HOY" },
+  "home.rest": { en: "Rest", es: "DESCANSO" },
+  "home.hero.title": { en: "Today's session", es: "Entrenamiento de hoy" },
+  "home.hero.gear": {
+    en: "With the gear you have",
+    es: "Con el equipo que tienes",
+  },
+  "home.hero.bodyweight": {
+    en: "Bodyweight only",
+    es: "Solo peso corporal",
+  },
+  "home.hero.linked": {
+    en: "BodyLab linked",
+    es: "BodyLab conectado",
+  },
+  "home.hero.cta": {
+    en: "Start training",
+    es: "Iniciar entrenamiento",
+  },
+  "home.kpi.consistency": {
+    en: "Weekly consistency",
+    es: "Constancia semanal",
+  },
+  "home.kpi.daysOf": {
+    en: "{done} of {target} days",
+    es: "{done} de {target} días",
+  },
+  "home.kpi.consistencyHint": { en: "This week", es: "Esta semana" },
+  "home.kpi.readiness": { en: "Recovery", es: "Recuperación" },
+  "home.kpi.ready": { en: "Ready", es: "Listo" },
+  "home.kpi.fair": { en: "Fair", es: "Justo" },
+  "home.kpi.low": { en: "Low", es: "Bajo" },
+  "home.kpi.readyHint": {
+    en: "Enough energy for the full plan",
+    es: "Energía suficiente para el plan completo",
+  },
+  "home.kpi.fairHint": {
+    en: "The plan trims the volume a little",
+    es: "El plan recorta un poco el volumen",
+  },
+  "home.kpi.lowHint": {
+    en: "The plan drops volume and raises the RIR target",
+    es: "El plan baja volumen y sube el RIR objetivo",
+  },
+  "home.kpi.volume": { en: "Weekly volume", es: "Volumen semanal" },
+  "home.kpi.volumeHint": {
+    en: "Sets logged / sets planned",
+    es: "Series hechas / planificadas",
+  },
+  "home.kpi.bodyweight": { en: "Body weight", es: "Peso corporal" },
+  "home.kpi.bodyweightFrom": {
+    en: "Imported from BodyLab",
+    es: "Importado de BodyLab",
+  },
+  "home.kpi.bodyweightNone": {
+    en: "No BodyLab data",
+    es: "Sin datos de BodyLab",
+  },
+  // ── Inicio: the boseto's own furniture ───────────────────────────────
+  "home.pill.elapsedHint": {
+    en: "Counting from the first set you logged today",
+    es: "Cuenta desde la primera serie que registraste hoy",
+  },
+  "home.week.title": { en: "Week at a glance", es: "Resumen de la semana" },
+  "home.week.done": { en: "Done", es: "Completado" },
+  "home.week.pending": { en: "Pending", es: "Pendiente" },
+  "home.next.title": { en: "Next exercise", es: "Siguiente ejercicio" },
+  "home.next.current": { en: "Current session", es: "Sesión actual" },
+  "home.next.go": { en: "Continue in ZEN", es: "Continuar en ZEN" },
+  "home.numbers.title": { en: "Your numbers", es: "Tus cifras" },
+  "home.numbers.records": {
+    en: "{n} BodyLab records merged in",
+    es: "{n} marcas de BodyLab incluidas",
+  },
+  "home.zen.progress": {
+    en: "{pct} % of today's sets",
+    es: "{pct} % de las series de hoy",
+  },
+  "home.progress.title": { en: "Your progress", es: "Tu progreso" },
+  "home.progress.week": { en: "Week", es: "Semana" },
+  "home.progress.month": { en: "Month", es: "Mes" },
+  "home.progress.year": { en: "Quarter", es: "Trimestre" },
+  "home.progress.note": {
+    en: "Nice: you hit your target in {n} of the last 4 weeks.",
+    es: "Vas muy bien: cumpliste tu objetivo en {n} de las últimas 4 semanas.",
+  },
+  "home.progress.noteNone": {
+    en: "Log a full week and the trend line starts to mean something.",
+    es: "Registra una semana completa y la tendencia empezará a decir algo.",
+  },
+  "home.progress.constancy": { en: "Consistency", es: "Constancia" },
+  "home.progress.sets": {
+    en: "{done} of {target} sets completed.",
+    es: "{done} de {target} series completadas.",
+  },
+  "home.progress.daySets": { en: "{n} sets", es: "{n} series" },
+  "home.tiles.title": { en: "Your data", es: "Tus datos" },
+  "home.tiles.sessions": { en: "Sessions", es: "Sesiones" },
+  "home.tiles.sets": { en: "Sets logged", es: "Series registradas" },
+  "home.tiles.exercises": {
+    en: "Distinct exercises",
+    es: "Ejercicios distintos",
+  },
+  "home.tiles.records": { en: "BodyLab records", es: "Marcas de BodyLab" },
+  "home.tiles.days": { en: "Days trained", es: "Días entrenados" },
+  "home.focus.badge": { en: "ZEN MODE", es: "MODO ZEN" },
+  "home.focus.title": { en: "Focus", es: "Enfócate" },
+  "home.focus.body": {
+    en: "Your only job right now is the next repetition.",
+    es: "Tu única tarea ahora es completar la siguiente repetición.",
+  },
+
+  // ── Progreso ──────────────────────────────────────────────────────────
+  "progress.periodHint": { en: "Last {n} days", es: "Últimos {n} días" },
+  "progress.days": { en: "{n} d", es: "{n} d" },
+  "progress.empty": {
+    en: "Nothing logged yet",
+    es: "Todavía no hay nada registrado",
+  },
+  "progress.emptyHint": {
+    en: "Log one session and this screen fills itself: volume, balance, records and trend.",
+    es: "Registra una sesión y esta pantalla se llena sola: volumen, equilibrio, marcas y tendencia.",
+  },
+  "progress.kpi.sets": { en: "Working sets", es: "Series de trabajo" },
+  "progress.kpi.setsHint": {
+    en: "In the last {n} days",
+    es: "En los últimos {n} días",
+  },
+  "progress.kpi.volume": { en: "Volume", es: "Volumen" },
+  "progress.kpi.volumeHint": {
+    en: "Kilos moved: weight × reps",
+    es: "Kilos movidos: peso × repeticiones",
+  },
+  "progress.kpi.perSet": { en: "kg per set", es: "kg por serie" },
+  "progress.kpi.perSetHint": {
+    en: "Average per working set",
+    es: "Media por serie de trabajo",
+  },
+  "progress.kpi.days": { en: "Days trained", es: "Días entrenados" },
+  "progress.kpi.consistencyHint": {
+    en: "{pct} % of this week's plan",
+    es: "{pct} % del plan de esta semana",
+  },
+  "progress.trend": { en: "General progress", es: "Progreso general" },
+  "progress.peak": { en: "Peak {n} sets", es: "Máx {n} series" },
+  "progress.heat.title": {
+    en: "Muscle heat map",
+    es: "Mapa de calor muscular",
+  },
+  "progress.heat.hint": {
+    en: "Sets per muscle family in the period",
+    es: "Series por grupo muscular en el periodo",
+  },
+  "progress.heat.scale": {
+    en: "More intense = more work",
+    es: "Más intenso = más trabajo",
+  },
+  "progress.heat.effective": {
+    en: "Effective sets",
+    es: "Series efectivas",
+  },
+  "progress.heat.complementary": {
+    en: "Complementary sets",
+    es: "Series complementarias",
+  },
+  "progress.heat.accessory": {
+    en: "Accessory sets",
+    es: "Series accesorias",
+  },
+  // ── Progreso: body analysis (the mockup's signature section) ────────
+  "progress.body.title": { en: "Body analysis", es: "Análisis corporal" },
+  "progress.body.sub": {
+    en: "2D map · Volume · Balance",
+    es: "Mapa 2D · Volumen · Equilibrio",
+  },
+  "progress.body.mapLabel": { en: "2D MAP", es: "MAPA 2D" },
+  "progress.body.front": { en: "Front view", es: "Vista frontal" },
+  "progress.body.back": { en: "Back view", es: "Vista posterior" },
+  "progress.body.tapHint": {
+    en: "Tap a zone to inspect it",
+    es: "Toca una zona para inspeccionarla",
+  },
+  "progress.body.mapAlt": {
+    en: "Front and back muscle heat map; colour follows your logged training stimulus",
+    es: "Mapa de calor muscular frontal y posterior; el color sigue el estímulo registrado",
+  },
+  "progress.body.selectFamily": {
+    en: "Inspect",
+    es: "Explorar",
+  },
+  "progress.body.equivalentSets": {
+    en: "{n} equivalent sets",
+    es: "{n} series equivalentes",
+  },
+  "progress.body.selectedStats": {
+    en: "{family} · {stimulus} equivalent sets · {sets} logged sets · {index}/100",
+    es: "{family} · {stimulus} series equivalentes · {sets} series · {index}/100",
+  },
+  "progress.body.noData": {
+    en: "No logged work",
+    es: "Sin trabajo registrado",
+  },
+  "progress.body.summary": {
+    en: "Summary by muscle group",
+    es: "Resumen por grupo muscular",
+  },
+  "progress.body.empty": {
+    en: "Nothing logged in this period",
+    es: "Nada registrado en este periodo",
+  },
+  "progress.body.indexHint": {
+    en: "Colour compares estimated hard-set equivalents in this period: primary involvement = 1, secondary = 0.66, accessory = 0.33. The index is relative to your most-trained family, not a population norm.",
+    es: "El color compara series duras equivalentes del periodo: participación principal = 1, secundaria = 0,66 y accesoria = 0,33. El índice es relativo a tu grupo más entrenado, no a una norma poblacional.",
+  },
+  "progress.body.schematic": {
+    en: "Anatomical zones are an estimate from the exercise catalogue. This map does not measure muscle size, recovery, pain, or growth.",
+    es: "Las zonas anatómicas son una aproximación basada en el catálogo de ejercicios. El mapa no mide tamaño muscular, recuperación, dolor ni crecimiento.",
+  },
+  "progress.body.trendUp": {
+    en: "Up on the previous period",
+    es: "Sube frente al periodo anterior",
+  },
+  "progress.body.trendDown": {
+    en: "Down on the previous period",
+    es: "Baja frente al periodo anterior",
+  },
+  "progress.body.trendFlat": {
+    en: "Steady on the previous period",
+    es: "Estable frente al periodo anterior",
+  },
+  // ── Progreso: the goal lens (2026-09-29 e) ──────────────────────────
+  "progress.lens.training": {
+    en: "Training",
+    es: "Entrenamiento",
+  },
+  "progress.lens.goal": { en: "Goals", es: "Objetivos" },
+  "progress.goal.source": {
+    en: "Goal source",
+    es: "Fuente del objetivo",
+  },
+  "progress.goal.measures": {
+    en: "BodyLab measures",
+    es: "Medidas de BodyLab",
+  },
+  "progress.goal.targets": { en: "My targets", es: "Mis objetivos" },
+  "progress.goal.golden": {
+    en: "Golden ratio",
+    es: "Proporción dorada",
+  },
+  "progress.body.goalStats": {
+    en: "{family} · {actual} cm of {goal} cm · {index}/100",
+    es: "{family} · {actual} cm de {goal} cm · {index}/100",
+  },
+  "progress.body.goalHint": {
+    en: "Colour shows how close each family is to your target circumference (100 = at target). Estimates a shape, never growth or recovery.",
+    es: "El color muestra qué tan cerca está cada grupo de tu perímetro objetivo (100 = en el objetivo). Estima una forma, nunca crecimiento ni recuperación.",
+  },
+  "progress.goal.noMeasures": {
+    en: "No BodyLab measures yet — import your BodyLab export, set your own targets, or use the golden-ratio preset.",
+    es: "Aún no hay medidas de BodyLab — importa tu exportación, define tus propios objetivos o usa la proporción dorada.",
+  },
+  "progress.goal.noWaist": {
+    en: "The golden-ratio preset needs a waist: measure it in BodyLab or declare it in Ajustes → Progreso → Objetivos.",
+    es: "La proporción dorada necesita una cintura: mídela en BodyLab o declárala en Ajustes → Progreso → Objetivos.",
+  },
+  "progress.goal.noTargets": {
+    en: "You have not set any target yet — define them in Ajustes → Progreso → Objetivos.",
+    es: "Aún no has definido objetivos — créalos en Ajustes → Progreso → Objetivos.",
+  },
+  "settings.goals.title": {
+    en: "Body goals",
+    es: "Objetivos corporales",
+  },
+  "settings.goals.hint": {
+    en: "Optional circumferences in cm. They feed the goal view of the 2D map — leave a family empty and it simply has no target.",
+    es: "Perímetros opcionales en cm. Alimentan la vista de objetivos del mapa 2D — deja un grupo vacío y simplemente no tiene objetivo.",
+  },
+  "settings.goals.waist": {
+    en: "Waist (cm) — anchors the golden-ratio preset",
+    es: "Cintura (cm) — ancla la proporción dorada",
+  },
+  "settings.goals.waistPlaceholder": { en: "e.g. 84", es: "p. ej. 84" },
+  // ── Reps per set, decided by the user (2026-09-29 e) ─────────────────
+  "slot.repsLabel": { en: "Reps per set", es: "Reps por serie" },
+  "slot.repsMin": { en: "Min reps", es: "Reps mín" },
+  "slot.repsMax": { en: "Max reps", es: "Reps máx" },
+  "slot.repsCustom": { en: "yours", es: "tuyo" },
+  "slot.repsReset": { en: "Reset", es: "Restablecer" },
+  "slot.repsHint": {
+    en: "Set your own rep range — it replaces the planner's for this exercise.",
+    es: "Define tu propio rango de reps — sustituye al del plan para este ejercicio.",
+  },
+  "progress.band.excellent": {
+    en: "Top of your range · 80–100",
+    es: "Tope de tu rango · 80–100",
+  },
+  "progress.band.strong": {
+    en: "Well covered · 60–79",
+    es: "Bien cubierto · 60–79",
+  },
+  "progress.band.moderate": {
+    en: "Moderate · 40–59",
+    es: "Moderado · 40–59",
+  },
+  "progress.band.weak": { en: "Weak · 20–39", es: "Débil · 20–39" },
+  "progress.band.veryLow": {
+    en: "Very low · 0–19",
+    es: "Muy bajo · 0–19",
+  },
+  "progress.detail.title": {
+    en: "Sets per family",
+    es: "Series por familia",
+  },
+  "progress.balance.title": { en: "Balance", es: "Equilibrio" },
+  "progress.balance.most": { en: "Most trained", es: "La que más trabajas" },
+  "progress.balance.least": {
+    en: "Least trained",
+    es: "La que menos trabajas",
+  },
+  "progress.balance.hint": {
+    en: "If the gap grows for weeks, the planner already puts the weakest family first on the next training day.",
+    es: "Si la distancia crece durante semanas, el planificador ya pone la familia más débil primero en el próximo día de entrenamiento.",
+  },
+  "progress.marks.title": { en: "Top lifts", es: "Mejores avances" },
+  "progress.marks.count": { en: "{n} marks", es: "{n} marcas" },
+  "progress.marks.empty": {
+    en: "Log a set with a weight and your best lift appears here.",
+    es: "Registra una serie con peso y tu mejor levantamiento aparecerá aquí.",
+  },
+  "progress.marks.fromBodyLab": {
+    en: "from BodyLab",
+    es: "desde BodyLab",
+  },
+  "progress.assistant.title": {
+    en: "Assistant recommendations",
+    es: "Recomendaciones del asistente",
+  },
+  "progress.assistant.empty": {
+    en: "Once there is logged history, the priorities appear here.",
+    es: "Cuando haya historial registrado, las prioridades aparecen aquí.",
+  },
+  "progress.assistant.priority": {
+    en: "Prioritise {family}",
+    es: "Prioriza {family}",
+  },
+  "progress.assistant.detail": {
+    en: "{sets} sets in the last week · index {score}/100",
+    es: "{sets} series en la última semana · índice {score}/100",
+  },
+  "progress.assistant.withBodyLab": {
+    en: "Priorities come from the planner's own weakness map, informed by your BodyLab export.",
+    es: "Las prioridades salen del mapa de debilidades del planificador, informado por tu export de BodyLab.",
+  },
+  "progress.assistant.withoutBodyLab": {
+    en: "Priorities come from the planner's own map, built from your logged history. Import a BodyLab export to add body measurements.",
+    es: "Las prioridades salen del mapa del planificador, construido con tu historial. Importa un export de BodyLab para añadir medidas corporales.",
+  },
+
+  // ── Ajustes ──────────────────────────────────────────────────────────
+  "settings.pageHint": {
+    en: "Goal, gear, assistant, data and household network — all optional.",
+    es: "Objetivo, equipo, asistente, datos y red de casa — todo opcional.",
+  },
+  "settings.profile.linked": {
+    en: "Profile linked from BodyLab",
+    es: "Perfil conectado desde BodyLab",
+  },
+  "settings.profile.local": { en: "Local profile", es: "Perfil local" },
+  "settings.profile.bodylab": {
+    en: "Height, weight and composition come from the last export.",
+    es: "Altura, peso y composición vienen del último export.",
+  },
+  "settings.profile.bodylabNone": {
+    en: "No export: the app works the same with its internal catalog.",
+    es: "Sin export: la app funciona igual con su catálogo interno.",
+  },
+  "settings.catalogNote": {
+    en: "exercises in the built-in catalog",
+    es: "ejercicios en el catálogo interno",
+  },
+  "settings.importHint": {
+    en: "BodyLab's v2 export brings measurements, the weakness map and your records. Without it, TrainingLab plans from your own history alone.",
+    es: "El export v2 de BodyLab aporta medidas, el mapa de debilidades y tus marcas. Sin él, TrainingLab planifica solo con tu historial.",
+  },
+  "settings.about.privacy": {
+    en: "100 % local: no accounts, no telemetry, no background downloads.",
+    es: "100 % local: sin cuentas, sin telemetría y sin descargas en segundo plano.",
+  },
+  "settings.about.offline": {
+    en: "Everything works without a connection.",
+    es: "Todo funciona sin conexión.",
+  },
+  "common.seeAll": { en: "See all", es: "Ver todo" },
+  "session.noneHint": {
+    en: "Recovery is part of the plan: the next session is already scheduled.",
+    es: "Recuperar es parte del plan: la próxima sesión ya está programada.",
+  },
 };
 
 export function t(key: string): string {

@@ -142,6 +142,81 @@ export function familyLabel(family: string): string {
   return entry ? (entry[getLanguage()] ?? entry.en) : family;
 }
 
+/**
+ * The 34 catalog muscles, in the user's words.
+ *
+ * The catalog names muscles for the *model* (`chest_upper`, `triceps_long`) and
+ * a screen cannot show those. This is the only place the mapping lives, and it
+ * falls back to the raw id, so a muscle added to the core catalog shows up as
+ * "new_muscle" instead of an empty cell.
+ */
+const MUSCLE_LABEL: Record<string, { en: string; es: string }> = {
+  chest_upper: { en: "Upper chest", es: "Pecho superior" },
+  chest_lower: { en: "Lower chest", es: "Pecho inferior" },
+  pectoralis_minor: { en: "Pectoralis minor", es: "Pectoral menor" },
+  serratus_anterior: { en: "Serratus anterior", es: "Serrato anterior" },
+  anterior_deltoid: { en: "Front deltoid", es: "Deltoides anterior" },
+  lateral_deltoid: { en: "Side deltoid", es: "Deltoides lateral" },
+  posterior_deltoid: { en: "Rear deltoid", es: "Deltoides posterior" },
+  triceps_long: { en: "Triceps (long head)", es: "Tríceps (cabeza larga)" },
+  triceps_lateral: {
+    en: "Triceps (lateral head)",
+    es: "Tríceps (cabeza lateral)",
+  },
+  triceps_medial: {
+    en: "Triceps (medial head)",
+    es: "Tríceps (cabeza medial)",
+  },
+  biceps_long: { en: "Biceps (long head)", es: "Bíceps (cabeza larga)" },
+  biceps_short: { en: "Biceps (short head)", es: "Bíceps (cabeza corta)" },
+  brachioradialis: { en: "Brachioradialis", es: "Braquiorradial" },
+  forearm_flexors: { en: "Forearm flexors", es: "Flexores del antebrazo" },
+  forearm_extensors: {
+    en: "Forearm extensors",
+    es: "Extensores del antebrazo",
+  },
+  lats_upper: { en: "Lats (upper)", es: "Dorsal (porción alta)" },
+  lats_mid: { en: "Lats (mid)", es: "Dorsal (porción media)" },
+  lats_lower: { en: "Lats (lower)", es: "Dorsal (porción baja)" },
+  traps_upper: { en: "Upper traps", es: "Trapecio superior" },
+  traps_mid: { en: "Mid traps", es: "Trapecio medio" },
+  traps_lower: { en: "Lower traps", es: "Trapecio inferior" },
+  rhomboids: { en: "Rhomboids", es: "Romboides" },
+  rectus_abdominis: { en: "Rectus abdominis", es: "Recto abdominal" },
+  obliques: { en: "Obliques", es: "Oblicuos" },
+  erector_spinae: { en: "Erector spinae", es: "Erectores espinales" },
+  iliopsoas: { en: "Iliopsoas", es: "Iliopsoas" },
+  gluteus_maximus: { en: "Gluteus maximus", es: "Glúteo mayor" },
+  gluteus_medius: { en: "Gluteus medius", es: "Glúteo medio" },
+  quadriceps: { en: "Quadriceps", es: "Cuádriceps" },
+  adductors: { en: "Adductors", es: "Aductores" },
+  hamstrings: { en: "Hamstrings", es: "Isquiotibiales" },
+  calves: { en: "Calves", es: "Gemelos" },
+  soleus: { en: "Soleus", es: "Sóleo" },
+  tibialis_anterior: { en: "Tibialis anterior", es: "Tibial anterior" },
+};
+
+/** Translated muscle label (falls back to the raw id). */
+export function muscleLabel(muscle: string): string {
+  const entry = MUSCLE_LABEL[muscle];
+  return entry ? (entry[getLanguage()] ?? entry.en) : muscle;
+}
+
+const CATEGORY_LABEL: Record<string, { en: string; es: string }> = {
+  compound: { en: "Compound", es: "Compuesto" },
+  isolation: { en: "Isolation", es: "Aislamiento" },
+  bodyweight: { en: "Bodyweight", es: "Peso corporal" },
+  cable: { en: "Cable", es: "Polea" },
+  machine: { en: "Machine", es: "Máquina" },
+  cardio: { en: "Cardio", es: "Cardio" },
+};
+
+/** Translated category label (falls back to the raw id). */
+export function categoryLabel(category: string): string {
+  const entry = CATEGORY_LABEL[category];
+  return entry ? (entry[getLanguage()] ?? entry.en) : category;
+}
+
 /** One reason as a short, translated phrase. */
 export function formatReason(reason: PlanReason): string {
   switch (reason.code) {

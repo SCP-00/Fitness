@@ -1,25 +1,37 @@
 /**
- * ZEN session — the workout stripped to what matters mid-set.
+ * ZEN — the session, with the exercise owning the screen.
  *
- * Owner spec (2026-09-29): when a session starts, everything else disappears.
- * Only four things exist here:
- *   1. the exercise you are on (and what comes next, small, at the bottom);
- *   2. the set you are on: "Serie 2 de 5";
- *   3. the weight, huge, in the chosen unit;
- *   4. how hard that set felt: a 1–5 fatigue row per set (RPE-class), one tap.
+ * The owner's mockup (`docs/reference/traininglab-design/04-zen-mode.png`) shows
+ * three columns of attention, and this file is that composition:
  *
- * Warm-up ramp lives here too (the 50/70/85 ramp for the first exercise's
- * load) — tagged `warmup: true` so no aggregate ever counts it.
+ *   * **the stage** (left): the exercise, the set you are on, the load, the reps
+ *     and — after the set — how hard it was, in one tap;
+ *   * **the rails** (right): *Enfócate* (why you are here), *Guía rápida* (three
+ *     steps, from the shared technique library), *Registro actual* (the set table
+ *     with the `Anterior` column) and *Notas* (what to watch for).
  *
- * Everything else — swaps, stats, settings — waits outside. Escape hatch:
- * a small × top-right (44 px), and Escape on desktop.
+ * Two deliberate departures from the mockup, both because this is a logger, not a
+ * poster:
+ *
+ *   * **The rest countdown is not the middle of this screen.** The rest timer is
+ *     owned by the store and drawn as a bar over *every* destination, so a rest
+ *     that is going while you read something else is never lost. Duplicating it
+ *     here would show two countdowns for one rest.
+ *   * **The screen scrolls to the log, not the log to the screen.** The weight
+ *     stepper is the largest control on the page: that is the thing your thumb
+ *     finds mid-set.
+ *
+ * The warm-up ramp survives exactly as it was: buildWarmup's 50/70/85 % steps are
+ * tagged `warmup: true`, so no aggregate anywhere in the app counts them.
  *
  * @module features/today/ZenSession
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { Minus, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { CheckCircle2, Minus, Plus, Repeat, Timer } from "lucide-react";
+import { getExerciseTechnique } from "@fitness/bodylab-exercises";
 import { t, tInterp, getLanguage } from "../../lib/i18n";
+import { familyLabel } from "../../lib/format";
 import { fromKg, toKg, type WeightUnit } from "../../lib/units";
 import { parseNumberInput } from "../../lib/parse-num";
 import type { PlannedRow } from "../../lib/plan";
@@ -38,31 +50,67 @@ export function ZenSession({
   rows,
   unit,
   suggestionFor,
+  loggedToday,
+  previousSetsFor,
   onLogSet,
   onFinish,
   onExit,
+  repRangeFor,
+  onRepRange,
 }: {
   rows: PlannedRow[];
   unit: WeightUnit;
   /** Suggested first-set load per exercise (kg canonical). */
   suggestionFor: (exerciseId: string) => number | null;
-  onLogSet: (row: PlannedRow, weightKg: number | null, reps: number, opts?: { warmup?: boolean; rpe?: number }) => void;
+  /** Working sets already logged today for an exercise. */
+  loggedToday: (exerciseId: string) => TLSet[];
+  /** The sets of the previous session that trained this exercise, oldest first. */
+  previousSetsFor: (exerciseId: string) => TLSet[];
+  onLogSet: (
+    row: PlannedRow,
+    weightKg: number | null,
+    reps: number,
+    opts?: { warmup?: boolean; rpe?: number },
+  ) => void;
   onFinish: () => void;
   onExit: () => void;
+  /** The effective rep range for a row (override or plan default). */
+  repRangeFor?: (exerciseId: string) => {
+    min: number;
+    max: number;
+    custom: boolean;
+  };
+  /** Sets (or clears, with `null`) the user's rep range for an exercise. */
+  onRepRange?: (
+    exerciseId: string,
+    range: { min: number; max: number } | null,
+  ) => void;
 }) {
   const lang = getLanguage();
   const [rowIdx, setRowIdx] = useState(0);
-  const [setDone, setSetDone] = useState<Record<string, number>>({});
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [lastFatigue, setLastFatigue] = useState<number | null>(null);
   const [phase, setPhase] = useState<"warmup" | "work">("warmup");
   const [warmupStep, setWarmupStep] = useState(0);
+  // The reps-per-set editor, inline in the facts row (2026-09-29 e).
+  const [editingReps, setEditingReps] = useState(false);
+  const [repDraftMin, setRepDraftMin] = useState("");
+  const [repDraftMax, setRepDraftMax] = useState("");
 
   const row = rows[rowIdx]!;
   const isCardio = row.cardioMin !== undefined;
-  const done = setDone[row.exerciseId] ?? 0;
+  const todaySets = loggedToday(row.exerciseId);
+  const done = todaySets.length;
   const complete = done >= row.sets;
+  // The user's range when they set one; the plan's otherwise. Everything
+  // below — prefill, target fact, submit fallback — reads this, so the
+  // override is real in ZEN and not just a label on Inicio.
+  const repRange = repRangeFor?.(row.exerciseId) ?? {
+    min: row.repsMin,
+    max: row.repsMax,
+    custom: false,
+  };
 
   const warmup = useMemo(
     () =>
@@ -78,11 +126,13 @@ export function ZenSession({
   const suggestedKg = suggestionFor(row.exerciseId);
   useEffect(() => {
     setWeight(suggestedKg !== null ? String(fromKg(suggestedKg, unit)) : "");
-    setReps(String(row.repsMin));
+    setReps(String(repRange.min));
     setPhase("warmup");
     setWarmupStep(0);
     setLastFatigue(null);
-  }, [row.exerciseId, suggestedKg, unit, row.repsMin]);
+    // repRange is derived per-row; including it would re-reset mid-edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row.exerciseId, suggestedKg, unit]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -97,10 +147,12 @@ export function ZenSession({
 
   const nextRow = rows[rowIdx + 1] ?? null;
   const totalWorkSets = rows.reduce((a, r) => a + r.sets, 0);
-  const doneWorkSets = Object.entries(setDone).reduce((a, [id, n]) => {
-    const r = rows.find((x) => x.exerciseId === id);
-    return a + Math.min(n, r?.sets ?? 0);
-  }, 0);
+  const doneWorkSets = rows.reduce(
+    (a, r) => a + Math.min(loggedToday(r.exerciseId).length, r.sets),
+    0,
+  );
+  const previous = previousSetsFor(row.exerciseId);
+  const technique = getExerciseTechnique(row.exerciseId);
 
   const currentWeightKg = (): number | null => {
     if (isCardio) return null;
@@ -111,26 +163,17 @@ export function ZenSession({
 
   const logCurrent = (fatigue?: number) => {
     if (phase === "warmup" && warmup.length > 0) {
-      const s = warmup[warmupStep]!;
-      onLogSet(row, s.weightKg, s.reps, { warmup: true });
-      if (warmupStep + 1 < warmup.length) {
-        setWarmupStep(warmupStep + 1);
-      } else {
-        setPhase("work");
-      }
+      const step = warmup[warmupStep]!;
+      onLogSet(row, step.weightKg, step.reps, { warmup: true });
+      if (warmupStep + 1 < warmup.length) setWarmupStep(warmupStep + 1);
+      else setPhase("work");
       return;
     }
-    const r = parseNumberInput(reps) ?? row.repsMin;
+    const r = parseNumberInput(reps) ?? repRange.min;
     if (r === null || r <= 0) return;
-    const wKg = currentWeightKg();
-    onLogSet(row, wKg, r, { rpe: fatigue });
+    onLogSet(row, currentWeightKg(), r, { rpe: fatigue });
     setLastFatigue(fatigue ?? null);
-    setSetDone((prev: Record<string, number>) => ({
-      ...prev,
-      [row.exerciseId]: (prev[row.exerciseId] ?? 0) + 1,
-    }));
-    // Reset reps for the next set; keep the weight (same set scheme).
-    setReps(String(row.repsMin));
+    setReps(String(repRange.min));
   };
 
   /** Advance to the next exercise (or finish) when the prescription is done. */
@@ -139,176 +182,483 @@ export function ZenSession({
     else onFinish();
   };
 
+  const warmupSet = phase === "warmup" ? (warmup[warmupStep] ?? null) : null;
   const unitLabel = unit;
-  const warmupSet = phase === "warmup" ? warmup[warmupStep] ?? null : null;
 
   return (
-    <div
-      className="fixed inset-0 z-[70] bg-black text-[var(--tl-text)] flex flex-col"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("zen.title")}
-    >
-      {/* Header: minimal — position + exit */}
-      <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
-        <span className="text-xs text-[var(--tl-text-muted)] tabular-nums">
-          {tInterp("zen.progress", { done: doneWorkSets, total: totalWorkSets })}
-        </span>
-        <button
-          onClick={onExit}
-          aria-label={t("zen.exit")}
-          className="p-3 -m-1 rounded-xl text-[var(--tl-text-muted)] hover:text-[var(--tl-text)] tl-focusable"
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
+    <div className="tl-zen-grid">
+      {/* ── Stage ────────────────────────────────────────────────────────── */}
+      <div className="tl-col">
+        <section className="tl-card">
+          <div className="tl-zen-stage">
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className="tl-dots"
+                role="img"
+                aria-label={tInterp("slot.of", { done, total: row.sets })}
+              >
+                {Array.from({ length: row.sets }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`tl-dot ${i < done ? "is-on" : ""}`}
+                  />
+                ))}
+              </div>
+              <h2 className="text-2xl font-bold leading-tight">
+                {row.name[lang]}
+              </h2>
+              <p className="text-sm text-[var(--tl-text-muted)]">
+                {row.families.slice(0, 2).map(familyLabel).join(" · ")}
+                {row.pattern ? ` · ${row.pattern.replace(/_/g, " ")}` : ""}
+              </p>
+            </div>
 
-      {/* Exercise */}
-      <div className="px-6 pt-2 pb-1">
-        <h1 className="text-2xl font-bold leading-tight">{row.name[lang]}</h1>
-        <p className="text-sm text-[var(--tl-text-muted)] mt-1">
-          {isCardio
-            ? tInterp("session.cardioDesc", { n: row.cardioMin! })
-            : `${row.sets} × ${row.repsMin}–${row.repsMax} · RIR ${row.rir}`}
+            {/* Warm-up ramp: the same three steps, one at a time. */}
+            {warmupSet && !isCardio ? (
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-xs uppercase tracking-wide text-[var(--tl-text-muted)]">
+                  {t("zen.warmup")} · {warmupStep + 1}/{warmup.length}
+                </p>
+                <p className="text-5xl font-bold tabular-nums">
+                  {/* Three cases, not two: an empty bar is a real 0 %, a
+                      bodyweight/cardio opener has no percentage at all. */}
+                  {warmupSet.percent === 0
+                    ? t("zen.emptyBar")
+                    : warmupSet.percent === null
+                      ? t("zen.mobilityLine")
+                      : `${warmupSet.percent}%`}
+                </p>
+                <p className="text-lg text-[var(--tl-text-secondary)] tabular-nums">
+                  {warmupSet.reps > 0
+                    ? tInterp("zen.warmupReps", {
+                        reps: warmupSet.reps,
+                        w:
+                          warmupSet.weightKg !== null
+                            ? fromKg(warmupSet.weightKg, unit).toFixed(1)
+                            : "—",
+                        unit: unitLabel,
+                      })
+                    : warmupSet.note[lang]}
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-[var(--tl-text-secondary)] tabular-nums">
+                  {tInterp("zen.setOf", {
+                    done: Math.min(done + 1, row.sets),
+                    total: row.sets,
+                  })}
+                </p>
+
+                {/* The load: the largest control on the page. */}
+                {!isCardio && (
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWeight((w) =>
+                          String(
+                            Math.max(
+                              0,
+                              (parseNumberInput(w) ?? 0) - stepOf(unit),
+                            ),
+                          ),
+                        )
+                      }
+                      aria-label={t("zen.less")}
+                      className="p-4 rounded-2xl bg-[var(--tl-surface-2)] border border-[var(--tl-border)] tl-focusable"
+                    >
+                      <Minus className="w-6 h-6" />
+                    </button>
+                    <div className="text-center min-w-[8rem]">
+                      <input
+                        value={weight}
+                        onChange={(e) => setWeight(e.target.value)}
+                        inputMode="decimal"
+                        aria-label={t("log.weight")}
+                        className="w-full bg-transparent text-center text-6xl font-bold tabular-nums outline-none"
+                      />
+                      <span className="text-sm text-[var(--tl-text-muted)]">
+                        {unitLabel}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWeight((w) =>
+                          String((parseNumberInput(w) ?? 0) + stepOf(unit)),
+                        )
+                      }
+                      aria-label={t("zen.more")}
+                      className="p-4 rounded-2xl bg-[var(--tl-surface-2)] border border-[var(--tl-border)] tl-focusable"
+                    >
+                      <Plus className="w-6 h-6" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="tl-zen-facts">
+                  <Fact
+                    value={
+                      editingReps ? (
+                        <span className="inline-flex items-center gap-1">
+                          <input
+                            value={repDraftMin}
+                            onChange={(e) => setRepDraftMin(e.target.value)}
+                            inputMode="numeric"
+                            aria-label={t("slot.repsMin")}
+                            className="w-10 bg-transparent text-center tabular-nums outline-none border-b border-[var(--tl-border)]"
+                          />
+                          –
+                          <input
+                            value={repDraftMax}
+                            onChange={(e) => setRepDraftMax(e.target.value)}
+                            inputMode="numeric"
+                            aria-label={t("slot.repsMax")}
+                            className="w-10 bg-transparent text-center tabular-nums outline-none border-b border-[var(--tl-border)]"
+                          />
+                        </span>
+                      ) : (
+                        `${repRange.min}–${repRange.max}`
+                      )
+                    }
+                    label={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editingReps) {
+                            const min = parseNumberInput(repDraftMin);
+                            const max = parseNumberInput(repDraftMax);
+                            if (min !== null && min >= 1 && onRepRange) {
+                              onRepRange(row.exerciseId, {
+                                min,
+                                max: max === null ? min : Math.max(min, max),
+                              });
+                            }
+                            setEditingReps(false);
+                          } else {
+                            setRepDraftMin(String(repRange.min));
+                            setRepDraftMax(String(repRange.max));
+                            setEditingReps(true);
+                          }
+                        }}
+                        title={t("slot.repsHint")}
+                        className="tl-focusable underline decoration-dotted underline-offset-4 hover:text-[var(--tl-accent)] transition-colors"
+                      >
+                        {editingReps ? t("common.save") : t("log.reps")}
+                        {repRange.custom && !editingReps
+                          ? ` · ${t("slot.repsCustom")}`
+                          : ""}
+                      </button>
+                    }
+                  />
+                  <Fact
+                    value={
+                      isCardio
+                        ? `${row.cardioMin}′`
+                        : `${Math.round(fromKg(currentWeightKg() ?? 0, unit) * 10) / 10} ${unitLabel}`
+                    }
+                    label={isCardio ? t("ex.cardio") : t("log.weight")}
+                  />
+                  <Fact
+                    value={tInterp("slot.rest", { s: row.restSec })}
+                    label={t("settings.model")}
+                  />
+                </div>
+
+                <input
+                  value={reps}
+                  onChange={(e) => setReps(e.target.value)}
+                  inputMode="numeric"
+                  aria-label={t("log.reps")}
+                  className="w-24 bg-transparent text-center text-xl tabular-nums outline-none text-[var(--tl-text-secondary)] border-b border-[var(--tl-border)]"
+                />
+
+                {/* Effort per set: one tap, no numbers to type. */}
+                <div className="w-full max-w-md">
+                  <p className="text-center text-xs uppercase tracking-wide text-[var(--tl-text-muted)] mb-2">
+                    {t("zen.fatigue")}
+                  </p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {([1, 2, 3, 4, 5] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => logCurrent(v)}
+                        className={`min-h-[3.25rem] rounded-xl border text-sm font-semibold tl-focusable transition-colors ${
+                          lastFatigue === v
+                            ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)] border-transparent"
+                            : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-center text-[11px] text-[var(--tl-text-muted)] mt-1">
+                    {lastFatigue !== null
+                      ? FATIGUE_LABELS[lastFatigue as 1 | 2 | 3 | 4 | 5][lang]
+                      : t("zen.fatigueHint")}
+                  </p>
+                </div>
+              </>
+            )}
+
+            <div className="flex flex-col gap-2 w-full max-w-md">
+              {warmupSet && !isCardio ? (
+                <button
+                  type="button"
+                  onClick={() => logCurrent()}
+                  className="min-h-[3.25rem] rounded-2xl tl-btn-primary text-base font-semibold"
+                >
+                  {t("zen.doneWarmup")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => logCurrent()}
+                  disabled={complete}
+                  className="min-h-[3.25rem] rounded-2xl tl-btn-primary text-base font-semibold disabled:opacity-40"
+                >
+                  {t("zen.logSet")}
+                </button>
+              )}
+              {complete && (
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="min-h-[3.25rem] rounded-2xl tl-btn-ghost text-base"
+                >
+                  {nextRow
+                    ? tInterp("zen.next", { name: nextRow.name[lang] })
+                    : t("zen.finish")}
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Next up: the mockup's "Siguiente serie" row. */}
+        <section className="tl-card">
+          <div className="tl-card-body">
+            <div className="tl-next">
+              <span className="tl-day-icon shrink-0" aria-hidden>
+                {complete ? "✓" : Math.min(done + 1, row.sets)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+                  {complete ? t("zen.upNext") : t("home.next.title")}
+                </p>
+                <p className="text-sm font-semibold truncate mt-0.5">
+                  {complete && nextRow ? nextRow.name[lang] : row.name[lang]}
+                </p>
+                <p className="text-[11px] text-[var(--tl-text-secondary)] mt-1 tabular-nums">
+                  {tInterp("slot.of", { done, total: row.sets })} ·{" "}
+                  {repRange.min}–{repRange.max} ·{" "}
+                  {tInterp("slot.rest", { s: row.restSec })}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="tl-arrow-btn tl-focusable"
+                title={complete ? t("zen.finish") : t("zen.logSet")}
+                aria-label={complete ? t("zen.finish") : t("zen.logSet")}
+                onClick={() => (complete ? goNext() : logCurrent())}
+              >
+                →
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <p className="flex items-center justify-center gap-2 text-[11px] text-[var(--tl-text-muted)]">
+          <Timer className="w-3.5 h-3.5" />
+          {tInterp("zen.progress", {
+            done: doneWorkSets,
+            total: totalWorkSets,
+          })}{" "}
+          · {t("zen.sessionRunning")}
         </p>
       </div>
 
-      {/* Body: warmup ramp or the set */}
-      <div className="flex-1 flex flex-col justify-center px-6 gap-6">
-        {warmupSet && !isCardio ? (
-          <div className="text-center">
-            <p className="text-xs uppercase tracking-wide text-[var(--tl-text-muted)]">
-              {t("zen.warmup")} · {warmupStep + 1}/{warmup.length}
+      {/* ── Rails ────────────────────────────────────────────────────────── */}
+      <aside className="tl-col">
+        <section className="tl-card">
+          <div className="tl-zen-panel">
+            <div className="tl-zen-label">{t("home.focus.badge")}</div>
+            <h3 className="text-xl font-bold mb-1.5">
+              {t("home.focus.title")}
+            </h3>
+            <p className="text-xs text-[var(--tl-text-secondary)] leading-relaxed">
+              {t("home.focus.body")}
             </p>
-            <p className="text-5xl font-bold tabular-nums mt-2">
-              {/* Three cases, not two: an empty bar is a real 0 %, a
-                  bodyweight/cardio opener has no percentage at all — rendering
-                  `${null}%` there was the bug this comment replaces. */}
-              {warmupSet.percent === 0
-                ? t("zen.emptyBar")
-                : warmupSet.percent === null
-                  ? t("zen.mobilityLine")
-                  : `${warmupSet.percent}%`}
-            </p>
-            <p className="text-lg text-[var(--tl-text-secondary)] mt-1 tabular-nums">
-              {warmupSet.reps > 0
-                ? tInterp("zen.warmupReps", {
-                    reps: warmupSet.reps,
-                    w: warmupSet.weightKg !== null ? fromKg(warmupSet.weightKg, unit).toFixed(1) : "—",
-                    unit: unitLabel,
-                  })
-                : warmupSet.note[lang]}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="text-center">
-              <p className="text-sm text-[var(--tl-text-muted)] tabular-nums">
-                {tInterp("zen.setOf", { done: Math.min(done + 1, row.sets), total: row.sets })}
-              </p>
-              {!isCardio && (
-                <div className="flex items-center justify-center gap-4 mt-3">
-                  <button
-                    onClick={() => setWeight((w) => String(Math.max(0, (parseNumberInput(w) ?? 0) - stepOf(unit))))}
-                    aria-label={t("zen.less")}
-                    className="p-4 rounded-2xl bg-[var(--tl-surface-2)] tl-focusable"
-                  >
-                    <Minus className="w-6 h-6" />
-                  </button>
-                  <div className="text-center min-w-[8rem]">
-                    <input
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                      inputMode="decimal"
-                      aria-label={t("log.weight")}
-                      className="w-full bg-transparent text-center text-6xl font-bold tabular-nums outline-none"
-                    />
-                    <span className="text-sm text-[var(--tl-text-muted)]">{unitLabel}</span>
-                  </div>
-                  <button
-                    onClick={() => setWeight((w) => String((parseNumberInput(w) ?? 0) + stepOf(unit)))}
-                    aria-label={t("zen.more")}
-                    className="p-4 rounded-2xl bg-[var(--tl-surface-2)] tl-focusable"
-                  >
-                    <Plus className="w-6 h-6" />
-                  </button>
-                </div>
-              )}
-              <input
-                value={reps}
-                onChange={(e) => setReps(e.target.value)}
-                inputMode="numeric"
-                aria-label={t("log.reps")}
-                className="mt-3 bg-transparent text-center text-xl tabular-nums outline-none text-[var(--tl-text-secondary)]"
+            <div className="tl-zen-progress">
+              <span
+                style={{
+                  width: `${progressPct(doneWorkSets, totalWorkSets)}%`,
+                }}
               />
             </div>
+          </div>
+        </section>
 
-            {/* Fatigue per set — one tap after the set */}
-            <div>
-              <p className="text-center text-xs uppercase tracking-wide text-[var(--tl-text-muted)] mb-2">
-                {t("zen.fatigue")}
-              </p>
-              <div className="grid grid-cols-5 gap-2">
-                {([1, 2, 3, 4, 5] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => logCurrent(v)}
-                    className={`min-h-[3.25rem] rounded-xl border text-sm font-semibold tl-focusable transition-colors ${
-                      lastFatigue === v
-                        ? "bg-[var(--tl-accent)] text-black border-transparent"
-                        : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
-                    }`}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
-              <p className="text-center text-[11px] text-[var(--tl-text-muted)] mt-1">
-                {lastFatigue !== null
-                  ? FATIGUE_LABELS[lastFatigue as 1 | 2 | 3 | 4 | 5][lang]
-                  : t("zen.fatigueHint")}
-              </p>
+        <section className="tl-card">
+          <div className="tl-card-head">
+            <h2>{t("zen.guide")}</h2>
+            <span>
+              {tInterp("slot.techniqueLvl", {
+                n: technique?.techniqueLevel ?? 1,
+              })}
+            </span>
+          </div>
+          <div className="tl-card-body">
+            <div className="tl-steps">
+              <Step
+                n={1}
+                title={t("zen.step1")}
+                body={
+                  suggestedKg !== null
+                    ? tInterp("log.suggested", {
+                        w: Math.round(fromKg(suggestedKg, unit) * 10) / 10,
+                      })
+                    : t("zen.step1b")
+                }
+              />
+              <Step
+                n={2}
+                title={t("zen.step2")}
+                body={
+                  technique ? cue(technique.execution[0], lang) : t("ex.noCues")
+                }
+              />
+              <Step n={3} title={t("zen.step3")} body={t("zen.step3b")} />
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </section>
 
-      {/* Actions */}
-      <div className="px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 flex flex-col gap-2">
-        {warmupSet && !isCardio ? (
-          <button
-            onClick={() => logCurrent()}
-            className="min-h-[3.25rem] rounded-2xl tl-btn-primary text-base font-semibold"
-          >
-            {t("zen.doneWarmup")}
-          </button>
-        ) : (
-          <button
-            onClick={() => logCurrent()}
-            disabled={complete}
-            className="min-h-[3.25rem] rounded-2xl tl-btn-primary text-base font-semibold disabled:opacity-40"
-          >
-            {t("zen.logSet")}
-          </button>
-        )}
-        {complete && (
-          <button
-            onClick={goNext}
-            className="min-h-[3.25rem] rounded-2xl tl-btn-ghost text-base"
-          >
-            {nextRow
-              ? tInterp("zen.next", { name: nextRow.name[lang] })
-              : t("zen.finish")}
-          </button>
-        )}
-        {nextRow && !complete && (
-          <p className="text-center text-xs text-[var(--tl-text-muted)]">
-            {t("zen.upNext")}: {nextRow.name[lang]}
-          </p>
-        )}
-      </div>
+        {/* Registro actual — the set table, `Anterior` column included. */}
+        <section className="tl-card">
+          <div className="tl-card-head">
+            <h2>{t("zen.log")}</h2>
+            <span>{tInterp("slot.of", { done, total: row.sets })}</span>
+          </div>
+          <div className="tl-card-body">
+            <table className="tl-table">
+              <thead>
+                <tr>
+                  <th>{t("zen.col.set")}</th>
+                  <th className="num">{t("log.reps")}</th>
+                  <th className="num">{t("zen.col.kg")}</th>
+                  <th className="num">{t("zen.col.previous")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: row.sets }, (_, i) => {
+                  const logged = todaySets[i];
+                  const previousSet = previous[i];
+                  const current = i === done;
+                  return (
+                    <tr key={i} className={current ? "is-current" : ""}>
+                      <td className="tabular-nums">{i + 1}</td>
+                      <td className="num">
+                        {logged?.reps ?? (current ? reps || repRange.min : "—")}
+                      </td>
+                      <td className="num">
+                        {logged?.weight !== null && logged?.weight !== undefined
+                          ? Math.round(fromKg(logged.weight, unit) * 10) / 10
+                          : current && !isCardio
+                            ? Math.round(
+                                fromKg(currentWeightKg() ?? 0, unit) * 10,
+                              ) / 10
+                            : "—"}
+                      </td>
+                      <td className="num">
+                        {previousSet
+                          ? `${previousSet.reps ?? "—"}×${
+                              previousSet.weight !== null
+                                ? Math.round(
+                                    fromKg(previousSet.weight, unit) * 10,
+                                  ) / 10
+                                : "—"
+                            }`
+                          : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Notas — what to watch out for, straight from the shared library. */}
+        <section className="tl-card">
+          <div className="tl-card-head">
+            <h2>{t("ex.tab.guide")}</h2>
+            <span>{t("ex.guide.mistakes")}</span>
+          </div>
+          <div className="tl-card-body flex flex-col gap-2">
+            <p className="flex items-start gap-2 text-xs text-[var(--tl-text-secondary)] leading-relaxed">
+              <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--tl-accent)]" />
+              {technique ? cue(technique.mistakes[0], lang) : t("ex.noCues")}
+            </p>
+            <p className="flex items-start gap-2 text-xs text-[var(--tl-text-muted)] leading-relaxed">
+              <Repeat className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              {technique
+                ? tInterp("zen.tempo", {
+                    tempo: technique.tempo,
+                    rir: technique.effort.rir,
+                  })
+                : t("ex.noCues")}
+            </p>
+          </div>
+        </section>
+      </aside>
     </div>
   );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Small pieces
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function Fact({ value, label }: { value: ReactNode; label: ReactNode }) {
+  return (
+    <div className="tl-zen-fact">
+      <div className="tl-zen-fact-value">{value}</div>
+      <div className="tl-zen-fact-label">{label}</div>
+    </div>
+  );
+}
+
+function Step({ n, title, body }: { n: number; title: string; body: string }) {
+  return (
+    <div className="tl-step">
+      <span className="tl-step-icon" aria-hidden>
+        {n}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-[11px] text-[var(--tl-text-muted)] mt-0.5 leading-relaxed">
+          {body}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** A cue in the app language, falling back to English — never an empty string. */
+function cue(
+  value: { en: string; es: string } | undefined,
+  lang: "en" | "es",
+): string {
+  if (!value) return t("ex.noCues");
+  return value[lang] ?? value.en;
+}
+
+function progressPct(done: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.min(100, Math.round((done / total) * 100));
 }
 
 /** ±step for the ± buttons: 2.5 kg (≈5.5 lb) or the lb display of it. */
@@ -317,4 +667,3 @@ function stepOf(unit: WeightUnit): number {
 }
 
 export type { TLSet };
-void (t as unknown as TLSet | undefined);

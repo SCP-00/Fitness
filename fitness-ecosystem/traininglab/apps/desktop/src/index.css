@@ -1,45 +1,84 @@
 @import "tailwindcss";
 
 /*
- * TrainingLab design tokens — black + orange identity.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  TrainingLab — design system
  *
- * BodyLab speaks "clinical lab" (white/indigo, data-first). TrainingLab speaks
- * "iron gym" (near-black steel + ember orange, strength-first). The palette is
- * WCAG-checked against the same 2xl radii / surface vocabulary, so components
- * port between apps with a token swap only.
+ *  Tokens first, components second. The component classes below are the
+ *  *boseto* (`docs/Boseto_preview.html`, the owner's own sketch) ported into the
+ *  app: its gradients, shadows, hero art, ring, week tiles and body map are the
+ *  look we are matching, so they live here once instead of being re-invented in
+ *  JSX with ad-hoc utilities.
+ *
+ *  Rules that keep it coherent:
+ *    * a surface is never nested inside a surface of the same level (page →
+ *      `.tl-card` → `--tl-surface-2` control → `--tl-surface-3` inner control);
+ *    * everything measured is `tabular-nums`;
+ *    * every colour comes from a token, so a theme would be a one-block change.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* ── Tokens ──────────────────────────────────────────────────────────────
+ * Palette v2 (2026-09-29 c): the owner's mockups replaced the first dark set
+ * with a cooler one and a punchier ember orange. Every pair was measured, not
+ * eyeballed — worst case in the app is muted on `surface-3` at 4.57:1, which is
+ * why `--tl-text-muted` is `#7f8a95` and not the mockup's `#68727d` (3.55:1,
+ * which fails AA for the 11px labels it is used on).
+ *
+ *   text 16.8 · secondary 7.3 · muted 4.6 · accent 5.9 · on-accent 7.3
+ *   success 10.0 · warning 11.9 · danger 5.7 · info 7.3
  */
 :root {
-  --tl-bg: #0a0a0a;
-  --tl-surface: #141414;
-  --tl-surface-2: #1e1e1e;
-  --tl-border: #2a2a2a;
-  --tl-border-strong: #3f3f3f;
+  --tl-bg: #080b0e;
+  --tl-surface: #10151a;
+  --tl-surface-2: #151b21;
+  --tl-surface-3: #1b2229;
+  --tl-border: #29313a;
+  --tl-border-strong: #39434e;
 
-  --tl-text: #fafafa;
-  --tl-text-secondary: #a3a3a3;
-  --tl-text-muted: #737373;
+  --tl-text: #f3f5f7;
+  --tl-text-secondary: #9ba5af;
+  --tl-text-muted: #7f8a95;
 
-  --tl-accent: #f97316; /* ember orange 500 */
-  --tl-accent-strong: #ea580c; /* orange 600 */
-  --tl-accent-soft: #c2410c; /* orange 700 for hover rings */
-  --tl-accent-wash: rgba(249, 115, 22, 0.12);
+  --tl-accent: #ff7300;
+  --tl-accent-strong: #ff9447;
+  --tl-accent-soft: #c75200;
+  --tl-accent-wash: rgba(255, 115, 0, 0.12);
+  --tl-accent-border: rgba(255, 115, 0, 0.35);
+  --tl-on-accent: #0a0a0a;
 
-  --tl-success: #10b981;
-  --tl-danger: #ef4444;
-  --tl-warning: #f59e0b;
+  --tl-success: #39d98a;
+  --tl-warning: #ffc857;
+  --tl-danger: #ff4f4f;
+  --tl-info: #46a8ff;
+
+  --radius: 16px;
+  --radius-small: 10px;
+  --rail-width: 245px;
+  --rail-compact-width: 78px;
+  --tabbar-height: 72px;
 }
 
 html,
 body,
 #root {
   /* 100dvh, not 100vh: Safari iOS keeps the URL bar in the 100vh figure, so
-     the bottom of the app would sit behind it. dvh tracks the real viewport. */
+     the bottom of the app would sit behind it. */
   min-height: 100dvh;
 }
 
 body {
-  background: var(--tl-bg);
   color: var(--tl-text);
+  /* The owner's sketch opens with a warm glow in the top right; it is what
+     keeps the near-black page from reading as flat. */
+  background:
+    radial-gradient(
+      circle at 70% 10%,
+      rgba(255, 115, 0, 0.08),
+      transparent 35%
+    ),
+    var(--tl-bg);
+  background-attachment: fixed;
   font-family:
     ui-sans-serif,
     system-ui,
@@ -48,21 +87,17 @@ body {
     Roboto,
     sans-serif;
   -webkit-font-smoothing: antialiased;
-  /* Safe areas (iPhone notch + home indicator) when running standalone or
-     with viewport-fit=cover: keep thumbs and content out of the corners. */
+  /* Safe areas (iPhone notch + home indicator). */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
-  /* Prevent horizontal rubber-banding on iOS Safari. */
   overscroll-behavior-x: none;
-  /* Momentum scrolling tuned for long cards. */
   -webkit-overflow-scrolling: touch;
 }
 
 /*
- * Inputs never zoom Safari on focus: iOS auto-zooms any input with
- * font-size < 16px. Our compact inputs are 14px on desktop, so the phone
- * media query below restores 16px (and keeps the same visual size via
- * tighter line-height).
+ * Inputs never zoom Safari on focus: iOS auto-zooms any input with font-size
+ * < 16px. Our compact inputs are 14px on desktop, so this restores 16px (and
+ * keeps the same visual size via tighter line-height).
  */
 input,
 select,
@@ -70,38 +105,575 @@ textarea {
   font-size: max(16px, 1em);
 }
 
-/* Shared building blocks (mirrors BodyLab's rounded-2xl card language) */
-.tl-card {
-  background: var(--tl-surface);
+/* ══════════════════════════════════════════════════════════════════════════
+   Shell — rail (≥1024px) and tab bar (below)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * The page geometry lives here, not in the screens: `.tl-shell` reserves the
+ * rail and `.tl-main` is the single padded column every destination drops into.
+ * A screen that wants to be wider or narrower overrides one token, and no screen
+ * ever invents its own `max-w-*` (that is how a five-screen app ends up with
+ * five different left margins).
+ *
+ * `--tl-main-max` caps the measure on a 2K monitor; the mockup is full-bleed at
+ * 1440 px, which this reproduces exactly.
+ */
+.tl-shell {
+  --tl-rail-current: 0px;
+  min-height: 100dvh;
+}
+
+@media (min-width: 1024px) {
+  .tl-shell {
+    --tl-rail-current: var(--rail-width);
+    padding-left: var(--tl-rail-current);
+    transition: padding-left 180ms ease-out;
+  }
+
+  .tl-shell.is-rail-compact {
+    --tl-rail-current: var(--rail-compact-width);
+  }
+}
+
+.tl-main {
+  --tl-main-max: 1600px;
+  width: 100%;
+  max-width: calc(var(--tl-main-max) + var(--tl-rail-current));
+  margin-inline: auto;
+  padding: 22px 18px
+    calc(var(--tabbar-height) + 34px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+@media (min-width: 1024px) {
+  .tl-main {
+    padding: 25px 25px 32px;
+    gap: 20px;
+  }
+}
+
+/* The centered loader every screen shows while the store hydrates. */
+.tl-loading {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  color: var(--tl-text-muted);
+}
+
+/*
+ * The rail owns its own visibility rather than leaving it to a utility class:
+ * this stylesheet is unlayered, so it would win against Tailwind's layered
+ * `hidden`/`lg:flex` regardless of source order. One rule, one place.
+ */
+.tl-rail {
+  display: none;
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  width: var(--tl-rail-current);
+  padding: 22px 16px;
+  border-right: 1px solid var(--tl-border);
+  background: linear-gradient(180deg, #0d1217 0%, #090d11 100%);
+  flex-direction: column;
+  transition:
+    width 180ms ease-out,
+    padding 180ms ease-out;
+}
+
+@media (min-width: 1024px) {
+  .tl-rail {
+    display: flex;
+  }
+}
+
+.tl-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 26px;
+  font-size: 19px;
+  font-weight: 800;
+  min-width: 0;
+}
+
+.tl-rail-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 18px;
+}
+
+.tl-rail-head .tl-rail-brand {
+  flex: 1;
+  padding-bottom: 8px;
+  margin-bottom: 0;
+}
+
+.tl-rail-toggle {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
   border: 1px solid var(--tl-border);
-  border-radius: 1rem;
+  border-radius: 10px;
+  background: var(--tl-surface-2);
+  color: var(--tl-text-secondary);
+  font-size: 25px;
+  line-height: 1;
+  transition: 0.18s ease;
+}
+
+.tl-rail-toggle:hover {
+  border-color: var(--tl-accent-border);
+  color: var(--tl-accent-strong);
+}
+
+.tl-shell.is-rail-compact .tl-rail {
+  padding-inline: 12px;
+}
+
+.tl-shell.is-rail-compact .tl-rail-head {
+  justify-content: center;
+}
+
+.tl-shell.is-rail-compact .tl-rail-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.tl-shell.is-rail-compact .tl-rail-brand span,
+.tl-shell.is-rail-compact .tl-nav-label,
+.tl-shell.is-rail-compact .tl-offline-card .tl-offline-status span:last-child,
+.tl-shell.is-rail-compact .tl-offline-card p,
+.tl-shell.is-rail-compact .tl-quote {
+  display: none;
+}
+
+.tl-shell.is-rail-compact .tl-rail-head .tl-rail-brand {
+  flex: 0 0 28px;
+}
+
+.tl-shell.is-rail-compact .tl-nav-item {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.tl-shell.is-rail-compact .tl-offline-card {
+  padding: 10px;
+}
+
+.tl-shell.is-rail-compact .tl-offline-status {
+  justify-content: center;
+  margin: 0;
+}
+
+.tl-rail-brand span {
+  color: var(--tl-accent);
+}
+
+.tl-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tl-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 14px;
+  border-radius: 11px;
+  color: var(--tl-text-secondary);
+  font-weight: 600;
+  text-align: left;
+  transition: 0.18s ease;
+}
+
+.tl-nav-item:hover {
+  background: var(--tl-surface-2);
+  color: #fff;
+}
+
+.tl-nav-item.is-active {
+  color: #fff;
+  background: linear-gradient(90deg, var(--tl-accent), #ff5d00);
+  box-shadow: 0 8px 30px rgba(255, 115, 0, 0.18);
+}
+
+.tl-offline-card {
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid var(--tl-border);
+  border-radius: var(--radius-small);
+  background: rgba(17, 23, 29, 0.75);
+}
+
+.tl-offline-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--tl-success);
+  margin-bottom: 5px;
+}
+
+/* The motto under the offline card. Muted on purpose: it is the one piece of
+   copy in the rail that is not information. */
+.tl-quote {
+  color: var(--tl-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 0 4px;
+}
+
+.tl-offline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tl-success);
+  box-shadow: 0 0 10px rgba(57, 217, 138, 0.8);
+}
+
+/*
+ * The phone tab bar: translucent so content stays legible behind it, with the
+ * home-indicator inset reserved (that is what stops the last row of a list from
+ * hiding under the bar).
+ */
+.tl-tabbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--tl-border);
+  background: color-mix(in oklab, var(--tl-bg) 96%, transparent);
+  backdrop-filter: blur(14px);
+  display: flex;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .tl-tabbar {
+    display: none;
+  }
+}
+
+.tl-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tl-text-muted);
+  transition: 0.18s ease;
+}
+
+.tl-tab.is-active {
+  color: var(--tl-accent);
+}
+
+.tl-tab-centre {
+  margin-top: -16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--tl-accent);
+  color: var(--tl-on-accent);
+  border: 4px solid var(--tl-bg);
+  box-shadow: 0 8px 24px rgba(255, 115, 0, 0.35);
+}
+
+.tl-tab-centre.is-active {
+  background: var(--tl-accent-strong);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Page furniture
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.tl-welcome h1 {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.tl-welcome p {
+  color: var(--tl-text-secondary);
+  margin-top: 5px;
+}
+
+/* The sketch's pill: a soft chip for context (date, mode, clock). */
+.tl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid var(--tl-border);
+  border-radius: 999px;
+  background: var(--tl-surface);
+  color: var(--tl-text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tl-pill.is-accent {
+  color: var(--tl-accent-strong);
+  border-color: var(--tl-accent-border);
+  background: var(--tl-accent-wash);
+}
+
+/* The two-column dashboard: wide column + rail, collapsing in that order. */
+.tl-dash {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.tl-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .tl-dash {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Card
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-card {
+  border: 1px solid var(--tl-border);
+  border-radius: var(--radius);
+  /* A very slight diagonal gradient plus one soft shadow: enough to lift the
+     card off the page without a shadow ladder. */
+  background: linear-gradient(
+    145deg,
+    rgba(22, 28, 34, 0.94),
+    rgba(13, 17, 21, 0.96)
+  );
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
 }
 
 .tl-card-hover:hover {
   border-color: var(--tl-border-strong);
 }
 
-.tl-input {
-  background: var(--tl-surface-2);
-  border: 1px solid var(--tl-border);
-  color: var(--tl-text);
-  border-radius: 0.75rem;
+.tl-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px 0;
 }
 
-.tl-input:focus {
-  outline: none;
-  border-color: var(--tl-accent);
-  box-shadow: 0 0 0 2px var(--tl-accent-wash);
+.tl-card-head h2,
+.tl-card-head h3 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.tl-card-head span {
+  color: var(--tl-text-muted);
+  font-size: 12px;
+}
+
+.tl-card-body {
+  padding: 18px 20px 20px;
+}
+
+.tl-slot-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--tl-border);
+  border-radius: 10px;
+  background: var(--tl-surface-2);
+  color: var(--tl-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tl-slot-toggle:hover {
+  border-color: var(--tl-accent-border);
+  color: var(--tl-text);
+}
+
+.tl-slot-toggle svg {
+  transition: transform 180ms ease-out;
+}
+
+.tl-slot-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Hero — the one card allowed to own the first screenful
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-hero {
+  position: relative;
+  min-height: 330px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* The art: a dark plate with the ember slab cutting across it. Drawn with
+   gradients on purpose — no photograph to license, nothing to mangle, and it
+   survives being the only "image" on the page. */
+.tl-hero-art {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, #111820, #1d252c 50%, #281707);
+}
+
+.tl-hero-slab {
+  position: absolute;
+  width: 330px;
+  height: 430px;
+  right: -80px;
+  top: -50px;
+  background: linear-gradient(
+    135deg,
+    transparent 35%,
+    rgba(255, 115, 0, 0.86) 36%,
+    rgba(255, 115, 0, 0.72) 57%,
+    transparent 58%
+  );
+  transform: rotate(-5deg);
+}
+
+/* The scrim keeps the copy readable no matter where the slab lands. */
+.tl-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(8, 11, 14, 0.97) 0%,
+    rgba(8, 11, 14, 0.82) 45%,
+    rgba(8, 11, 14, 0.25) 100%
+  );
+}
+
+.tl-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
+}
+
+.tl-hero-content h2 {
+  font-size: 31px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.tl-hero-sub {
+  color: var(--tl-text-secondary);
+  margin-bottom: 20px;
+}
+
+.tl-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  color: var(--tl-text-secondary);
+  font-size: 13px;
+  margin-bottom: 23px;
+}
+
+.tl-hero-meta strong {
+  color: var(--tl-text);
+}
+
+@media (max-width: 850px) {
+  .tl-hero {
+    min-height: 300px;
+    padding: 22px;
+  }
+  .tl-hero-content h2 {
+    font-size: 25px;
+  }
+  .tl-hero-meta {
+    flex-direction: column;
+    gap: 9px;
+  }
+}
+
+/* The "HOY" / "MODO ZEN" badge. */
+.tl-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 6px 10px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  background: var(--tl-accent-wash);
+  border: 1px solid var(--tl-accent-border);
+  color: var(--tl-accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Buttons
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 11px;
+  font-weight: 700;
+  transition: 0.18s ease;
 }
 
 .tl-btn-primary {
   background: var(--tl-accent);
-  color: #0a0a0a;
-  font-weight: 600;
+  color: var(--tl-on-accent);
+  font-weight: 800;
 }
 
 .tl-btn-primary:hover {
+  transform: translateY(-1px);
   background: var(--tl-accent-strong);
+  box-shadow: 0 8px 25px rgba(255, 115, 0, 0.3);
 }
 
 .tl-btn-ghost {
@@ -115,6 +687,37 @@ textarea {
   border-color: var(--tl-border-strong);
 }
 
+/* Circular arrow button from the sketch's "next session" row. */
+.tl-arrow-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--tl-accent);
+  color: var(--tl-on-accent);
+  flex-shrink: 0;
+  transition: 0.18s ease;
+}
+
+.tl-arrow-btn:hover {
+  background: var(--tl-accent-strong);
+  transform: translateX(2px);
+}
+
+.tl-input {
+  background: var(--tl-surface-2);
+  border: 1px solid var(--tl-border);
+  color: var(--tl-text);
+  border-radius: 12px;
+}
+
+.tl-input:focus {
+  outline: none;
+  border-color: var(--tl-accent);
+  box-shadow: 0 0 0 2px var(--tl-accent-wash);
+}
+
 .tl-chip {
   background: var(--tl-accent-wash);
   color: var(--tl-accent);
@@ -123,8 +726,8 @@ textarea {
 
 /*
  * Horizontal strips (phone ergonomics): a row that scrolls sideways instead of
- * stacking four cards vertically. The scrollbar itself is noise on a touch
- * screen, so it is hidden while scrolling stays enabled.
+ * stacking. The scrollbar is noise on a touch screen, so it is hidden while
+ * scrolling stays enabled.
  */
 .tl-hscroll {
   scrollbar-width: none;
@@ -135,22 +738,953 @@ textarea {
   display: none;
 }
 
-/* Focus ring for keyboard-first navigation */
 .tl-focusable:focus-visible {
   outline: 2px solid var(--tl-accent);
   outline-offset: 2px;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Metrics — the four-tile KPI strip
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.tl-context-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-top: -8px;
+  padding-block: 2px 4px;
+}
+
+.tl-context-tags::-webkit-scrollbar {
+  display: none;
+}
+
+.tl-context-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 13px;
+  flex: 0 0 auto;
+  border: 1px solid var(--tl-border);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tl-surface) 90%, transparent);
+  color: var(--tl-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  transition: 0.18s ease;
+}
+
+.tl-context-tag:hover,
+.tl-context-tag.is-active {
+  color: var(--tl-text);
+  border-color: var(--tl-accent-border);
+  background: var(--tl-accent-wash);
+}
+
+.tl-context-tag.is-primary {
+  color: var(--tl-on-accent);
+  border-color: transparent;
+  background: var(--tl-accent);
+}
+
+.tl-context-tag.is-primary:hover {
+  background: var(--tl-accent-strong);
+}
+
+@media (max-width: 1200px) {
+  .tl-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 540px) {
+  .tl-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /*
- * Touch ergonomics (phones — the app is served over the LAN to an iPhone).
- * Interactive elements must be reachable with a thumb: 40 px minimum hit
- * height, and the compact desktop paddings get a little room. Only below the
- * `sm` breakpoint, so the keyboard-first desktop screen stays dense.
+ * The metric tile: icon on the left, three stacked lines on the right (label,
+ * value, explanation + optional sparkline) — the layout the mockups use, and the
+ * reason the four tiles read as one strip instead of four small cards.
+ */
+.tl-metric {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 4px 12px;
+  align-content: start;
+  padding: 16px;
+  min-height: 108px;
+  border: 1px solid var(--tl-border);
+  border-radius: var(--radius);
+  background: var(--tl-surface);
+}
+
+.tl-metric-icon {
+  grid-row: 1 / span 3;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--tl-accent-wash);
+  color: var(--tl-accent);
+}
+
+.tl-metric-label {
+  color: var(--tl-text-secondary);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tl-metric-value {
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-metric-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--tl-text-muted);
+  font-size: 11px;
+}
+
+/*
+ * A sparkline is 14 px tall and holds the shape of the last week: it is there to
+ * be *seen*, not read, so it has no axis, no label and one stroke width.
+ */
+.tl-spark {
+  flex-shrink: 0;
+  display: block;
+}
+
+/*
+ * Segmented control ("Semana · Mes · Año"): a pill of pills. The active seat is
+ * the accent gradient, the rest are muted text.
+ */
+.tl-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--tl-border);
+  border-radius: 999px;
+  background: var(--tl-surface-2);
+}
+
+.tl-seg button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tl-text-muted);
+  white-space: nowrap;
+  transition: 0.18s ease;
+}
+
+.tl-seg button:hover {
+  color: var(--tl-text);
+}
+
+.tl-seg button.is-active {
+  background: linear-gradient(90deg, var(--tl-accent), #ff5d00);
+  color: var(--tl-on-accent);
+}
+
+/* A one-line highlight under a card (the mockup's "¡Vas muy bien!" note). */
+.tl-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tl-border);
+  color: var(--tl-text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Week strip
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 9px;
+}
+
+@media (max-width: 850px) {
+  .tl-week {
+    /* Seven tiles cannot fit a phone: they scroll, and the whole row stays one
+       gesture wide. */
+    grid-template-columns: repeat(7, 88px);
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+}
+
+.tl-day {
+  padding: 13px 9px;
+  border: 1px solid var(--tl-border);
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(10, 14, 18, 0.8);
+}
+
+.tl-day.is-done {
+  border-color: color-mix(in oklab, var(--tl-success) 28%, transparent);
+}
+
+.tl-day.is-today {
+  border-color: var(--tl-accent);
+  background: rgba(255, 115, 0, 0.08);
+}
+
+.tl-day-name {
+  color: var(--tl-text-muted);
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+
+.tl-day-icon {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  background: var(--tl-surface-3);
+  font-size: 12px;
+}
+
+.tl-day.is-done .tl-day-icon {
+  color: var(--tl-success);
+}
+
+.tl-day.is-today .tl-day-icon {
+  color: var(--tl-accent);
+}
+
+.tl-day-status {
+  font-size: 10px;
+  color: var(--tl-text-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Progress ring, mini chart, badges, next session
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-ring-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+@media (max-width: 540px) {
+  .tl-ring-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* A conic gradient with a masked hole: cheaper and crisper than an SVG arc for
+   a single percentage. */
+.tl-ring {
+  --pct: 0;
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: conic-gradient(
+    var(--tl-accent) 0 calc(var(--pct) * 1%),
+    #252d35 calc(var(--pct) * 1%) 100%
+  );
+}
+
+.tl-ring::before {
+  content: "";
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--tl-surface);
+}
+
+.tl-ring strong {
+  position: relative;
+  z-index: 1;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  height: 55px;
+  margin-top: 15px;
+}
+
+.tl-mini-chart span {
+  width: 11px;
+  border-radius: 4px 4px 1px 1px;
+  background: var(--tl-accent);
+  opacity: 0.85;
+}
+
+/*
+ * The full-width version of the same bar chart (Progreso). Heights are inline
+ * percentages; everything else is here. Bars are 1 px-rounded rectangles rather
+ * than a line: sets per day are counts and a line would imply values between
+ * the days that do not exist.
+ */
+.tl-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  margin-top: 16px;
+}
+
+.tl-chart span {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 3px 3px 1px 1px;
+  background: var(--tl-surface-3);
+  transition: 0.2s ease;
+}
+
+.tl-chart span.is-empty {
+  min-height: 4px;
+}
+
+.tl-chart span.is-live {
+  background: var(--tl-accent);
+}
+
+.tl-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--tl-text-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A read-only data row: left label (with optional hint), right value. The
+   value column is fixed so the numbers line up down the card. */
+.tl-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tl-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--tl-border);
+  border-radius: var(--radius-small);
+  background: rgba(12, 17, 21, 0.7);
+}
+
+.tl-row-name {
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tl-row-value {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tl-row-sub {
+  display: block;
+  color: var(--tl-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* A tile that only holds a number + label, inside a card ("Tus datos"). */
+.tl-fact {
+  padding: 12px;
+  border: 1px solid var(--tl-border);
+  border-radius: 12px;
+  background: rgba(12, 17, 21, 0.7);
+}
+
+.tl-fact-value {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.tl-fact-label {
+  margin-top: 3px;
+  color: var(--tl-text-muted);
+  font-size: 11px;
+}
+
+/* A heading that stands on the page instead of inside a card ("Sesión de hoy"):
+   the cards below it are already cards, and nesting a card in a card is the one
+   depth rule this system does not allow. */
+.tl-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* An advisory strip: enough surface to group the notes, not a card. */
+.tl-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--tl-border);
+  border-radius: var(--radius-small);
+  background: rgba(12, 17, 21, 0.6);
+  color: var(--tl-text-secondary);
+  font-size: 13px;
+}
+
+.tl-badges {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.tl-badge-tile {
+  padding: 15px;
+  border-radius: 13px;
+  border: 1px solid var(--tl-border);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 115, 0, 0.08),
+    rgba(15, 20, 25, 0.8)
+  );
+  text-align: center;
+}
+
+.tl-badge-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: var(--tl-accent-wash);
+  border: 1px solid rgba(255, 115, 0, 0.22);
+  color: var(--tl-accent);
+}
+
+.tl-badge-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tl-badge-desc {
+  font-size: 10px;
+  color: var(--tl-text-muted);
+  margin-top: 3px;
+}
+
+.tl-next {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tl-thumb {
+  width: 100px;
+  height: 70px;
+  border-radius: 11px;
+  border: 1px solid var(--tl-border);
+  background: linear-gradient(135deg, #161c21, #322015);
+  display: grid;
+  place-items: center;
+  color: var(--tl-accent);
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .tl-thumb {
+    width: 68px;
+    height: 62px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ZEN — the focus panel
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-zen-panel {
+  padding: 18px;
+  border-radius: var(--radius);
+  background: radial-gradient(
+    circle at 80% 20%,
+    rgba(255, 115, 0, 0.11),
+    transparent 45%
+  );
+}
+
+.tl-zen-label {
+  color: var(--tl-accent-strong);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.tl-zen-progress {
+  height: 4px;
+  margin-top: 15px;
+  border-radius: 4px;
+  background: #292f35;
+  overflow: hidden;
+}
+
+.tl-zen-progress span {
+  display: block;
+  height: 100%;
+  background: var(--tl-accent);
+}
+
+/* Rest ring: the largest single number in the app, and the one you read from
+   two metres away with your hands full. */
+/* ── Entrenamiento (ZEN) ───────────────────────────────────────────────── */
+
+/*
+ * Two columns: the stage (what you are doing) and the rails (what you might want
+ * to read). Below 1100 px the rails drop under the stage, because mid-set you are
+ * looking at the stage and nothing else.
+ */
+.tl-zen-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .tl-zen-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tl-zen-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 28px 22px;
+  text-align: center;
+}
+
+.tl-zen-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.tl-zen-fact {
+  padding: 12px 10px;
+  border: 1px solid var(--tl-border);
+  border-radius: 12px;
+  background: rgba(12, 17, 21, 0.7);
+}
+
+.tl-zen-fact-value {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.tl-zen-fact-label {
+  margin-top: 2px;
+  color: var(--tl-text-muted);
+  font-size: 11px;
+}
+
+/* Progress dots: one per working set of the exercise you are on. */
+.tl-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.tl-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tl-surface-3);
+}
+
+.tl-dot.is-on {
+  background: var(--tl-accent);
+}
+
+/* Numbered quick-guide steps (the mockup's "Guía rápida"). */
+.tl-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tl-step {
+  display: flex;
+  gap: 12px;
+}
+
+.tl-step-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--tl-border);
+  background: var(--tl-surface-2);
+  color: var(--tl-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/*
+ * The set table: `SERIE · REPS · PESO · ANTERIOR`. The row you are on is the only
+ * one with an accent wash — that is what makes it findable at arm's length.
+ */
+.tl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.tl-table th {
+  padding: 6px 8px;
+  text-align: left;
+  color: var(--tl-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tl-table td {
+  padding: 8px;
+  border-top: 1px solid var(--tl-border);
+  color: var(--tl-text-secondary);
+}
+
+.tl-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-table tr.is-current {
+  background: var(--tl-accent-wash);
+}
+
+.tl-table tr.is-current td {
+  color: var(--tl-text);
+  font-weight: 600;
+}
+
+.tl-rest-ring {
+  --pct: 0;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  margin: 0 auto;
+  background: conic-gradient(
+    var(--tl-accent) 0 calc(var(--pct) * 1%),
+    #20272e calc(var(--pct) * 1%) 100%
+  );
+}
+
+.tl-rest-ring::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: var(--tl-bg);
+}
+
+.tl-rest-ring > div {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.tl-rest-time {
+  font-size: 44px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Body map (schematic) + muscle rows
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-analysis {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 20px;
+  /* `start`, not `stretch`: the figure keeps its 410 px and does not float in the
+     middle of a column that happens to be taller because a family list is long. */
+  align-items: start;
+}
+
+@media (max-width: 850px) {
+  .tl-analysis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The supplied line-art remains the anatomy; a pixel-ID canvas paints only its
+   muscle interiors, leaving the hand-drawn borders intact. */
+.tl-body-map {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tl-body-map::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: var(--tl-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.tl-body-figure {
+  position: relative;
+  width: min(100%, 520px);
+  aspect-ratio: 1044 / 1024;
+  overflow: hidden;
+  border: 1px solid var(--tl-border);
+  border-radius: 14px;
+  background: #11161b;
+}
+
+.tl-body-image,
+.tl-body-map-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tl-body-image {
+  z-index: 2;
+  object-fit: fill;
+  filter: invert(1);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  user-select: none;
+}
+
+.tl-body-map-canvas {
+  z-index: 1;
+  cursor: pointer;
+  transition: filter 160ms ease-out;
+}
+
+.tl-body-map-canvas:hover {
+  filter: brightness(1.25) drop-shadow(0 0 5px rgba(255, 115, 0, 0.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-body-map-canvas {
+    transition: none;
+  }
+}
+
+.tl-body-picker-wrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 520px);
+}
+
+.tl-body-picker-label {
+  color: var(--tl-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.tl-body-picker {
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 34px 8px 11px;
+  border: 1px solid var(--tl-border);
+  border-radius: 10px;
+  background: var(--tl-surface-2);
+  color: var(--tl-text);
+  font-size: 12px;
+}
+
+.tl-body-selection {
+  min-height: 1.1rem;
+  margin-top: 3px;
+  color: var(--tl-accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tl-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.tl-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tl-text-secondary);
+  font-size: 11px;
+}
+
+.tl-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tl-muscle-row {
+  padding: 10px 11px;
+  border: 1px solid var(--tl-border);
+  border-radius: 9px;
+  background: rgba(12, 17, 21, 0.7);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px 34px;
+  gap: 10px;
+  align-items: center;
+}
+
+.tl-muscle-name {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tl-muscle-score {
+  font-size: 11px;
+  text-align: right;
+  color: var(--tl-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-trend-up {
+  color: var(--tl-success);
+}
+
+.tl-trend-down {
+  color: var(--tl-danger);
+}
+
+/* "No change" is a third state, not a missing one — it gets a neutral
+   glyph and no colour, so a flat muscle never reads as a decline. */
+.tl-trend-flat {
+  color: var(--tl-text-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Media slot + celebration
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * Media slot wash: the faint accent gradient behind an exercise thumbnail. It is
+ * what makes an empty slot read as "an image goes here" instead of as a broken
+ * image — the fallback is a designed state, not a failure.
+ */
+.tl-media-wash {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--tl-accent) 14%, transparent),
+    transparent 62%
+  );
+}
+
+@keyframes tl-celebrate-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tl-celebration {
+  animation: tl-celebrate-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  backdrop-filter: blur(8px);
+  max-width: min(26rem, 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-celebration {
+    animation: none;
+  }
+  .tl-btn-primary:hover,
+  .tl-nav-item,
+  .tl-tab {
+    transition: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Touch ergonomics (phones — the app is served over the LAN to an iPhone)
+   ══════════════════════════════════════════════════════════════════════════
+ *
+ * 44px minimum hit height and a little more room for the compact desktop
+ * paddings. Only below `sm`, so the keyboard-first desktop screen stays dense.
  *
  * NOTE: the selector deliberately does NOT use `input[type='text']` — plenty of
- * inputs in this app omit the `type` attribute entirely, and an attribute
- * selector only matches when the attribute is *present*. `:not(...)` on the few
- * genuinely compact controls (checkbox/radio/file) is the reliable form.
+ * inputs here omit the `type` attribute, and an attribute selector only matches
+ * when the attribute is *present*.
  */
 @media (max-width: 640px) {
   button,
@@ -160,7 +1694,6 @@ textarea {
   label:has(> input[type="checkbox"]),
   label:has(> input[type="radio"]),
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
-    /* Apple HIG minimum hit target: 44 × 44 pt. */
     min-height: 2.75rem;
   }
 
@@ -173,7 +1706,6 @@ textarea {
     height: 2.75rem;
   }
 
-  /* Summary rows of collapsible cards are full-width tap targets too. */
   summary {
     min-height: 2.75rem;
   }
@@ -193,42 +1725,77 @@ textarea {
     justify-content: center;
   }
 
-  /* Swap menu anchored to the card instead of overflowing the viewport. */
   .tl-swap-menu {
     left: 0;
     right: auto;
     width: 100%;
   }
-}
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Celebration banner (record / achievement / session finished)
-
-   Three cues, one entry animation. The slide-up + fade is short on purpose:
-   it plays next to a rest timer that is counting down, so it must read as
-   confirmation, not as something that needs to be dismissed.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-@keyframes tl-celebrate-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.97);
+  /* On a phone the rail is gone and the tab bar is at the bottom. */
+  .tl-dash {
+    gap: 14px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+
+  .tl-topbar {
+    margin-bottom: 12px;
   }
-}
 
-.tl-celebration {
-  animation: tl-celebrate-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  backdrop-filter: blur(8px);
-  max-width: min(26rem, 100%);
-}
+  .tl-welcome h1 {
+    font-size: 25px;
+  }
 
-/* Respect the OS switch: the sound is already opt-in, this quietens the view. */
-@media (prefers-reduced-motion: reduce) {
-  .tl-celebration {
-    animation: none;
+  .tl-topbar > div:last-child {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tl-topbar > div:last-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tl-context-tags {
+    margin-top: -4px;
+  }
+
+  .tl-metrics {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin-inline: -4px;
+    padding-inline: 4px;
+    scrollbar-width: none;
+  }
+
+  .tl-metrics::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tl-metric {
+    flex: 0 0 min(82vw, 250px);
+    min-height: 92px;
+    padding: 13px;
+  }
+
+  .tl-metric-value {
+    font-size: 20px;
+  }
+
+  .tl-card-head {
+    padding-inline: 16px;
+  }
+
+  .tl-card-body {
+    padding-inline: 16px;
+  }
+
+  .tl-slot-toggle {
+    min-width: 36px;
+    justify-content: center;
+    padding-inline: 8px;
+  }
+
+  .tl-slot-toggle span {
+    display: none;
   }
 }

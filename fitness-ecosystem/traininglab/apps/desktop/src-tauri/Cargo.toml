@@ -1,6 +1,6 @@
 [package]
 name = "traininglab"
-version = "0.1.0"
+version = "0.2.0"
 description = "TrainingLab desktop host (Tauri v2) — the gym-logging half of the fitness ecosystem"
 authors = ["TrainingLab"]
 edition = "2021"
