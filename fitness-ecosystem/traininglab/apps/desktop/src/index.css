@@ -1684,6 +1684,13 @@ textarea {
   line-height: 1.45;
 }
 
+.tl-muscle-row {
+  padding: 10px 11px;
+  border: 1px solid var(--tl-border);
+  border-radius: 9px;
+  background: rgba(12, 17, 21, 0.7);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px 34px;
   gap: 10px;
   align-items: center;
 }
