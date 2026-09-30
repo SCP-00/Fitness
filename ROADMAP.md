@@ -8,9 +8,16 @@
 > Marcadores: `[ ]` pendiente · `[~]` en curso · `[x]` hecho (fecha) · `[!]` bloqueado (por qué) · `[?]` decisión abierta
 >
 > Dirección de producto (visión, IA, branding, plataforma): `docs/ECOSYSTEM_STRATEGY.md`.
-> Fases de TrainingLab: `docs/TRAININGLAB_PLAN.md`.
+> Fases de TrainingLab: `fitness-ecosystem/docs/TRAININGLAB_UI_PLAN.md`.
 >
-> Última actualización: **2026-09-28 (c)** (icono real en el lanzador de
+> Última actualización: **2026-09-30 (f)** (dirección del mapa corregida por el owner:
+> fuerza relativa contra referencia/ideal externo como vista principal y exposición de
+> entrenamiento como vista alternativa; falta validar evidencia para estatura y población;
+> documentado en `AGENT_HANDOFF.md`). Anterior: **2026-09-29 (e)** (rediseño TrainingLab completo:
+> app modular de 5 pantallas con rail plegable, mapa 2D del propietario con
+> doble lente entrenamiento/objetivos, reps por serie configurables,
+> **TrainingLab 0.2.0 con instalador Tauri construido y smoke-testeado**).
+> Anterior: **2026-09-28 (c)** (icono real en el lanzador de
 > escritorio · **Born Date** en vez de Edad · **avisos sonoros** de campana,
 > logro y récord · **notificaciones locales** del temporizador · paquetes de
 > ejercicios a core compartido · constructor de sesión del día · modelo de
@@ -91,6 +98,13 @@ matemática y las reglas duras disponen; el usuario decide.
 - [?] ¿Publicar la web (GitHub Pages) antes del GA desktop?
 
 ### Fase B — TrainingLab F2 (biblioteca, programas, historial)
+
+- [?] **Mapa de fuerza relativa vs. referencia externa (owner, 2026-09-30)** — vista
+  principal del mapa: fuerza observada/estimada frente a un nivel “ideal” publicado;
+  investigar cómo se sostienen sexo, estatura, peso corporal y edad en la fuente elegida.
+  Añadir exposición por series como lente alternativa. No aprobar fórmula ni recolorear
+  la app hasta documentar validez, límites, cobertura por ejercicio y el destino de la
+  lente antropométrica existente. Handoff: `fitness-ecosystem/docs/AGENT_HANDOFF.md`.
 
 - [x] **Package core compartido `@fitness/bodylab-exercises` (2026-09-28)** —
   catálogo movido desde la web, con `traits.ts` (requerimientos de equipamiento,
@@ -330,3 +344,13 @@ altavoz de un teléfono a distancia de brazo.
   razones/avisos estructurados y traducidos; iconos maestros SVG + pipeline de
   rasterizado + iconos de launcher Tauri; JEV ≠ JEPA corregido; ROADMAP por
   fases. **708 root · 82 web · 21 e2e · lint 0/0 · builds OK.**
+- **2026-09-29 (e)** — **Rediseño TrainingLab completo y Tauri 0.2.0**: app modular
+  (monolito TodayPage eliminado; `app/ui/screens/features/lib`) con **rail plegable
+  245↔78 px persistido**, tags de contexto, tarjetas de ejercicio colapsables y
+  **mapa 2D con el dibujo anatómico del propietario** (PNG + máscara de regiones)
+  y **doble lente**: estímulo de entrenamiento (1 / 0,66 / 0,33, calentamientos
+  fuera) y **objetivos** (medidas de BodyLab · objetivos propios en Ajustes ·
+  proporción dorada anclada a la cintura); **reps por serie configurables** por
+  ejercicio (persisten en settings, fluyen a Inicio/ZEN/sugerencia); ZEN v2 como
+  ruta; **TrainingLab 0.2.0**: `@tauri-apps/*` alineados a 2.12, instalador NSIS
+  construido y smoke PASS. **847 root · 110 web · typecheck + builds OK.**

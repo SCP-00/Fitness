@@ -3,21 +3,21 @@
 > Documento vivo de dirección de producto. Nace **2026-09-28**, revisado el
 > **2026-09-28** tras la primera sesión de construcción real de TrainingLab.
 > Complementa (no reemplaza) `ROADMAP.md` (ejecución) y
-> `docs/TRAININGLAB_PLAN.md` (fases F1–F5).
+> `fitness-ecosystem/docs/TRAININGLAB_UI_PLAN.md` (contrato de diseño de TrainingLab).
 > Idioma: español; identificadores de código en inglés.
 
 ---
 
 ## 1. Las dos mitades (y la tercera futura)
 
-| | **BodyLab** (clínico, blanco/índigo) | **TrainingLab** (gimnasio, negro/naranja) | **NutriLab** (visión, congelado) |
-|---|---|---|---|
-| Pregunta | «¿Cómo está mi cuerpo y por qué?» | «¿Qué entreno hoy y con cuánto peso?» | «¿Qué como y cómo apoya mi objetivo?» |
-| Método | Matemática pura: antropometría, ratios, scoring, conditioning (Cooper/FC/%grasa/pliegues/Parker) | Motor determinista (sesión del día + ventanas semanales) + modelo de decisión local + LLM local opcional | Registro manual + macros; visión de comida mucho más tarde |
-| Entrada | Cinta, báscula, plicómetro, test de campo, bici | Su propia biblioteca de ejercicios + **equipamiento declarado ítem a ítem** + sus series registradas | Etiquetas, recetas |
-| Salida | Scores, ideales, mapa de debilidades, tendencias, modelo 3D | Sesión de hoy, dosis, descanso, carga sugerida, por qué de cada decisión | Objetivo proteico/kcal alineado al peso magro que ya calcula BodyLab |
-| Dato canónico | cm / kg (métrico siempre en disco) | kg en el log (mismo canon) | g / kcal |
-| Estética | Superficies claras, índigo, precisión clínica | Acero casi negro + naranja brasa `#f97316`, energía de gimnasio | Por definir |
+|               | **BodyLab** (clínico, blanco/índigo)                                                             | **TrainingLab** (gimnasio, negro/naranja)                                                                | **NutriLab** (visión, congelado)                                     |
+| ------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Pregunta      | «¿Cómo está mi cuerpo y por qué?»                                                                | «¿Qué entreno hoy y con cuánto peso?»                                                                    | «¿Qué como y cómo apoya mi objetivo?»                                |
+| Método        | Matemática pura: antropometría, ratios, scoring, conditioning (Cooper/FC/%grasa/pliegues/Parker) | Motor determinista (sesión del día + ventanas semanales) + modelo de decisión local + LLM local opcional | Registro manual + macros; visión de comida mucho más tarde           |
+| Entrada       | Cinta, báscula, plicómetro, test de campo, bici                                                  | Su propia biblioteca de ejercicios + **equipamiento declarado ítem a ítem** + sus series registradas     | Etiquetas, recetas                                                   |
+| Salida        | Scores, ideales, mapa de debilidades, tendencias, modelo 3D                                      | Sesión de hoy, dosis, descanso, carga sugerida, por qué de cada decisión                                 | Objetivo proteico/kcal alineado al peso magro que ya calcula BodyLab |
+| Dato canónico | cm / kg (métrico siempre en disco)                                                               | kg en el log (mismo canon)                                                                               | g / kcal                                                             |
+| Estética      | Superficies claras, índigo, precisión clínica                                                    | Acero casi negro + naranja brasa `#f97316`, energía de gimnasio                                          | Por definir                                                          |
 
 **Principio de diseño del ecosistema:** una sola identidad visual familiar
 (mismos radios, mismas tarjetas, mismo ritmo de superficies, mismos tokens
@@ -46,11 +46,11 @@ como cambiar de sala del mismo laboratorio, no como cambiar de producto.
 Existen tres siglas parecidas y solo una describe lo que hacemos aquí.
 
 - **JEV** es un **modelo comercial de terceros** (TypeSafe AI, 2026): un modelo
-  *System One* que **no genera texto**, devuelve **decisiones tipadas con
+  _System One_ que **no genera texto**, devuelve **decisiones tipadas con
   probabilidad** en decenas o cientos de milisegundos y cuesta una fracción de
   un LLM. Se usa para clasificar, enrutar, verificar y poner guardarraíles. **No
   es nuestro modelo y no debemos presentar `decision.ts` como «JEV».**
-- **JEPA** (I-JEPA, V-JEPA…) es una familia de *world models* que predicen
+- **JEPA** (I-JEPA, V-JEPA…) es una familia de _world models_ que predicen
   representaciones latentes. Es una ruta de **investigación**, no de producto
   (§2.3). **JEV ≠ JEPA**: nunca presentar uno como el otro.
 - Cuando en estos documentos se dice **«modelo de clase JEV»** significa lo
@@ -72,15 +72,15 @@ Es el suelo de calidad y **ya está construido y verificado**:
 - **Generador determinista de la semana** (`generator.ts`): split por forma de
   semana, dosis débil→techo / fuerte→piso, fix-point de spill, auto-validación.
 - **Constructor de la sesión del día** (`session.ts`, nuevo 2026-09-28):
-  presupuesto de tiempo real (los 90 minutos del owner), *readiness* del día
+  presupuesto de tiempo real (los 90 minutos del owner), _readiness_ del día
   (energía, motivación, frescura), ledger semanal rodante en lugar de ventana
   rígida, y **nunca lanza**: emite avisos estructurados y devuelve la mejor
   sesión honesta posible.
 - **Sugerencia de carga** (`plan.ts`): histórico real + PR (e1RM Epley que ya
   exporta BodyLab) + el incremento que permite el equipo que posees.
 
-*Este nivel es el requisito «que se pueda usar sin el LLM»: la app es completa
-y útil con toda la IA apagada.*
+_Este nivel es el requisito «que se pueda usar sin el LLM»: la app es completa
+y útil con toda la IA apagada._
 
 ### 2.2 Nivel 2 — Modelo de decisión local (clase JEV) — **implementado**
 
@@ -89,7 +89,7 @@ determinista y actualización online. Misma clase de problema que JEV —decidir
 no generar— resuelta con un modelo propio y explicable.
 
 - **Por qué un bandit y no un «world model»**: con pocos datos por usuario, un
-  bandit contextual es *sample-efficient*, **explicable** (cada decisión es una
+  bandit contextual es _sample-efficient_, **explicable** (cada decisión es una
   suma de aportes visibles) y corre en microsegundos en CPU, sin dependencias.
 - **Features (7)**, todas 0-1: `weaknessGap`, `weeklyGap`, `freshness`,
   `readinessFit`, `variety`, `preference`, `cheapness`.
@@ -111,7 +111,7 @@ no generar— resuelta con un modelo propio y explicable.
    (fuerza, adherencia) y afinado con los logs del usuario. Misma interfaz
    (`scoreExercise`), mejor generalización con pocos datos.
 2. **Modelo de fatiga/wear**: secuencia corta (GRU/TCN mínimo) sobre las últimas
-   N sesiones por familia para estimar recuperación real (hoy es un *ledger* de
+   N sesiones por familia para estimar recuperación real (hoy es un _ledger_ de
    series y días de descanso).
 3. **Ruta de investigación (no producto): mundo latente tipo JEPA**. I-JEPA
    (2023), V-JEPA (2024), VL-JEPA y LeJEPA (2025) demuestran que predecir en
@@ -129,7 +129,7 @@ bucle acotado.
   LM Studio (`:1234/v1`), Ollama (`:11434/v1`), Jan (`:1337/v1`) y cualquier
   otro endpoint compatible. El usuario **carga el modelo a mano** en su app
   habitual; TrainingLab solo apunta al puerto. Recomendado: familia Qwen3 ~4B
-  en Q4 por su calidad de *function calling* y *structured outputs*.
+  en Q4 por su calidad de _function calling_ y _structured outputs_.
 - **Herramientas (solo lectura)**: `get_context`, `get_deterministic_plan`,
   `list_available_exercises`, `get_exercise_history`, y **una terminal**:
   `propose_session`.
@@ -190,14 +190,14 @@ BodyLab (mediciones)                 TrainingLab (hoy)
 
 ### 3.3 Riesgos y mitigaciones
 
-| Riesgo | Mitigación |
-|---|---|
-| El alcance del ecosistema explota (NutriLab) | NutriLab congelado hasta BodyLab GA + TrainingLab F2 + 4 semanas de uso real. Sin código antes. |
-| La IA se percibe como humo | El nivel 1 determinista ya da valor completo; la IA es opt-in, explicable y con fallback. Nada depende de Ollama. |
-| Deriva estética entre apps | Tokens documentados en cada `index.css`; revisión visual en cada release (capturas). |
-| El modelo local del usuario no está instalado | La app nunca lo requiere; el panel explica cómo activarlo y qué se pierde (nada esencial). |
-| Modelos locales alucinando prescripciones | `validateProposal` + reglas duras en core + el plan determinista como suelo. |
-| Fragmentación del catálogo entre apps | Un solo paquete core (`@fitness/bodylab-exercises`); el alias se mantiene en 5 mapas (§ AGENTS.md). |
+| Riesgo                                        | Mitigación                                                                                                        |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| El alcance del ecosistema explota (NutriLab)  | NutriLab congelado hasta BodyLab GA + TrainingLab F2 + 4 semanas de uso real. Sin código antes.                   |
+| La IA se percibe como humo                    | El nivel 1 determinista ya da valor completo; la IA es opt-in, explicable y con fallback. Nada depende de Ollama. |
+| Deriva estética entre apps                    | Tokens documentados en cada `index.css`; revisión visual en cada release (capturas).                              |
+| El modelo local del usuario no está instalado | La app nunca lo requiere; el panel explica cómo activarlo y qué se pierde (nada esencial).                        |
+| Modelos locales alucinando prescripciones     | `validateProposal` + reglas duras en core + el plan determinista como suelo.                                      |
+| Fragmentación del catálogo entre apps         | Un solo paquete core (`@fitness/bodylab-exercises`); el alias se mantiene en 5 mapas (§ AGENTS.md).               |
 
 ---
 
@@ -223,6 +223,7 @@ BodyLab (mediciones)                 TrainingLab (hoy)
 ### 4.2 Prompts para IA generativa (reproducir/evolucionar los iconos)
 
 **Prompt A — Icono de TrainingLab (negro + naranja).**
+
 ```
 Minimalist flat vector app icon, 1024x1024, rounded square (radius 22%),
 background #0a0a0a with a very subtle #1f1f1f inner border. Centered bold
@@ -235,6 +236,7 @@ fitness-tech aesthetic, flat design.
 ```
 
 **Prompt B — Icono de BodyLab (clínico blanco + índigo).**
+
 ```
 Minimalist flat vector app icon, 1024x1024, rounded square (radius 22%),
 background a soft white-to-indigo-tint gradient (#ffffff to #eef2ff) with a
@@ -248,6 +250,7 @@ scientific mood, flat design, crisp edges, generous negative space.
 ```
 
 **Prompt C (opcional) — Hero del ecosistema (README/tienda).**
+
 ```
 Wide 16:9 hero image, split composition: left half clean white with indigo
 (#4f46e5) wireframe human torso crossed by measurement lines; right half matte
@@ -302,5 +305,5 @@ premium tech aesthetic, no text.
 
 ---
 
-*Última actualización: 2026-09-28. Vinculado a `ROADMAP.md` (ejecución) y
-`docs/TRAININGLAB_PLAN.md` (fases F1–F5).*
+_Última actualización: 2026-09-29. Vinculado a `ROADMAP.md` (ejecución) y
+`fitness-ecosystem/docs/TRAININGLAB_UI_PLAN.md` (contrato de diseño)._

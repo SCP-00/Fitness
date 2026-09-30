@@ -9,7 +9,7 @@ Gracias por tu interés en contribuir al Fitness Ecosystem.
 3. **Tests obligatorios** — Todo código nuevo debe incluir tests (ver [TESTING.md](docs/TESTING.md))
 4. **TypeScript estricto** — No usar `any`, mantener tipado completo
 5. **Convenciones de commits** — Usar [Conventional Commits](https://www.conventionalcommits.org/)
-6. **Documentación viva** — Si el cambio afecta arquitectura, comandos o rendimiento, actualiza la doc correspondiente (READMEs, [ARCHITECTURE.md](docs/ARCHITECTURE.md), [PERFORMANCE.md](docs/PERFORMANCE.md))
+6. **Documentación viva** — Si el cambio afecta arquitectura, comandos o rendimiento, actualiza la doc correspondiente (READMEs, [ARCHITECTURE.md](docs/ARCHITECTURE.md), [UI_DESIGN.md](docs/UI_DESIGN.md))
 
 ## 🔄 Flujo de Trabajo
 
@@ -153,7 +153,7 @@ Todo código nuevo debe incluir:
 
 ### Rendimiento (checklist de merge)
 
-Reglas completas en [PERFORMANCE.md](docs/PERFORMANCE.md). Resumen:
+Reglas completas en [ARCHITECTURE.md](docs/ARCHITECTURE.md). Resumen:
 
 - [ ] Dependencias nuevas: medir y declarar el impacto gzip en el PR
 - [ ] Librerías pesadas (charts, 3D, zip, WASM) → import dinámico o chunk por ruta
@@ -165,7 +165,7 @@ Reglas completas en [PERFORMANCE.md](docs/PERFORMANCE.md). Resumen:
 ### Definition of Done (por feature)
 
 ```text
-[ ] Requisito implementado (con ID de docs/REQUIREMENTS.md)
+[ ] Requisito implementado y cubierto por tests
 [ ] Unit test escrito
 [ ] Integration test (si aplica)
 [ ] Error handling implementado
@@ -201,10 +201,9 @@ Usa [GitHub Issues](https://github.com/tu-usuario/fitness-ecosystem/issues) con 
 - [PLAN.md](PLAN.md) — Plan maestro del proyecto
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Arquitectura verificada (fuente de verdad)
 - [TESTING.md](docs/TESTING.md) — Estrategia y comandos de testing
-- [PERFORMANCE.md](docs/PERFORMANCE.md) — Baseline, budgets y reglas de rendimiento
+- [UI_DESIGN.md](docs/UI_DESIGN.md) — Reglas de interfaz y contrato responsive
+- [TRAININGLAB_UI_PLAN.md](docs/TRAININGLAB_UI_PLAN.md) — Contrato de diseño de TrainingLab
 - [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) — Especificación del producto
-- [REQUIREMENTS.md](docs/REQUIREMENTS.md) — Requisitos con IDs
-- [V1_RELEASE_GATE.md](docs/V1_RELEASE_GATE.md) — Condiciones de release
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — Licencias de terceros
 - [LICENSE](LICENSE) — Licencia del proyecto
 

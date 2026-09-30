@@ -315,8 +315,10 @@ try {
     viewport: DESKTOP,
     seed: seedTraininglab(),
     settle: 2000,
-    expect: "series registradas",
-    reject: "0 series registradas",
+    // The redesigned Inicio shows the logged volume as "Series hechas /
+    // planificadas" and the plan badge; "Sesión de hoy" is the hero title.
+    expect: "Series hechas",
+    reject: "0 / 0",
   });
   await capture(browser, {
     name: "traininglab-phone",
@@ -324,8 +326,8 @@ try {
     viewport: PHONE,
     seed: seedTraininglab(),
     settle: 2000,
-    expect: "series registradas",
-    reject: "0 series registradas",
+    expect: "Series hechas",
+    reject: "0 / 0",
   });
 } finally {
   await browser.close();

@@ -194,11 +194,9 @@ Ver [CONTRIBUTING.md](CONTRIBUTING.md) antes de enviar un Pull Request.
 - [PLAN.md](PLAN.md) — Plan maestro del proyecto
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Arquitectura verificada (fuente de verdad)
 - [TESTING.md](docs/TESTING.md) — Estrategia de testing y comandos
-- [PERFORMANCE.md](docs/PERFORMANCE.md) — Baseline de rendimiento y budgets
+- [UI_DESIGN.md](docs/UI_DESIGN.md) — Reglas de interfaz y contrato responsive
+- [TRAININGLAB_UI_PLAN.md](docs/TRAININGLAB_UI_PLAN.md) — Contrato de diseño de TrainingLab
 - [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) — Especificación del producto
-- [REQUIREMENTS.md](docs/REQUIREMENTS.md) — Requisitos con IDs
-- [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) — Criterios de aceptación
-- [V1_RELEASE_GATE.md](docs/V1_RELEASE_GATE.md) — Condiciones de release
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) — Notas de versión
 - [CHANGELOG.md](CHANGELOG.md) — Historial de cambios
 - [RESOURCE_MATRIX.md](RESOURCE_MATRIX.md) — Recursos externos

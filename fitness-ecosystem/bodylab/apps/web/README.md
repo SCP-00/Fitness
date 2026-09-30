@@ -3,7 +3,7 @@
 > React + TypeScript + Vite — Aplicación web de análisis corporal local-first.
 
 Arquitectura global verificada del monorepo: [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md).
-Testing: [docs/TESTING.md](../../../docs/TESTING.md) · Rendimiento: [docs/PERFORMANCE.md](../../../docs/PERFORMANCE.md).
+Testing: [docs/TESTING.md](../../../docs/TESTING.md) · Arquitectura: [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md).
 
 ## 🚀 Inicio Rápido
 
@@ -187,7 +187,7 @@ pnpm build                # = tsc -b && vite build
 # Output: dist/
 ```
 
-Tamaño actual (verificado 2026-09-11): `dist/` ≈ 9 MB total incluyendo medios offline (GIFs 3.6 MB, modelo 3D 2.0 MB, wasm 0.2.1 724 KB + glue 64 KB). Entrada JS principal: **291 KB (91 KB gzip)** tras el route-splitting; el 3D, wasm y los GIFs cargan bajo demanda. Ver [docs/PERFORMANCE.md](../../../docs/PERFORMANCE.md) para budgets y cómo medir.
+Tamaño actual (verificado 2026-09-11): `dist/` ≈ 9 MB total incluyendo medios offline (GIFs 3.6 MB, modelo 3D 2.0 MB, wasm 0.2.1 724 KB + glue 64 KB). Entrada JS principal: **291 KB (91 KB gzip)** tras el route-splitting; el 3D, wasm y los GIFs cargan bajo demanda. El presupuesto de tamaño se comprueba en cada build (`pnpm build` imprime el top-5 de assets).
 
 ## 📄 Licencia
 

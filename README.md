@@ -5,7 +5,7 @@
 > *Two local, account-free apps: measure your body (BodyLab) and train from a plan derived from those measurements (TrainingLab). Offline-first, data stays on your device.*
 
 [![Release](https://img.shields.io/github/v/release/SCP-00/Fitness?include_prereleases&label=descarga&color=orange)](https://github.com/SCP-00/Fitness/releases)
-[![Tests](https://img.shields.io/badge/tests-775%20core%20%2B%20110%20web-brightgreen)](fitness-ecosystem/docs/TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-847%20core%20%2B%20110%20web-brightgreen)](fitness-ecosystem/docs/TESTING.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%2B%20CC%20BY--SA%204.0-blue)](fitness-ecosystem/LICENSE)
 [![Platform](https://img.shields.io/badge/Windows%2010%2F11-instalador-lightgrey)](#-descargar)
 
@@ -101,9 +101,9 @@ pnpm lan --shared          # sirve ambas apps para la LAN + historial compartido
 
 ## 🗺️ Estado
 
-- **BodyLab**: `1.0.0-beta.5` — funcional y usable a diario; pulido de UI y accesibilidad en curso.
-- **TrainingLab**: `0.1.0` — pantalla "Hoy" completa (plan, registro, descansos, récords, sonidos, notificaciones, historial compartido); el resto de la app (biblioteca, historial largo, ajustes avanzados) va detrás.
-- Calidad: **775 tests** del núcleo + **110** de la web + E2E de navegador y humo del binario de escritorio. `pnpm check` corre la pirámide completa.
+- **BodyLab**: `1.0.0-beta.6` — funcional y usable a diario; pulido de UI y accesibilidad en curso.
+- **TrainingLab**: `0.2.0` — app modular de cinco pantallas (Inicio · Ejercicios · Entrenamiento/ZEN · Progreso · Ajustes) con mapa corporal 2D de doble lente (entrenamiento y objetivos), reps por serie configurables, plan, registro, descansos, récords, sonidos, notificaciones e historial compartido.
+- Calidad: **847 tests** del núcleo + **110** de la web + E2E de navegador y humo del binario de escritorio. `pnpm check` corre la pirámide completa.
 
 Detalle de lo hecho y lo que falta: [`ROADMAP.md`](ROADMAP.md) y [`fitness-ecosystem/CHANGELOG.md`](fitness-ecosystem/CHANGELOG.md).
 

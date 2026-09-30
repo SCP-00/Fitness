@@ -11,7 +11,7 @@
  *   4. Bundled 3D runtime assets (.ohpk + wasm) exist and are non-trivial
  *
  * Runs headless (node-safe: no WebGL, no DOM rendering). The real WebGL/WASM
- * render path still needs a browser E2E — see docs/TESTING.md & PERFORMANCE.md.
+ * render path still needs a browser E2E — see docs/TESTING.md.
  *
  * @module __tests__/integration-total
  */

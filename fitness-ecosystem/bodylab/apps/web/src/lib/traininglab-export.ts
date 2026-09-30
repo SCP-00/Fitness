@@ -1,7 +1,7 @@
 /**
  * TrainingLab export — the data bridge to the gym-planning app.
  *
- * TrainingLab (V2, plan in docs/TRAININGLAB_PLAN.md) will consume this JSON to
+ * TrainingLab (V2, plan in docs/TRAININGLAB_UI_PLAN.md) will consume this JSON to
  * build AI/deterministic routines (locally via an LLM such as Qwen). The
  * contract is designed so the planner can answer: "which muscles are weak
  * (anthropometry) and which are undertrained (volume) → program them first".

@@ -14,7 +14,7 @@ src_dir = argv[0]      # current (pre-calibration) GLBs
 masters_dir = argv[1]  # calibrated full-res masters
 web_dir = argv[2]      # web public dir
 
-TARGET_HEIGHT = 1.753  # standard man stature (m), per docs/3D_MODELING_PLAN.md
+TARGET_HEIGHT = 1.753  # standard man stature (m), the app's reference profile
 
 
 def clean_scene():

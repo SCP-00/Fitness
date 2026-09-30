@@ -1,278 +1,436 @@
-# TrainingLab — UI redesign plan
+# TrainingLab — UI redesign plan (v2)
 
-> Why this document exists: the app works, but the interface has never been
-> *designed* — it grew as one 1 559-line page that stacks every panel into a
-> single column and hides the other half behind a two-way switch. The owner's
-> words: "todavía no nos entendemos en el diseño". This is the plan to fix that,
-> in ordered phases, with the rules that make each screen predictable.
->
-> Companion documents: [UI_DESIGN.md](UI_DESIGN.md) (the binding responsive/token
-> contract — unchanged, this plan extends it) and
-> [EXERCISE_DATA_AUDIT.md](EXERCISE_DATA_AUDIT.md) (what content exists to show).
-> Sources studied: twelve screenshots of a commercial training app, kept locally
-> in the gitignored `docs/reference/symmetry/` folder.
+> **Status: the design contract for the redesign session.** v1 (2026-09-29) proposed
+> the architecture from studying other apps. v2 (2026-09-29 c) is rewritten against the
+> owner's own mockups (`docs/reference/traininglab-design/`) and five locked decisions.
+> Where v1 and v2 disagree, **v2 wins**; the disagreements are listed in §0 so nothing
+> silently drifts.
 
-## 0. What we studied, and the line we do not cross
+The mockups are the visual authority. This file is the _engineering_ authority: it says
+which of the mockup's ideas map onto data we actually have, which need new data, and
+which we refuse. Reference material is local and gitignored — the conclusions below are
+what ships.
 
-We studied **interaction patterns** — where things live, what a thumb reaches,
-what a screen says first. We copy **nothing**: no artwork, no anatomical
-illustrations, no icon set, no copy, no colour, no brand marks, no pixel-for-pixel
-layout. Patterns are not protectable; assets are. Every visual in TrainingLab is
-either our own drawing, a public-domain photo (free-exercise-db, Unlicense) or
-the GIF set already licensed for BodyLab.
+### 0.1 Interaction revision (2026-09-29 d)
 
-Nine patterns were extracted. Six are worth adopting, three are not:
+The owner request adds a usability constraint that is now part of this contract:
+TrainingLab must remain legible and operable when the user is fatigued, on a phone, or
+using a desktop window narrower than the reference capture. The vertical page is a
+container, not the navigation model. The following decisions are therefore normative:
 
-| Pattern studied | Take? | How we do it our way |
-|---|---|---|
-| **Home opens on a hero card for today's recommended workout** — title, duration, exercise count, one big CTA | **Yes** | Our hero is "Sesión de hoy": time budget, families, exercise count, muscle thumbnail, one accent CTA. No cover photo (we have no licensed photography and don't want any). |
-| **5-slot bottom tab bar with a raised centre action** | **Yes** | Hoy · Ejercicios · **Iniciar** · Progreso · Ajustes. Fixes one-hand reach on the iPhone; the centre action starts the session. |
-| **Exercise picker: search + two filter buttons opening sheets with anatomical circles and checkmarks** | **Yes** | Same shape, our data: search + Músculo/Equipo/Categoría sheets, rows show our muscle names, difficulty and whether a demo exists. |
-| **Exercise detail as tabs: Guide · Summary · Rank · History** | **Yes** | Guía · Resumen · Rango · Historial. Guide is our technique content (already written), Summary is our muscle model (primary/secondary), History is our logged sets. |
-| **Session logger: big media, set table with a PREVIOUS column, coloured set-type badges, sticky rest bar** | **Yes** | This is ZEN v2 (§5). The PREVIOUS column and the set-type badges are the two cheapest big wins in the whole plan. |
-| **Progress screen: metric + period selectors, headline with delta, chart, KPI tiles, consistency heatmap, recent PRs** | **Yes** | All computed locally from logged sets. Chart is a ~120-line SVG component, no chart dependency. |
-| **Rank screen: "top 27 % strongest" + anatomy coloured by tier** | **No (as a claim)** | We have no population data, so a percentile would be invented. We ship a **Nivel estimado** with our own published thresholds and say plainly that it is an internal reference (§6.3). The anatomy figure we *can* do — BodyLab already draws one. |
-| **Social feed, followers, "1 303 completed workouts"** | **No** | Contradicts the privacy model that is the product's whole point. |
-| **Streak flame as a pressure device** | **Partly** | We show consistency (days trained, heatmap) with neutral wording. No loss-anxiety mechanics, no red "streak lost". |
+- **The desktop rail is dynamic.** It opens at 245 px and can collapse to an icon rail
+  of 78 px. The preference is local to the device and the labels remain available as
+  native tooltips and accessible names. The main content reflows with the rail instead
+  of leaving a dead gutter.
+- **Context tags are destinations.** The short row below the page header links directly
+  to Entrenar, Ejercicios, Progreso and Esta semana. A tag is not decorative metadata:
+  it is a one-tap route or same-page focus target.
+- **One exercise, one decision.** Inicio opens only the next planned exercise. Other
+  exercise cards keep their prescription and log controls available, but are collapsed
+  until requested. This preserves the complete plan without making the user scroll past
+  repeated controls.
+- **The body map uses the owner's supplied anatomical line art, not a hand-drawn SVG body.** A
+  pixel-ID region mask aligns to the front/back PNG; a React canvas paints those regions
+  from the selected lens. The map and detail list share the same data, provide accessible
+  selection, and collapse cleanly on mobile.
+- **Owner correction (2026-09-30): the primary heatmap is strength vs. a published external
+  ideal/reference, not training volume.** The intended map has a direct tag/lens to switch
+  between (1) strength relative to a defensible external standard and (2) training exposure
+  estimated from logged sets. The latter remains useful, but is not a proxy for strength.
+  The meaning of “ideal” is a level in a published external norm, not a user-entered target
+  or the golden-ratio anthropometric preset. Do not silently remove the existing
+  anthropometric-goal lens; keep it distinct until the owner approves where it belongs.
+  See `AGENT_HANDOFF.md` for the research handoff and unresolved evidence gaps.
+- **Reps per set are the user's to decide (2026-09-29 e).** Every exercise card and
+  the ZEN facts row carry an editable rep range; an override persists per exercise
+  (`settings.repOverrides`), flows into Inicio, ZEN and the load suggestion, and is
+  cleared with one tap back to the planner's default.
+- **Mobile favors horizontal compression.** KPI tiles and context tags use short,
+  thumb-scrollable strips; the fixed bottom bar remains the global navigation; primary
+  logging controls keep a 44 px target. Desktop retains the two-column composition.
 
-## 1. Design principles (the tie-breakers)
+These are implementation decisions derived from the owner's `Boseto_preview.html` (free to
+reuse) and the reference captures in `docs/reference/traininglab-design/` (gitignored on
+purpose: the conclusions ship, the files do not). The normative interface contract is
+[UI_DESIGN.md](UI_DESIGN.md); this file is the engineering plan that follows it.
 
-1. **One screen, one job.** If a screen answers two questions, it is two screens.
-2. **The thumb owns the bottom half.** Primary actions live low; destructive or
-   rare actions live in the header or in Ajustes.
-3. **Measure, don't decorate.** Every number on screen must be computable from
-   local data and explainable in one sentence.
-4. **The maths proposes, the user disposes.** The planner and the local model
-   suggest; nothing is applied without a visible reason and a way to undo it.
-5. **Offline is not a mode.** No loading spinners for local data, no empty state
-   that blames the network.
-6. **Spanish-first copy, English code** (unchanged rule).
-7. **Ember orange on near-black.** Same tokens, no new palette (§7).
+## 0. What the mockups changed
 
-## 2. Information architecture
+| Topic                        | v1 said                                  | v2 (owner-confirmed 2026-09-29 c)                                                                                                  |
+| ---------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Palette                      | current `#0a0a0a` + `#f97316`            | **adopt the mockup's cooler dark palette** (`#080b0e` … `#1b2229`) and the punchier `#ff7300` accent                               |
+| Light mode                   | refused                                  | **dark only for now**; the token layer stays themeable, the toggle is hidden until a light theme exists                            |
+| Photography                  | none; rig drawings only                  | **free-license stock photos** (Pexels/Unsplash-class), with a provenance manifest and the silhouette/rig as the mandatory fallback |
+| ZEN                          | "only the exercise" (extreme minimalism) | **focused, not empty**: the current exercise owns the screen, everything else is _collapsible_                                     |
+| Percentiles                  | refused outright                         | **published strength standards**, cited, validated, classified by sex, age and body size — with an explicit honesty label          |
+| Body composition in Progreso | not addressed                            | **muscle map painted from our own logged sets**; anthropometrics only appear when BodyLab supplies them                            |
+| Exercise detail              | 4 tabs assumed                           | confirmed: `Guía · Resumen · Rango · Historial` — the first, second and fourth already have data (see §4.2)                        |
 
-Today: two panes (`Entrenar` / `Ajustes`) behind one switch. It cannot hold a
-library, a logger, progress and a planner.
+## 1. Design language
 
-Proposed five destinations, each a real screen:
-
-| # | Destination | Answers | Absorbs today's |
-|---|---|---|---|
-| 1 | **Hoy** | "¿Qué toca y con cuánta energía estoy?" | readiness, stats strip, slot cards, advisories |
-| 2 | **Ejercicios** | "¿Qué puedo hacer y cómo se ejecuta?" | the demo modal (now reachable directly) |
-| 3 | **Iniciar** *(centre)* | "Empezar ya" | session start → ZEN, plus "sesión libre" and "generar con el coach" |
-| 4 | **Progreso** | "¿Estoy mejorando y cómo voy de equilibrio?" | records, PR feedback, BodyLab weakness map |
-| 5 | **Ajustes** | "Equipo, preferencias, coach, LAN" | gear, preferences, coach, BodyLab import, shared, mobile |
-
-**Navigation is a state machine with hash sync**, not a new dependency:
-
-```ts
-type Screen =
-  | { kind: "today" }
-  | { kind: "exercises"; filter?: MuscleGroup; id?: string }  // id → detail
-  | { kind: "progress"; tab?: "balance" | "prs" }
-  | { kind: "settings" };
-```
-
-`#/hoy`, `#/ejercicios`, `#/ejercicios/arnold-press`, `#/progreso`, `#/ajustes`.
-Hash sync costs ~20 lines and buys: the iPhone back-swipe works, deep links from
-a slot card to its exercise detail work, and screenshots/Playwright can address a
-screen directly (which is how we will test them).
-
-**Plans taxonomy** — four nouns, used consistently everywhere:
-
-| Noun | Meaning | Lives in |
-|---|---|---|
-| **Plantilla** | a saved day you can repeat | Ejercicios → "Mis plantillas" |
-| **Semana** | the weekly distribution (families → days) | Hoy (collapsed card) |
-| **Sesión de hoy** | today's concrete list, derived from the week + readiness + kit | Hoy (the hero and the list) |
-| **Sesión libre** | exercises you pick as you go | Iniciar |
-
-## 3. Screen: Hoy
-
-- **Hero card** (the only card above the fold): "Sesión de hoy" · `45 min · 6 ejercicios · Pecho · Hombros` · muscle thumbnail · badge when it came from the coach or was edited by hand · primary CTA **Empezar** (full width, accent) · secondary "Ver plan".
-- **Readiness strip**: three compact 1–5 inputs (energía / sueño / dolor). Changing one re-derives the plan *in place* with a one-line explanation of what moved ("bajé 2 series de empuje, subí RIR").
-- **Plan list**: the existing `SlotCard`s, unchanged in substance — they already show sets, reps, load, swap and the demo button. Row rhythm tightened: media thumb 44 px, name, muscles, sets summary.
-- **Semana card**: collapsed, one line per training day, today marked.
-- **Advisories**: single-line, dismissible, never a modal (already the case).
-- **Empty state**: "Sin datos de BodyLab" → import CTA, plus "usar catálogo interno" (also the LAN guest path).
-
-## 4. Screen: Ejercicios (library)
-
-Reachable from the tab bar, from a slot's "Sustituir", and from "Ver guía".
-
-- **Search** auto-focused, filters answers as you type (accent-insensitive, ES+EN).
-- **Filter chips**: Músculo · Equipo · Categoría · Dificultad. Each opens a
-  **bottom sheet** with checkmarks; active filters show as removable chips.
-- **Sort**: Recientes (what you actually use) · A–Z · Dificultad.
-- **Rows** (44 px min): media thumb (GIF/foto/dibujo), name + muscle subtitle,
-  trailing badges — equipment icon, difficulty dots, and a muted "guía" dot when
-  our technique text exists.
-- **"Añadir a la sesión"** appears on every row when a session is open; the row
-  becomes an "Añadido" state. This is what makes ZEN's "Sustituir" feel fast.
-
-## 5. Screen: Sesión (ZEN v2) — the logger
-
-ZEN v1 exists (full-screen overlay). v2 adds the three things that make logging
-fast, all visible in one glance:
+The palette, radii and surface vocabulary come from the mockups and stay **identical
+across both apps' component vocabulary**, so a component can move between apps with a
+token swap.
 
 ```
-┌──────────────────────────────────────────┐
-│ ⌄  12:41                              ⋯ │  elapsed · collapse · overflow
-│                                          │
-│              [ media hero ]              │
-│                                          │
-│  Press de banca con barra                │
-│  Pectoral mayor · Tríceps · Hombro ant.  │
-│  [ Guía ]  [ Sustituir ]  [ Notas ]      │
-│                                          │
-│  SERIE   ANTERIOR    KG      REPS   ✓    │  ← the PREVIOUS column
-│   1      60×8        [60]    [ 8]   ✗    │
-│   2      60×8        [60]    [ 8]   ✗    │
-│   C      —           [40]    [10]  calentamiento
-│                                          │
-│  Esfuerzo de la serie  RIR  [1][2][3][4][5]   ← fatiga por serie
-│                                          │
-│  ── Descanso 1:30  ▸ empezar   ⏭ saltar ──│  sticky bottom bar
-└──────────────────────────────────────────┘
+bg        #080b0e   surface  #10151a   surface-2 #151b21   surface-3 #1b2229
+border    #29313a   text     #f3f5f7   soft      #9ba5af   muted     #68727d
+accent    #ff7300   accent-l #ff9447   accent-d  #c75200   on-accent #08121a
+success   #39d98a   warning  #ffc857   danger    #ff4f4f   info      #46a8ff
+radius    16px card / 10px control     sidebar   245px open / 78px compact (≥ 1024px)
 ```
 
-- **Set-type badges**: C (calentamiento, muted) · normal · D (dropset, violet) ·
-  F (fallo, red). Warm-up sets are already excluded from volume in the maths;
-  the badge makes that visible.
-- **Esfuerzo por serie**: the RIR/RPE control is the *primary* effort input, big
-  enough to tap with a thumb, with the label written out ("quedan 2 reps en
-  reserva" is better than "RIR 2" — we show both).
-- **Descanso** is a sticky bottom bar owned by the timer service, not a modal.
-- **Next exercise peek**: bottom-right chip "Siguiente: Remo con mancuerna" that
-  swipes to it.
-- **Finish**: the celebration banner + sound stay as they are (already good).
+- **Surfaces are a hierarchy, not decoration**: `bg` is the page, `surface` is a card,
+  `surface-2` is a control _inside_ a card, `surface-3` is a control inside that. A card
+  never sits on a card of the same level.
+- **Type**: one sans stack (system UI), no webfonts. Scale: 11 px uppercase labels with
+  wide tracking · 13 px secondary · 15 px body · 20–24 px section titles · 32–40 px
+  headline numbers, always `tabular-nums`.
+- **Icons**: one stroke set, 1.75 px, 16/20/24 px. Decorative emoji from the mockups are
+  replaced by drawn icons so the tone stays clinical; the _one_ exception is deliberate:
+  nothing in the logging loop uses emoji.
+- **Motion**: 150–220 ms, ease-out, and every transition moves something meaningful
+  (entry animation of a banner, a rest ring draining). `prefers-reduced-motion` turns
+  them all off.
+- **Focus**: 2 px accent ring, offset 2 px, never removed.
+
+## 2. The shell and navigation
+
+Today: one column, two panes (`Entrenar` / `Ajustes`) behind a switch, 1 559 lines in a
+single file. It cannot hold a library, a logger, progress and a planner.
+
+**Five real destinations**, hash-routed, no new dependency:
+
+| Route                               | Destination       | Answers                                    |
+| ----------------------------------- | ----------------- | ------------------------------------------ |
+| `#/hoy`                             | **Inicio**        | ¿Qué toca hoy y con cuánta energía estoy?  |
+| `#/ejercicios`, `#/ejercicios/<id>` | **Ejercicios**    | ¿Qué puedo hacer y cómo se ejecuta?        |
+| `#/sesion`                          | **Entrenamiento** | Empezar y registrar (ZEN vive aquí)        |
+| `#/progreso`, `#/progreso/<tab>`    | **Progreso**      | ¿Estoy mejorando y cómo voy de equilibrio? |
+| `#/ajustes`, `#/ajustes/<section>`  | **Ajustes**       | Equipo, preferencias, coach, datos         |
+
+- **Desktop (≥ 1024 px)**: dynamic 245 px rail on the left, collapsible to a 78 px
+  icon rail. Active item = accent-filled pill with a left indicator bar, brand at the
+  top, "Modo local · todo funciona sin conexión" card at the bottom (a privacy
+  statement, not a status light). The open/compact choice is persisted locally.
+- **Phone (< 1024 px)**: the rail becomes a **fixed bottom tab bar**, 5 items, the centre
+  one an accent FAB (`Entrenar`) that is 8 px taller than the bar. `padding-bottom` on
+  the scroll container reserves `72px + env(safe-area-inset-bottom)`.
+- **ZEN takes over the screen**: no rail, no tab bar. The way out is an explicit back
+  control, never a gesture-only affordance.
+- Hash sync is ~40 lines in `lib/router.ts`: it buys the iPhone back-swipe, deep links
+  from any card to its detail, and addressable screens for Playwright and screenshots.
+- **Plans taxonomy** (four nouns, used consistently): **Plantilla** (a saved day) ·
+  **Semana** (the distribution) · **Sesión de hoy** (derived, concrete) · **Sesión libre**
+  (picked as you go).
+
+## 3. Screen: Inicio
+
+Two columns above 1200 px, one below, mirroring the mockup.
+
+- **Hero**: `Sesión de hoy` · focus line (`Fuerza · Tren superior`) · three meta chips
+  (duración, lugar, equipo) · one primary CTA (`Empezar`). The hero is the only card with
+  a media background, and the layout must look finished **without** it (§8).
+- **KPI strip**: four tiles — constancia de la semana, recuperación (readiness), volumen
+  semanal (`series hechas / planificadas`) y peso corporal (only if there is data).
+  Each tile shows a value, a one-line explanation, and a trend sparkline where a series
+  exists; a tile with no data says so instead of showing `—`.
+- **Semana**: one row per training day, today marked, each row tappable → that day's
+  list. Days already trained show a check; the rest show what the planner intends.
+- **Siguiente sesión / siguiente ejercicio**: the exercise that is next _right now_,
+  with sets done/total, target reps and load, and a single arrow that opens ZEN.
+- **Right rail (desktop only)**: progress ring (constancia), badges, and the `Enfócate`
+  card that links to ZEN.
+- **Readiness is collapsed by default** (three 1–5 sliders + sore families) and carries
+  its three values in the badge when collapsed. Changing a slider re-derives the plan in
+  place and explains what moved.
+- **No empty dead end**: no BodyLab data → "usar el catálogo interno" + import CTA.
+
+## 4. Screen: Ejercicios
+
+### 4.1 The list
+
+- Search first (accent-insensitive, ES + EN), then filter chips: **Músculo · Equipo ·
+  Categoría · Nivel**. Chips open a bottom sheet on the phone and a popover on desktop.
+- Rows: 72 px on the phone, 56 px on desktop — media thumb, name, `músculo · patrón ·
+tipo`, trailing chevron. The row is tappable end to end; every control inside it stops
+  propagation.
+- Sort: **Recientes** (what you actually log) · A–Z · Nivel técnico.
+- When a session is open, each row gains `Añadir` and becomes `Añadido` — this is what
+  makes ZEN's _Sustituir_ fast.
+- Count line: `143 ejercicios · 94 con guía de técnica` (never a bare number).
+
+### 4.2 Ficha de ejercicio — four tabs, and what feeds each
+
+| Tab           | Content                                                                                                                   | Source                                                        | Status                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------- |
+| **Guía**      | setup, execution, mistakes, safety, breathing, tempo, effort target (RIR), `techniqueLevel` + why, per-exercise overrides | `exercises/technique.ts` — 28 movement patterns + 9 overrides | **exists**                 |
+| **Resumen**   | primary/secondary muscles with intensity, equipment, load type, progression axes, hypertrophy note, joints under stress   | `catalog.ts` + `traits.ts`                                    | **exists**                 |
+| **Historial** | every logged set, best set, estimated 1RM over time, sessions count, "la última vez"                                      | TrainingLab's own `TLSet[]`                                   | **exists** (needs a chart) |
+| **Rango**     | where your estimated 1RM sits against **published standards**, by sex, age band and body size                             | a cited external source — **to be validated** (§9)            | **missing**                |
+
+Layout: media hero, name, `músculo · patrón`, then the tab strip. Both `Guía` and
+`Resumen` open with the same 3-line "quick steps" summary the mockup shows, because that
+is the part people read while standing at the rack.
+
+The tab strip shows `Rango` greyed with a reason ("se activa cuando tengamos tu peso y
+sexo en Ajustes") rather than hiding it or faking it.
+
+## 5. Screen: Entrenamiento (ZEN)
+
+ZEN stops being a full-screen overlay with a modal vocabulary and becomes a **route**.
+
+**ZEN is focused, not empty.** The current exercise owns the screen; everything else is
+collapsible. Concretely, three collapsible regions — never invisible, never in the way:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ ←  Sesión de hoy · Fuerza · Tren superior        ☰  ⏸  12:41 │  ① header
+├──────────────────────────────────────┬───────────────────────┤
+│                                      │ ▸ Enfócate    (open)  │
+│  [ media: foto → silueta → rig ]     │ ▸ Guía rápida (closed)│  ③ rails
+│                                      │ ▸ Registro    (open)  │
+│  Press de banca con barra            │ ▸ Notas       (closed)│
+│  Pectoral mayor · Tríceps · Hombro   │                       │
+│  [Guía] [Sustituir] [Notas]          │                       │
+│                                      │                       │
+│  SERIE  ANTERIOR   KG     REPS   ✓   │                       │
+│   1     60×8       [ 60 ] [  8]  ✓   │  ② the set table      │
+│   2     60×8       [ 60 ] [  8]  ✗   │                       │
+│   C     —          [ 40 ] [ 10]   🅲  │                       │
+│  Esfuerzo  RIR [1][2][3][4][5]       │                       │
+│  ── Descanso 1:30 ▸ ⏭ ───────────────│  ④ sticky rest bar    │
+└──────────────────────────────────────┴───────────────────────┘
+```
+
+- **① Header**: back, session context, a `☰` that collapses _both_ side regions at once
+  (the "modo foco" state), pause, and the elapsed clock. Pause stops the session clock
+  _and_ the rest timer, and says so in one line — it never silently eats a rest interval.
+- **② The set table** is the spine: `SERIE · ANTERIOR · KG · REPS · ✓`. The `ANTERIOR`
+  column is the single most valuable thing on screen and is already in the mockup and the
+  plan. Set-type badges: `C` calentamiento (muted, excluded from volume) · normal ·
+  `D` dropset · `F` fallo. `Esfuerzo` per set (RIR 1–5, written out: "quedan 2 en
+  reserva") is the primary effort input, thumb-sized.
+- **③ Rails**: on desktop, `Enfócate` / `Guía rápida` / `Registro actual` / `Notas` as
+  `<details>` cards. On the phone they become one sheet behind `⏱` and `…`.
+- **④ Rest bar**: sticky at the bottom, owned by the timer, with `+15 s`, `⏭ saltar` and
+  a countdown that survives navigation within the session.
+- **Siguiente serie / siguiente ejercicio**: one line, always visible at the bottom of
+  the column, tappable.
+- **Finish**: the existing celebration banner + sound stay (already good). The summary
+  shows what changed vs the plan, never a score.
 
 ## 6. Screen: Progreso
 
-### 6.1 Selectors and headline
-Metric: Volumen · Series · Reps · Tiempo. Period: Semana · Mes · 3 meses · Año.
-Headline number with a delta chip versus the previous equivalent period, and the
-exact date range in small type — never a bare "↑ 221 %" with no anchor.
+- **Period and metric selectors** (`Peso · Fuerza · Volumen · Medidas`) with an explicit
+  date range in small type under the headline. Never a bare percentage with no anchor.
+- **KPI tiles**: sesiones, series, días entrenados, PRs.
+- **Mapa muscular (2D)** — the owner's front/back line-art image with a pixel-aligned
+  region mask, painted live from the selected period's own logged working sets. Set credit
+  follows catalog involvement: primary = 1 equivalent set, secondary = 0.66, accessory =
+  0.33; warm-ups are excluded. Colours are relative to the user's highest-covered family
+  in that period, not a population norm. Raw kg are not compared across muscle groups,
+  because exercise leverage and equipment make that comparison misleading. The map does
+  not claim to measure muscle size, hypertrophy, pain or recovery. It needs no BodyLab
+  data and uses the same exercise catalogue and family mapping as the planner.
+- **Volumen por grupo muscular**: stacked bars split into series efectivas /
+  complementarias / accesorias — that split maps 1:1 onto `MuscleInvolvement.intensity`
+  (3/2/1) which the catalog already carries.
+- **Progreso general**: one `<TrendChart>` (0 deps, SVG, drag to read a value, accessible
+  table fallback) per selected metric.
+- **Mejores avances**: PR list with value, date and a `NUEVO` badge only during the 7
+  days after it happened.
+- **Recomendaciones del asistente**: the coach's proposals as _actions_ (`Ver ejercicios
+→`, `Ver plan →`), each with its reason trail. Text without an action is not a
+  recommendation.
 
-### 6.2 Chart, KPIs, consistency
-- **Chart**: one SVG component (`<TrendChart>`), 0 dependencies, tap/drag to read
-  a value, respects `prefers-reduced-motion`, has an accessible table fallback.
-- **KPI tiles**: Entrenamientos · PRs nuevos · Series totales · Días entrenados.
-- **Consistencia**: GitHub-style heatmap, "23/30 días · 3,2×/semana", legend
-  Entrenado / Descanso. Neutral vocabulary — no streak-shaming.
+## 7. Screen: Ajustes
 
-### 6.3 Muscle balance and estimated level (our honest version of "Ranks")
-- **Equilibrio muscular**: per family, sets in the period versus a guidance band,
-  with the weak families highlighted. Sourced from our conditioning/weakness data
-  and the weekly planner's own family model — the same numbers the planner uses,
-  so the screen cannot disagree with the plan.
-- **Nivel estimado**: per-family tier computed from estimated 1RM relative to
-  bodyweight, using **thresholds we document in this file** and expose in the UI
-  ("¿Cómo se calcula?"), with the sentence: *this is a reference against your own
-  history and published bodyweight ratios — we do not have population data and we
-  will not pretend to.* Tiers: `Inicial · Constante · Fuerte · Avanzado` (our
-  names, not a copy of any other app's ladder).
-- **PRs recientes**: list with the value, the date, and a "NUEVO" badge only in
-  the 7 days after it happened.
+Sections in the mockup's order, each a `<details>` card, with sub-routes
+(`#/ajustes/equipo`):
 
-## 7. Visual system
+1. **Perfil** — nombre, fecha de nacimiento (**no** edad escrita), sexo, altura, peso.
+   Needed by §9; explained in the field, not in a help page.
+2. **Objetivo** — goal · nivel · días por semana (2–6) · presupuesto de tiempo · unidad
+   (kg / lb USA con la conversión exacta `1 kg = 2.2046226218488 lb` visible).
+3. **Equipo disponible** — the gear inventory with presets.
+4. **Entrenamiento** — modelo de decisión, registrar con la app, notificaciones, sonido.
+5. **Datos** — importar/exportar, BodyLab, LAN del hogar, borrar datos locales.
+6. **Acerca de** — versión, privacidad ("sin telemetría, sin descargas en segundo plano").
 
-Unchanged tokens (see UI_DESIGN.md). Additions needed by these screens:
+## 8. Media: what the user sees when there is no photo
 
-| Token | Value | Use |
-|---|---|---|
-| `--tl-surface-3` | `#262626` | hover/selected rows, sheet backdrop rows |
-| `--tl-violet` | `#8b5cf6` | dropset badge only |
-| `--tl-rest` | `#0f172a` (wash) | rest bar background |
+Four levels, resolved per exercise, in this order:
 
-Type: add a **display step** (28–32 px, tight tracking, uppercase optional) for
-hero/stat headlines; keep the system stack (no webfonts). Tabular numerals
-everywhere a number is measured. Motion: 150–200 ms `ease-out`, no bounce,
-`prefers-reduced-motion` = instant. Icons: the existing `lucide-react` set only.
+1. **GIF licenciado** — if a licensed animation exists for that exercise.
+2. **Foto libre** — the new level (decision 2026-09-29 c).
+3. **Silueta generada** — our own rig / generated still (§ the `tools/ai-media` pipeline).
+4. **Rig animado** — `PATTERN_DEMOS`, 28 patterns, already rendered in-app; the only
+   level that actually _moves_, and the one that teaches.
 
-## 8. Component inventory (build once, use everywhere)
+**Rules that make this safe:**
 
-`TabBar` · `NavRail` (desktop) · `HeroCard` · `ListRow` · `FilterChips` +
-`FilterSheet` · `Tabs` (scrollable on phone) · `SetRow` + `SetTypeBadge` ·
-`EffortPicker` · `RestBar` · `MetricCard` + `DeltaBadge` · `TrendChart` ·
-`ConsistencyHeatmap` · `MuscleThumb` · `MuscleBalanceBar` · `BottomSheet`
-(formalises what `ExerciseDemoModal` does ad hoc) · `EmptyState`.
+- Only licenses that permit commercial use **and** redistribution inside an application:
+  CC0 / public domain, Pexels, Unsplash. No scraped images, no other app's artwork, ever.
+- Every file carries provenance in `public/media/credits.json`: id, file, author, source
+  URL, license, retrieval date. The manifest is committed; the images are fetched by a
+  script (same shape as `tools/ai-media/fetch-models.mjs`, zero new dependencies).
+- **A curated subset ships committed** (the exercises the planner actually prescribes
+  most); the rest are fetched locally. Budget: ≤ 250 KB per image, WebP with a JPEG
+  fallback, and a hard cap on the committed total so the repository stays cloneable.
+- **The layout is designed for slot 3, not slot 2**: thumbnails have a fixed aspect ratio
+  and the silhouette fills it. A missing photo must never look like a broken app, and the
+  list must not reflow when photos arrive.
+- An image never replaces the technique text, the cues or the rig animation. The photo
+  says _what it looks like_; the rig shows _what moves_.
 
-Rules: every one of these gets its state shown (empty/loading-not-needed/error),
-a `tl-focusable` ring, and a story in the phone/desktop screenshots.
+## 9. Rango: published strength standards, done honestly
 
-## 9. Responsive rules (extends UI_DESIGN.md)
+The owner's requirement (2026-09-30): make the Progreso map's primary heat a **relative
+strength level against a published external ideal/reference**, with an optional separate
+training-exposure/volume lens. The owner wants height, body weight and sex considered;
+age should also be applied where the source stratifies by it. “Ideal” means the norm's
+published level, not an invented target. The exact height-aware method remains a research
+gate: do not ship a score until sources and applicability are validated.
 
-| Width | Navigation | Layout |
-|---|---|---|
-| `< 640 px` (iPhone 11 Pro Max = 414) | **Bottom tab bar**, safe-area bottom inset, 56 px tall, centre action raised | one column; hero first; set rows stack as `SERIE | ANTERIOR | KG | REPS`; sheets are bottom sheets |
-| `640–1023 px` | Segmented nav in the sticky header | single column `max-w-5xl`, sections stack |
-| `≥ 1024 px` | **Left rail** (icon + label), keyboard-first | two columns where useful (plan ‖ progress); hover states; density back to 40 px controls |
+Non-negotiable constraints before the map or `Rango` can ship:
 
-All the hard rules from UI_DESIGN.md stay binding (44 px targets on phones, 16 px
-inputs, no horizontal overflow, `100dvh`, `parseNumberInput`).
+1. **Source quality and population fit:** prefer peer-reviewed normative data or a published
+   standard with documented sample, population, lift protocol, year and data availability.
+   Competition-only norms must be labelled as such; they must not be presented as norms for
+   every gym user. Proprietary app data alone is not an acceptable ideal/reference.
+2. **Inputs and unsupported variables:** stratify by sex, body mass/weight class and age
+   when the source does so. The owner specifically wants height included, but height may
+   affect a result only through a validated source/model that actually supports it. If the
+   chosen reference does not account for height, show that limitation and ask the owner
+   whether to proceed with a clearly labelled fallback; do not silently omit height or
+   invent a correction. Clarify any remaining ambiguity with the owner before locking the
+   formula.
+3. **Strength measure:** compare an actual or validated estimated 1RM for the same lift
+   and protocol against that lift's reference. Never compare absolute kilos across muscle
+   groups, and never infer local muscle strength from unrelated compound lifts without a
+   validated mapping. If evidence or logged data is insufficient for a region, show a
+   neutral/no-data state with the reason, not a fabricated weak/strong color.
+4. **Coverage:** only lifts and regions with a defensible matching standard get a
+   strength-reference color. For unsupported exercises keep the exercise history/internal
+   progress view, clearly labelled as personal history rather than an external standard.
+5. **Independent volume lens:** logged hard-set stimulus remains a separate view, excludes
+   warm-ups, credits primary/secondary/accessory involvement transparently, and is described
+   as training exposure—not strength, hypertrophy, recovery or muscle size.
+6. **Visible provenance:** show source, year, population/sample, lift protocol, applicable
+   sex/age/body-mass bands, any height handling, uncertainty/limitations, and a reachable
+   “¿Cómo se calcula?” explanation. Tiers must preserve the source's actual percentiles or
+   labels; do not imply medical assessment.
 
-## 10. How we present exercises and plans in a local environment
+Initial source audit only (not an approved implementation choice): van den Hoek et al.
+(2024) report squat/bench/deadlift norms from 809,986 drug-tested, unequipped powerlifting
+entries by sex, age classification and weight class, using relative load/body mass; the
+sample is competitive powerlifters and the abstract does not establish height-based
+stratification. Folland et al. (2008) discuss allometric strength scaling and note that
+normalizing by body mass may leave height effects; their small study was knee strength in
+young men, not a general lifting-standard table. These papers are research leads, not yet
+validation for the requested general-user map. [van den Hoek et al.](https://doi.org/10.1016/j.jsams.2024.07.005) ·
+[Folland et al.](https://pubmed.ncbi.nlm.nih.gov/18172672/).
 
-This was an explicit requirement, so it gets its own section.
+This is a research task with a validation gate, not a copy-paste. It is scheduled in P4
+and refuses to ship a number it cannot defend.
 
-**Media cascade** (already implemented, keep it): GIF → photo pair → our drawn
-demo. A row never renders empty; when there is no media the drawn figure *is* the
-content. 100 of 143 exercises have media today; the 43 without are the mobility
-block the audit recommends adding first, which is exactly where a drawing is
-acceptable.
+## 10. Data ownership (the standalone rule)
 
-**Where things come from, locally**:
-- Catalog, technique, demos, warm-up ramps: **compiled into the app** — they work
-  with the Wi-Fi off and are identical on the phone over LAN.
-- Your data: **IndexedDB per device**; nothing leaves the machine. LAN sharing is
-  an explicit, switchable opt-in that shows the local URL to open on the phone.
-- BodyLab → TrainingLab: the `traininglab-export.ts` handoff file (v2), imported
-  by hand from Ajustes, never by background sync.
+| Data                                                  | Owner                           | TrainingLab standalone behaviour           |
+| ----------------------------------------------------- | ------------------------------- | ------------------------------------------ |
+| Sets, reps, load, effort, rest                        | TrainingLab                     | works fully                                |
+| Weekly plan, readiness, gear                          | TrainingLab                     | works fully                                |
+| Volume per muscle family                              | TrainingLab (from its own sets) | works fully                                |
+| Exercise catalog, technique, traits, rig              | shared `core/exercises`         | works fully                                |
+| Estimated 1RM, records, trends                        | TrainingLab                     | works fully                                |
+| **Body composition** (weight, %fat, muscle mass, BMI) | **BodyLab**                     | hidden, with a link and an import CTA      |
+| Anthropometric muscle score (2D/3D)                   | BodyLab                         | optional second layer on the map, labelled |
 
-**Plan presentation rules** (the part that was missing):
-1. A plan is always shown **as a week and a day**, never as a form. The day the
-   user actually faces is one tap away.
-2. Every planned set carries its **evidence**: why this exercise (families it
-   covers), why this many sets (budget + readiness), why this load (last
-   performance). One line, hidden behind a "¿por qué?" tap.
-3. **Edits are first-class**: swap, add, remove, reorder and re-time; a manual
-   edit is remembered for the next session and the planner says so.
-4. **Warm-ups are visible but weightless** — shown in the session, excluded from
-   the volume maths, labelled.
-5. **Nothing is a dead end**: every empty state offers the next action (import,
-   pick from the catalog, or start freestyle).
+TrainingLab never requires BodyLab to be installed, reachable, or up to date. Where it
+shows BodyLab-derived data, it says so and it says when it was imported.
 
-## 11. Phased delivery
+## 11. Component inventory (build once)
 
-| Phase | Scope | Ships | Effort |
-|---|---|---|---|
-| **P0 · Shell** | Split `TodayPage` into screens, add the nav shell (tab bar / rail) + hash sync, move current content in unchanged | the same features, reachable; the monolith dies | M |
-| **P1 · Library & detail** | Ejercicios list, filters, sheets, detail with 4 tabs | "what can I do and how" becomes answerable in-app | L |
-| **P2 · ZEN v2** | Set table with PREVIOUS, set-type badges, effort per set, sticky rest bar, next peek | the logging loop gets fast | M |
-| **P3 · Progreso** | Selectors, `TrendChart`, KPI tiles, heatmap, PR list, muscle balance | "am I improving" becomes answerable | L |
-| **P4 · Week & coach** | Week editing, coach proposal sheet with the reason trail, plan provenance badge | the horizontalisation becomes usable | M |
+`AppShell` (rail / tab bar) · `NavItem` · `HeroCard` · `KpiTile` · `WeekStrip` ·
+`ExerciseRow` · `ExerciseThumb` (the 4-level cascade) · `FilterSheet` · `TabStrip` ·
+`SetTable` + `SetRow` + `EffortPicker` + `SetTypeBadge` · `RestBar` · `NextUpLine` ·
+`SectionCard` (details-based, exists) · `StatCard` (exists) · `Badge` (exists) ·
+`Switch` (exists) · `TrendChart` · `MuscleMap2D` · `VolumeStack` · `RecordList` ·
+`CoachCard` · `EmptyState` · `Celebration` (exists).
 
-Every phase: typecheck, root + web tests, screenshots at 414×896 and 1440×900
-committed, `UI_DESIGN.md` updated if a rule moved, and one push.
+## 12. Mobile rules (extends `UI_DESIGN.md`)
 
-## 12. What we refuse
+- Bottom bar reserves `72px + env(safe-area-inset-bottom)`; the FAB is not in the safe
+  area. Every tappable is **≥ 44 px**; inputs stay **≥ 16 px** font (no iOS zoom).
+- Any grid whose children could be a phone gets an explicit `grid-cols-1` below `sm`, so
+  an `auto` column cannot overflow its parent.
+- Tables scroll horizontally inside their own container (the set table is the one place
+  where this is allowed); the page body never scrolls sideways.
+- Every JSX asset URL goes through `import.meta.env.BASE_URL` (the LAN server mounts the
+  app at `/traininglab/`).
+- Verified at **390 × 844** and **1440 × 900** in the same commit, with screenshots.
 
-Social feed and followers · leaderboards · invented percentiles · streak
-loss-anxiety · autoplay video · webfonts · light mode · telemetry · any borrowed
-artwork.
+## 13. What we refuse
 
-## 13. Open questions for the owner
+Social feed and followers · leaderboards · **invented** percentiles · streak loss-anxiety
+(we show weekly consistency, not a chain that can break) · autoplay video · webfonts ·
+telemetry · any borrowed artwork · any number from a source we cannot cite.
 
-1. **Rename** — "Training App" was your preference and we deferred it. The nav
-   shell is the cheapest moment to do it: one place, one version bump. Say the
-   word and P0 includes it.
-2. **Bottom tab bar** — it changes thumb ergonomics on the iPhone substantially;
-   confirm you want navigation at the bottom (recommended) rather than the
-   current top switch.
-3. **Nivel estimado** — do you want per-family strength tiers at all, given we
-   must label them as internal reference (no population data)? "Yes with the
-   honest label" is my recommendation; "no" is a perfectly good answer.
-4. **Mobility block** — do we add the 12 stretching entries (audit Tier 2) in P1
-   so the library is complete, or leave it as its own phase?
+## 14. Phases (shell first, screen by screen)
+
+| Phase                                                      | Scope                                                                                                             | Why this order                                                                                                      |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **P0 · Shell** ✅ _(shell + state lift done 2026-09-29 d)_ | `app/router.ts`, `AppShell` (rail + tab bar), five destinations reachable, today's content moved in **unchanged** | the navigation is the thing every later screen hangs off; content behaviour is untouched so a regression is obvious |
+| **P1 · Design language** ✅                                | palette + surfaces + type scale + focus rings; component extraction (`HeroCard`, `KpiTile`, `ExerciseThumb`)      | cheap, visible, and de-risks every screenshot after it                                                              |
+| **P2 · Inicio** ✅                                         | hero, KPI strip, week strip, next-up, right rail, readiness collapsed                                             | the screen you see 20× a day                                                                                        |
+| **P3 · ZEN** ✅                                            | set table with `ANTERIOR`, set types, effort per set, sticky rest bar, collapsible rails, next-up                 | the screen you use with one hand, mid-set                                                                           |
+| **P4 · Ejercicios + ficha** ✅ _(`Rango` gated on §9)_     | list, filters, four tabs; `Rango` gated on §9                                                                     | the library makes ZEN's _Sustituir_ fast                                                                            |
+| **P5 · Progreso** ✅ _base_; ⏳ _strength-reference lens_  | selectors, `TrendChart`, KPIs, current volume/goal lenses, volume stack, records, coach cards; published-standard strength lens is a new research-gated addition | needs P1's components and real logged data to look right |
+| **P6 · Media** ⏳                                          | credits manifest, fetch script, curated committed subset, cascade rules                                           | last, and independent: the layout must already look finished without it                                             |
+
+Every phase: `tsc -b`, root + web tests, lint, a build, screenshots at both widths, this
+file updated if a rule moved, one commit.
+
+## 15. State of the build (2026-09-29 e)
+
+**Done and verified:** the modular shell (`app/App.tsx`, `app/router.ts`,
+`app/nav.ts`) with `app/store.tsx` owning the state the monolith used to hold;
+the design system (`ui/primitives.tsx`, `ui/icons.tsx`); the v2 palette with
+measured contrast; **Inicio** (hero, KPI strip, week strip, session with the next
+exercise open, rail with ring/numbers/ZEN); **ZEN v2** as the `#/sesion` route
+(header, set table with `Anterior`, effort, sticky rest bar, collapsible rails);
+**Progreso** (period selector, metric tiles, the anatomical body map painted from
+the log with its **two existing lenses** — training stimulus and anthropometric goal
+proximity —, family split, records, assistant); and the **Ejercicios library** with its
+detail tabs — `Rango` disabled with its reason, `Historial` filling as sets get
+logged. The interaction revision is in: dynamic rail, context tags, collapsible
+exercise cards, mobile KPI strips. 15 root tests pin the library logic and
+`tests/training/test_body_map.test.ts` pins both map lenses plus the rep
+overrides.
+
+**New owner direction (2026-09-30):** the current volume/goal map is not yet the
+requested strength-standard heatmap. The primary strength-vs-published-reference
+lens and alternate volume lens need source validation and implementation. The existing
+anthropometric goal lens must not be silently relabelled or removed; its placement is an
+owner decision. Until research is approved, existing app behavior remains unchanged.
+
+**Pending:** (1) strength-reference research and lens; (2) the media manifest and the curated photo subset (§8);
+(3) `Rango` (§9), which waits for a cited source; (4) `Historial` becomes a chart
+when there is history to chart; (5) `src/features/today/ui.tsx`, the deprecated
+re-export shim, disappears with its last import.
+
+The TrainingLab desktop shell is now **0.2.0** (`src-tauri/tauri.conf.json`,
+`Cargo.toml`, `package.json` and the `APP_VERSION` shown in Ajustes) — the web
+build changes reach Tauri through `frontendDist: ../dist`, and the CSP was
+already roomy enough for everything the redesign added (inline SVG, data-URI
+images, WebAudio, loopback for the optional LLM).
+
+## 16. Open questions
+
+1. **App name** — "Training App" was mentioned once; the nav shell is the cheapest moment
+   to rename, and it also touches the installer and the Pages site.
+2. **Committed photo budget** — how many MB may the repository carry for the curated
+   subset before it is fetched at build time instead?
+3. **Streaks** — confirm the reframing from "racha" (a chain) to "constancia semanal".
+4. **Mobility block** — do the 12 stretching entries enter the library in P4?

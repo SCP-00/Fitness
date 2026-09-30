@@ -71,7 +71,7 @@ Dos aplicaciones independientes conectadas por un contrato de datos compartido:
 | V1.1 — Multi-profile | ⏳ DEFERRED | Track family/clients |
 | V1.1 — Body Story | ⏳ DEFERRED | Narrative timeline |
 | V1.1 — Gym Companion | ⏳ DEFERRED | Ultra-simple gym mode |
-| V2.0 — TrainingLab | 📋 PLANEADO | Rutinas + LLM — plan en `docs/TRAININGLAB_PLAN.md` |
+| V2.0 — TrainingLab | 📋 PLANEADO | Rutinas + LLM — plan en `docs/TRAININGLAB_UI_PLAN.md` |
 
 ---
 
@@ -128,12 +128,11 @@ fitness-ecosystem/
 │
 ├── docs/
 │   ├── PRODUCT_SPEC.md              # What we're building
-│   ├── REQUIREMENTS.md              # All requirements with IDs
-│   ├── ACCEPTANCE_CRITERIA.md       # Binary PASS/FAIL tests
-│   ├── V1_RELEASE_GATE.md           # Release conditions
 │   ├── ARCHITECTURE.md              # Verified architecture (single source of truth)
+│   ├── UI_DESIGN.md                 # Interface rules + responsive contract
+│   ├── TRAININGLAB_UI_PLAN.md       # TrainingLab redesign contract (v2)
 │   ├── TESTING.md                   # Test strategy + commands
-│   └── PERFORMANCE.md               # Performance baseline + budgets
+│   └── ieee/                        # Two IEEE technical reports (.tex + .pdf)
 │
 ├── bodylab/
 │   ├── core/
@@ -230,7 +229,6 @@ fitness-ecosystem/
 ## 6. Test Strategy
 
 Estrategia completa, comandos por nivel y mapa de cobertura: [docs/TESTING.md](docs/TESTING.md).
-Baseline de rendimiento y budgets: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ### Current Test Suite
 
@@ -278,7 +276,7 @@ tests/data/golden/
 - Performance improvements
 
 ### V2.0+ Candidates
-- TrainingLab integration — **plan completo en `docs/TRAININGLAB_PLAN.md`** (registro de sesión, biblioteca, rutinas deterministas + IA local opcional vía Ollama, ciclo rendimiento↔medidas)
+- TrainingLab integration — **plan completo en `docs/TRAININGLAB_UI_PLAN.md`** (registro de sesión, biblioteca, rutinas deterministas + IA local opcional vía Ollama, ciclo rendimiento↔medidas)
 - LLM integration
 - Cloud sync
 - Mobile app
