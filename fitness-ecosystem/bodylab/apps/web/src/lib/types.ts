@@ -29,6 +29,16 @@ export interface Profile {
   age?: number;
   biologicalSex: BiologicalSex;
   units: UnitSystem;
+  /**
+   * Owner direction 2026-09-30 (docs/RESEARCH_IDEALS_BY_SPORT.md §5): the
+   * "Sport" and "Atractivo" onboarding tracks. Ids come from
+   * `lib/onboarding-context.ts` and are additive/optional so existing stored
+   * profiles and backups keep loading untouched.
+   */
+  sport?: string;
+  sportFocus?: string | null;
+  objective?: string;
+  aestheticPreset?: string | null;
   createdAt: string;
   updatedAt: string;
 }

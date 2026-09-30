@@ -15,6 +15,19 @@ import { useApp } from "../lib/store";
 import type { BiologicalSex, Language, AllMeasurementType } from "../lib/types";
 import { BUILT_IN_REFERENCES } from "../lib/constants";
 import { parseNumberInput } from "../lib/parse-num";
+import { ageFromBirthDate } from "../lib/age";
+import {
+  AESTHETIC_PRESETS,
+  BRACKET_SOURCE,
+  OBJECTIVES,
+  SPORTS,
+  SPORT_FOCUS,
+  ageBracket,
+  type AestheticPresetId,
+  type ObjectiveId,
+  type SportFocusId,
+  type SportId,
+} from "../lib/onboarding-context";
 import * as db from "../lib/db";
 
 /**
@@ -24,7 +37,7 @@ import * as db from "../lib/db";
  * 1. Welcome (no language yet)
  * 2. Language selection
  * 3. Product intro (4 mini-screens teaching the mental model)
- * 4. Profile creation
+ * 4. Profile creation (body + the Sport / Atractivo context, 2026-09-30)
  * 5. Optional first measurements
  * 6. Reference selection
  */
@@ -74,6 +87,16 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [height, setHeight] = useState("1.75");
   const [weight, setWeight] = useState("70");
   const [sex, setSex] = useState<BiologicalSex>("male");
+  // Owner direction 2026-09-30 (approved §5): the Sport and Atractivo tracks.
+  const [sport, setSport] = useState<SportId>("general");
+  const [sportFocus, setSportFocus] = useState<SportFocusId | null>(null);
+  const [objective, setObjective] = useState<ObjectiveId>("health");
+  const [aestheticPreset, setAestheticPreset] =
+    useState<AestheticPresetId | null>(null);
+  // The published source backing the user's age, shown once the birth date
+  // makes it known — never a source we cannot cite for their bracket.
+  const bracket = ageBracket(ageFromBirthDate(birthDate));
+  const bracketSource = bracket ? BRACKET_SOURCE[bracket] : null;
   const [measurementsData, setMeasurementsData] = useState<
     Record<string, number>
   >({});
@@ -118,6 +141,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       weight: parseNumberInput(weight) ?? 70,
       biologicalSex: sex,
       units: "metric" as const,
+      sport,
+      sportFocus,
+      objective,
+      aestheticPreset,
       createdAt: now,
       updatedAt: now,
     };
@@ -356,6 +383,114 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     />
                   </div>
                 </div>
+
+                {/* Owner direction 2026-09-30: Sport + Atractivo context
+                    (docs/RESEARCH_IDEALS_BY_SPORT.md §5, approved). */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {language === "es" ? "Deporte" : "Sport"}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SPORTS.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          setSport(s.id);
+                          if (s.id === "general") setSportFocus(null);
+                        }}
+                        className={`py-2.5 px-2 rounded-xl text-sm font-medium border-2 transition-all ${
+                          sport === s.id
+                            ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300"
+                            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                        }`}
+                      >
+                        {language === "es" ? s.es : s.en}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {sport !== "general" && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {language === "es" ? "Enfoque" : "Focus"}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {SPORT_FOCUS.map((f) => (
+                        <button
+                          key={f.id}
+                          onClick={() => setSportFocus(f.id)}
+                          className={`py-2.5 px-2 rounded-xl text-sm font-medium border-2 transition-all ${
+                            sportFocus === f.id
+                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300"
+                              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                          }`}
+                        >
+                          {language === "es" ? f.es : f.en}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {language === "es" ? "Objetivo" : "Objective"}
+                  </label>
+                  <div className="flex gap-2">
+                    {OBJECTIVES.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setObjective(o.id)}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${
+                          objective === o.id
+                            ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300"
+                            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                        }`}
+                      >
+                        {language === "es" ? o.es : o.en}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {objective === "handsome" && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {language === "es"
+                        ? "Preferencia estética"
+                        : "Aesthetic preference"}
+                    </label>
+                    <div className="space-y-2">
+                      {AESTHETIC_PRESETS.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => setAestheticPreset(p.id)}
+                          className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${
+                            aestheticPreset === p.id
+                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300"
+                              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                          }`}
+                        >
+                          {language === "es" ? p.es : p.en}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                      {language === "es"
+                        ? "Meta estética personal; no es un estándar médico."
+                        : "A personal aesthetic goal — not a medical standard."}
+                    </p>
+                  </div>
+                )}
+
+                {bracketSource && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {language === "es"
+                      ? `Referencias publicadas para tu edad: ${bracketSource}`
+                      : `Published references for your age: ${bracketSource}`}
+                  </p>
+                )}
               </div>
             </div>
           )}

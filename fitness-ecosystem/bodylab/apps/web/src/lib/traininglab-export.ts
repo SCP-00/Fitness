@@ -89,7 +89,6 @@ interface MuscleLoad {
   /** latest value of the proxy measurement (cm), null = not measured */
   proxyValue: number | null;
 }
-
 interface TraininglabProfile {
   height: number; // cm
   weight: number | null; // kg (latest)
@@ -99,6 +98,11 @@ interface TraininglabProfile {
   birthDate: string | null;
   biologicalSex: "male" | "female" | string;
   units: string;
+  /** Onboarding context (additive in v2; consumers ignore unknown fields). */
+  sport?: string;
+  sportFocus?: string | null;
+  objective?: string;
+  aestheticPreset?: string | null;
 }
 
 /** The file TrainingLab consumes. Keep flat + explicit: LLM-friendly. */
@@ -295,6 +299,10 @@ export function buildTraininglabExport(state: ExportState): TraininglabExport {
           birthDate: profile.birthDate ?? null,
           biologicalSex: profile.biologicalSex,
           units: profile.units ?? "metric",
+          sport: profile.sport,
+          sportFocus: profile.sportFocus ?? null,
+          objective: profile.objective,
+          aestheticPreset: profile.aestheticPreset ?? null,
         }
       : null,
     measurements: latest,
