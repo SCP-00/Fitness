@@ -1029,6 +1029,28 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "No BodyLab measures yet — import your BodyLab export, set your own targets, or use the golden-ratio preset.",
     es: "Aún no hay medidas de BodyLab — importa tu exportación, define tus propios objetivos o usa la proporción dorada.",
   },
+  "condition.title": {
+    en: "Physical condition",
+    es: "Condición física",
+  },
+  "condition.sub": {
+    en: "You vs the published average and athletic band",
+    es: "Tú vs el promedio publicado y la franja atlética",
+  },
+  "condition.mean": { en: "Mean", es: "Media" },
+  "condition.noData": {
+    en: "No data — see how to measure it in BodyLab",
+    es: "Sin dato — mira cómo medirlo en BodyLab",
+  },
+  "condition.axis.cardio": { en: "Cardio (Cooper 12 min)", es: "Cardio (Cooper 12 min)" },
+  "condition.axis.composition": { en: "Body fat", es: "Grasa corporal" },
+  "condition.axis.proportion": { en: "Waist-to-height", es: "Cintura/estatura" },
+  "condition.axis.muscle": { en: "Muscle mass (FFMI)", es: "Masa muscular (FFMI)" },
+  "condition.band.excellent": { en: "Athletic / excellent", es: "Atlético / excelente" },
+  "condition.band.above": { en: "Above average", es: "Sobre el promedio" },
+  "condition.band.average": { en: "Average", es: "Promedio" },
+  "condition.band.below": { en: "Below average", es: "Bajo el promedio" },
+  "condition.band.poor": { en: "Needs work", es: "Por mejorar" },
   "progress.goal.noWaist": {
     en: "The golden-ratio preset needs a waist: measure it in BodyLab or declare it in Ajustes → Progreso → Objetivos.",
     es: "La proporción dorada necesita una cintura: mídela en BodyLab o declárala en Ajustes → Progreso → Objetivos.",

@@ -1,10 +1,9 @@
 # Investigación: el "ideal" por disciplina, edad, sexo, estatura y objetivo
 
-**Estado:** INVESTIGACIÓN (documento de trabajo). No cambia código ni el mapa hasta la
-aprobación explícita del dueño. Cumple la dirección de `AGENT_HANDOFF.md` (2026-09-30)
-y las reglas de `AGENTS.md` §Product vision: el "ideal" es siempre una **norma publicada
-externa**, nunca un número inventado, y solo se estratifica por las variables que la
-fuente soporta de verdad.
+**Estado:** §3 DECIDIDA y §5 APROBADA por el dueño (2026-09-30): la lente principal es
+la **condición física vs promedio publicado y franja atlética** por edad/sexo/peso/estatura;
+se implementan las secciones Deporte y Atractivo del onboarding y la primera fuente
+(Cooper/%BF/WHtR/FFMI) en TrainingLab. Los cambios de mapa per-family siguen gated.
 
 Tarea asignada por el dueño (2026-09-30, "Super Search Task"): ideales por
 disciplina/edad/sexo/estatura/objetivo, sección **Deporte** en las preguntas iniciales
@@ -96,22 +95,55 @@ estatura que podamos citar sin fabricar. Por regla del dueño: no se inventa; se
 WHtR + %BF por sexo + presets propios, y la sección pide confirmación antes de derivar
 sustitutos.
 
-## 3. Estatura: qué soporta cada fuente (la pregunta abierta del dueño)
+## 3. Estatura: decisión documentada (revisada 2026-09-30 tras la aclaración del dueño)
+
+**El objetivo real del dueño (aclaración 2026-09-30):** no es el salto ni un deporte
+específico — es **evaluar la condición física del usuario frente al promedio publicado
+(según edad, sexo, peso y estatura) y frente a la franja de un físico atlético**, con
+datos de hombres y mujeres. Eso reencuadra la pregunta: la estatura solo es un problema
+cuando la *métrica* no la usa; hay métricas publicadas cuya **definición la incluye**.
 
 | Fuente | Sexo | Edad | Peso | Estatura |
 |---|---|---|---|---|
-| Cooper 1968 + Mandsager 2018 / Kokkinos 2022 | ✅ | ✅ | — | ❌ |
+| Cooper 1968 (bandas ya en core) | ✅ | ✅ (13–50+) | — | ❌ |
+| FRIEND registry (Kaminsky 2015/2022; Peterman 2020) | ✅ | ✅ (décadas 20–79) | — | ❌ (VO₂max ya es relativo al peso) |
+| %BF ACE (bandas ya en core) | ✅ | adultos | ✅ (vía %BF) | ❌ |
+| **FFMI (Kouri 1995)** `FFM/h²` + normalización `6.3×(1.8−h)` | ✅ (referencias ♂/♀ distintas) | adultos | ✅ | ✅ **en la definición** |
+| WHtR (Ashwell) `<0.5` | ✅ | ✅ | ✅ | ✅ **en la definición** |
 | Normas powerlifting 2024 | ✅ | ✅ | ✅ (clase) | ❌ |
-| ACE salto vertical | ✅ | ✅ | — | ❌ |
 | Rikli & Jones SFT 60–94 | ✅ | ✅ | — | ❌ |
-| WMA age-grading 2023 | ✅ | ✅ (año a año) | — | ❌ |
-| WHtR / %BF ACE/J-P/Navy | ✅ | parcial | ✅ | ✅ (WHtR usa estatura) |
+| WMA age-grading 2023 | ✅ | ✅ | — | ❌ |
 
-Ninguna fuente de fuerza/potencia/carrera citada soporta ajuste por estatura; el paper
-2008 de escalado alométrico (handoff 2026-09-30) no basta por muestra/medición. **Cumplimos
-la regla:** no multiplicadores inventados; se declara la brecha por fuente y se pide
-decisión al dueño (opciones: (a) mostrar solo lo soportado, (b) explorar alométrico
-exclusivamente como experimental etiquetado, (c) esperar fuente mejor).
+### Decisión (4 opciones comparadas)
+
+1. **Solo lo soportado por fuente** — cada métrica se estratifica con sus variables
+   reales (Cooper: sexo+edad; %BF: sexo; FFMI/WHtR: sexo+estatura+peso). Donde la fuente
+   no soporta un ajuste, se declara la brecha en pantalla. ✅ **ELEGIDA**: cero invención,
+   y cubre peso+estatura del dueño a través de FFMI/WHtR sin fabricar nada.
+2. **Alométrico como ajuste universal** — rechazada: el paper de 2008 no valida normas
+   poblacionales por estatura (handoff 2026-09-30); inventaría un multiplicador.
+3. **Métricas definidas por estatura** (FFMI normalizado, WHtR, SMI si hay BIA) — ✅
+   adoptada DENTRO de la opción 1: son la respuesta honesta a "qué papel juega la
+   estatura". FFMI ♂ promedio ≈ 21.4 (rango atlético hasta ~25, techo natural de Kouri),
+   ♀ promedio ≈ 18.0; rangos saludables publicados ♂ 18–25 / ♀ 15–22 (contexto adulto).
+4. **Esperar una fuente mejor** — no bloquea: la opción 1+3 ya cubre el objetivo; si
+   aparece una norma con ajuste por estatura validado, se añade como fila nueva.
+
+### Qué implementa la decisión (la lente "Condición física")
+
+Ejes derivados SOLO de datos ya exportados por BodyLab (v2), cada uno con banda
+publicada por sexo (+edad cuando la fuente la define) y provenance visible:
+
+- **Cardio** — Cooper 12-min clasificado por sexo+edad (13–50+ ya en core;
+  FRIEND como referencia de percentiles en la documentación).
+- **Composición** — %BF medido vs bandas ACE por sexo (atlética/fitness/aceptable).
+- **Proporción** — WHtR `<0.5` sano / `<0.6` aumentado / `≥0.6` alto (Ashwell), por igual
+  para ♀/♂.
+- **Masa muscular relativa** — FFMI = FFM/altura² (+ normalización de Kouri), informativo
+  con su fuente; sin percentiles inventados.
+
+Sin el dato de entrada de un eje → ese eje se muestra como "sin dato + cómo medirlo",
+nunca como 0 ni como "malo".
 
 ## 4. Cobertura mujeres-primero (70/30)
 

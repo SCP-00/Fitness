@@ -25,6 +25,7 @@ export default defineConfig({
     alias: {
       '@fitness/bodylab-training': path.resolve(__dirname, '../../../bodylab/core/training/src'),
       '@fitness/bodylab-exercises': path.resolve(__dirname, '../../../bodylab/core/exercises/src'),
+      '@fitness/bodylab-conditioning': path.resolve(__dirname, '../../../bodylab/core/conditioning/src'),
     },
   },
   // Tauri reads TAURI_* env vars at build time to inject the platform details.

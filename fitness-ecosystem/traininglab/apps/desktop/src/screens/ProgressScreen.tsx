@@ -32,6 +32,8 @@ import { Badge, Chip, EmptyState, MetricTile } from "../ui/primitives";
 import { IconLayers } from "../ui/icons";
 import { useStore } from "../app/store";
 import { BodyMap } from "../features/stats/BodyMap";
+import ConditionCard from "../features/today/ConditionCard";
+import { conditionProfile, heightMOf } from "../features/stats/condition";
 import {
   goalProximity,
   resolveWaistCm,
@@ -92,6 +94,14 @@ export default function ProgressScreen() {
     }
     return null;
   }, [mapMode, goalSource, payload, settings]);
+
+  // The condition lens (2026-09-30 owner direction): whole-body published-norm
+  // read — you vs the average and the athletic band — independent of the map's
+  // per-family lenses. Null axis = no data for it; never a fabricated band.
+  const condition = useMemo(
+    () => conditionProfile({ payload, heightM: heightMOf(payload) }),
+    [payload],
+  );
 
   const buckets = useMemo(() => dayBuckets(sets, days), [sets, days]);
   const families = useMemo(() => volumeByFamily(sets, days), [sets, days]);
@@ -171,6 +181,9 @@ export default function ProgressScreen() {
               info={tInterp("progress.kpi.consistencyHint", { pct: stats.pct })}
             />
           </section>
+
+          {/* ── Physical condition: you vs the published norms ───────────── */}
+          <ConditionCard axes={condition.axes} mean={condition.mean} />
 
           {/* ── Body analysis: the figure, the legend, the families ──────── */}
           <section className="tl-card">

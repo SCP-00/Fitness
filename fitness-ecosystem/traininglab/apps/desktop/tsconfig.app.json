@@ -27,7 +27,8 @@
     "baseUrl": ".",
     "paths": {
       "@fitness/bodylab-training": ["../../../bodylab/core/training/src"],
-      "@fitness/bodylab-exercises": ["../../../bodylab/core/exercises/src"]
+      "@fitness/bodylab-exercises": ["../../../bodylab/core/exercises/src"],
+      "@fitness/bodylab-conditioning": ["../../../bodylab/core/conditioning/src"]
     }
   },
   "include": ["src"]

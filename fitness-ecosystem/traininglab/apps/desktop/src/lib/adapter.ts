@@ -71,6 +71,11 @@ export interface ImportPayload {
   }[];
   /** v2 conditioning weakness map (null when BodyLab has nothing classified). */
   conditioning?: ImportConditioning | null;
+  /**
+   * WHtR / Adonis ratios BodyLab already computed (additive, optional — the
+   * condition lens falls back to waist/height from raw values when absent).
+   */
+  indicators?: { whtr: number | null; adonis: number | null } | null;
   /** Personal records per exercise, used for the first load suggestion. */
   personalRecords?: ImportRecord[];
   trainingLog?: {
