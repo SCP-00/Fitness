@@ -18,9 +18,15 @@
 
 import { useEffect, useState } from "react";
 
-/** The five destinations. Everything else is a parameter of one of them. */
+/**
+ * The six destinations. Everything else is a parameter of one of them.
+ *
+ * `week` arrived with the Inicio slimming (2026-09-30 f): the weekly plan, its
+ * regeneration and its explanation are a surface of their own, so Inicio can
+ * answer one question (what do I do now?) instead of four.
+ */
 export type RouteId =
-  "today" | "exercises" | "session" | "progress" | "settings";
+  "today" | "exercises" | "week" | "session" | "progress" | "settings";
 
 export interface Route {
   id: RouteId;
@@ -42,6 +48,8 @@ const SEGMENTS: Record<string, RouteId> = {
   inicio: "today",
   ejercicios: "exercises",
   exercises: "exercises",
+  semana: "week",
+  week: "week",
   sesion: "session",
   session: "session",
   entrenamiento: "session",
@@ -55,9 +63,20 @@ const SEGMENTS: Record<string, RouteId> = {
 export const HASH: Record<RouteId, string> = {
   today: "#/hoy",
   exercises: "#/ejercicios",
+  week: "#/semana",
   session: "#/sesion",
   progress: "#/progreso",
   settings: "#/ajustes",
+};
+
+/** Route segment per destination — one source for every plain `<a href>`. */
+export const SEGMENT: Record<RouteId, string> = {
+  today: "hoy",
+  exercises: "ejercicios",
+  week: "semana",
+  session: "sesion",
+  progress: "progreso",
+  settings: "ajustes",
 };
 
 /** Parse a `location.hash` (with or without the leading `#`) into a route. */

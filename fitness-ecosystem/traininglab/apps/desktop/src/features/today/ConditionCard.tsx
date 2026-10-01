@@ -24,10 +24,7 @@ const ICONS: Record<ConditionAxis["id"], ReactNode> = {
 };
 
 /** Same palette the body map uses for the 0–100 index bands. */
-const BAND_CLASS: Record<
-  NonNullable<ConditionAxis["band"]>,
-  string
-> = {
+const BAND_CLASS: Record<NonNullable<ConditionAxis["band"]>, string> = {
   excellent: "is-band-excellent",
   above_average: "is-band-above",
   average: "is-band-average",
@@ -86,10 +83,16 @@ export default function ConditionCard({
       </div>
       <div className="tl-card-body tl-condition-grid">
         {axes.map((a) => (
-          <div key={a.id} className="tl-condition-item" data-testid={`condition-${a.id}`}>
+          <div
+            key={a.id}
+            className="tl-condition-item"
+            data-testid={`condition-${a.id}`}
+          >
             <div className="tl-condition-head">
               {ICONS[a.id]}
-              <span className="tl-condition-name">{t(`condition.axis.${a.id}`)}</span>
+              <span className="tl-condition-name">
+                {t(`condition.axis.${a.id}`)}
+              </span>
               {a.band && (
                 <span className={`tl-band ${BAND_CLASS[a.band]}`}>
                   {bandLabel(a.band)}

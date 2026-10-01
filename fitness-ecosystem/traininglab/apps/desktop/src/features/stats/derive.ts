@@ -397,4 +397,64 @@ export function weeklySetsFor(sessions: TLSession[]): number {
   return sessions.reduce((acc, s) => acc + s.setIds.length, 0);
 }
 
+/**
+ * The shape of a period in 5–7 bars, whatever the span: days for a week, weeks
+ * for a month, months for a quarter. One bar per day would be 90 slivers in a
+ * rail, which is noise, not a trend. Oldest bar first; today is the last one.
+ */
+export function periodSeries(
+  sets: TLSet[],
+  days: 7 | 30 | 90,
+): number[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const buckets = days === 7 ? 7 : days === 30 ? 5 : 6;
+  const span = Math.ceil(days / buckets);
+  const out = Array.from({ length: buckets }, () => 0);
+
+  for (const set of workingSets(sets)) {
+    const diff = Math.floor(
+      (today.getTime() -
+        new Date(`${set.timestamp.slice(0, 10)}T00:00:00`).getTime()) /
+        DAY_MS,
+    );
+    if (diff < 0 || diff >= buckets * span) continue;
+    const index = buckets - 1 - Math.floor(diff / span);
+    out[index] += 1;
+  }
+  return out;
+}
+
+/**
+ * How many of the last `weeks` weeks hit the training-days target. Weekly
+ * "constancia" is deliberately not a streak: a chain that can break punishes a
+ * partial week instead of rewarding the one you actually trained.
+ */
+export function trainedWeeksIn(
+  sets: { timestamp: string; warmup?: boolean }[],
+  weeks: number,
+  daysPerWeek: number,
+): number {
+  const trained = new Set(
+    sets.filter((s) => !s.warmup).map((s) => s.timestamp.slice(0, 10)),
+  );
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const monday = new Date(
+    today.getTime() - ((today.getDay() + 6) % 7) * DAY_MS,
+  );
+  let hit = 0;
+  for (let w = 0; w < weeks; w += 1) {
+    const start = new Date(monday.getTime() - w * 7 * DAY_MS);
+    let count = 0;
+    for (let d = 0; d < 7; d += 1) {
+      if (trained.has(isoDay(new Date(start.getTime() + d * DAY_MS)))) {
+        count += 1;
+      }
+    }
+    if (count >= Math.max(1, daysPerWeek)) hit += 1;
+  }
+  return hit;
+}
+
 export { exerciseFamilies };

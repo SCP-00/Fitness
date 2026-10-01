@@ -1,6 +1,6 @@
 [package]
 name = "bodylab"
-version = "1.0.0-beta.6"
+version = "1.0.0-beta.7"
 description = "BodyLab desktop host (Tauri v2) — privacy-first anthropometry, body modeling & training"
 authors = ["BodyLab"]
 edition = "2021"

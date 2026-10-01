@@ -7,6 +7,40 @@
 
 import type { TLSettingsData } from "./types";
 import type { PlannedRow } from "./plan";
+import type { ImportPayload } from "./adapter";
+
+/** Which anatomical drawing the body map shows. */
+export type BodyMapFigure = "male" | "female";
+
+/**
+ * The figure the map draws, from the user's choice and the imported profile.
+ *
+ * Two rules, both deliberate:
+ *
+ *   * **the import is only consulted in `auto`** — an explicit choice is never
+ *     overridden by a file the user imported months ago;
+ *   * **only the field BodyLab actually exports is read** (`biologicalSex`), and
+ *     an unrecognised or missing value falls back to the male drawing instead
+ *     of guessing. The screen says when the figure came from the import, so a
+ *     wrong guess is visible rather than silent.
+ */
+export function resolveBodyMapFigure(
+  settings: TLSettingsData | null | undefined,
+  payload: ImportPayload | null | undefined,
+): { figure: BodyMapFigure; from: "choice" | "bodylab" | "default" } {
+  const choice = settings?.bodyMapFigure ?? "auto";
+  if (choice === "male" || choice === "female") {
+    return { figure: choice, from: "choice" };
+  }
+  const sex = (payload?.profile?.biologicalSex ?? "").trim().toLowerCase();
+  if (sex.startsWith("f") || sex.startsWith("muj")) {
+    return { figure: "female", from: "bodylab" };
+  }
+  if (sex.startsWith("m") || sex.startsWith("hom")) {
+    return { figure: "male", from: "bodylab" };
+  }
+  return { figure: "male", from: "default" };
+}
 
 /**
  * The rep-range overrides the user set for one exercise, or `null` when the

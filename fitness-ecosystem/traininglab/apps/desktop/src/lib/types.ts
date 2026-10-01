@@ -181,6 +181,14 @@ export interface TLSettingsData {
    * as long as the override exists. Never persisted into the plan itself.
    */
   repOverrides?: Record<string, { min: number; max: number }>;
+  /**
+   * Which anatomical figure the Progreso map draws (2026-09-30 f):
+   * `auto` follows the imported BodyLab profile's sex and needs no data of its
+   * own (a profile-less user gets the male drawing, and the screen says so),
+   * while `male`/`female` are an explicit override for anyone the import gets
+   * wrong. Absent in old records → `auto`.
+   */
+  bodyMapFigure?: "auto" | "male" | "female";
 }
 
 /** Sensible defaults: 90 minutes, a real home setup, no network of any kind. */
@@ -198,4 +206,5 @@ export const DEFAULT_SETTINGS: TLSettingsData = {
   notifications: { ...DEFAULT_NOTIFICATIONS },
   shared: { ...DEFAULT_SHARED },
   llm: { ...DEFAULT_LLM },
+  bodyMapFigure: "auto",
 };

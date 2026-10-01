@@ -5,12 +5,25 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- `interactive-widget=resizes-content` is what keeps the ZEN action bar above
+         the on-screen keyboard on Android/Chrome: the layout viewport shrinks, so a
+         sticky bottom bar stays visible. iOS Safari ignores it (the keyboard overlays
+         the page) and is handled in `ui/use-keyboard-offset.ts` with visualViewport. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <!-- Web app capable when added to the iPhone home screen (standalone,
          status bar matches the ember theme). -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="TrainingLab — registra tu entrenamiento y planifica desde tus medidas de BodyLab. 100 % local." />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta
+      name="description"
+      content="TrainingLab — registra tu entrenamiento y planifica desde tus medidas de BodyLab. 100 % local."
+    />
     <!-- Ember orange: mirrors the in-app accent (index.css --tl-accent). -->
     <meta name="theme-color" content="#ff7300" />
     <title>TrainingLab</title>

@@ -86,6 +86,19 @@ export async function saveSet(set: TLSet): Promise<void> {
   await put(STORES.sets, set);
 }
 
+/** Bulk upsert in one transaction (used by the backup restore). */
+export async function saveSetsMany(rows: TLSet[]): Promise<void> {
+  if (rows.length === 0) return;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.sets, "readwrite");
+    const store = tx.objectStore(STORES.sets);
+    for (const row of rows) store.put(row);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export async function deleteSet(id: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -107,7 +120,45 @@ export async function saveSession(session: TLSession): Promise<void> {
   await put(STORES.sessions, session);
 }
 
+/** Bulk upsert in one transaction (used by the backup restore). */
+export async function saveSessionsMany(rows: TLSession[]): Promise<void> {
+  if (rows.length === 0) return;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.sessions, "readwrite");
+    const store = tx.objectStore(STORES.sessions);
+    for (const row of rows) store.put(row);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 // ── Settings (single JSON doc in the meta store) ────────────────────────────
+
+/**
+ * Fill a partial settings document with every default.
+ *
+ * Shared by `loadSettings` and the backup restore: nested objects and arrays
+ * need explicit merging so an older stored doc (or a partially written one) can
+ * never produce `undefined` at runtime.
+ */
+export function normalizeSettings(
+  value: Partial<TLSettingsData> | null | undefined,
+): TLSettingsData {
+  const partial = value ?? {};
+  return {
+    ...DEFAULT_SETTINGS,
+    ...partial,
+    inventory: Array.isArray(partial.inventory) ? partial.inventory : [],
+    sound: { ...DEFAULT_SOUND, ...(partial.sound ?? {}) },
+    notifications: {
+      ...DEFAULT_NOTIFICATIONS,
+      ...(partial.notifications ?? {}),
+    },
+    shared: { ...DEFAULT_SHARED, ...(partial.shared ?? {}) },
+    llm: { ...DEFAULT_LLM, ...(partial.llm ?? {}) },
+  };
+}
 
 export async function loadSettings(): Promise<TLSettingsData> {
   const db = await openDB();
@@ -118,21 +169,7 @@ export async function loadSettings(): Promise<TLSettingsData> {
     req.onerror = () => resolve(null);
   });
   if (!raw || typeof raw !== "object") return { ...DEFAULT_SETTINGS };
-  const value = (raw as { value?: Partial<TLSettingsData> }).value ?? {};
-  return {
-    ...DEFAULT_SETTINGS,
-    ...value,
-    // Nested + array settings need explicit merging so an older stored doc
-    // (or a partially written one) can never produce `undefined` at runtime.
-    inventory: Array.isArray(value.inventory) ? value.inventory : [],
-    sound: { ...DEFAULT_SOUND, ...(value.sound ?? {}) },
-    notifications: {
-      ...DEFAULT_NOTIFICATIONS,
-      ...(value.notifications ?? {}),
-    },
-    shared: { ...DEFAULT_SHARED, ...(value.shared ?? {}) },
-    llm: { ...DEFAULT_LLM, ...(value.llm ?? {}) },
-  };
+  return normalizeSettings((raw as { value?: Partial<TLSettingsData> }).value);
 }
 
 export async function saveSettings(settings: TLSettingsData): Promise<void> {
@@ -188,7 +225,8 @@ export async function loadHealthRecords(): Promise<HealthRecord[]> {
     const tx = db.transaction(STORES.meta, "readonly");
     const req = tx.objectStore(STORES.meta).get("health-records");
     req.onsuccess = () => {
-      const rows = (req.result as { value?: HealthRecord[] } | undefined)?.value;
+      const rows = (req.result as { value?: HealthRecord[] } | undefined)
+        ?.value;
       resolve(Array.isArray(rows) ? rows : []);
     };
     req.onerror = () => resolve([]);

@@ -28,6 +28,7 @@ import {
 import {
   applyRepOverrides,
   repRangeFor,
+  resolveBodyMapFigure,
   withRepOverride,
 } from "../../traininglab/apps/desktop/src/lib/settings";
 import type { ImportPayload } from "../../traininglab/apps/desktop/src/lib/adapter";
@@ -295,6 +296,73 @@ describe("rep overrides", () => {
     });
     const out = repRangeFor(settings, row());
     expect(out).toEqual({ min: 6, max: 9, custom: true });
+  });
+});
+
+// ── The figure the map draws (2026-09-30 f) ─────────────────────────────────
+
+/**
+ * `resolveBodyMapFigure` decides which of the two anatomical drawings the map
+ * paints. It is small and it is easy to get wrong in ways that would be
+ * uncomfortable for a user (silently drawing a male body for a woman, or
+ * letting a stale import override an explicit choice), so all four branches are
+ * pinned here.
+ */
+describe("resolveBodyMapFigure", () => {
+  /** A settings object with the fields this suite cares about. */
+  const settingsWith = (patch: Partial<TLSettingsData>): TLSettingsData => ({
+    ...DEFAULT_SETTINGS,
+    ...patch,
+  });
+  const profile = (biologicalSex: string): ImportPayload => ({
+    ...payloadWith,
+    profile: { ...payloadWith.profile!, biologicalSex },
+  });
+
+  it("follows the imported profile's sex in automatic mode", () => {
+    expect(resolveBodyMapFigure(settingsWith({}), profile("female"))).toEqual({
+      figure: "female",
+      from: "bodylab",
+    });
+    expect(resolveBodyMapFigure(settingsWith({}), profile("male"))).toEqual({
+      figure: "male",
+      from: "bodylab",
+    });
+  });
+
+  it("accepts the Spanish words for the same field", () => {
+    expect(resolveBodyMapFigure(settingsWith({}), profile("Femenino")).figure)
+      .toBe("female");
+    expect(resolveBodyMapFigure(settingsWith({}), profile("hombre")).figure)
+      .toBe("male");
+  });
+
+  it("falls back to the male drawing when there is nothing to read", () => {
+    expect(resolveBodyMapFigure(settingsWith({}), null)).toEqual({
+      figure: "male",
+      from: "default",
+    });
+    expect(
+      resolveBodyMapFigure(settingsWith({}), profile("")).from,
+    ).toBe("default");
+  });
+
+  it("never lets the import override an explicit choice", () => {
+    expect(
+      resolveBodyMapFigure(settingsWith({ bodyMapFigure: "male" }), profile("female")),
+    ).toEqual({ figure: "male", from: "choice" });
+    expect(
+      resolveBodyMapFigure(
+        settingsWith({ bodyMapFigure: "female" }),
+        profile("male"),
+      ),
+    ).toEqual({ figure: "female", from: "choice" });
+  });
+
+  it("defaults to automatic when the setting predates the field", () => {
+    const legacy = { ...settingsWith({}) } as TLSettingsData;
+    delete legacy.bodyMapFigure;
+    expect(resolveBodyMapFigure(legacy, profile("female")).figure).toBe("female");
   });
 });
 

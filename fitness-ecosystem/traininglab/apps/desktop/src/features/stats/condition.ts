@@ -37,11 +37,7 @@ import type { ImportPayload } from "../../lib/adapter";
 
 /** The five bands the UI paints, mirroring the core `NormBand` grammar. */
 export type ConditionBand =
-  | "excellent"
-  | "above_average"
-  | "average"
-  | "below_average"
-  | "poor";
+  "excellent" | "above_average" | "average" | "below_average" | "poor";
 
 /** A classified axis: band + honest provenance + the raw inputs used. */
 export interface ConditionAxis {
@@ -138,7 +134,8 @@ export function classifyWhtr(whtr: number): {
   bounds: string;
 } | null {
   if (!Number.isFinite(whtr) || whtr <= 0 || whtr > 1.5) return null;
-  if (whtr < 0.5) return { band: "excellent", score: 95, bounds: "<0.5 (sano)" };
+  if (whtr < 0.5)
+    return { band: "excellent", score: 95, bounds: "<0.5 (sano)" };
   if (whtr < 0.6)
     return { band: "above_average", score: 70, bounds: "0.5–0.6 (aumentado)" };
   return { band: "poor", score: 20, bounds: ">=0.6 (alto)" };
@@ -181,7 +178,8 @@ export function computeFfmi(
   bodyFatPct: number,
   sex: BiologicalSex,
 ): FfmiResult | null {
-  if (!Number.isFinite(weightKg) || weightKg < 25 || weightKg > 350) return null;
+  if (!Number.isFinite(weightKg) || weightKg < 25 || weightKg > 350)
+    return null;
   if (!Number.isFinite(heightM) || heightM < 1.2 || heightM > 2.3) return null;
   if (!Number.isFinite(bodyFatPct) || bodyFatPct < 0 || bodyFatPct > 60)
     return null;
@@ -217,9 +215,10 @@ const BF_SOURCE = "ACE body-composition guidelines — bandas por sexo (core)";
 const WHTR_SOURCE = "Ashwell — WHtR <0.5 sano, <0.6 aumentado (sexo-neutral)";
 
 /** The four-axis condition profile for the given payload. */
-export function conditionProfile(
-  input: ConditionInput,
-): { axes: ConditionAxis[]; mean: number | null } {
+export function conditionProfile(input: ConditionInput): {
+  axes: ConditionAxis[];
+  mean: number | null;
+} {
   const { payload } = input;
   const heightM = input.heightM ?? heightMOf(payload);
   const sex = sexOf(payload);
@@ -275,9 +274,7 @@ export function conditionProfile(
   };
 
   const axes = [cardio, composition, proportion, muscle];
-  const scores = axes
-    .map((a) => a.score)
-    .filter((s): s is number => s != null);
+  const scores = axes.map((a) => a.score).filter((s): s is number => s != null);
   const mean =
     scores.length >= 2
       ? Math.max(

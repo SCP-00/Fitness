@@ -27,7 +27,7 @@
  * @module features/today/ZenSession
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, Minus, Plus, Repeat, Timer } from "lucide-react";
 import { getExerciseTechnique } from "@fitness/bodylab-exercises";
 import { t, tInterp, getLanguage } from "../../lib/i18n";
@@ -37,6 +37,8 @@ import { parseNumberInput } from "../../lib/parse-num";
 import type { PlannedRow } from "../../lib/plan";
 import type { TLSet } from "../../lib/types";
 import { buildWarmup } from "../../lib/warmup";
+import { SectionCard } from "../../ui/primitives";
+import { useKeyboardOffset } from "../../ui/use-keyboard-offset";
 
 const FATIGUE_LABELS: Record<1 | 2 | 3 | 4 | 5, { en: string; es: string }> = {
   1: { en: "Easy", es: "Fácil" },
@@ -97,6 +99,11 @@ export function ZenSession({
   const [editingReps, setEditingReps] = useState(false);
   const [repDraftMin, setRepDraftMin] = useState("");
   const [repDraftMax, setRepDraftMax] = useState("");
+  // Pixels covered by the phone's keyboard: the action bar lifts by this much so
+  // the confirmation is never under the numeric pad (plan QA, P0 móvil).
+  const keyboardOffset = useKeyboardOffset();
+  const weightInputRef = useRef<HTMLInputElement>(null);
+  const repsInputRef = useRef<HTMLInputElement>(null);
 
   const row = rows[rowIdx]!;
   const isCardio = row.cardioMin !== undefined;
@@ -127,12 +134,17 @@ export function ZenSession({
   useEffect(() => {
     setWeight(suggestedKg !== null ? String(fromKg(suggestedKg, unit)) : "");
     setReps(String(repRange.min));
-    setPhase("warmup");
+    // Reset per **exercise**, not per suggestion. `suggestedKg` is recomputed
+    // from the log, so depending on it made every logged set re-enter the
+    // warm-up ramp and wipe the RPE feedback (audited 2026-09-30, P0).
+    // Mounting mid-exercise (a trip to Progreso and back) keeps the ramp done:
+    // if a working set exists, the warm-up is behind the user, not ahead.
+    setPhase(loggedToday(row.exerciseId).length > 0 ? "work" : "warmup");
     setWarmupStep(0);
     setLastFatigue(null);
-    // repRange is derived per-row; including it would re-reset mid-edit.
+    // repRange is derived per-row too; including it would re-reset mid-edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [row.exerciseId, suggestedKg, unit]);
+  }, [row.exerciseId, unit]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -272,11 +284,19 @@ export function ZenSession({
                     </button>
                     <div className="text-center min-w-[8rem]">
                       <input
+                        ref={weightInputRef}
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            repsInputRef.current?.focus();
+                            repsInputRef.current?.select();
+                          }
+                        }}
                         inputMode="decimal"
                         aria-label={t("log.weight")}
-                        className="w-full bg-transparent text-center text-6xl font-bold tabular-nums outline-none"
+                        className="tl-zen-input w-full bg-transparent text-center text-6xl font-bold tabular-nums outline-none"
                       />
                       <span className="text-sm text-[var(--tl-text-muted)]">
                         {unitLabel}
@@ -366,45 +386,75 @@ export function ZenSession({
                   />
                 </div>
 
-                <input
-                  value={reps}
-                  onChange={(e) => setReps(e.target.value)}
-                  inputMode="numeric"
-                  aria-label={t("log.reps")}
-                  className="w-24 bg-transparent text-center text-xl tabular-nums outline-none text-[var(--tl-text-secondary)] border-b border-[var(--tl-border)]"
-                />
-
-                {/* Effort per set: one tap, no numbers to type. */}
-                <div className="w-full max-w-md">
-                  <p className="text-center text-xs uppercase tracking-wide text-[var(--tl-text-muted)] mb-2">
-                    {t("zen.fatigue")}
-                  </p>
-                  <div className="grid grid-cols-5 gap-2">
-                    {([1, 2, 3, 4, 5] as const).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => logCurrent(v)}
-                        className={`min-h-[3.25rem] rounded-xl border text-sm font-semibold tl-focusable transition-colors ${
-                          lastFatigue === v
-                            ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)] border-transparent"
-                            : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
-                        }`}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-center text-[11px] text-[var(--tl-text-muted)] mt-1">
-                    {lastFatigue !== null
-                      ? FATIGUE_LABELS[lastFatigue as 1 | 2 | 3 | 4 | 5][lang]
-                      : t("zen.fatigueHint")}
-                  </p>
+                <div className="flex flex-col items-center gap-1">
+                  <input
+                    ref={repsInputRef}
+                    value={reps}
+                    onChange={(e) => setReps(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        logCurrent();
+                        weightInputRef.current?.focus();
+                        weightInputRef.current?.select();
+                      }
+                    }}
+                    inputMode="numeric"
+                    aria-label={t("log.reps")}
+                    className="tl-zen-input w-24 bg-transparent text-center text-xl tabular-nums outline-none text-[var(--tl-text-secondary)] border-b border-[var(--tl-border)]"
+                  />
+                  <span className="text-[11px] text-[var(--tl-text-muted)] hidden sm:inline select-none">
+                    ↵ Enter para registrar
+                  </span>
                 </div>
+
+                {/* Optional effort is collapsed so the sticky primary action
+                    never competes with or covers the five-choice selector. */}
+                <details className="w-full max-w-md tl-zen-effort">
+                  <summary className="tl-zen-effort-summary tl-focusable">
+                    <span>{t("zen.fatigueOptional")}</span>
+                    <span className="text-[var(--tl-text-secondary)]">
+                      {lastFatigue !== null
+                        ? FATIGUE_LABELS[
+                            lastFatigue as 1 | 2 | 3 | 4 | 5
+                          ][lang]
+                        : "＋"}
+                    </span>
+                  </summary>
+                  <div className="tl-zen-effort-body">
+                    <p className="text-center text-xs uppercase tracking-wide text-[var(--tl-text-muted)] mb-2">
+                      {t("zen.fatigue")}
+                    </p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {([1, 2, 3, 4, 5] as const).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => logCurrent(v)}
+                          className={`min-h-[3.25rem] rounded-xl border text-sm font-semibold tl-focusable transition-colors ${
+                            lastFatigue === v
+                              ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)] border-transparent"
+                              : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
+                          }`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-center text-[11px] text-[var(--tl-text-muted)] mt-1">
+                      {t("zen.fatigueHint")}
+                    </p>
+                  </div>
+                </details>
               </>
             )}
 
-            <div className="flex flex-col gap-2 w-full max-w-md">
+            <div
+              className="tl-zen-actions flex flex-col gap-2 w-full max-w-md"
+              style={
+                keyboardOffset ? { bottom: keyboardOffset + 8 } : undefined
+              }
+            >
               {warmupSet && !isCardio ? (
                 <button
                   type="button"
@@ -481,9 +531,22 @@ export function ZenSession({
         </p>
       </div>
 
-      {/* ── Rails ────────────────────────────────────────────────────────── */}
+      {/*
+       * ── Rails ────────────────────────────────────────────────────────────
+       *
+       * "Focused, not empty" (`TRAININGLAB_UI_PLAN.md` §5): on a phone the
+       * stage has to own the screen, so everything below it is a `<details>`
+       * that opens on demand — the panels are one tap away, never in the way,
+       * and never hidden from a screen reader. `Enfócate` stays open because it
+       * carries the session's own progress; the set table, once duplicated by
+       * the stage, waits collapsed.
+       */}
       <aside className="tl-col">
-        <section className="tl-card">
+        <SectionCard
+          title={t("home.focus.title")}
+          hint={t("home.focus.badge")}
+          icon={<Timer className="w-4 h-4" />}
+        >
           <div className="tl-zen-panel">
             <div className="tl-zen-label">{t("home.focus.badge")}</div>
             <h3 className="text-xl font-bold mb-1.5">
@@ -500,17 +563,16 @@ export function ZenSession({
               />
             </div>
           </div>
-        </section>
+        </SectionCard>
 
-        <section className="tl-card">
-          <div className="tl-card-head">
-            <h2>{t("zen.guide")}</h2>
-            <span>
-              {tInterp("slot.techniqueLvl", {
-                n: technique?.techniqueLevel ?? 1,
-              })}
-            </span>
-          </div>
+        <SectionCard
+          title={t("zen.guide")}
+          hint={tInterp("slot.techniqueLvl", {
+            n: technique?.techniqueLevel ?? 1,
+          })}
+          icon={<Repeat className="w-4 h-4" />}
+          defaultOpen={false}
+        >
           <div className="tl-card-body">
             <div className="tl-steps">
               <Step
@@ -534,14 +596,15 @@ export function ZenSession({
               <Step n={3} title={t("zen.step3")} body={t("zen.step3b")} />
             </div>
           </div>
-        </section>
+        </SectionCard>
 
         {/* Registro actual — the set table, `Anterior` column included. */}
-        <section className="tl-card">
-          <div className="tl-card-head">
-            <h2>{t("zen.log")}</h2>
-            <span>{tInterp("slot.of", { done, total: row.sets })}</span>
-          </div>
+        <SectionCard
+          title={t("zen.log")}
+          hint={tInterp("slot.of", { done, total: row.sets })}
+          icon={<CheckCircle2 className="w-4 h-4" />}
+          defaultOpen={false}
+        >
           <div className="tl-card-body">
             <table className="tl-table">
               <thead>
@@ -589,14 +652,15 @@ export function ZenSession({
               </tbody>
             </table>
           </div>
-        </section>
+        </SectionCard>
 
         {/* Notas — what to watch out for, straight from the shared library. */}
-        <section className="tl-card">
-          <div className="tl-card-head">
-            <h2>{t("ex.tab.guide")}</h2>
-            <span>{t("ex.guide.mistakes")}</span>
-          </div>
+        <SectionCard
+          title={t("ex.tab.guide")}
+          hint={t("ex.guide.mistakes")}
+          icon={<Repeat className="w-4 h-4" />}
+          defaultOpen={false}
+        >
           <div className="tl-card-body flex flex-col gap-2">
             <p className="flex items-start gap-2 text-xs text-[var(--tl-text-secondary)] leading-relaxed">
               <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--tl-accent)]" />
@@ -612,7 +676,7 @@ export function ZenSession({
                 : t("ex.noCues")}
             </p>
           </div>
-        </section>
+        </SectionCard>
       </aside>
     </div>
   );

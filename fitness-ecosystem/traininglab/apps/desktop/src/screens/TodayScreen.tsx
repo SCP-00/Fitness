@@ -1,52 +1,39 @@
 /**
- * Inicio — what do I do in the next {budget} minutes, with the body I have today?
+ * Inicio — one question: what do I do now, with the body I have today?
  *
- * Composition is the owner's sketch (`docs/Boseto_preview.html`, rendered in
- * `docs/reference/traininglab-design/01-inicio-pc.png`) ported *structurally*, not
- * approximated with utilities: a two-column dashboard (wide column + rail, which
- * stacks below 1200 px), a hero that owns the first screenful, a four-tile KPI
- * strip, the week strip, the session itself and the next exercise — and in the
- * rail, the constancia ring, the numbers grid and the ZEN panel.
+ * **2026-09-30 (f), the slimming.** The owner read the old screen and said the
+ * same thing three ways: *too much information, and it repeats itself*. He was
+ * right, and the measurement backed him up — 38 controls and two full
+ * dashboards' worth of cards on one page, of which only two answered today's
+ * question:
  *
- * Every card here is `.tl-card` + `.tl-card-head` + `.tl-card-body`, every tile is
- * from the design system, and no screen re-invents a padding. That is the whole
- * difference between "looks like the mockup" and "looks like a React app": the
- * geometry comes from one stylesheet.
+ *   * the KPI strip, the constancia ring and the "tus cifras" grid were
+ *     **analytics** — the same numbers Progreso already charts, in a worse
+ *     place to read them (a 300 px rail);
+ *   * the week strip was **planning** — reference material you read once, not
+ *     while standing at the rack;
+ *   * the "siguiente ejercicio" card repeated the exercise card that is already
+ *     expanded right above it (`autoOpen`), and the ZEN card repeated the
+ *     hero's CTA.
  *
- * Three deliberate departures from the sketch, all of them honesty rather than
- * taste:
+ * So each of those left for the surface that owns it: analytics → Progreso,
+ * planning → the new **Semana** destination, duplicated affordances → deleted.
+ * What remains is the session, the hero that starts it, the readiness that
+ * shapes it and one genuinely new card — what you did last time, which is the
+ * question a logger exists to answer and which Inicio did not answer at all.
  *
- *   * **Constancia replaces "racha".** A streak that resets to zero teaches the
- *     user to skip a day rather than log a partial one. Weekly constancia says the
- *     same thing without the punishment.
- *   * **"Tus cifras", not "Tus badges".** "Fuerza +12 %", "Disciplina 4 semanas"
- *     and "Nivel 2" would be inventable, and we do not invent. The tiles show
- *     sessions, working sets, distinct exercises and logged training days — the
- *     same data Progreso charts.
- *   * **The clock pill is real.** It counts from the first set you logged today,
- *     and before that it shows the planned minutes. A ticking timer that counts
- *     nothing would be a decoration.
+ * The rule that follows from this, for whoever edits it next: **a card earns its
+ * place on Inicio only if it changes what the user does in the next five
+ * minutes.** If it can wait until after the session, it belongs to Progreso.
  *
  * @module screens/TodayScreen
  */
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import {
-  Activity,
-  CalendarDays,
-  Dumbbell,
-  Flame,
-  Heart,
-  Info,
-  Layers,
-  Moon,
-  Scale,
-  Zap,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, CalendarDays, Info, Moon, Zap } from "lucide-react";
 import { navigate } from "../app/router";
 import { SORE_FAMILIES, useStore } from "../app/store";
-import type { TLSet } from "../lib/types";
-import { suggestLoadFor } from "../lib/plan";
+import { exerciseName, suggestLoadFor } from "../lib/plan";
 import { repRangeFor } from "../lib/settings";
 import { formatAdvisory, familyLabel } from "../lib/format";
 import { getLanguage, t, tInterp } from "../lib/i18n";
@@ -55,21 +42,11 @@ import {
   Button,
   Chip,
   EmptyState,
-  MetricTile,
-  MiniBars,
   ScaleInput,
   SectionCard,
-  Segmented,
-  Sparkline,
 } from "../ui/primitives";
-import { IconChart, IconDumbbell, IconPlay } from "../ui/icons";
 import { SlotCard } from "../features/today/SlotCard";
-import { WeekCard } from "../features/today/WeekCard";
-import {
-  consistency,
-  trainingDays,
-  workingSets,
-} from "../features/stats/derive";
+import { workingSets } from "../features/stats/derive";
 
 export default function TodayScreen() {
   const {
@@ -91,9 +68,9 @@ export default function TodayScreen() {
     payload,
     addSet,
     removeSet,
+    editSet,
     swapRow,
     finishSession,
-    regenerateWeek,
     prFor,
     swapOptionsFor,
     clearCoach,
@@ -106,7 +83,6 @@ export default function TodayScreen() {
   }
 
   const isRestDay = rows.length === 0;
-  const weekIndex = weekPlan?.rows.findIndex((day) => day.isToday) ?? -1;
   // "Today is a rest day in the week plan" is a different state from "today's
   // session came out empty", and the empty state says so.
   const isRestWeekDay =
@@ -129,37 +105,28 @@ export default function TodayScreen() {
             <CalendarDays className="w-3.5 h-3.5" aria-hidden />
             {todayLabel()}
           </span>
-          <a
-            href="#/sesion"
-            className="tl-pill is-accent tl-focusable"
-            title={t("nav.session")}
-          >
-            {t("home.badge.zen")}
-          </a>
           <ClockPill plannedMinutes={plannedMinutes} />
         </div>
       </header>
 
-      <QuickTags />
-
       <div className="tl-dash">
-        {/* ── Wide column ───────────────────────────────────────────────────── */}
+        {/* ── Wide column: today, and nothing else ─────────────────────── */}
         <div className="tl-col">
           <HeroCard
             isRestDay={isRestDay}
             focus={focusLine(rows.map((r) => r.name[getLanguage()]))}
             plannedMinutes={plannedMinutes}
             exerciseCount={rows.length}
+            plannedSets={rows.reduce((acc, r) => acc + r.sets, 0)}
+            doneSets={totalSetsToday}
             withBodyLab={payload !== null}
           />
 
-          <MetricStrip />
-
           {/*
-           * The session: the reason the app exists, so it sits above the week. It
-           * is **not** wrapped in a card — the slot cards below are the cards, and a
-           * card inside a card is the one nesting this design system forbids. The
-           * heading and the two actions stand on the page instead.
+           * The session: the reason the app exists. It is **not** wrapped in a
+           * card — the slot cards below are the cards, and a card inside a card
+           * is the one nesting this design system forbids. The heading and the
+           * one action that is not in the hero stand on the page instead.
            */}
           <div
             id="today-session"
@@ -177,21 +144,13 @@ export default function TodayScreen() {
                   {t("settings.modelReset")}
                 </Button>
               )}
+              {/* Ending a session is not a hero action; starting it is. */}
               <Button
                 size="sm"
                 onClick={finishSession}
                 disabled={totalSetsToday === 0 || finished !== null}
               >
                 {t("session.finish")}
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                disabled={rows.length === 0}
-                onClick={() => navigate("session")}
-              >
-                <IconPlay size={15} />
-                {t("zen.start")}
               </Button>
             </div>
           </div>
@@ -275,6 +234,7 @@ export default function TodayScreen() {
                     autoOpen={row.exerciseId === nextExerciseId}
                     onAddSet={addSet}
                     onRemoveSet={removeSet}
+                    onEditSet={editSet}
                     onSwap={swapRow}
                     customReps={repRangeFor(settings, row)}
                     onRepRange={(range) => setRepRange(row.exerciseId, range)}
@@ -283,25 +243,10 @@ export default function TodayScreen() {
               })
             )}
           </div>
-
-          <div id="today-week">
-            <WeekCard
-              weekPlan={weekPlan!}
-              sets={sets}
-              onRegenerate={regenerateWeek}
-            />
-          </div>
-
-          <NextExerciseCard />
         </div>
 
-        {/* ── Rail ──────────────────────────────────────────────────────────── */}
+        {/* ── Rail: how the body is today, and what it did last time ────── */}
         <aside className="tl-col">
-          <ProgressCard />
-          <NumbersCard />
-          <ZenCard weekIndex={weekIndex} />
-
-          {/* Readiness: collapsed by default, its values live in the badge. */}
           <SectionCard
             title={t("readiness.titleShort")}
             hint={t("readiness.hint")}
@@ -366,6 +311,8 @@ export default function TodayScreen() {
               </div>
             </div>
           </SectionCard>
+
+          <LastSessionCard />
         </aside>
       </div>
     </>
@@ -376,48 +323,27 @@ export default function TodayScreen() {
    Hero
    ══════════════════════════════════════════════════════════════════════════ */
 
-/**
- * Context tags keep the main destinations one thumb away. They are deliberately
- * links, not filters hidden inside the long dashboard: the tag is a promise that
- * the user will arrive at a dedicated surface with the relevant task in focus.
- */
-function QuickTags() {
-  return (
-    <nav className="tl-context-tags" aria-label="Accesos rápidos">
-      <a href="#/sesion" className="tl-context-tag is-primary tl-focusable">
-        <IconPlay size={15} />
-        {t("nav.session")}
-      </a>
-      <a href="#/ejercicios" className="tl-context-tag tl-focusable">
-        <IconDumbbell size={15} />
-        {t("nav.exercises")}
-      </a>
-      <a href="#/progreso" className="tl-context-tag tl-focusable">
-        <IconChart size={15} />
-        {t("nav.progress")}
-      </a>
-      <a href="#today-week" className="tl-context-tag tl-focusable">
-        <CalendarDays className="w-3.5 h-3.5" aria-hidden />
-        {t("week.title")}
-      </a>
-    </nav>
-  );
-}
-
 function HeroCard({
   isRestDay,
   focus,
   plannedMinutes,
   exerciseCount,
+  plannedSets,
+  doneSets,
   withBodyLab,
 }: {
   isRestDay: boolean;
   focus: string;
   plannedMinutes: number;
   exerciseCount: number;
+  plannedSets: number;
+  doneSets: number;
   withBodyLab: boolean;
 }) {
-  const { settings, rows } = useStore();
+  const { settings } = useStore();
+  const pct =
+    plannedSets > 0 ? Math.min(100, Math.round((doneSets / plannedSets) * 100)) : 0;
+
   return (
     <section className="tl-card tl-hero">
       <div className="tl-hero-art" aria-hidden />
@@ -447,12 +373,26 @@ function HeroCard({
           {withBodyLab && <strong>{t("home.hero.linked")}</strong>}
         </div>
 
+        {/* The one number that changes what the user does next: how much of
+            today is already logged. It is not analytics — it is the state of
+            the session that the CTA below starts or continues. */}
+        {!isRestDay && (
+          <div className="tl-hero-progress">
+            <div className="tl-hero-bar">
+              <span style={{ width: `${pct}%` }} />
+            </div>
+            <span className="tabular-nums">
+              {tInterp("slot.of", { done: doneSets, total: plannedSets })}
+            </span>
+          </div>
+        )}
+
         <Button
           variant="primary"
-          disabled={rows.length === 0}
+          disabled={exerciseCount === 0}
           onClick={() => navigate("session")}
         >
-          {t("home.hero.cta")} →
+          {doneSets > 0 ? t("home.hero.continue") : t("home.hero.cta")} →
         </Button>
       </div>
     </section>
@@ -460,249 +400,52 @@ function HeroCard({
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   KPI strip — four tiles, exactly the sketch's four questions
-   ══════════════════════════════════════════════════════════════════════════ */
-
-function MetricStrip() {
-  const { settings, sets, weekPlan, readiness, payload } = useStore();
-  const stats = useMemo(
-    () => consistency(sets, settings?.daysPerWeek ?? 4),
-    [sets, settings?.daysPerWeek],
-  );
-  const week = useMemo(() => lastWeekSets(sets), [sets]);
-  // Body weight over the imported measurements — the only weight history we have,
-  // and the honest source for the tile's sparkline.
-  const weights = useMemo(
-    () =>
-      (payload?.measurements ?? [])
-        .filter((m) => m.type === "weight")
-        .slice(-8)
-        .map((m) => m.value),
-    [payload],
-  );
-
-  // Three bands, and the *key* drives both the label and the one-line
-  // explanation — never a translated string used as a dictionary key.
-  const average =
-    (readiness.energy + readiness.motivation + readiness.soreness) / 3;
-  const band = average >= 3.67 ? "ready" : average >= 2.5 ? "fair" : "low";
-
-  const bodyWeight = payload?.profile?.weight ?? null;
-
-  return (
-    <section className="tl-metrics">
-      <MetricTile
-        icon={<Activity className="w-4 h-4" />}
-        label={t("home.kpi.consistency")}
-        value={tInterp("home.kpi.daysOf", {
-          done: stats.days,
-          target: stats.target,
-        })}
-        info={t("home.kpi.consistencyHint")}
-      />
-      <MetricTile
-        icon={<Heart className="w-4 h-4" />}
-        label={t("home.kpi.readiness")}
-        value={t(`home.kpi.${band}`)}
-        info={t(`home.kpi.${band}Hint`)}
-      />
-      <MetricTile
-        icon={<Dumbbell className="w-4 h-4" />}
-        label={t("home.kpi.volume")}
-        value={`${stats.weekSets} / ${weekPlan?.totalSets ?? 0}`}
-        info={t("home.kpi.volumeHint")}
-        trailing={<MiniBars values={week} />}
-      />
-      <MetricTile
-        icon={<Scale className="w-4 h-4" />}
-        label={t("home.kpi.bodyweight")}
-        value={bodyWeight !== null ? `${bodyWeight} kg` : "—"}
-        info={
-          bodyWeight !== null
-            ? t("home.kpi.bodyweightFrom")
-            : t("home.kpi.bodyweightNone")
-        }
-        trailing={
-          weights.length >= 2 ? <Sparkline values={weights} /> : undefined
-        }
-      />
-    </section>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Rail — ring, numbers, ZEN
+   Last session — the question a logger exists to answer
    ══════════════════════════════════════════════════════════════════════════ */
 
 /**
- * "Tu progreso": a period selector, the constancia ring and the shape of that
- * period. All three read the same window, so the ring and the bars can never
- * describe different spans of time.
+ * What the log did the last day you trained (today excluded — that is the hero).
+ * Deliberately a handful of figures and three exercise names: it is a
+ * memory-jogger before the session, not a report. The report is one tap away in
+ * Progreso.
  */
-function ProgressCard() {
-  const { sets, settings, weekPlan } = useStore();
-  const [days, setDays] = useState<7 | 30 | 90>(7);
+function LastSessionCard() {
+  const { sets } = useStore();
+  const lang = getLanguage();
 
-  const series = useMemo(() => periodSeries(sets, days), [sets, days]);
-  const peak = Math.max(1, ...series);
-  const logged = series.reduce((a, b) => a + b, 0);
-  // The plan's own target for the same window — never a made-up goal.
-  const target = Math.max(
-    1,
-    Math.round(((weekPlan?.totalSets ?? 0) * days) / 7),
-  );
-  const pct = Math.min(100, Math.round((logged / target) * 100));
-  const trainedWeeks = trainedWeeksIn(sets, 4, settings?.daysPerWeek ?? 4);
-
-  return (
-    <section className="tl-card">
-      <div className="tl-card-head">
-        <h2>{t("home.progress.title")}</h2>
-        <Segmented
-          value={days}
-          onChange={setDays}
-          options={[
-            { value: 7, label: t("home.progress.week") },
-            { value: 30, label: t("home.progress.month") },
-            { value: 90, label: t("home.progress.year") },
-          ]}
-        />
-      </div>
-      <div className="tl-card-body">
-        <div className="tl-ring-row">
-          <div
-            className="tl-ring"
-            style={{ "--pct": String(pct) } as CSSProperties}
-          >
-            <strong>{pct}%</strong>
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-sm">
-              {t("home.progress.constancy")}
-            </h3>
-            <p className="text-xs text-[var(--tl-text-secondary)] mt-1 leading-relaxed">
-              {tInterp("home.progress.sets", { done: logged, target })}
-            </p>
-            <div className="tl-mini-chart">
-              {series.map((n, i) => (
-                <span
-                  key={i}
-                  style={{ height: `${Math.max(9, (n / peak) * 100)}%` }}
-                  title={tInterp("home.progress.daySets", { n })}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <p className="tl-callout">
-          <span aria-hidden>🏆</span>
-          {trainedWeeks > 0
-            ? tInterp("home.progress.note", { n: trainedWeeks })
-            : t("home.progress.noteNone")}
-        </p>
-      </div>
-    </section>
-  );
-}
-
-/**
- * The shape of the period, in 5–7 bars whatever the span: days for a week, weeks
- * for a month, months for a quarter. One bar per day would be 90 slivers in a
- * 245 px rail, which is noise, not a trend.
- */
-function periodSeries(sets: TLSet[], days: 7 | 30 | 90): number[] {
-  const working = workingSets(sets);
-  const dayOf = (s: TLSet) => s.timestamp.slice(0, 10);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const buckets = days === 7 ? 7 : days === 30 ? 5 : 6;
-  const span = Math.ceil(days / buckets);
-  const out = Array.from({ length: buckets }, () => 0);
-
-  for (const set of working) {
-    const diff = Math.floor(
-      (today.getTime() - new Date(`${dayOf(set)}T00:00:00`).getTime()) /
-        86400000,
+  const last = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = new Set(
+      workingSets(sets)
+        .filter(
+          (s) =>
+            new Date(`${s.timestamp.slice(0, 10)}T00:00:00`).getTime() <
+            today.getTime(),
+        )
+        .map((s) => s.timestamp.slice(0, 10)),
     );
-    if (diff < 0 || diff >= buckets * span) continue;
-    const index = buckets - 1 - Math.floor(diff / span);
-    out[index] += 1;
-  }
-  return out;
-}
-
-/** How many of the last `weeks` weeks hit the training-days target. */
-function trainedWeeksIn(
-  sets: { timestamp: string; warmup?: boolean }[],
-  weeks: number,
-  daysPerWeek: number,
-): number {
-  const working = sets.filter((s) => !s.warmup);
-  const trained = new Set(working.map((s) => s.timestamp.slice(0, 10)));
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const monday = new Date(
-    today.getTime() - ((today.getDay() + 6) % 7) * 86400000,
-  );
-  let hit = 0;
-  for (let w = 0; w < weeks; w++) {
-    const start = new Date(monday.getTime() - w * 7 * 86400000);
-    let count = 0;
-    for (let d = 0; d < 7; d++) {
-      const date = isoDate(new Date(start.getTime() + d * 86400000));
-      if (trained.has(date)) count += 1;
-    }
-    if (count >= Math.max(1, daysPerWeek)) hit += 1;
-  }
-  return hit;
-}
-
-function isoDate(date: Date): string {
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${m}-${d}`;
-}
-
-/**
- * The numbers grid (the sketch's "badges"): four real figures from the log. It is
- * a 2 × 2 grid of accent circles because that is what the sketch draws — the
- * content is what changed, not the shape.
- */
-function NumbersCard() {
-  const { sets, sessions, payload } = useStore();
-  const working = workingSets(sets);
-  const distinct = new Set(working.map((s) => s.exerciseId)).size;
-  const records = payload?.personalRecords?.length ?? 0;
-
-  const tiles = [
-    {
-      icon: <Flame className="w-5 h-5" />,
-      value: String(sessions.length),
-      label: t("home.tiles.sessions"),
-    },
-    {
-      icon: <Dumbbell className="w-5 h-5" />,
-      value: String(working.length),
-      label: t("home.tiles.sets"),
-    },
-    {
-      icon: <Layers className="w-5 h-5" />,
-      value: String(distinct),
-      label: t("home.tiles.exercises"),
-    },
-    {
-      icon: <CalendarDays className="w-5 h-5" />,
-      value: String(trainingDays(sets)),
-      label: t("home.tiles.days"),
-    },
-  ];
+    const day = [...days].sort().at(-1);
+    if (!day) return null;
+    const rows = workingSets(sets).filter(
+      (s) => s.timestamp.slice(0, 10) === day,
+    );
+    const names = [...new Set(rows.map((s) => s.exerciseId))].slice(0, 3);
+    return {
+      day,
+      sets: rows.length,
+      volume: rows.reduce((acc, s) => acc + (s.weight ?? 0) * (s.reps ?? 0), 0),
+      names,
+      daysAgo: Math.round(
+        (today.getTime() - new Date(`${day}T00:00:00`).getTime()) / 86400000,
+      ),
+    };
+  }, [sets]);
 
   return (
     <section className="tl-card">
       <div className="tl-card-head">
-        <h2>{t("home.numbers.title")}</h2>
+        <h2>{t("home.last.title")}</h2>
         <button
           type="button"
           onClick={() => navigate("progress")}
@@ -712,123 +455,40 @@ function NumbersCard() {
         </button>
       </div>
       <div className="tl-card-body">
-        <div className="tl-badges">
-          {tiles.map((tile) => (
-            <div key={tile.label} className="tl-badge-tile">
-              <div className="tl-badge-icon">{tile.icon}</div>
-              <div className="tl-badge-title tabular-nums">{tile.value}</div>
-              <div className="tl-badge-desc">{tile.label}</div>
-            </div>
-          ))}
-        </div>
-        {records > 0 && (
-          <p className="text-[11px] text-[var(--tl-text-muted)] mt-3">
-            {tInterp("home.numbers.records", { n: records })}
+        {!last ? (
+          <p className="text-sm text-[var(--tl-text-muted)]">
+            {t("home.last.none")}
           </p>
+        ) : (
+          <>
+            <p className="text-sm font-semibold">
+              {last.daysAgo === 1
+                ? t("home.last.yesterday")
+                : tInterp("home.last.daysAgo", { n: last.daysAgo })}
+            </p>
+            <div className="tl-last-grid">
+              <span>
+                <strong className="tabular-nums">{last.sets}</strong>
+                {t("home.last.sets")}
+              </span>
+              <span>
+                <strong className="tabular-nums">
+                  {Math.round(last.volume).toLocaleString()}
+                </strong>
+                {t("home.last.volume")}
+              </span>
+              <span>
+                <strong className="tabular-nums">{last.names.length}</strong>
+                {t("home.last.exercises")}
+              </span>
+            </div>
+            <ul className="tl-last-list">
+              {last.names.map((id) => (
+                <li key={id}>{exerciseName(id, lang)}</li>
+              ))}
+            </ul>
+          </>
         )}
-      </div>
-    </section>
-  );
-}
-
-/**
- * ZEN — the sketch's focus panel, with the progress bar wired to the real session
- * (sets logged / sets planned). No button: the hero's CTA and the tab bar are the
- * two ways in, and a third would dilute both.
- */
-function ZenCard({ weekIndex }: { weekIndex: number }) {
-  const { plannedMinutes, totalSetsToday, weekPlan } = useStore();
-  const plannedSets =
-    weekPlan?.rows[weekIndex]?.sets ?? Math.max(totalSetsToday, 1);
-  const pct =
-    plannedSets > 0
-      ? Math.min(100, Math.round((totalSetsToday / plannedSets) * 100))
-      : 0;
-
-  return (
-    <section className="tl-card">
-      <div className="tl-zen-panel">
-        <div className="tl-zen-label">{t("home.focus.badge")}</div>
-        <h3 className="text-xl font-bold mb-1.5">{t("home.focus.title")}</h3>
-        <p className="text-xs text-[var(--tl-text-secondary)] leading-relaxed">
-          {t("home.focus.body")}
-        </p>
-        <div className="tl-zen-progress">
-          <span
-            style={{ width: `${pct}%` }}
-            title={tInterp("home.zen.progress", { pct })}
-          />
-        </div>
-        <p className="text-[11px] text-[var(--tl-text-muted)] mt-2 tabular-nums">
-          {tInterp("slot.of", { done: totalSetsToday, total: plannedSets })} ·{" "}
-          {tInterp("session.minutes", { n: plannedMinutes })}
-        </p>
-      </div>
-    </section>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Next exercise
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/**
- * The sketch's "Siguiente ejercicio" row: what is left to do right now, with the
- * same 100 × 70 media slot and the circular arrow that jumps into ZEN. It picks
- * today's first exercise that is not finished, so the card always answers "and
- * then what?".
- */
-function NextExerciseCard() {
-  const { rows, todaySets } = useStore();
-  const lang = getLanguage();
-
-  const next = rows.find((row) => {
-    const done = todaySets.filter(
-      (s) => s.exerciseId === row.exerciseId,
-    ).length;
-    return done < row.sets;
-  });
-
-  if (!next) return null;
-
-  const done = todaySets.filter((s) => s.exerciseId === next.exerciseId).length;
-
-  return (
-    <section className="tl-card">
-      <div className="tl-card-head">
-        <h2>{t("home.next.title")}</h2>
-        <span>{t("home.next.current")}</span>
-      </div>
-      <div className="tl-card-body">
-        <div className="tl-next">
-          <div className="tl-thumb" aria-hidden>
-            <span className="text-2xl font-black">
-              {next.name[lang].trim().charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold truncate">
-              {next.name[lang]}
-            </h3>
-            <p className="text-[11px] text-[var(--tl-text-muted)] mt-0.5 truncate">
-              {next.families.slice(0, 2).map(familyLabel).join(" · ")}
-              {next.pattern ? ` · ${next.pattern.replace(/_/g, " ")}` : ""}
-            </p>
-            <p className="text-[11px] text-[var(--tl-text-secondary)] mt-1.5 tabular-nums">
-              {tInterp("slot.of", { done, total: next.sets })} · {next.repsMin}–
-              {next.repsMax} · {tInterp("slot.rest", { s: next.restSec })}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="tl-arrow-btn tl-focusable"
-            title={t("home.next.go")}
-            aria-label={t("home.next.go")}
-            onClick={() => navigate("session")}
-          >
-            →
-          </button>
-        </div>
       </div>
     </section>
   );
@@ -888,22 +548,6 @@ function formatElapsed(seconds: number): string {
   const s = seconds % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-}
-
-/** Working sets logged per day over the last seven days, oldest first. */
-function lastWeekSets(
-  sets: { timestamp: string; warmup?: boolean }[],
-): number[] {
-  const out = Array.from({ length: 7 }, () => 0);
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  for (const set of sets) {
-    if (set.warmup) continue;
-    const day = new Date(`${set.timestamp.slice(0, 10)}T00:00:00`);
-    const diff = Math.round((start.getTime() - day.getTime()) / 86400000);
-    if (diff >= 0 && diff < 7) out[6 - diff] += 1;
-  }
-  return out;
 }
 
 /** "Press de banca · Sentadilla · Remo"-style focus line, from today's rows. */

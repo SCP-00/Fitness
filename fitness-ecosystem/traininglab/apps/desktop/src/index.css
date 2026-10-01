@@ -38,7 +38,11 @@
 
   --tl-text: #f3f5f7;
   --tl-text-secondary: #9ba5af;
-  --tl-text-muted: #7f8a95;
+  /* Raised from #7f8a95 (5.6:1) to #8b96a1 (6.6:1) on 2026-09-30: the muted
+     colour carries 11px labels, and at that size the old value read poorly on a
+     phone outside. Still dimmer than --tl-text-secondary (7.9:1), so hierarchy
+     survives. Measured against --tl-bg, WCAG 2.x relative-luminance formula. */
+  --tl-text-muted: #8b96a1;
 
   --tl-accent: #ff7300;
   --tl-accent-strong: #ff9447;
@@ -442,10 +446,10 @@ textarea {
   background: var(--tl-accent-wash);
 }
 
-/* The two-column dashboard: wide column + rail, collapsing in that order. */
+/* The two-column dashboard: wide column + rail, collapsing below 1024px (phone/tablet). */
 .tl-dash {
   display: grid;
-  grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.9fr);
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -457,7 +461,7 @@ textarea {
   min-width: 0;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1023px) {
   .tl-dash {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -617,6 +621,72 @@ textarea {
 
 .tl-hero-meta strong {
   color: var(--tl-text);
+}
+
+/*
+ * The hero's progress line (2026-09-30 f): how much of today is already logged.
+ * It is the only figure on Inicio that is not a plan figure, and it is the one
+ * the CTA acts on — "Empezar" vs "Continuar".
+ */
+.tl-hero-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 420px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--tl-text-secondary);
+}
+
+.tl-hero-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.tl-hero-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--tl-accent), #ff5d00);
+}
+
+/*
+ * "Last session" (Inicio's rail): three figures and the exercises trained. It
+ * answers the pre-session question the hero cannot — what did I do last time?
+ */
+.tl-last-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.tl-last-grid span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--tl-text-muted);
+}
+
+.tl-last-grid strong {
+  font-size: 18px;
+  color: var(--tl-text);
+  line-height: 1.1;
+}
+
+.tl-last-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tl-border);
+  font-size: 12px;
+  color: var(--tl-text-secondary);
 }
 
 @media (max-width: 850px) {
@@ -983,6 +1053,88 @@ textarea {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Semana — one row per day of the plan
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* A page that is not the dashboard: one readable column, full width up to a
+   point, so a plan never stretches a sentence across 1600 px. */
+.tl-page {
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tl-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.tl-day-row {
+  border: 1px solid var(--tl-border);
+  border-radius: 14px;
+  padding: 14px 15px;
+  background: var(--tl-surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tl-day-row.is-today {
+  border-color: var(--tl-accent-border);
+  background: var(--tl-accent-wash);
+}
+
+.tl-day-row.is-rest {
+  opacity: 0.62;
+}
+
+.tl-day-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tl-day-row-head h3 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tl-day-row-head > span:last-child {
+  margin-left: auto;
+}
+
+.tl-day-row-families {
+  font-size: 12px;
+  color: var(--tl-text-secondary);
+}
+
+.tl-day-row-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--tl-text-muted);
+}
+
+.tl-day-row-preview li {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--tl-border);
+}
+
+.tl-day-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    Progress ring, mini chart, badges, next session
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -1306,6 +1458,75 @@ textarea {
   text-align: center;
 }
 
+/*
+ * The confirmation bar of ZEN.
+ *
+ * `sticky` (not `fixed`) on purpose: it tracks the bottom of the viewport while
+ * the stage card is on screen and disappears with it — no floating ghost over
+ * the rails. On phones it clears the tab bar; with the keyboard open the inline
+ * `bottom` from `ui/use-keyboard-offset.ts` takes over, which is the only thing
+ * that works on iOS (where the keyboard overlays the page instead of shrinking
+ * it).
+ */
+.tl-zen-actions {
+  position: sticky;
+  bottom: 0.5rem;
+  z-index: 30;
+  padding: 0.5rem 0;
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--tl-bg) 97%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.tl-zen-effort {
+  border: 1px solid var(--tl-border);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--tl-surface) 88%, transparent);
+}
+
+.tl-zen-effort-summary {
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--tl-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tl-zen-effort-summary::marker {
+  color: var(--tl-accent);
+}
+
+.tl-zen-effort-body {
+  padding: 0.25rem 0.75rem 0.75rem;
+}
+
+@media (max-width: 1023px) {
+  .tl-zen-actions {
+    position: static;
+    bottom: auto;
+    z-index: auto;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  /* Do not cover the optional effort control in the normal, keyboard-closed
+     layout. Once a numeric input is focused, pin the action above the OS pad. */
+  .tl-zen-stage:has(.tl-zen-input:focus) .tl-zen-actions {
+    position: sticky;
+    bottom: 0.5rem;
+    z-index: 30;
+    padding: 0.5rem 0;
+    background: color-mix(in oklab, var(--tl-bg) 97%, transparent);
+    backdrop-filter: blur(10px);
+  }
+}
+
 .tl-zen-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1494,7 +1715,9 @@ textarea {
 .tl-body-figure {
   position: relative;
   width: min(100%, 520px);
-  aspect-ratio: 1044 / 1024;
+  /* The aspect ratio is set inline from the loaded figure (1044/1024 male,
+     1536/1024 female): the box must match the image or the mask is painted at
+     the wrong scale. */
   overflow: hidden;
   border: 1px solid var(--tl-border);
   border-radius: 14px;
@@ -1504,19 +1727,34 @@ textarea {
 .tl-body-image,
 .tl-body-map-canvas {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 50%;
   display: block;
-  width: 100%;
+  width: auto;
   height: 100%;
+  max-width: none;
+  transform: translateX(-50%);
 }
 
 .tl-body-image {
   z-index: 2;
-  object-fit: fill;
-  filter: invert(1);
+  object-fit: contain;
+  /* `screen` lets the painted canvas below show through the drawing's dark
+     background, whichever figure is loaded. */
   mix-blend-mode: screen;
   pointer-events: none;
   user-select: none;
+}
+
+/* The male map is dark line work on white; inverting turns the background black
+   (transparent under `screen`) and the lines light. */
+.tl-body-image.is-inverted {
+  filter: invert(1);
+}
+
+/* The woman's drawing is already light-on-dark, so it needs no filter. */
+.tl-body-image.is-plain {
+  filter: none;
 }
 
 .tl-body-map-canvas {
@@ -1569,6 +1807,77 @@ textarea {
   text-align: center;
 }
 
+.tl-body-anatomy-focus {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 520px);
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--tl-border);
+  border-radius: 12px;
+  background: var(--tl-surface-2);
+}
+
+.tl-body-anatomy-focus h4,
+.tl-body-anatomy-focus h5 {
+  margin: 0;
+  color: var(--tl-text);
+  font-size: 12px;
+}
+
+.tl-body-focus-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tl-body-focus-chip {
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid var(--tl-border);
+  border-radius: 999px;
+  background: var(--tl-surface);
+  color: var(--tl-text-secondary);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.tl-body-focus-chip[aria-pressed="true"] {
+  border-color: var(--tl-accent);
+  background: color-mix(in srgb, var(--tl-accent) 14%, var(--tl-surface));
+  color: var(--tl-text);
+}
+
+.tl-body-focus-chip:focus-visible {
+  outline: 2px solid var(--tl-accent);
+  outline-offset: 2px;
+}
+
+.tl-body-exercise-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tl-body-exercise-list li {
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: var(--tl-surface);
+  color: var(--tl-text);
+  font-size: 11px;
+}
+
+.tl-body-anatomy-note {
+  margin: 0;
+  color: var(--tl-text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .tl-legend {
   display: flex;
   flex-direction: column;
@@ -1590,7 +1899,6 @@ textarea {
   border-radius: 50%;
   flex-shrink: 0;
 }
-
 
 /* ── Condition lens: you vs the published norms ───────────────────────── */
 .tl-condition-grid {

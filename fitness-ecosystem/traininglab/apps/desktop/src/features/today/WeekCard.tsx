@@ -15,7 +15,6 @@
  */
 
 import { RefreshCw } from "lucide-react";
-import { navigate } from "../../app/router";
 import { t, tInterp } from "../../lib/i18n";
 import type { WeekPlan } from "../../lib/plan";
 import type { TLSet } from "../../lib/types";
@@ -47,24 +46,13 @@ export function WeekCard({
   return (
     <section className="tl-card">
       <div className="tl-card-head">
-        <h2>{t("home.week.title")}</h2>
-        <div className="flex items-center gap-3">
-          <Badge tone="neutral">
-            {tInterp("week.summary", {
-              sets: weekPlan.totalSets,
-              min: weekPlan.totalMinutes,
-            })}
-          </Badge>
-          <button
-            type="button"
-            onClick={() => navigate("progress")}
-            title={t("common.seeAll")}
-            aria-label={t("common.seeAll")}
-            className="tl-focusable text-[var(--tl-text-muted)] hover:text-[var(--tl-text)] transition-colors"
-          >
-            ›
-          </button>
-        </div>
+        <h2>{t("week.card.title")}</h2>
+        <Badge tone="neutral">
+          {tInterp("week.summary", {
+            sets: weekPlan.totalSets,
+            min: weekPlan.totalMinutes,
+          })}
+        </Badge>
       </div>
       <div className="tl-card-body">
         <div className="tl-week">
@@ -99,12 +87,12 @@ export function WeekCard({
                 <div className="tl-day-name">{row.label}</div>
                 <div className="tl-day-status">
                   {done
-                    ? t("home.week.done")
+                    ? t("week.card.done")
                     : row.isToday
                       ? t("week.today")
                       : row.isRest
                         ? t("week.rest")
-                        : t("home.week.pending")}
+                        : t("week.card.pending")}
                 </div>
               </div>
             );

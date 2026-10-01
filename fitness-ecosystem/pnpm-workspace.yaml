@@ -5,12 +5,14 @@
 # --frozen-lockfile` — including CI — died with ERR_PNPM_OUTDATED_LOCKFILE. Its
 # research assets can still be installed on their own by running `pnpm install`
 # inside `corpus/`.
+# `traininglab/core/*` and `traininglab/packages/*` used to be listed here for
+# seven empty `@fitness/traininglab-*` packages (plus an eighth empty
+# `traininglab/apps/web`). They contained a `package.json` and nothing else, so
+# they were removed 2026-09-30 along with their globs (plan optimizacion, Fase 1).
 packages:
   - "bodylab/apps/*"
   - "bodylab/packages/*"
   - "bodylab/core/*"
   - "traininglab/apps/*"
-  - "traininglab/packages/*"
-  - "traininglab/core/*"
 allowBuilds:
   esbuild: true

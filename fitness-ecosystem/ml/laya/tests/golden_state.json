@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "GOLDEN FIXTURE — cross-language contract between the app and the trainer.",
+    "Produced by the real implementation in bodylab/core/training/src/laya.ts",
+    "(`buildLayaState`). `tests/training/test_laya_contract.test.ts` locks the",
+    "TypeScript side and ml/laya/tests/test_schema.py locks the Python mirror to",
+    "these exact bytes, so training data can never drift from what the app sends.",
+    "To regenerate: add a temporary vitest that prints buildLayaState(ctx), copy,",
+    "then update BOTH suites in the same change."
+  ],
+  "cases": {
+    "full": {
+      "context": {
+        "level": "intermediate",
+        "goal": "hypertrophy",
+        "timeBudgetMin": 45,
+        "readiness": { "energy": 3, "motivation": 4, "soreness": 2 },
+        "weakness": { "chest": 32, "lats": 61, "quadriceps": 44 },
+        "weeklyVolume": { "chest": 3, "lats": 9, "quadriceps": 6 },
+        "fatiguedFamilies": ["quadriceps"],
+        "gear": ["dumbbell", "bench"],
+        "note": "me duele el hombro derecho"
+      },
+      "text": "goal: hypertrophy | level: intermediate\nminutes: 45\nreadiness: energy=3 motivation=4 soreness=2 (1=bad 5=great; soreness 5=fresh)\ngear: bench,dumbbell\nweakest: chest=32 quadriceps=44 lats=61 (0-100, lower=weaker)\nsets_7d: chest=3 lats=9 quadriceps=6\nfatigued: quadriceps\nnote: me duele el hombro derecho",
+      "truncated": false
+    },
+    "minimal": {
+      "context": {
+        "level": "beginner",
+        "goal": "strength",
+        "timeBudgetMin": 20,
+        "readiness": { "energy": 5, "motivation": 5, "soreness": 5 },
+        "weakness": {}
+      },
+      "text": "goal: strength | level: beginner\nminutes: 20\nreadiness: energy=5 motivation=5 soreness=5 (1=bad 5=great; soreness 5=fresh)\nweakest: unknown (no anthropometric map)",
+      "truncated": false
+    },
+    "conditioning_low": {
+      "context": {
+        "level": "advanced",
+        "goal": "recomposition",
+        "timeBudgetMin": 90.4,
+        "readiness": { "energy": 1, "motivation": 2, "soreness": 1.5 },
+        "weakness": { "core": 55.55, "calves": 78 },
+        "weeklyVolume": { "calves": 0, "core": 12 },
+        "gear": ["barbell"],
+        "conditioningScore": 18.5
+      },
+      "text": "goal: recomposition | level: advanced\nminutes: 90\nreadiness: energy=1 motivation=2 soreness=1.5 (1=bad 5=great; soreness 5=fresh)\nconditioning: 18.5/100\ngear: barbell\nweakest: core=55.6 calves=78 (0-100, lower=weaker)\nsets_7d: core=12",
+      "truncated": false
+    }
+  }
+}

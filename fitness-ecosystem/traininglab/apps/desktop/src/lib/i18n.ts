@@ -44,7 +44,11 @@ const DICT: Record<string, { en: string; es: string }> = {
   "settings.lanOff": { en: "Off", es: "Apagado" },
   "settings.lanOn": { en: "On", es: "Encendido" },
 
-  // ── This week (horizontalised plan) ──────────────────────────────────
+  // ── Week (horizontalised plan) ───────────────────────────────────────
+  "week.hintCollapsed": {
+    en: "How the volume is spread across the week.",
+    es: "Cómo se reparte el volumen en la semana.",
+  },
   "week.title": { en: "This week", es: "Esta semana" },
   "week.hint": {
     en: "Volume spread across {n} days — weakest muscles first, 48 h between hits.",
@@ -96,9 +100,37 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Calentamiento hecho",
   },
   "zen.logSet": { en: "Log set", es: "Registrar serie" },
+  "zen.guide": { en: "How to do it", es: "Cómo hacerlo" },
+  "zen.log": { en: "Set log", es: "Registro de series" },
+  "zen.sessionRunning": {
+    en: "Session in progress",
+    es: "Sesión en curso",
+  },
+  "zen.step1": { en: "Set the load", es: "Ajusta la carga" },
+  "zen.step1b": {
+    en: "Use a comfortable starting load",
+    es: "Elige una carga inicial cómoda",
+  },
+  "zen.step2": { en: "Perform the movement", es: "Realiza el movimiento" },
+  "zen.step3": { en: "Log the set", es: "Registra la serie" },
+  "zen.step3b": {
+    en: "Rest, then continue when you are ready",
+    es: "Descansa y continúa cuando estés listo",
+  },
+  "zen.tempo": {
+    en: "Tempo {tempo} · leave {rir} reps in reserve",
+    es: "Ritmo {tempo} · deja {rir} repeticiones en reserva",
+  },
+  "zen.col.set": { en: "Set", es: "Serie" },
+  "zen.col.kg": { en: "Load", es: "Carga" },
+  "zen.col.previous": { en: "Previous", es: "Anterior" },
   "zen.fatigue": {
     en: "How hard was that set?",
     es: "¿Qué tan duro fue esa serie?",
+  },
+  "zen.fatigueOptional": {
+    en: "Effort (optional)",
+    es: "Esfuerzo (opcional)",
   },
   "zen.fatigueHint": {
     en: "1 easy · 5 at the limit — one tap, no numbers to type",
@@ -152,6 +184,38 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "setup.goal": { en: "Goal", es: "Objetivo" },
   "setup.level": { en: "Level", es: "Nivel" },
+  "data.title": { en: "My data", es: "Mis datos" },
+  "data.exportCsv": { en: "Export CSV", es: "Exportar CSV" },
+  "data.exportHint": {
+    en: "Your logged sets as CSV — opens in Excel and any local assistant can read it. Nothing leaves the device.",
+    es: "Tus series registradas en CSV: se abre en Excel y cualquier asistente local puede leerlo. Nada sale del dispositivo.",
+  },
+  "data.setsCount": { en: "{n} sets logged", es: "{n} series registradas" },
+  "backup.export": {
+    en: "Download full backup (JSON)",
+    es: "Descargar copia completa (JSON)",
+  },
+  "backup.restore": { en: "Restore backup", es: "Restaurar copia" },
+  "backup.hint": {
+    en: "Series, sessions, health records, settings and the local model. Restoring merges by id — it never deletes what is already here.",
+    es: "Series, sesiones, salud, ajustes y modelo local. Restaurar fusiona por id: nunca borra lo que ya tienes.",
+  },
+  "backup.restored": {
+    en: "Backup read: {n} sets merged.",
+    es: "Copia leída: {n} series fusionadas.",
+  },
+  "backup.error.app": {
+    en: "That file is not a TrainingLab backup.",
+    es: "Ese archivo no es una copia de TrainingLab.",
+  },
+  "backup.error.version": {
+    en: "That backup was made by a newer version of the app.",
+    es: "Esa copia la hizo una versión más nueva de la app.",
+  },
+  "backup.error.invalid": {
+    en: "The backup file is not readable.",
+    es: "La copia no se puede leer.",
+  },
   "setup.budget": {
     en: "Minutes available today",
     es: "Minutos disponibles hoy",
@@ -321,6 +385,7 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Última: {d} · {n} sesiones",
   },
   "log.suggested": { en: "Suggested {w} kg", es: "Sugerido {w} kg" },
+  "log.removed": { en: "Set deleted", es: "Serie eliminada" },
   "log.untrained": {
     en: "First time — start light",
     es: "Primera vez — empieza ligero",
@@ -591,6 +656,8 @@ const DICT: Record<string, { en: string; es: string }> = {
 
   "common.loading": { en: "Loading…", es: "Cargando…" },
   "common.delete": { en: "Delete", es: "Eliminar" },
+  "common.edit": { en: "Edit", es: "Editar" },
+  "common.undo": { en: "Undo", es: "Deshacer" },
   "common.cancel": { en: "Cancel", es: "Cancelar" },
   "common.close": { en: "Close", es: "Cerrar" },
   "common.save": { en: "Save", es: "Guardar" },
@@ -599,6 +666,7 @@ const DICT: Record<string, { en: string; es: string }> = {
   "nav.label": { en: "Main navigation", es: "Navegación principal" },
   "nav.today": { en: "Home", es: "Inicio" },
   "nav.exercises": { en: "Exercises", es: "Ejercicios" },
+  "nav.week": { en: "Week", es: "Semana" },
   "nav.session": { en: "Train", es: "Entrenar" },
   "nav.progress": { en: "Progress", es: "Progreso" },
   "nav.settings": { en: "Settings", es: "Ajustes" },
@@ -787,92 +855,26 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Start training",
     es: "Iniciar entrenamiento",
   },
-  "home.kpi.consistency": {
-    en: "Weekly consistency",
-    es: "Constancia semanal",
-  },
-  "home.kpi.daysOf": {
-    en: "{done} of {target} days",
-    es: "{done} de {target} días",
-  },
-  "home.kpi.consistencyHint": { en: "This week", es: "Esta semana" },
-  "home.kpi.readiness": { en: "Recovery", es: "Recuperación" },
-  "home.kpi.ready": { en: "Ready", es: "Listo" },
-  "home.kpi.fair": { en: "Fair", es: "Justo" },
-  "home.kpi.low": { en: "Low", es: "Bajo" },
-  "home.kpi.readyHint": {
-    en: "Enough energy for the full plan",
-    es: "Energía suficiente para el plan completo",
-  },
-  "home.kpi.fairHint": {
-    en: "The plan trims the volume a little",
-    es: "El plan recorta un poco el volumen",
-  },
-  "home.kpi.lowHint": {
-    en: "The plan drops volume and raises the RIR target",
-    es: "El plan baja volumen y sube el RIR objetivo",
-  },
-  "home.kpi.volume": { en: "Weekly volume", es: "Volumen semanal" },
-  "home.kpi.volumeHint": {
-    en: "Sets logged / sets planned",
-    es: "Series hechas / planificadas",
-  },
-  "home.kpi.bodyweight": { en: "Body weight", es: "Peso corporal" },
-  "home.kpi.bodyweightFrom": {
-    en: "Imported from BodyLab",
-    es: "Importado de BodyLab",
-  },
-  "home.kpi.bodyweightNone": {
-    en: "No BodyLab data",
-    es: "Sin datos de BodyLab",
+  "home.hero.continue": {
+    en: "Continue training",
+    es: "Continuar entrenamiento",
   },
   // ── Inicio: the boseto's own furniture ───────────────────────────────
   "home.pill.elapsedHint": {
     en: "Counting from the first set you logged today",
     es: "Cuenta desde la primera serie que registraste hoy",
   },
-  "home.week.title": { en: "Week at a glance", es: "Resumen de la semana" },
-  "home.week.done": { en: "Done", es: "Completado" },
-  "home.week.pending": { en: "Pending", es: "Pendiente" },
+  "home.last.title": { en: "Last session", es: "Última sesión" },
+  "home.last.none": {
+    en: "Nothing logged yet — today writes the first line.",
+    es: "Aún no hay nada registrado — hoy escribes la primera línea.",
+  },
+  "home.last.yesterday": { en: "Yesterday", es: "Ayer" },
+  "home.last.daysAgo": { en: "{n} days ago", es: "Hace {n} días" },
+  "home.last.sets": { en: "sets", es: "series" },
+  "home.last.volume": { en: "kg moved", es: "kg movidos" },
+  "home.last.exercises": { en: "exercises", es: "ejercicios" },
   "home.next.title": { en: "Next exercise", es: "Siguiente ejercicio" },
-  "home.next.current": { en: "Current session", es: "Sesión actual" },
-  "home.next.go": { en: "Continue in ZEN", es: "Continuar en ZEN" },
-  "home.numbers.title": { en: "Your numbers", es: "Tus cifras" },
-  "home.numbers.records": {
-    en: "{n} BodyLab records merged in",
-    es: "{n} marcas de BodyLab incluidas",
-  },
-  "home.zen.progress": {
-    en: "{pct} % of today's sets",
-    es: "{pct} % de las series de hoy",
-  },
-  "home.progress.title": { en: "Your progress", es: "Tu progreso" },
-  "home.progress.week": { en: "Week", es: "Semana" },
-  "home.progress.month": { en: "Month", es: "Mes" },
-  "home.progress.year": { en: "Quarter", es: "Trimestre" },
-  "home.progress.note": {
-    en: "Nice: you hit your target in {n} of the last 4 weeks.",
-    es: "Vas muy bien: cumpliste tu objetivo en {n} de las últimas 4 semanas.",
-  },
-  "home.progress.noteNone": {
-    en: "Log a full week and the trend line starts to mean something.",
-    es: "Registra una semana completa y la tendencia empezará a decir algo.",
-  },
-  "home.progress.constancy": { en: "Consistency", es: "Constancia" },
-  "home.progress.sets": {
-    en: "{done} of {target} sets completed.",
-    es: "{done} de {target} series completadas.",
-  },
-  "home.progress.daySets": { en: "{n} sets", es: "{n} series" },
-  "home.tiles.title": { en: "Your data", es: "Tus datos" },
-  "home.tiles.sessions": { en: "Sessions", es: "Sesiones" },
-  "home.tiles.sets": { en: "Sets logged", es: "Series registradas" },
-  "home.tiles.exercises": {
-    en: "Distinct exercises",
-    es: "Ejercicios distintos",
-  },
-  "home.tiles.records": { en: "BodyLab records", es: "Marcas de BodyLab" },
-  "home.tiles.days": { en: "Days trained", es: "Días entrenados" },
   "home.focus.badge": { en: "ZEN MODE", es: "MODO ZEN" },
   "home.focus.title": { en: "Focus", es: "Enfócate" },
   "home.focus.body": {
@@ -880,7 +882,136 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Tu única tarea ahora es completar la siguiente repetición.",
   },
 
+  // ── Semana (the plan's own surface since 2026-09-30 f) ───────────────
+  "week.pageTitle": { en: "The week", es: "La semana" },
+  "week.pageHint": {
+    en: "How {n} training days are distributed and why.",
+    es: "Cómo se reparten {n} días de entrenamiento y por qué.",
+  },
+  "week.budget": {
+    en: "{n} min per day",
+    es: "{n} min por día",
+  },
+  "week.empty": {
+    en: "No training days yet",
+    es: "Aún no hay días de entreno",
+  },
+  "week.emptyHint": {
+    en: "Set your weekly days and time budget and the plan is built again.",
+    es: "Define tus días por semana y el presupuesto de tiempo y el plan se reconstruye.",
+  },
+  "week.planTitle": { en: "Day by day", es: "Día a día" },
+  "week.planHint": {
+    en: "What the planner intends for each day.",
+    es: "Lo que el planificador propone para cada día.",
+  },
+  "week.dayDetail": {
+    en: "{sets} sets · {min} min",
+    es: "{sets} series · {min} min",
+  },
+  "week.whyTitle": { en: "Why this week", es: "Por qué esta semana" },
+  "week.whyNone": {
+    en: "The plan needed no adjustments this week.",
+    es: "El plan no necesitó ajustes esta semana.",
+  },
+  "week.gear": {
+    en: "{usable} catalog exercises usable with your gear, {excluded} excluded for missing equipment.",
+    es: "{usable} ejercicios del catálogo usables con tu equipo, {excluded} excluidos por falta de material.",
+  },
+  "week.adjustBudget": { en: "Adjust budget", es: "Ajustar presupuesto" },
+  "week.goToday": { en: "Go to today", es: "Ir a hoy" },
+  "week.todayIndexNote": {
+    en: "Day {i} of 7 · Monday-first week.",
+    es: "Día {i} de 7 · semana empezando en lunes.",
+  },
+  "week.card.title": { en: "Week at a glance", es: "Resumen de la semana" },
+  "week.card.done": { en: "Done", es: "Completado" },
+  "week.card.pending": { en: "Pending", es: "Pendiente" },
+
   // ── Progreso ──────────────────────────────────────────────────────────
+  "progress.constancy.title": { en: "Consistency", es: "Constancia" },
+  "progress.constancy.hint": {
+    en: "Sets logged against the plan's own target for the same window.",
+    es: "Series registradas frente al objetivo del propio plan para la misma ventana.",
+  },
+  "progress.constancy.week": { en: "Week", es: "Semana" },
+  "progress.constancy.month": { en: "Month", es: "Mes" },
+  "progress.constancy.quarter": { en: "Quarter", es: "Trimestre" },
+  "progress.constancy.note": {
+    en: "Nice: you hit your target in {n} of the last 4 weeks.",
+    es: "Vas muy bien: cumpliste tu objetivo en {n} de las últimas 4 semanas.",
+  },
+  "progress.constancy.noteNone": {
+    en: "Log a full week and the trend line starts to mean something.",
+    es: "Registra una semana completa y la tendencia empezará a decir algo.",
+  },
+  "progress.constancy.sets": {
+    en: "{done} of {target} sets completed",
+    es: "{done} de {target} series completadas",
+  },
+  "progress.constancy.daySets": { en: "{n} sets", es: "{n} series" },
+  "progress.numbers.title": { en: "Your numbers", es: "Tus cifras" },
+  "progress.numbers.sessions": { en: "Sessions", es: "Sesiones" },
+  "progress.numbers.sets": { en: "Sets logged", es: "Series registradas" },
+  "progress.numbers.exercises": {
+    en: "Distinct exercises",
+    es: "Ejercicios distintos",
+  },
+  "progress.numbers.days": { en: "Days trained", es: "Días entrenados" },
+  "progress.numbers.records": {
+    en: "{n} BodyLab records merged in",
+    es: "{n} marcas de BodyLab incluidas",
+  },
+  "progress.body.figureFromBodyLab": {
+    en: "Figure chosen from the BodyLab profile's sex.",
+    es: "Figura elegida según el sexo del perfil de BodyLab.",
+  },
+  "progress.body.figureChosen": {
+    en: "Figure chosen by you in Settings.",
+    es: "Figura elegida por ti en Ajustes.",
+  },
+  "progress.body.figureDefault": {
+    en: "No profile sex imported: this is the default drawing (change it in Settings).",
+    es: "Sin sexo importado en el perfil: esta es la figura por defecto (cámbialo en Ajustes).",
+  },
+  "settings.section.profile": { en: "Profile", es: "Perfil" },
+  "settings.section.profileHint": {
+    en: "Where your data comes from and which body it draws.",
+    es: "De dónde vienen tus datos y qué cuerpo dibuja.",
+  },
+  "settings.section.goal": {
+    en: "Goal and preferences",
+    es: "Objetivo y preferencias",
+  },
+  "settings.section.goalHint": {
+    en: "Level, weekly days, time budget and units.",
+    es: "Nivel, días por semana, presupuesto de tiempo y unidades.",
+  },
+  "settings.section.coachHint": {
+    en: "Optional: a local model that only reorders what the planner already allows.",
+    es: "Opcional: un modelo local que solo reordena lo que el planner ya permite.",
+  },
+  "settings.section.bodylabHint": {
+    en: "Import the JSON BodyLab exports; nothing leaves the device.",
+    es: "Importa el JSON que exporta BodyLab; nada sale del dispositivo.",
+  },
+  "settings.section.about": { en: "About", es: "Acerca de" },
+  "settings.figure.title": { en: "Body map figure", es: "Figura del mapa" },
+  "settings.figure.auto": { en: "Automatic", es: "Automática" },
+  "settings.figure.male": { en: "Male", es: "Masculina" },
+  "settings.figure.female": { en: "Female", es: "Femenina" },
+  "settings.figure.fromBodyLab": {
+    en: "Automatic: taken from the imported BodyLab profile's sex.",
+    es: "Automática: tomada del sexo del perfil de BodyLab importado.",
+  },
+  "settings.figure.fallback": {
+    en: "Automatic, but no profile sex to read: the male drawing is used by default.",
+    es: "Automática, pero no hay sexo en el perfil: se usa la figura masculina por defecto.",
+  },
+  "settings.figure.manual": {
+    en: "Chosen by hand; the imported profile does not override it.",
+    es: "Elegida a mano; el perfil importado no la sobrescribe.",
+  },
   "progress.periodHint": { en: "Last {n} days", es: "Últimos {n} días" },
   "progress.days": { en: "{n} d", es: "{n} d" },
   "progress.empty": {
@@ -943,6 +1074,10 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "2D map · Volume · Balance",
     es: "Mapa 2D · Volumen · Equilibrio",
   },
+  "progress.body.subGoal": {
+    en: "2D map · Anthropometric goal proximity",
+    es: "Mapa 2D · Proximidad a objetivos antropométricos",
+  },
   "progress.body.mapLabel": { en: "2D MAP", es: "MAPA 2D" },
   "progress.body.front": { en: "Front view", es: "Vista frontal" },
   "progress.body.back": { en: "Back view", es: "Vista posterior" },
@@ -965,6 +1100,42 @@ const DICT: Record<string, { en: string; es: string }> = {
   "progress.body.selectedStats": {
     en: "{family} · {stimulus} equivalent sets · {sets} logged sets · {index}/100",
     es: "{family} · {stimulus} series equivalentes · {sets} series · {index}/100",
+  },
+  "progress.body.focusTitle": {
+    en: "Anatomical focus",
+    es: "Zona anatómica",
+  },
+  "progress.body.focus.serratus": {
+    en: "Serratus anterior · rib area",
+    es: "Serrato anterior · zona costal",
+  },
+  "progress.body.focus.rectus": {
+    en: "Rectus abdominis · front",
+    es: "Recto abdominal · frente",
+  },
+  "progress.body.focus.obliques": {
+    en: "Obliques · sides",
+    es: "Oblicuos · laterales",
+  },
+  "progress.body.focus.quadriceps": {
+    en: "Quadriceps · whole group",
+    es: "Cuádriceps · grupo completo",
+  },
+  "progress.body.exerciseTitle": {
+    en: "Catalogued primary-target exercises",
+    es: "Ejercicios cuyo objetivo principal indica el catálogo",
+  },
+  "progress.body.exerciseEvidenceNote": {
+    en: "These are catalog target labels, not a measurement of your muscle activation (EMG) in a set. The heat value remains aggregated at the larger family.",
+    es: "Son etiquetas de objetivo del catálogo, no una medición EMG de tu activación en una serie. El valor de calor sigue agregado por familia.",
+  },
+  "progress.body.deepCoreNote": {
+    en: "The transversus abdominis is a deep abdominal-wall layer; this superficial drawing cannot outline it separately, so it is not given its own colored zone.",
+    es: "El transverso del abdomen es una capa profunda; este dibujo superficial no permite delimitarlo por separado, así que no le asignamos una zona de color propia.",
+  },
+  "progress.body.quadricepsSpecificityNote": {
+    en: "The catalog records quadriceps as one group, not individual heads. The display does not claim to isolate rectus femoris or either vastus.",
+    es: "El catálogo registra el cuádriceps como grupo, no por cabezas. El mapa no afirma aislar el recto femoral ni los vastos por separado.",
   },
   "progress.body.noData": {
     en: "No logged work",
@@ -1042,11 +1213,23 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "No data — see how to measure it in BodyLab",
     es: "Sin dato — mira cómo medirlo en BodyLab",
   },
-  "condition.axis.cardio": { en: "Cardio (Cooper 12 min)", es: "Cardio (Cooper 12 min)" },
+  "condition.axis.cardio": {
+    en: "Cardio (Cooper 12 min)",
+    es: "Cardio (Cooper 12 min)",
+  },
   "condition.axis.composition": { en: "Body fat", es: "Grasa corporal" },
-  "condition.axis.proportion": { en: "Waist-to-height", es: "Cintura/estatura" },
-  "condition.axis.muscle": { en: "Muscle mass (FFMI)", es: "Masa muscular (FFMI)" },
-  "condition.band.excellent": { en: "Athletic / excellent", es: "Atlético / excelente" },
+  "condition.axis.proportion": {
+    en: "Waist-to-height",
+    es: "Cintura/estatura",
+  },
+  "condition.axis.muscle": {
+    en: "Muscle mass (FFMI)",
+    es: "Masa muscular (FFMI)",
+  },
+  "condition.band.excellent": {
+    en: "Athletic / excellent",
+    es: "Atlético / excelente",
+  },
   "condition.band.above": { en: "Above average", es: "Sobre el promedio" },
   "condition.band.average": { en: "Average", es: "Promedio" },
   "condition.band.below": { en: "Below average", es: "Bajo el promedio" },

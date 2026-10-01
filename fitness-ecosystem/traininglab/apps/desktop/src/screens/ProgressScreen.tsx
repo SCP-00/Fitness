@@ -14,7 +14,11 @@
  *      from the catalog's `MuscleInvolvement.intensity` (3 / 2 / 1);
  *   5. the records, with BodyLab's exported PRs merged in;
  *   6. the assistant's priorities, computed from the planner's own weakness map
- *      (no LLM required — the deterministic answer is the floor, and it is free).
+ *      (no LLM required — the deterministic answer is the floor, and it is free);
+ *   7. in the rail, the **constancy ring** and the **lifetime totals**, moved
+ *      here from Inicio on 2026-09-30 (f) — they are the same period and the
+ *      same log the rest of this page reads, and they are read after the
+ *      session, not before it.
  *
  * What is still deliberately **not** here: a percentile ("you are in the top 20 %
  * of lifters your age"). That needs cited normative data we have not validated
@@ -28,10 +32,13 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Bike, CalendarDays, Dumbbell, Flame, Trophy } from "lucide-react";
 import { familyLabel } from "../lib/format";
 import { t, tInterp } from "../lib/i18n";
+import { resolveBodyMapFigure } from "../lib/settings";
 import { Badge, Chip, EmptyState, MetricTile } from "../ui/primitives";
 import { IconLayers } from "../ui/icons";
 import { useStore } from "../app/store";
 import { BodyMap } from "../features/stats/BodyMap";
+import { ConstancyCard } from "../features/stats/ConstancyCard";
+import { NumbersCard } from "../features/stats/NumbersCard";
 import ConditionCard from "../features/today/ConditionCard";
 import { conditionProfile, heightMOf } from "../features/stats/condition";
 import {
@@ -94,6 +101,10 @@ export default function ProgressScreen() {
     }
     return null;
   }, [mapMode, goalSource, payload, settings]);
+
+  // Which drawing the map paints (2026-09-30 f): the user's explicit choice, or
+  // the imported profile's sex, or the male drawing as the documented default.
+  const figure = resolveBodyMapFigure(settings, payload);
 
   // The condition lens (2026-09-30 owner direction): whole-body published-norm
   // read — you vs the average and the athletic band — independent of the map's
@@ -187,12 +198,48 @@ export default function ProgressScreen() {
 
           {/* ── Body analysis: the figure, the legend, the families ──────── */}
           <section className="tl-card">
-            <div className="tl-card-head">
+            <div className="tl-card-head flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <h2>{t("progress.body.title")}</h2>
-                <span>{t("progress.body.sub")}</span>
+                <span>
+                  {mapMode === "training"
+                    ? t("progress.body.sub")
+                    : t("progress.body.subGoal")}
+                </span>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div
+                  className="flex items-center border border-[var(--tl-border)] rounded-xl p-0.5 bg-[var(--tl-surface-2)]"
+                  role="group"
+                  aria-label={t("settings.figure.title")}
+                >
+                  <button
+                    type="button"
+                    onClick={() => patch({ bodyMapFigure: "male" })}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
+                      figure.figure === "male"
+                        ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)]"
+                        : "text-[var(--tl-text-secondary)] hover:text-[var(--tl-text)]"
+                    }`}
+                    title={t("settings.figure.male")}
+                    aria-label={t("settings.figure.male")}
+                  >
+                    ♂ {t("settings.figure.male")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => patch({ bodyMapFigure: "female" })}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
+                      figure.figure === "female"
+                        ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)]"
+                        : "text-[var(--tl-text-secondary)] hover:text-[var(--tl-text)]"
+                    }`}
+                    title={t("settings.figure.female")}
+                    aria-label={t("settings.figure.female")}
+                  >
+                    ♀ {t("settings.figure.female")}
+                  </button>
+                </div>
                 <span className="tl-pill is-accent">
                   {tInterp("progress.periodHint", { n: days })}
                 </span>
@@ -243,6 +290,7 @@ export default function ProgressScreen() {
                   mode={mapMode}
                   goals={goals}
                   goalsUnavailable={goalsUnavailable}
+                  figure={figure.figure}
                 />
 
                 <div className="min-w-0">
@@ -269,6 +317,12 @@ export default function ProgressScreen() {
                   </p>
                   <p className="text-[11px] text-[var(--tl-text-muted)] mt-1.5 leading-relaxed">
                     {t("progress.body.schematic")}
+                    {" "}
+                    {figure.from === "bodylab"
+                      ? t("progress.body.figureFromBodyLab")
+                      : figure.from === "default"
+                        ? t("progress.body.figureDefault")
+                        : t("progress.body.figureChosen")}
                   </p>
                 </div>
               </div>
@@ -396,6 +450,12 @@ export default function ProgressScreen() {
 
             {/* ── Assistant ──────────────────────────────────────────────── */}
             <aside className="tl-col">
+              {/* Both of these lived on Inicio until 2026-09-30 (f). They are
+                  analytics, so they belong to the screen that is about
+                  analytics — and they read the same period selector as the
+                  rest of this page. */}
+              <ConstancyCard days={days} />
+              <NumbersCard />
               <AssistantCard />
               <BalanceCard balance={balance} />
             </aside>

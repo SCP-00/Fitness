@@ -13,11 +13,11 @@
 > [EXERCISE_DATA_AUDIT.md](EXERCISE_DATA_AUDIT.md). When a rule here changes,
 > both files move in the same commit.
 >
-> **2026-09-29 (d) — the interaction revision.** The rail collapses (245 px open
-> / 78 px compact) and remembers the choice; Inicio opens with context tags and
-> only the next exercise expanded; the body map is a selectable SVG. The rules
-> for all three are in this file, in Navigation, Component recipes and
-> "The schematic body map".
+> **2026-10-01 — current interaction contract.** The rail collapses (245 px open
+> / 78 px compact) and remembers the choice; Inicio is action-first; Semana is a
+> separate destination; ZEN keeps its primary log action reachable as the
+> keyboard opens; and Progreso uses the owner's raster body map plus a pixel-ID
+> mask. Current map lenses remain exposure and anthropometric goals.
 
 ## Tokens (do not invent new ones without adding them here)
 
@@ -28,7 +28,7 @@
 | `--tl-surface-2`                     | `#151b21`                                     | inputs, chips, a control **on** a card             |
 | `--tl-surface-3`                     | `#1b2229`                                     | a control inside a control (media slot, inner row) |
 | `--tl-border` / `--tl-border-strong` | `#29313a` / `#39434e`                         | hairlines, hover                                   |
-| `--tl-text` / `secondary` / `muted`  | `#f3f5f7` / `#9ba5af` / `#7f8a95`             | copy hierarchy                                     |
+| `--tl-text` / `secondary` / `muted`  | `#f3f5f7` / `#9ba5af` / `#8b96a1`             | copy hierarchy                                     |
 | `--tl-accent`                        | `#ff7300`                                     | primary actions, today, watched joints             |
 | `--tl-accent-strong` / `soft`        | `#ff9447` / `#c75200`                         | hover on a fill / pressed, rings                   |
 | `--tl-accent-wash`                   | `rgba(255,115,0,.12)`                         | focus ring, today wash, media slot gradient        |
@@ -40,7 +40,7 @@ Text: 15px body, 11px meta/chips, 20–24px section titles, 32–40px headlines 
 `tabular-nums` on anything measured.
 
 **Measured contrast** (worst surface each colour is used on): text 16.8 · secondary
-7.3 · muted 4.6 · accent 5.9 · on-accent 7.3 · success 10.0 · warning 11.9 ·
+7.3 · muted 5.6 · accent 5.9 · on-accent 7.3 · success 10.0 · warning 11.9 ·
 danger 5.7 · info 7.3. The mockup's muted `#68727d` measured 3.55:1 on
 `surface-2` and failed AA for 11px labels, which is why the token is one step
 lighter.
@@ -61,12 +61,12 @@ pure modules never import React.
 
 ## Navigation
 
-Five destinations, one definition (`app/nav.ts`), two shells:
+Six destinations, one definition (`app/nav.ts`), two shells:
 
 | Viewport          | Shell                                                                                                                                                                            |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `≥ 1024px` (`lg`) | fixed **rail**, **245 px open / 78 px compact**, active item = accent fill; rail and content both read `--tl-rail-current`, so the page reflows instead of leaving a dead gutter |
-| `< 1024px`        | fixed **bottom tab bar**, 72 px + `env(safe-area-inset-bottom)`; five items, the centre one a raised accent FAB                                                                  |
+| `< 1024px`        | fixed **bottom tab bar**, 72 px + `env(safe-area-inset-bottom)`; six destinations, with Entrenar visually emphasized                                                                  |
 
 The rail's toggle (`tl-rail-toggle`) sits in the rail head and the choice is
 persisted under `localStorage['traininglab.rail']`, so a WebView, a phone and a
@@ -75,15 +75,15 @@ hidden but never lost: every item keeps its accessible name and `title`, and the
 toggle announces the action it will perform ("Contraer / Expandir panel
 lateral").
 
-Routes are hash-only (`#/hoy`, `#/ejercicios/<id>`, `#/progreso`) — no router
+Routes are hash-only (`#/hoy`, `#/semana`, `#/ejercicios/<id>`, `#/progreso`) — no router
 dependency, no server rewrite rules, and the phone back-swipe works. ZEN takes
 over the screen: no rail, no tab bar, and an explicit way out.
 
 | Range            | Layout                                                                                               |
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `< 640px` (`sm`) | **Phone, one column.** Horizontal strips scroll sideways; `tl-set-row` wraps; every control ≥ 44 px. |
-| `640–1023px`     | Single column, centred, `max-w-3xl`–`5xl`.                                                           |
-| `≥ 1024px`       | Rail + content; keyboard-first density (40 px controls are fine again).                              |
+| `< 640px` (`sm`) | **Phone, one column.** Horizontal strips scroll sideways; `tl-set-row` wraps; frequent actions ≥ 44 px. |
+| `640–1023px`     | Single column, centred, `max-w-3xl`–`5xl`, bottom navigation retained.                                 |
+| `≥ 1024px`       | Rail + content; keyboard-first density, with content reflow when the rail collapses.                  |
 
 ## Hard rules (enforced by audit, see `tests/` + the manual 390×844 run)
 
@@ -116,8 +116,11 @@ over the screen: no rail, no tab bar, and an explicit way out.
   bar's bottom inset. The celebration banner clears both.
 - One-hand reach: primary actions live in the bottom half of each card, and the
   navigation is at the bottom of the screen, under the thumb.
-- Last audit 2026-09-29 at 414×896: 0 buttons < 44 px, 0 inputs < 16 px,
-  `scrollWidth == 397 ≤ 414`. Re-audit pending on the new shell (390×844).
+- Latest automated browser audit (2026-10-01): no horizontal overflow at 320, 360,
+  390, 414, 768, 1024, 1280 or 1440 px; at 390×844, tab bar items measured 65×71 px,
+  five visible inputs were ≥16 px, and nine ZEN tap targets were ≥44 px. This is Chromium
+  responsive evidence, **not** a physical iPhone/Safari keyboard test. The owner's LAN
+  check with the iOS keyboard open remains outstanding.
 
 ### Desktop / PC (keyboard first)
 
@@ -151,41 +154,61 @@ over the screen: no rail, no tab bar, and an explicit way out.
   with `aria-expanded`, and only the exercise that is next is open by default
   (`autoOpen`). Collapsing hides the prescription, the reasons and the logging
   row — never the `hechas / planificadas` counter, which is what a scan needs.
+- **ZEN effort** = optional `<details>` control, collapsed by default. The primary
+  `Registrar serie` path never requires effort; choosing one of the five effort
+  values is an explicit alternate action that logs the current set immediately.
+  Keep the summary ≥44 px on phones and never let the sticky action visually hide it.
 - **Metric tile** = `MetricTile` (a value, a one-line why, and a `Sparkline` /
   `MiniBars` when a series exists). No tile shows a bare `—`.
 - **Period switch** = `Segmented` (Semana · Mes · Trimestre) — the chosen value
   is visible without opening anything.
-- **Body-map lens** = two `Chip`s (Entrenamiento · Objetivos) on the analysis
-  card head; in the goal lens a second chip row picks the source. Editing reps
-  per set = the inline editor on the SlotCard prescription and the ZEN facts
-  label (`slot.reps*` keys); `yours` marks an override, `Restablecer` clears it.
+- **Current body-map controls** = two `Chip`s (`Entrenamiento` · `Objetivos`)
+  on the analysis card; in the goal lens a second chip row picks the source.
+  This is the shipped volume/anthropometric-goal behavior, not a strength-vs-norm
+  map. The separate whole-body `Condición física` card does not measure strength
+  per muscle. A per-family external-strength lens is pending evidence and owner
+  approval; do not silently relabel either existing mode. Revisit the number and
+  placement of controls only with documented semantics and owner direction.
+  Editing reps per set = the inline editor on the SlotCard prescription and the
+  ZEN facts label (`slot.reps*` keys); `yours` marks an override, `Restablecer`
+  clears it.
 - **Tabs** = `TabStrip`; a tab that cannot work yet is **disabled with its
   reason written on it**, never hidden and never faked.
 
-## The body map, with two lenses (`features/stats/BodyMap.tsx`)
+## The body map and the separate condition card
 
 The anatomy is the **owner's line art** (`public/traininglab-body-map.png`); a
 companion pixel-ID mask (`-regions.png`, one grey value per family) lets a
 React canvas recolour the real drawing without redrawing it. It is a
-**diagram**, and the screen says so. Two lenses, one figure:
+**diagram**, and the screen says so. Preserve the exact semantics of the
+currently shipped two lenses while the new per-family strength requirement is
+researched:
 
-- **Entrenamiento** (default). Colour = estimated hard-set stimulus for the
+- **Current `Entrenamiento`** (default). Colour = estimated hard-set stimulus for the
   period (primary 1 · secondary 0.66 · accessory 0.33; warm-ups never count),
   **relative to your own best-covered family** (`familyBalance`). Comparing a
   person against other people needs cited normative data; inventing a
   percentile is the one thing this app refuses.
-- **Objetivos** (2026-09-29 e). Colour = how close the family is to a target
+- **Current `Objetivos`** (2026-09-29 e). Colour = how close the family is to a target
   circumference: 100 = at target, red = far from it. Three declared sources,
   in the user's order: BodyLab's exported measures, per-family targets set in
   Ajustes → Objetivos corporales, or the golden-ratio preset anchored on the
   waist (no waist → the preset refuses and says why). A family with no usable
   target renders grey — an absent number, never a fabricated one.
+- **Separate `Condición física` card** (reported 2026-09-30): whole-body axes
+  with published references (Cooper, %BF, WHtR, FFMI). It is not painted onto
+  the muscle regions and does not turn a whole-body norm into local muscle force.
+- **Future external-strength lens:** pending validation of a published source,
+  exercise/protocol mapping and owner approval. A compound lift score must not
+  be presented as measured strength of every participating muscle. Unsupported
+  regions remain neutral and explain why. See `TRAININGLAB_UI_PLAN.md` §9,
+  `RESEARCH_IDEALS_BY_SPORT.md` and `BUFFY_IMPLEMENTATION_BRIEF.md`.
 - Every family stays reachable without colour: a `<select>` picker, a tap on
   the mask, and the selection read out in an `aria-live` line.
 - **No data is a colour too** (`#d6dce1`), and it is not a band: grey means
   "nothing here" (or "no target yet"), red means "at the bottom of the band".
-- The legend names the five bands and flips with the lens — same gradient,
-  opposite direction, so the mode switch is readable at a glance. The family
+- The legend names the bands and reflects the active lens' actual meaning — do
+  not reuse a color direction or label if that would conflate different scales. The family
   list beside the map carries the numbers as text; the map is an accelerator,
   never the only way to read them.
 - The goal lens estimates a **shape against a goal**. It does not measure
@@ -197,7 +220,7 @@ React canvas recolour the real drawing without redrawing it. It is a
 - **No light theme yet** (owner's decision, 2026-09-29 c): dark-only, and the
   toggle from the mockups stays hidden until there is a light palette to switch
   to. The token layer is already the only place a theme would live.
-- No hamburger navigation: the five destinations are always visible (rail or tab
+- No hamburger navigation: all six destinations are always visible (rail or tab
   bar).
 - No infinite scroll: everything is cards; the phone shows ≤ 2 screens of a
   session before a natural break.

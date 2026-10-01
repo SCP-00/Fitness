@@ -12,11 +12,14 @@
 import { useRef, useState } from "react";
 import {
   AlertTriangle,
+  Check,
   Info,
+  Pencil,
   Plus,
   Repeat,
   Trash2,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { parseNumberInput } from "../../lib/parse-num";
 import { fromKg, toKg, type WeightUnit } from "../../lib/units";
@@ -46,6 +49,7 @@ export function SlotCard({
   unit = "kg",
   onAddSet,
   onRemoveSet,
+  onEditSet,
   onSwap,
   onRepRange,
   customReps = null,
@@ -63,6 +67,11 @@ export function SlotCard({
   unit?: WeightUnit;
   onAddSet: (row: PlannedRow, weight: number | null, reps: number) => void;
   onRemoveSet: (id: string) => void;
+  /** Rewrite a logged set's weight (kg canonical) and reps, in place. */
+  onEditSet?: (
+    id: string,
+    patch: { weight: number | null; reps: number | null },
+  ) => void;
   onSwap: (fromId: string, toId: string) => void;
   /** Sets (or clears, with `null`) the user's rep range for this exercise. */
   onRepRange?: (range: { min: number; max: number } | null) => void;
@@ -80,6 +89,11 @@ export function SlotCard({
   const [editingReps, setEditingReps] = useState(false);
   const [repDraftMin, setRepDraftMin] = useState("");
   const [repDraftMax, setRepDraftMax] = useState("");
+  // Inline editing of an already logged set (2026-09-30, P0 audit): the row
+  // opens in place with weight/reps in the display unit; storage stays kg.
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editWeight, setEditWeight] = useState("");
+  const [editReps, setEditReps] = useState("");
   const techLvl = getExerciseTechnique(row.exerciseId)?.techniqueLevel ?? null;
 
   const isCardio = row.cardioMin !== undefined;
@@ -90,6 +104,34 @@ export function SlotCard({
     min: row.repsMin,
     max: row.repsMax,
     custom: false,
+  };
+
+  const startEdit = (set: TLSet) => {
+    setEditId(set.id);
+    setEditWeight(
+      set.weight === null
+        ? ""
+        : String(Math.round(fromKg(set.weight, unit) * 10) / 10),
+    );
+    setEditReps(set.reps === null ? "" : String(set.reps));
+  };
+
+  const submitEdit = () => {
+    if (!onEditSet || editId === null) return;
+    const current = todaySets.find((s) => s.id === editId);
+    const w = parseNumberInput(editWeight);
+    const r = parseNumberInput(editReps);
+    // Empty weight means "no load" (bodyweight); invalid input keeps the old
+    // value rather than silently writing a wrong number.
+    const weightKg =
+      editWeight.trim() === ""
+        ? null
+        : w === null
+          ? (current?.weight ?? null)
+          : toKg(w, unit);
+    const repsNext = r !== null && r > 0 ? r : (current?.reps ?? null);
+    onEditSet(editId, { weight: weightKg, reps: repsNext });
+    setEditId(null);
   };
 
   const submitRepRange = () => {
@@ -322,32 +364,94 @@ export function SlotCard({
           </p>
         )}
 
-        {/* Logged sets today */}
+        {/* Logged sets today — deletable, and editable in place. */}
         {todaySets.length > 0 && (
           <ul className="mt-3 space-y-1">
-            {todaySets.map((s, i) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between text-sm bg-[var(--tl-surface-2)] rounded-lg px-3 py-1.5"
-              >
-                <span className="text-[var(--tl-text-muted)] tabular-nums">
-                  #{i + 1}
-                </span>
-                <span className="font-medium tabular-nums">
-                  {s.weight === null
-                    ? "—"
-                    : `${Math.round(fromKg(s.weight, unit) * 10) / 10} ${unit}`}{" "}
-                  × {s.reps ?? "—"}
-                </span>
-                <button
-                  onClick={() => onRemoveSet(s.id)}
-                  className="p-1 text-[var(--tl-border-strong)] hover:text-red-400 rounded tl-focusable"
-                  aria-label={t("common.delete")}
+            {todaySets.map((s, i) => {
+              if (editId === s.id) {
+                return (
+                  <li
+                    key={s.id}
+                    className="flex items-center gap-2 text-sm bg-[var(--tl-surface-2)] rounded-lg px-3 py-1.5"
+                  >
+                    <span className="text-[var(--tl-text-muted)] tabular-nums">
+                      #{i + 1}
+                    </span>
+                    {!isCardio && (
+                      <input
+                        value={editWeight}
+                        onChange={(e) => setEditWeight(e.target.value)}
+                        inputMode="decimal"
+                        aria-label={t("log.weight")}
+                        className="tl-input w-16 px-2 py-1 text-sm tabular-nums"
+                      />
+                    )}
+                    <span className="text-[var(--tl-text-muted)]">×</span>
+                    <input
+                      value={editReps}
+                      onChange={(e) => setEditReps(e.target.value)}
+                      inputMode="numeric"
+                      aria-label={t("log.reps")}
+                      className="tl-input w-14 px-2 py-1 text-sm tabular-nums"
+                    />
+                    <div className="ml-auto flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={submitEdit}
+                        className="p-1.5 text-[var(--tl-accent)] rounded tl-focusable"
+                        aria-label={t("common.save")}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditId(null)}
+                        className="p-1.5 text-[var(--tl-text-muted)] rounded tl-focusable"
+                        aria-label={t("common.cancel")}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </li>
+                );
+              }
+              return (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between text-sm bg-[var(--tl-surface-2)] rounded-lg px-3 py-1.5"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </li>
-            ))}
+                  <span className="text-[var(--tl-text-muted)] tabular-nums">
+                    #{i + 1}
+                  </span>
+                  <span className="font-medium tabular-nums">
+                    {s.weight === null
+                      ? "—"
+                      : `${Math.round(fromKg(s.weight, unit) * 10) / 10} ${unit}`}{" "}
+                    × {s.reps ?? "—"}
+                  </span>
+                  <div className="flex items-center gap-0.5">
+                    {onEditSet && (
+                      <button
+                        type="button"
+                        onClick={() => startEdit(s)}
+                        className="p-1 text-[var(--tl-border-strong)] hover:text-[var(--tl-accent)] rounded tl-focusable"
+                        aria-label={t("common.edit")}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onRemoveSet(s.id)}
+                      className="p-1 text-[var(--tl-border-strong)] hover:text-red-400 rounded tl-focusable"
+                      aria-label={t("common.delete")}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
 

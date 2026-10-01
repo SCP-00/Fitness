@@ -48,6 +48,16 @@ container, not the navigation model. The following decisions are therefore norma
 - **Mobile favors horizontal compression.** KPI tiles and context tags use short,
   thumb-scrollable strips; the fixed bottom bar remains the global navigation; primary
   logging controls keep a 44 px target. Desktop retains the two-column composition.
+- **Keyboard-aware logging (QA follow-up).** On a phone, ZEN keeps the primary action in
+  normal flow while the keyboard is closed so it cannot cover optional controls; focusing
+  load/reps makes the action sticky. Android uses `interactive-widget=resizes-content`,
+  while iOS Safari is handled through `visualViewport` and a keyboard-derived bottom offset.
+  This is code-level/browser-emulation support, not proof on a physical iPhone: the
+  keyboard-open state still needs manual LAN verification on the owner's device. Effort
+  capture remains optional; `Registrar serie` works without selecting a fatigue value.
+- **Current navigation has six destinations.** Semana is a first-class route alongside
+  Inicio, Ejercicios, Entrenamiento, Progreso and Ajustes; do not move its plan back into
+  Inicio as a duplicate dashboard.
 
 These are implementation decisions derived from the owner's `Boseto_preview.html` (free to
 reuse) and the reference captures in `docs/reference/traininglab-design/` (gitignored on
@@ -74,7 +84,7 @@ token swap.
 
 ```
 bg        #080b0e   surface  #10151a   surface-2 #151b21   surface-3 #1b2229
-border    #29313a   text     #f3f5f7   soft      #9ba5af   muted     #68727d
+border    #29313a   text     #f3f5f7   soft      #9ba5af   muted     #8b96a1 (current token; see UI_DESIGN.md)
 accent    #ff7300   accent-l #ff9447   accent-d  #c75200   on-accent #08121a
 success   #39d98a   warning  #ffc857   danger    #ff4f4f   info      #46a8ff
 radius    16px card / 10px control     sidebar   245px open / 78px compact (≥ 1024px)
@@ -99,11 +109,12 @@ radius    16px card / 10px control     sidebar   245px open / 78px compact (≥ 
 Today: one column, two panes (`Entrenar` / `Ajustes`) behind a switch, 1 559 lines in a
 single file. It cannot hold a library, a logger, progress and a planner.
 
-**Five real destinations**, hash-routed, no new dependency:
+**Six real destinations**, hash-routed, no new dependency:
 
 | Route                               | Destination       | Answers                                    |
 | ----------------------------------- | ----------------- | ------------------------------------------ |
 | `#/hoy`                             | **Inicio**        | ¿Qué toca hoy y con cuánta energía estoy?  |
+| `#/semana`                          | **Semana**        | ¿Cómo se reparte el plan y por qué?        |
 | `#/ejercicios`, `#/ejercicios/<id>` | **Ejercicios**    | ¿Qué puedo hacer y cómo se ejecuta?        |
 | `#/sesion`                          | **Entrenamiento** | Empezar y registrar (ZEN vive aquí)        |
 | `#/progreso`, `#/progreso/<tab>`    | **Progreso**      | ¿Estoy mejorando y cómo voy de equilibrio? |
@@ -209,8 +220,9 @@ collapsible. Concretely, three collapsible regions — never invisible, never in
 - **② The set table** is the spine: `SERIE · ANTERIOR · KG · REPS · ✓`. The `ANTERIOR`
   column is the single most valuable thing on screen and is already in the mockup and the
   plan. Set-type badges: `C` calentamiento (muted, excluded from volume) · normal ·
-  `D` dropset · `F` fallo. `Esfuerzo` per set (RIR 1–5, written out: "quedan 2 en
-  reserva") is the primary effort input, thumb-sized.
+  `D` dropset · `F` fallo. Effort is optional and collapsed by default to protect the
+  primary `Registrar serie` action from competition on a phone. Expand `Esfuerzo
+  (opcional)` to log RPE 1–5 in one tap; the effort choice itself registers that set.
 - **③ Rails**: on desktop, `Enfócate` / `Guía rápida` / `Registro actual` / `Notas` as
   `<details>` cards. On the phone they become one sheet behind `⏱` and `…`.
 - **④ Rest bar**: sticky at the bottom, owned by the timer, with `+15 s`, `⏭ saltar` and
@@ -225,14 +237,24 @@ collapsible. Concretely, three collapsible regions — never invisible, never in
 - **Period and metric selectors** (`Peso · Fuerza · Volumen · Medidas`) with an explicit
   date range in small type under the headline. Never a bare percentage with no anchor.
 - **KPI tiles**: sesiones, series, días entrenados, PRs.
-- **Mapa muscular (2D)** — the owner's front/back line-art image with a pixel-aligned
-  region mask, painted live from the selected period's own logged working sets. Set credit
-  follows catalog involvement: primary = 1 equivalent set, secondary = 0.66, accessory =
-  0.33; warm-ups are excluded. Colours are relative to the user's highest-covered family
-  in that period, not a population norm. Raw kg are not compared across muscle groups,
-  because exercise leverage and equipment make that comparison misleading. The map does
-  not claim to measure muscle size, hypertrophy, pain or recovery. It needs no BodyLab
-  data and uses the same exercise catalogue and family mapping as the planner.
+- **Mapa muscular (2D), estado actual** — la figura frontal/posterior con máscara pinta
+  exposición de series del periodo; la lente `Objetivos` muestra cercanía a metas
+  antropométricas. La tarjeta separada `Condición física` (reportada como implementada el
+  2026-09-30) compara ejes de cuerpo completo con referencias; **no mide fuerza de cada
+  músculo ni reemplaza el mapa**. Estos estados no son la solución final pedida por el
+  dueño.
+- **Dirección pendiente del mapa:** la vista principal solicitada es fuerza observada o
+  estimada frente a una norma externa publicada, con una vista de exposición por series.
+  La fuerza solo se compara para el mismo ejercicio y protocolo; no comparar kg entre
+  grupos ni atribuir automáticamente la fuerza de un compuesto a cada músculo. Aplicar
+  sexo/edad/peso/estatura únicamente si la fuente los valida; neutral/sin referencia cuando
+  no exista comparación defendible. Mantener `Objetivos` antropométricos distinto hasta
+  decisión del dueño. Requiere fuente, cobertura, explicación visible y aprobación antes
+  de llevar cambios del prototipo a la app (ver §9 y `docs/BUFFY_IMPLEMENTATION_BRIEF.md`).
+- **Exposición (cuando esté activa):** créditos del catálogo (primario 1, secundario 0.66,
+  accesorio 0.33); excluir calentamientos y describirla como exposición, no hipertrofia,
+  recuperación, fuerza ni crecimiento. La vista utiliza el mismo catálogo/familias del
+  planificador.
 - **Volumen por grupo muscular**: stacked bars split into series efectivas /
   complementarias / accesorias — that split maps 1:1 onto `MuscleInvolvement.intensity`
   (3/2/1) which the catalog already carries.
@@ -386,13 +408,29 @@ telemetry · any borrowed artwork · any number from a source we cannot cite.
 | **P2 · Inicio** ✅                                         | hero, KPI strip, week strip, next-up, right rail, readiness collapsed                                             | the screen you see 20× a day                                                                                        |
 | **P3 · ZEN** ✅                                            | set table with `ANTERIOR`, set types, effort per set, sticky rest bar, collapsible rails, next-up                 | the screen you use with one hand, mid-set                                                                           |
 | **P4 · Ejercicios + ficha** ✅ _(`Rango` gated on §9)_     | list, filters, four tabs; `Rango` gated on §9                                                                     | the library makes ZEN's _Sustituir_ fast                                                                            |
-| **P5 · Progreso** ✅ _base_; ⏳ _strength-reference lens_  | selectors, `TrendChart`, KPIs, current volume/goal lenses, volume stack, records, coach cards; published-standard strength lens is a new research-gated addition | needs P1's components and real logged data to look right |
+| **P5 · Progreso** ✅ _base + condición whole-body reportada_; ⏳ _strength-reference lens_ | selectors, `TrendChart`, KPIs, volume/goal lenses, volume stack, records, coach cards, separate `ConditionCard`; published-standard per-family strength lens is research/owner-gated | needs evidence and a defensible exercise-to-region mapping, not just UI work |
 | **P6 · Media** ⏳                                          | credits manifest, fetch script, curated committed subset, cascade rules                                           | last, and independent: the layout must already look finished without it                                             |
 
 Every phase: `tsc -b`, root + web tests, lint, a build, screenshots at both widths, this
 file updated if a rule moved, one commit.
 
-## 15. State of the build (2026-09-29 e)
+## 15. State of the build (baseline 2026-09-29 e; update 2026-09-30)
+
+**Current UI status (2026-10-01, supersedes the screen inventory below):** TrainingLab now
+has six hash-routed destinations, including the dedicated Semana screen. Inicio has been
+reduced to today's decision and session, with broader week/analytics content moved to its
+own destinations. ZEN's primary action enters sticky mode when a numeric field is focused
+and has an Android viewport hint plus an iOS `visualViewport` offset; physical-device behavior with the keyboard open is not yet
+verified. Deleting a set offers an 8-second undo and edits are inline. The ZEN copy regression
+is fixed and covered by an ES/EN test. Optional effort is collapsed by default; the primary
+action stays in normal mobile flow unless a numeric field is focused, when it becomes sticky.
+The corrected browser audit passed 97 checks with zero failures, including simulated
+320–1440 px layouts. A production build and typecheck also pass. Physical iOS keyboard
+verification remains outstanding.
+
+The authoritative palette, current navigation count and responsive breakpoints live in
+[`UI_DESIGN.md`](UI_DESIGN.md). Previous baseline notes below are retained for history and
+must not be read as a description of the current Inicio layout.
 
 **Done and verified:** the modular shell (`app/App.tsx`, `app/router.ts`,
 `app/nav.ts`) with `app/store.tsx` owning the state the monolith used to hold;
@@ -409,13 +447,23 @@ exercise cards, mobile KPI strips. 15 root tests pin the library logic and
 `tests/training/test_body_map.test.ts` pins both map lenses plus the rep
 overrides.
 
-**New owner direction (2026-09-30):** the current volume/goal map is not yet the
-requested strength-standard heatmap. The primary strength-vs-published-reference
-lens and alternate volume lens need source validation and implementation. The existing
-anthropometric goal lens must not be silently relabelled or removed; its placement is an
-owner decision. Until research is approved, existing app behavior remains unchanged.
+**Reported follow-up (2026-09-30, handoff c):** Progreso gained a separate
+`ConditionCard` with four whole-body axes (Cooper, %BF, WHtR, FFMI), visible bands/source
+and no-data states. The handoff reports 871 root tests, 115 web tests, lint/typecheck and
+Vite builds passing; Tauri installer was not rebuilt in that session. This card does not
+represent per-family strength. Re-run checks before relying on that snapshot.
 
-**Pending:** (1) strength-reference research and lens; (2) the media manifest and the curated photo subset (§8);
+**Owner direction (2026-09-30):** the current volume/goal map is not yet the requested
+strength-standard heatmap. The primary strength-vs-published-reference lens and alternate
+volume lens need source validation and implementation. The existing anthropometric goal
+lens must not be silently relabelled or removed; its placement is an owner decision.
+Research leads in `RESEARCH_IDEALS_BY_SPORT.md` cover whole-body condition and some
+competitive-lifting standards, but do not establish a universal height-aware, per-muscle
+strength norm. Until a defensible source/mapping is approved, current app behavior remains
+unchanged and unsupported regions must not be colored as weak/strong.
+
+**Pending:** (1) strength-reference research, source-to-lift/protocol-to-region coverage,
+owner decision and independent prototype review; (2) the media manifest and the curated photo subset (§8);
 (3) `Rango` (§9), which waits for a cited source; (4) `Historial` becomes a chart
 when there is history to chart; (5) `src/features/today/ui.tsx`, the deprecated
 re-export shim, disappears with its last import.

@@ -23,6 +23,9 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm --filter web typecheck && pnpm --filter \"./bodylab/core/**\" --no-bail typecheck",
     "clean": "pnpm -r exec rm -rf dist node_modules",
+    "clean:tauri": "cargo clean --manifest-path bodylab/apps/desktop/src-tauri/Cargo.toml && cargo clean --manifest-path traininglab/apps/desktop/src-tauri/Cargo.toml",
+    "data": "node scripts/fitness-data-cli.mjs",
+    "audit:behavior": "node scripts/audit-app-behavior.mjs",
     "check": "pnpm typecheck && pnpm test && pnpm --filter web test && pnpm --filter web test:e2e"
   },
   "devDependencies": {

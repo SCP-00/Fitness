@@ -57,6 +57,13 @@ export const IconDumbbell = icon(
 
 export const IconPlay = icon(<path d="M8 5.5v13l10-6.5z" />);
 
+export const IconCalendar = icon(
+  <>
+    <rect x="3.75" y="5" width="16.5" height="15" rx="2.5" />
+    <path d="M3.75 9.6h16.5M8.4 3.5V6M15.6 3.5V6" />
+  </>,
+);
+
 export const IconChart = icon(
   <>
     <path d="M4 20h16" />

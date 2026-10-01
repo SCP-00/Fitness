@@ -65,5 +65,15 @@ resources/cache/*
 # Misc
 *.local
 
+# Python tooling (`ml/laya` — training pipeline; never needed to build the apps)
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+# Local corpora and training runs: data, not source. Manifests under docs/ are
+# what gets committed, so a run stays reproducible without the weights.
+ml/laya/data/
+ml/laya/runs/
+
 # V1 status (generated)
 V1_STATUS.md

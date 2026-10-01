@@ -1,10 +1,11 @@
 /**
  * The shell — where the app decides what the user is looking at.
  *
- * One definition of the five destinations drives both navigations: a fixed rail
+ * One definition of the six destinations drives both navigations: a fixed rail
  * from 1024 px up, a bottom tab bar below it. They come from the same list
  * (`app/nav.ts`), so a destination can never exist in one and be missing from the
- * other, and neither contains a screen.
+ * other, and neither contains a screen. Both read their `href` from
+ * `SEGMENT` in `app/router` — the URL is written in exactly one place.
  *
  * The two containers carry their own responsive visibility in CSS
  * (`.tl-rail` / `.tl-tabbar`) rather than through utility classes: the design
@@ -14,18 +15,32 @@
  * @module app/App
  */
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { getExerciseById } from "@fitness/bodylab-exercises";
 import { DESTINATIONS } from "./nav";
-import { useRoute, type Route, type RouteId } from "./router";
+import { SEGMENT, useRoute, type Route, type RouteId } from "./router";
 import { TrainingLabProvider } from "./store";
 import { t } from "../lib/i18n";
-import TodayScreen from "../screens/TodayScreen";
-import ExercisesScreen from "../screens/ExercisesScreen";
-import ExerciseDetailScreen from "../screens/ExerciseDetailScreen";
-import SessionScreen from "../screens/SessionScreen";
-import ProgressScreen from "../screens/ProgressScreen";
-import SettingsScreen from "../screens/SettingsScreen";
+
+const TodayScreen = lazy(() => import("../screens/TodayScreen"));
+const WeekScreen = lazy(() => import("../screens/WeekScreen"));
+const ExercisesScreen = lazy(() => import("../screens/ExercisesScreen"));
+const ExerciseDetailScreen = lazy(() => import("../screens/ExerciseDetailScreen"));
+const SessionScreen = lazy(() => import("../screens/SessionScreen"));
+const ProgressScreen = lazy(() => import("../screens/ProgressScreen"));
+const SettingsScreen = lazy(() => import("../screens/SettingsScreen"));
+
+function ScreenFallback() {
+  return (
+    <div
+      className="flex items-center justify-center min-h-[40vh] p-8 text-center"
+      role="status"
+      aria-label="Cargando"
+    >
+      <div className="w-8 h-8 border-2 border-[var(--tl-border)] border-t-[var(--tl-accent)] rounded-full animate-spin" />
+    </div>
+  );
+}
 
 export default function App() {
   const route = useRoute();
@@ -59,7 +74,9 @@ export default function App() {
           onToggle={() => setRailOpen((value) => !value)}
         />
         <main className="tl-main">
-          <Screen route={route} />
+          <Suspense fallback={<ScreenFallback />}>
+            <Screen route={route} />
+          </Suspense>
         </main>
         <TabBar active={route.id} />
       </div>
@@ -85,6 +102,8 @@ function Screen({ route }: { route: Route }) {
     }
     case "today":
       return <TodayScreen />;
+    case "week":
+      return <WeekScreen />;
     case "session":
       return <SessionScreen />;
     case "progress":
@@ -142,7 +161,7 @@ function SideRail({
           return (
             <a
               key={dest.id}
-              href={`#/${dest.id === "today" ? "hoy" : dest.id === "session" ? "sesion" : dest.id === "exercises" ? "ejercicios" : dest.id === "progress" ? "progreso" : "ajustes"}`}
+              href={`#/${SEGMENT[dest.id]}`}
               aria-current={on ? "page" : undefined}
               className={`tl-nav-item tl-focusable ${on ? "is-active" : ""}`}
               title={t(dest.labelKey)}
@@ -173,15 +192,6 @@ function SideRail({
 /* ══════════════════════════════════════════════════════════════════════════
    Phone tab bar
    ══════════════════════════════════════════════════════════════════════════ */
-
-/** Route segment per destination, for plain `<a href>` navigation. */
-const SEGMENT: Record<RouteId, string> = {
-  today: "hoy",
-  exercises: "ejercicios",
-  session: "sesion",
-  progress: "progreso",
-  settings: "ajustes",
-};
 
 function TabBar({ active }: { active: RouteId }) {
   return (

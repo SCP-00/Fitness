@@ -44,5 +44,20 @@ export default defineConfig({
     // WebView2 and every modern browser handle this; the app uses top-level
     // await-free ESM and no legacy syntax.
     target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+          if (id.includes('core/exercises')) {
+            return 'catalog-exercises';
+          }
+        },
+      },
+    },
   },
 });

@@ -1,0 +1,33 @@
+[project]
+name = "gym-decision"
+version = "0.1.0"
+description = "Typed-decision (LAYA-class) training and evaluation tooling for TrainingLab"
+requires-python = ">=3.10"
+
+# Deliberately empty. The dataset builder, the Python mirror of the app's
+# contract, the metrics and the temperature grid all run on a bare Python —
+# which is what lets `evaluate --model none` measure the baseline on any
+# machine, including CI. Training pulls its own weight from the `train` extra,
+# so a checkout that only wants to score a run does not download 2.5 GB of
+# Torch to do it.
+dependencies = []
+
+[project.optional-dependencies]
+# Matches the family's own floor: transformers 5.x and torch 2.14 need 3.10+.
+train = [
+  "torch>=2.4",
+  "transformers>=4.48",
+  "huggingface_hub>=0.24",
+  "safetensors",
+  "numpy",
+  "laya>=0.3",
+]
+onnx = ["onnxruntime", "laya[onnx]"]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.setuptools]
+packages = ["gym_decision"]

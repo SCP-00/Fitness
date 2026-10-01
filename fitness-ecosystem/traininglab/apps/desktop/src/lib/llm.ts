@@ -284,6 +284,51 @@ export const TOOL_SPECS: ToolSpec[] = [
   {
     type: "function",
     function: {
+      name: "report_fatigue_and_query_safe",
+      description:
+        "Report soreness, fatigue, or joint pain in specific muscle groups/joints to receive safe, alternative exercises from the user's available gear that completely avoid stressing those compromised areas.",
+      parameters: {
+        type: "object",
+        properties: {
+          painOrFatigueAreas: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Anatomical areas with pain or fatigue, e.g. 'upper_chest', 'front_shoulder', 'biceps_tendon', 'rotator_cuff', 'lower_back', 'knees', 'elbows'.",
+          },
+          targetFocus: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Optional fresh muscle groups or patterns the user wants to prioritize instead, e.g. 'abs', 'obliques', 'legs', 'lats'.",
+          },
+        },
+        required: ["painOrFatigueAreas"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "swap_exercise_safe",
+      description:
+        "Swap one specific exercise in the current plan for a biomechanically safe alternative without aggravating the reported soreness.",
+      parameters: {
+        type: "object",
+        properties: {
+          currentExerciseId: { type: "string" },
+          reason: { type: "string" },
+          targetMuscle: { type: "string" },
+        },
+        required: ["currentExerciseId", "reason"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "propose_session",
       description:
         "FINAL ANSWER tool. Propose the session to show. Only exercises from list_available_exercises are accepted; the app validates the proposal against the equipment, the time budget and the hard rules, and rejects it with reasons otherwise.",
@@ -429,8 +474,8 @@ function clampInt(v: unknown, lo: number, hi: number): number | null {
 }
 
 /** The system prompt: rules first, data second — the model's actual job. */
-export function buildSystemPrompt(): string {
-  return [
+export function buildSystemPrompt(extraContext?: string): string {
+  const base = [
     "You are the coaching layer of TrainingLab, a 100% local fitness app.",
     "You NEVER invent exercises, equipment or numbers: everything you propose must come from the tools.",
     "The deterministic planner has already built a session from real measurements; your job is to improve it",
@@ -440,6 +485,113 @@ export function buildSystemPrompt(): string {
     "family twice in one session; leave more reps in reserve (higher RIR) when readiness is low; prefer the",
     "weakest muscle family first. Finish by calling propose_session. Be concise.",
   ].join(" ");
+  if (extraContext) {
+    return `${base} ${extraContext}`;
+  }
+  return base;
+}
+
+/** Biomechanical constraints derived from reported pain or soreness. */
+export interface BiomechanicalConstraint {
+  contraindicatedPatterns: string[];
+  excludeJoints: string[];
+  excludeMuscles: string[];
+  recommendedPatterns: string[];
+  clinicalReason: string;
+}
+
+/**
+ * Evaluates reported pain/soreness keywords and maps them to biomechanical
+ * patterns to avoid and safe alternatives to prioritize.
+ */
+export function evaluateBiomechanicsAndFatigue(
+  reportedIssues: string[],
+): BiomechanicalConstraint {
+  const issuesLower = reportedIssues.map((s) => s.toLowerCase());
+  const hasChestOrFrontShoulder = issuesLower.some(
+    (s) =>
+      s.includes("pecho") ||
+      s.includes("chest") ||
+      s.includes("hombro") ||
+      s.includes("shoulder") ||
+      s.includes("mancuerna") ||
+      s.includes("biceps") ||
+      s.includes("clavicular") ||
+      s.includes("rotator"),
+  );
+
+  const hasLowerBack = issuesLower.some(
+    (s) =>
+      s.includes("lumbar") ||
+      s.includes("espalda baja") ||
+      s.includes("lower back") ||
+      s.includes("spine"),
+  );
+
+  const hasKnee = issuesLower.some(
+    (s) => s.includes("rodilla") || s.includes("knee") || s.includes("rotuliana"),
+  );
+
+  if (hasChestOrFrontShoulder) {
+    return {
+      contraindicatedPatterns: [
+        "horizontal_push",
+        "vertical_push",
+        "shoulder_flexion",
+        "shoulder_abduction",
+      ],
+      excludeJoints: ["shoulder"],
+      excludeMuscles: ["chest", "deltoid_anterior", "biceps"],
+      recommendedPatterns: [
+        "core_flexion",
+        "core_anti_extension",
+        "core_anti_lateral",
+        "core_rotation",
+        "squat",
+        "lunge",
+        "knee_flexion",
+        "knee_extension",
+        "plantar_flexion",
+      ],
+      clinicalReason:
+        "Sobrecarga o molestia en la inserción clavicular del pectoral mayor, deltoides anterior o tendón bicipital por torque excéntrico con mancuernas. Se vetan empujes y aperturas que estiren la articulación glenohumeral. Se prioriza core/abdomen y tren inferior.",
+    };
+  }
+
+  if (hasLowerBack) {
+    return {
+      contraindicatedPatterns: ["hinge"],
+      excludeJoints: ["lower_back"],
+      excludeMuscles: ["spinal_erectors"],
+      recommendedPatterns: [
+        "core_anti_extension",
+        "lunge",
+        "knee_flexion",
+        "knee_extension",
+      ],
+      clinicalReason:
+        "Molestia o sobrecarga axial lumbar. Se vetan cargas axiales y bisagras pesadas. Se prioriza estabilidad de core neutro y trabajo unilateral de piernas.",
+    };
+  }
+
+  if (hasKnee) {
+    return {
+      contraindicatedPatterns: ["knee_extension", "lunge"],
+      excludeJoints: ["knee"],
+      excludeMuscles: ["quadriceps"],
+      recommendedPatterns: ["hinge", "hip_extension", "core_flexion"],
+      clinicalReason:
+        "Molestia rotuliana. Se reduce la flexión profunda de rodilla con carga anterior. Se prioriza cadena posterior y core.",
+    };
+  }
+
+  return {
+    contraindicatedPatterns: [],
+    excludeJoints: [],
+    excludeMuscles: [],
+    recommendedPatterns: ["core_flexion", "core_anti_extension"],
+    clinicalReason: "Adaptación general por fatiga autoreportada.",
+  };
 }
 
 /** One-shot user request (also used by the "chat to plan" mode). */
@@ -452,3 +604,4 @@ export function buildUserRequest(request: string, contextCsv: string): string {
     request,
   ].join("\n");
 }
+

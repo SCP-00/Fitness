@@ -27,6 +27,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -57,6 +58,7 @@ import {
   buildUserRequest,
   chatWithTools,
   validateProposal,
+  evaluateBiomechanicsAndFatigue,
   type ChatMessage,
 } from "../lib/llm";
 import {
@@ -68,14 +70,18 @@ import {
   loadSessions,
   loadSettings,
   loadSets,
+  normalizeSettings,
   saveDecisionModel,
   saveHealthRecords,
   savePayload,
   saveReadiness,
   saveSession,
+  saveSessionsMany,
   saveSet,
+  saveSetsMany,
   saveSettings,
 } from "../lib/db";
+import { buildBackup, mergeById, parseBackup } from "../lib/backup";
 import { getLanguage, setLanguage, t, tInterp } from "../lib/i18n";
 import {
   configureSounds,
@@ -105,7 +111,6 @@ import RestTimer from "../features/today/RestTimer";
 import type { CoachResult } from "../features/today/CoachPanel";
 import type { TLSession, TLSet, TLSettingsData } from "../lib/types";
 import { applyRepOverrides, withRepOverride } from "../lib/settings";
-
 interface RestState {
   key: string;
   seconds: number;
@@ -181,6 +186,15 @@ export interface TrainingLabStore {
     opts?: { warmup?: boolean; rpe?: number },
   ) => void;
   removeSet: (id: string) => void;
+  /** Rewrite a logged set's weight (kg) and reps, in place. */
+  editSet: (
+    id: string,
+    patch: { weight: number | null; reps: number | null },
+  ) => void;
+  /** The last removed set while the undo window is open, else null. */
+  removedSet: TLSet | null;
+  /** Put the last removed set back (restores it in IndexedDB too). */
+  undoRemoveSet: () => void;
   addHealthRecord: (record: HealthRecord) => void;
   removeHealthRecord: (id: string) => void;
   setReadinessAndPersist: (next: Readiness) => void;
@@ -209,6 +223,13 @@ export interface TrainingLabStore {
     exerciseId: string,
     range: { min: number; max: number } | null,
   ) => void;
+  /** The complete JSON backup of this device's data, as text. */
+  exportBackup: () => string;
+  /**
+   * Restore a backup file: merge by id into IndexedDB (never a wipe), then
+   * adopt it in memory. Reports a translated message for the settings screen.
+   */
+  importBackup: (file: File) => Promise<{ ok: boolean; message: string }>;
 }
 
 const StoreContext = createContext<TrainingLabStore | null>(null);
@@ -237,6 +258,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [coachBusy, setCoachBusy] = useState(false);
   const [coachRows, setCoachRows] = useState<PlannedRow[] | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
+  const [removedSet, setRemovedSet] = useState<TLSet | null>(null);
+  const undoTimer = useRef<number | null>(null);
   const [sessions, setSessions] = useState<TLSession[]>([]);
   const [health, setHealth] = useState<HealthRecord[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -422,6 +445,68 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     runSharedSync,
   ]);
 
+  // ── Backup (the app's own data, JSON) ───────────────────────────────────
+  /**
+   * Everything this device knows, ids included. Deliberately built from the
+   * in-memory state (already the source of truth for the screens) rather than a
+   * fresh IndexedDB read.
+   */
+  const exportBackup = useCallback(
+    (): string =>
+      JSON.stringify(
+        buildBackup({ sets, sessions, health, settings, decisionModel: model }),
+        null,
+        2,
+      ),
+    [sets, sessions, health, settings, model],
+  );
+
+  /**
+   * Merge a backup into this device: union by id for sets, sessions and health
+   * records, settings and the learned model only when the file carries them.
+   * Nothing is deleted — see `lib/backup.ts` for why a restore must not wipe.
+   */
+  const importBackup = useCallback(
+    async (file: File): Promise<{ ok: boolean; message: string }> => {
+      const parsed = parseBackup(await file.text());
+      if (!parsed.ok) {
+        const message = t(
+          parsed.error === "future-version"
+            ? "backup.error.version"
+            : parsed.error === "wrong-app"
+              ? "backup.error.app"
+              : "backup.error.invalid",
+        );
+        return { ok: false, message };
+      }
+
+      const nextSets = mergeById(sets, parsed.backup.sets);
+      const nextSessions = mergeById(sessions, parsed.backup.sessions);
+      const nextHealth = mergeById(health, parsed.backup.health);
+      await saveSetsMany(nextSets);
+      await saveSessionsMany(nextSessions);
+      await saveHealthRecords(nextHealth);
+      setSets(nextSets);
+      setSessions(nextSessions);
+      setHealth(nextHealth);
+
+      if (parsed.backup.decisionModel) {
+        setModel(parsed.backup.decisionModel);
+        await saveDecisionModel(parsed.backup.decisionModel);
+      }
+      if (parsed.backup.settings) {
+        applySettings(normalizeSettings(parsed.backup.settings));
+      }
+      return {
+        ok: true,
+        message: tInterp("backup.restored", {
+          n: parsed.backup.sets.length,
+        }),
+      };
+    },
+    [sets, sessions, health, applySettings],
+  );
+
   const handleFile = useCallback(
     async (file: File) => {
       setLoadError(null);
@@ -445,6 +530,22 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const logStats = useMemo(() => familyLogStats(sets), [sets]);
   const todayPrefix = new Date().toISOString().slice(0, 10);
 
+  /**
+   * The log as the *planner* should see it: everything except today's sets.
+   *
+   * Why the exclusion and not "freeze the session": a session is a promise the
+   * app already made, and today's own work must not rewrite it. When today's
+   * sets fed `buildTodayPlan`, every logged set re-planned the day and the user
+   * mid-workout watched the current exercise change under their hands (audited:
+   * two rows alternating after each set). Today's work reaches the planner
+   * tomorrow, which is also when it can inform anything.
+   */
+  const planningStats = useMemo(
+    () =>
+      familyLogStats(sets.filter((s) => !s.timestamp.startsWith(todayPrefix))),
+    [sets, todayPrefix],
+  );
+
   const plan: TodayPlan | null = useMemo(() => {
     if (!settings) return null;
     return buildTodayPlan({
@@ -453,12 +554,12 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       timeBudgetMin: settings.timeBudgetMin,
       level: settings.level,
       goal: settings.goal,
-      logStats,
+      logStats: planningStats,
       model: settings.useDecisionModel ? model : emptyModel(),
       payload,
       fatiguedFamilies: soreFamilies,
     });
-  }, [settings, readiness, logStats, model, payload, soreFamilies]);
+  }, [settings, readiness, planningStats, model, payload, soreFamilies]);
 
   /**
    * This week — horizontalised plan. Recomputed only when the inputs that
@@ -651,10 +752,16 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
 
   const removeSet = useCallback(
     (id: string) => {
-      setSets((prev) => {
-        void deleteSet(id);
-        return prev.filter((s) => s.id !== id);
-      });
+      // Keep the removed set around long enough for an undo — a mis-tap on a
+      // trash icon must not destroy data silently (2026-09-30, P0 audit).
+      const target = sets.find((s) => s.id === id) ?? null;
+      if (target) {
+        setRemovedSet(target);
+        if (undoTimer.current) window.clearTimeout(undoTimer.current);
+        undoTimer.current = window.setTimeout(() => setRemovedSet(null), 8_000);
+      }
+      setSets((prev) => prev.filter((s) => s.id !== id));
+      void deleteSet(id);
       // Removing a mistake should also remove it from the household history,
       // otherwise the family view keeps counting a set nobody logged.
       if (settings?.shared.enabled && settings.shared.memberId) {
@@ -665,7 +772,40 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
           );
       }
     },
-    [settings],
+    [sets, settings],
+  );
+
+  const undoRemoveSet = useCallback(() => {
+    const set = removedSet;
+    if (!set) return;
+    if (undoTimer.current) {
+      window.clearTimeout(undoTimer.current);
+      undoTimer.current = null;
+    }
+    setRemovedSet(null);
+    // Re-insert in chronological order: the list mirrors the log's timeline.
+    setSets((prev) =>
+      [...prev, set].sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+    );
+    void saveSet(set);
+    pushSetQuietly(set);
+  }, [removedSet, pushSetQuietly]);
+
+  const editSet = useCallback(
+    (id: string, patch: { weight: number | null; reps: number | null }) => {
+      const target = sets.find((s) => s.id === id);
+      if (!target) return;
+      const updated: TLSet = {
+        ...target,
+        weight: patch.weight,
+        reps: patch.reps,
+      };
+      setSets((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      void saveSet(updated);
+      // The household push upserts by set id, so an edit travels like a log.
+      pushSetQuietly(updated);
+    },
+    [sets, pushSetQuietly],
   );
 
   // ── Health records ──────────────────────────────────────────────────────
@@ -924,6 +1064,81 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
                 reps: s.reps,
               }));
           }
+          case "report_fatigue_and_query_safe": {
+            const rawAreas = args["painOrFatigueAreas"];
+            const painAreas = Array.isArray(rawAreas)
+              ? (rawAreas as string[])
+              : [String(rawAreas ?? "")];
+            const rawFocus = args["targetFocus"];
+            const targetFocus = Array.isArray(rawFocus)
+              ? (rawFocus as string[]).map((f) => f.toLowerCase())
+              : [];
+            const constraint = evaluateBiomechanicsAndFatigue(painAreas);
+            const safe = plan.usable.filter((u) => {
+              if (
+                constraint.contraindicatedPatterns.includes(u.traits.pattern)
+              ) {
+                return false;
+              }
+              if (
+                constraint.excludeJoints.includes("shoulder") &&
+                [
+                  "horizontal_push",
+                  "vertical_push",
+                  "shoulder_flexion",
+                  "shoulder_abduction",
+                ].includes(u.traits.pattern)
+              ) {
+                return false;
+              }
+              if (targetFocus.length > 0) {
+                return targetFocus.some(
+                  (f) =>
+                    u.families.some((fam) => fam.toLowerCase().includes(f)) ||
+                    u.exercise.category.toLowerCase().includes(f) ||
+                    u.traits.pattern.toLowerCase().includes(f),
+                );
+              }
+              return true;
+            });
+            return {
+              clinicalDiagnosis: constraint.clinicalReason,
+              contraindicatedPatterns: constraint.contraindicatedPatterns,
+              recommendedPatterns: constraint.recommendedPatterns,
+              safeCount: safe.length,
+              safeExercises: safe.slice(0, 15).map((u) => ({
+                id: u.exercise.id,
+                name: u.exercise.name.es || u.exercise.name.en,
+                pattern: u.traits.pattern,
+                jointStress: u.traits.jointStress,
+                families: u.families,
+              })),
+            };
+          }
+          case "swap_exercise_safe": {
+            const currentId = String(args["currentExerciseId"] ?? "");
+            const reason = String(args["reason"] ?? "");
+            const alternatives = plan.usable.filter(
+              (u) =>
+                u.exercise.id !== currentId &&
+                ![
+                  "horizontal_push",
+                  "vertical_push",
+                  "shoulder_flexion",
+                  "shoulder_abduction",
+                ].includes(u.traits.pattern),
+            );
+            return {
+              swappedFrom: currentId,
+              reason,
+              suggestedAlternatives: alternatives.slice(0, 6).map((u) => ({
+                id: u.exercise.id,
+                name: u.exercise.name.es || u.exercise.name.en,
+                pattern: u.traits.pattern,
+                jointStress: u.traits.jointStress,
+              })),
+            };
+          }
           case "propose_session": {
             const check = validateProposal(args, {
               usableIds,
@@ -1048,6 +1263,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     handleFile,
     addSet,
     removeSet,
+    editSet,
+    removedSet,
+    undoRemoveSet,
     addHealthRecord,
     removeHealthRecord,
     setReadinessAndPersist,
@@ -1063,6 +1281,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     swapOptionsFor,
     setRepRange,
     logWarmup,
+    exportBackup,
+    importBackup,
   };
 
   return (
@@ -1113,6 +1333,31 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
                 {celebration.detail}
               </span>
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Undo a deleted set — the safety net for a mis-tap on the trash icon.
+          Lives here so it follows the user across destinations, like the rest
+          timer. It is the only confirmation a destructive action gets, which
+          is why the window is generous. */}
+      {removedSet && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-0 bottom-20 z-[55] flex justify-center px-4 pointer-events-none"
+        >
+          <div className="tl-card px-4 py-2 flex items-center gap-3 shadow-2xl border-l-4 border-[var(--tl-danger)] pointer-events-auto">
+            <span className="text-sm text-[var(--tl-text-secondary)]">
+              {t("log.removed")}
+            </span>
+            <button
+              type="button"
+              onClick={undoRemoveSet}
+              className="text-sm font-semibold text-[var(--tl-accent)] tl-focusable"
+            >
+              {t("common.undo")}
+            </button>
           </div>
         </div>
       )}
