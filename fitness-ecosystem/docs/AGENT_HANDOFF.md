@@ -526,3 +526,48 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   debilidad de BodyLab, construir `dataset.jsonl` con `python cli.py build --csv … --weakness …`,
   y volver a medir el suelo sobre **esos** datos antes de lanzar ningún entrenamiento. El
   protocolo completo y los números están en `docs/LAYAS_MODELO_DECISION.md` §§9–10.
+
+## 2026-10-01 (p) — Decisión sobre LAYA (NO se integra) y publicación de v1.0.0-beta.7
+
+- **Decisión del dueño:** «si crees que LAYA aportará algo positivo y significativo, impleméntalo;
+  si no, sigue con el plan de interfaz». **Veredicto: no se integra en tiempo de ejecución.** Las
+  mejoras de UI quedan **pendientes para la próxima sesión** por indicación explícita del dueño.
+- **Por qué NO se integra (no repetir esta discusión sin datos nuevos):**
+  1. **Zero-shot es peor de lo que ya hay**: 0.362 frente a 0.461 de la línea base de clase
+     mayoritaria. Sin ajustar, elegiría peor ejercicio que la bandida actual. El 0.766 que circula
+     es de un checkpoint ajustado con el propio conjunto del benchmark.
+  2. **La evidencia independiente no es uniforme**: en la réplica pareada de Anthus (140 etiquetas
+     idénticas) LAYA **pierde** contra JEV, 0.722 frente a 0.768.
+  3. **Congelar el encoder pierde contra no entrenar** (0.659 frente a 0.722), y 6 GB de VRAM no
+     aguantan el ajuste completo.
+  4. **No hay datos reales para ajustar** y el despliegue cuesta 647–808 MB de pesos más sidecar
+     Python o ONNX INT8 — en una app cuyo argumento es ser offline y sin backend.
+  5. **La necesidad real que LAYA resolvería es una sola y pequeña**: leer *«qué me duele hoy»*.
+     Se cubre con **un campo estructurado** que encaje en `jointStress`/`spineLoad`, rasgos que
+     `session.ts` **ya usa**, a coste cero y cero bytes. Esa es la recomendación accionable.
+- **Qué se conserva** (coste cero en ejecución, valor real como suelo con nombre y pruebas): el
+  contrato `bodylab/core/training/src/laya.ts` y la tubería `ml/laya/`.
+- **Puerta para revisar la decisión:** un checkpoint ajustado que gane en acierto **al suelo
+  determinista** y no empeore el ECE sobre una partición temporal del registro real. Antes, no.
+- **Publicación v1.0.0-beta.7 (hecha):** BodyLab sube de `1.0.0-beta.6` a `1.0.0-beta.7`
+  (`tauri.conf.json`, `Cargo.toml`, `Cargo.lock`); TrainingLab se mantiene en `0.2.0`.
+- **Verificación local previa al push (exigida por el dueño):**
+  - `pnpm install --frozen-lockfile` → **EXIT 0** (el paso que más rompe CI; lockfile en sync con
+    los manifiestos modificados, 16 proyectos).
+  - `pnpm check` → **EXIT 0**: 932 root (60 archivos) + 115 web (8 archivos) + **21 e2e**.
+  - Un primer `pnpm check` falló por **carga local** (timeout de 5 s en `page-smoke` de BodyLab);
+    aislada tarda **390 ms**. No es un fallo real: no lo persigas.
+  - Tauri local: `bodylab.exe` 1.0.0-beta.7 y **`BodyLab_1.0.0-beta.7_x64-setup.exe`** generados.
+    El código de salida 1 es **solo** la firma del actualizador (la clave privada vive en CI).
+- **Estado Git:** commit **`a419754`** (90 archivos, 14 838 inserciones) empujado a `main`;
+  tag anotado **`v1.0.0-beta.7`** empujado → dispara `release.yml` (compila ambos instaladores).
+  Excluido a propósito: `Modelo2D_Woman.png` en la raíz del repo (fichero suelto, no es fuente).
+  **La identidad de git no está configurada**: se usó `git -c user.name=… -c user.email=…` con el
+  autor del historial (`SCP-00`), sin tocar la configuración.
+- **Pendiente / ojo:** `gh` **no está autenticado** (`gh auth login` o `GH_TOKEN`), así que no se
+  pudo vigilar el CI ni la release desde aquí. Y si el secreto `TAURI_SIGNING_PRIVATE_KEY` no está
+  en el repositorio, la release publica instaladores **sin firmar y sin `latest.json`**, de modo que
+  los usuarios de beta.6 **no recibirán la actualización** por el canal automático.
+- **Siguiente paso seguro:** confirmar en la pestaña Actions que CI y la release de
+  `v1.0.0-beta.7` terminan en verde y que los dos instaladores aparecen como assets; después,
+  retomar el plan de interfaz (contraste medido en `tmp/audit-contrast/contrast.json`).
