@@ -91,9 +91,10 @@ for (const lang of ['en', 'es'] as const) {
   test.describe(`x-ray mode (${lang})`, () => {
     // Parsing two 8 MB GLBs and drawing them in software takes an order of
     // magnitude longer than on a GPU: the default 90 s is not the product's
-    // budget, it is the runner's. `slow()` triples it so a slow box cannot
-    // report a working feature as broken.
-    test.slow();
+    // budget, it is the runner's, so a slow box must not report a working
+    // feature as broken. The budget is set on the describe rather than with
+    // `test.slow()`, which would triple this number a second time.
+    test.describe.configure({ timeout: 600_000 });
 
     test('loads the anatomy atlas and toggles x-ray layer controls', async ({ page }) => {
       await seed(page);
@@ -105,8 +106,21 @@ for (const lang of ['en', 'es'] as const) {
 
       await openBody3D(page, lang);
 
+      const toggle = page.getByRole('button', { name: /X-ray|Rayos X/ });
+
       // Toggle x-ray → the atlas (~8 MB of GLBs) must load and the sliders appear
-      await page.getByRole('button', { name: /X-ray|Rayos X/ }).click();
+      await toggle.click();
+
+      // The layer panel mounts as soon as the mode flips on, which is BEFORE the
+      // atlas finishes decoding — and the toggle disables itself for exactly that
+      // window (`disabled={xrayLoading}`). Waiting for the sliders is therefore
+      // not waiting for the load: on a software-WebGL runner the toggle is still
+      // disabled when the test reaches the toggle-off click, and Playwright then
+      // blocks on its "enabled" actionability check until the test times out,
+      // which is how this spec failed on Linux CI while passing in ~11 s on real
+      // hardware. Assert the product's real contract instead: the toggle
+      // re-enables only once the atlas is live and the layers are usable.
+      await expect(toggle).toBeEnabled({ timeout: 300_000 });
 
       const musclesLabel = lang === 'es' ? /Músculos/ : /Muscles/;
       const skeletonLabel = lang === 'es' ? /Esqueleto/ : /Skeleton/;
@@ -121,7 +135,7 @@ for (const lang of ['en', 'es'] as const) {
       await expect(page.getByLabel(musclesLabel)).toHaveValue('70');
 
       // Toggle off → controls disappear, toggle returns to off state
-      await page.getByRole('button', { name: /X-ray|Rayos X/ }).click();
+      await toggle.click();
       await expect(page.getByLabel(musclesLabel)).toHaveCount(0);
 
       expect(errors).toEqual([]);
