@@ -62,6 +62,14 @@ jobs:
 
       # BodyLab: tauri.conf.json has createUpdaterArtifacts: true, so with the
       # secrets present the CLI signs the bundle itself and emits .exe + .sig.
+      #
+      # The unsigned override is passed as a FILE, never as inline JSON. `pnpm tauri`
+      # runs the "tauri" script from package.json, so pnpm hands the extra arguments
+      # to cmd.exe on Windows, which strips the inner double quotes and delivers
+      # {bundle:{createUpdaterArtifacts:false}} to the CLI. clap rejects that
+      # ("invalid value ... for '--config <CONFIG>'") and the step dies in about a
+      # second, long before any compilation starts — which is exactly how the
+      # v1.0.0-beta.7 run failed. A path survives every shell unchanged.
       - name: Build BodyLab installer
         shell: pwsh
         working-directory: fitness-ecosystem/bodylab/apps/desktop
@@ -69,15 +77,33 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
-            Write-Host "No signing key secret → building an UNSIGNED BodyLab installer."
-            "SIGNED=false" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-            pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
-          } else {
-            Write-Host "Signing key present → building a signed BodyLab installer."
-            "SIGNED=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-            pnpm tauri build
+          $ErrorActionPreference = 'Continue'
+          Write-Host "node $(node --version) / pnpm $(pnpm --version) / $(pnpm tauri --version)"
+
+          # An encrypted minisign key without its password cannot produce a
+          # signature, and the CLI only finds that out after the whole build.
+          # Treat a half-configured secret as "unsigned" instead.
+          $signed = -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY) `
+                    -and -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)
+          if (-not $signed -and -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            Write-Host "TAURI_SIGNING_PRIVATE_KEY is set but its password secret is not: building UNSIGNED."
           }
+
+          if ($signed) {
+            "SIGNED=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            Write-Host "Signing key + password present -> signed BodyLab installer."
+            pnpm tauri build
+          } else {
+            "SIGNED=false" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            $override = Join-Path $PWD "tauri-ci-unsigned.json"
+            Set-Content -Path $override -Value '{"bundle":{"createUpdaterArtifacts":false}}' -Encoding utf8
+            Write-Host "No complete signing key -> UNSIGNED BodyLab installer (override: $override)"
+            pnpm tauri build --config $override
+          }
+
+          $code = $LASTEXITCODE
+          if ($code -ne 0) { Write-Host "::error::tauri build exited with code $code" }
+          exit $code
 
       - name: Build TrainingLab installer
         working-directory: fitness-ecosystem/traininglab/apps/desktop

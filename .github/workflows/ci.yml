@@ -21,7 +21,11 @@ jobs:
   check:
     name: lint + typecheck + unit + browser E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The whole pyramid on a 2-core runner: typecheck → 932 root tests → 115 web
+    # tests → 21 Playwright E2E. It measured 8.8 min when the suite was smaller
+    # and then ran over 20 min (GitHub reports a job that hits its limit as
+    # "cancelled", which is what every recent red CI run actually was).
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
