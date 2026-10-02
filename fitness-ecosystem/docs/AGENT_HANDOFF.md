@@ -571,3 +571,67 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
 - **Siguiente paso seguro:** confirmar en la pestaña Actions que CI y la release de
   `v1.0.0-beta.7` terminan en verde y que los dos instaladores aparecen como assets; después,
   retomar el plan de interfaz (contraste medido en `tmp/audit-contrast/contrast.json`).
+
+## 2026-10-02 — CI y release de v1.0.0-beta.7 vigilados hasta el final, y arreglar lo que salió rojo
+
+- **Resultado:** `release.yml` y `CI` están **verdes** y la release **`v1.0.0-beta.7` está
+  publicada con los DOS instaladores descargables**. Se encontraron y corrigieron **dos**
+  causas rojas distintas, ambas ocultas por gestos anteriores del propio CI.
+- **Cambios:**
+  - `.github/workflows/release.yml` — el override sin firma de Tauri se pasa como **fichero**
+    (`tauri-ci-unsigned.json`), nunca como JSON en línea; firmar exige clave **y** contraseña;
+    se imprime node/pnpm/versión de tauri y se hace `exit $LASTEXITCODE` explícito.
+  - `.github/workflows/ci.yml` — `check` pasa de `timeout-minutes: 20` a `45`.
+  - `fitness-ecosystem/bodylab/apps/web/e2e/anatomy-xray.spec.ts` — espera a que el atlas
+    esté vivo antes de volver a desactivar el modo X; presupuesto de 10 min por `describe`.
+- **Causa roja 1 — la release moría en 1 segundo (run 36939904641):** `pnpm tauri` ejecuta el
+  script `tauri` de `package.json`, así que pnpm entrega los argumentos extra a `cmd.exe`, que
+  **elimina las comillas internas** del JSON de `--config` y la CLI recibe
+  `{bundle:{createUpdaterArtifacts:false}}`, que clap rechaza antes de compilar nada. Un
+  argumento en línea no sobrevive a un shell; **una ruta de fichero sí**. Comprobado en local:
+  el mismo comando con fichero genera el instalador (EXIT 0).
+- **Causa roja 2 — el job `check` no fallaba, expiraba (y eso tapaba un fallo real):** GitHub
+  reporta como **`cancelled`** cualquier job que supera su `timeout-minutes`, y por eso
+  *todos* los CI rojos recientes de este repo eran «cancelled» a los 20 min. Al subir el
+  límite, `pnpm check` corrió 20,8 min y **falló de verdad**: dos tests e2e de
+  `anatomy-xray.spec.ts` (en + es). El toggle de Rayos X está `disabled={xrayLoading}` mientras
+  decodifican los ~8 MB del atlas, pero el panel de capas monta en cuanto el modo se activa,
+  **antes**: el test esperaba a los sliders, daba por cargado el atlas y pulsaba un botón
+  **deshabilitado**, así que Playwright se quedaba bloqueado en su comprobación de
+  «enabled» hasta agotar el test. Con GPU la ventana es ~1 s; con WebGL por software son
+  **5,8 min (en) y 6,2 min (es)** contra un presupuesto de 270 s. El test ahora espera el
+  contrato real del producto: el toggle se rehabilita cuando el atlas está vivo.
+- **Verificación:**
+  - Local: `npx playwright test e2e/anatomy-xray.spec.ts` → **2 passed** (11,3 s / 7,3 s) sobre
+    hardware real; `pnpm --filter web typecheck` → EXIT 0; `pnpm lint` → 0 avisos / 0 errores.
+  - CI run **37021236333** (commit `bb89cd2`) → **los 4 jobs en verde**; `check` 20,5 min:
+    60 archivos root + 8 web + **21 e2e en 13,5 min**, con los dos tests de Rayos X en verde.
+  - Release `v1.0.0-beta.7` (run 37017104135) → **success**; el paso que antes moría en 1 s tardó
+    **396 s**. Assets, los cuatro con HTTP 200 y cabecera `MZ` verificada:
+    `BodyLab_1.0.0-beta.7_x64-setup.exe` (23 574 275 B) y `TrainingLab_0.2.0_x64-setup.exe`
+    (15 540 359 B), más los alias estables `BodyLab-setup.exe` y `TrainingLab-setup.exe`.
+- **Pendiente / decisión del dueño:**
+  - **La release va SIN FIRMAR y sin `latest.json`**: los secretos `TAURI_SIGNING_PRIVATE_KEY` /
+    `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` no están en el repositorio, así que **los usuarios de
+    beta.6 no recibirán la actualización** por el canal automático.
+  - **Aun con los secretos puestos, el autoactualizador seguiría sin ver beta.7:** el endpoint
+    del producto es `releases/latest/download/latest.json`, y `/releases/latest` **excluye las
+    prereleases**; hoy resuelve a `v1.0.0-beta.6` (la beta.6 se publicó como `prerelease: false`).
+    Hay que decidir entre marcar una versión como release completa o apuntar el updater a una
+    etiqueta concreta.
+  - El fichero `anatomy-xray.spec.ts` son **12,0 min de los 13,5 min** de la suite e2e: es el
+    coste dominante del job `check`. Candidato a ejecutarse por agenda y no en cada push.
+  - **`gh` sigue sin credenciales en este equipo**; el dueño facilitó un PAT de ejemplo por el
+    chat para leer los logs. **Ese token queda expuesto en la transcripción: revócalo.**
+  - Sigue **aplazado por el dueño** para la próxima sesión: los tres fallos de contraste medidos
+    en `tmp/audit-contrast/contrast.json` y conectar ese auditor al CI.
+- **Puertas de aprobación:** siguen **CERRADAS** y no se han cruzado: el mapa de calor de fuerza
+  frente a una referencia externa publicada, y la integración del prototipo independiente del
+  mapa muscular. Esta nota es estado del proyecto, no autorización.
+- **Estado Git:** `main` en `bb89cd2`; el tag **`v1.0.0-beta.7` se movió** de `a419754` a
+  `bd13ca5` (decisión explícita del dueño) para que la release usara el workflow arreglado, y
+  después `main` avanzó a `bb89cd2` con el arreglo del e2e. `Modelo2D_Woman.png` sigue sin
+  rastrear a propósito.
+- **Siguiente paso seguro:** decidir lo del canal de actualización (prerelease vs. etiqueta
+  fija) y, si se firma, cargar los dos secretos; después, retomar el plan de interfaz con el
+  contraste medido.
