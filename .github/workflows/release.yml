@@ -15,6 +15,14 @@ name: Release desktop apps (exe installers)
 # without latest.json, because an updater feed whose signature cannot be verified
 # is worse than no feed at all (the app would offer a broken update instead of
 # simply reporting that it is up to date).
+#
+# THE UPDATER ENDPOINT IS TAG-SPECIFIC ON PURPOSE. BodyLab's tauri.conf.json polls
+#   .../releases/download/<TAG>/latest.json
+# and NOT releases/latest/download/latest.json: GitHub's /releases/latest excludes
+# prereleases, so it always resolved to the newest *tagged* release (v1.0.0-beta.6)
+# and 404'd. Bumping the version therefore means bumping THREE places in lockstep —
+# tauri.conf.json "version", its plugins.updater.endpoints[0], and Cargo.toml — or
+# the shipped app keeps polling a feed that will never exist.
 
 on:
   push:

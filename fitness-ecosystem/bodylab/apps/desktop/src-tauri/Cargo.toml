@@ -1,22 +1,23 @@
 [package]
 name = "bodylab"
-version = "1.0.0-beta.7"
+version = "1.0.0-beta.8"
 description = "BodyLab desktop host (Tauri v2) — privacy-first anthropometry, body modeling & training"
 authors = ["BodyLab"]
 edition = "2021"
-rust-version = "1.77"
+# Tauri 2.12 requires 1.90 (checked against the crate's own rust-version).
+rust-version = "1.90"
 
 [lib]
 name = "bodylab_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.7", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
-tauri-plugin-updater = "2"
+tauri = { version = "2.12", features = [] }
+tauri-plugin-opener = "2.7"
+tauri-plugin-updater = "2.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

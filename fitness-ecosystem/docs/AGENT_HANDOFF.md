@@ -635,3 +635,63 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
 - **Siguiente paso seguro:** decidir lo del canal de actualización (prerelease vs. etiqueta
   fija) y, si se firma, cargar los dos secretos; después, retomar el plan de interfaz con el
   contraste medido.
+
+## 2026-10-04 — Tauri 2 a la última estable en ambas apps, y el endpoint del updater
+
+- **Resultado:** revisión de estado (sin commits nuevos en el remoto; `main` en `9e133b4`,
+  árbol limpio salvo `Modelo2D_Woman.png` sin rastrear) y actualización del shell Tauri de
+  las dos apps a la última estable: `tauri` 2.12.1, `tauri-build` 2.7.1,
+  `tauri-plugin-opener` 2.7.0, `tauri-plugin-updater` 2.13.1,
+  `tauri-plugin-notification` 2.5.1 y un único `@tauri-apps/cli` 2.12.1. Antes BodyLab
+  arrastraba un minor entero de retraso (tauri 2.11.5) y el monorepo instalaba dos CLIs
+  distintos (2.11.4 y 2.12.0). Se arregló además el canal de actualización.
+- **Cambios:**
+  - `fitness-ecosystem/bodylab/apps/desktop/src-tauri/Cargo.toml` y
+    `fitness-ecosystem/traininglab/apps/desktop/src-tauri/Cargo.toml` — versiones de crate
+    al minor vigente; `rust-version` de `1.77` a `1.90` (Tauri 2.12 declara `rust-version =
+    "1.90"`, el valor anterior era ya falso).
+  - `fitness-ecosystem/bodylab/apps/web/package.json`,
+    `fitness-ecosystem/bodylab/apps/desktop/package.json`,
+    `fitness-ecosystem/traininglab/apps/desktop/package.json`,
+    `fitness-ecosystem/pnpm-lock.yaml` — CLI y plugins npm al alza; el `version` del
+    package.json del escritorio BodyLab decía `1.0.0` mientras `tauri.conf.json` decía
+    `1.0.0-beta.7`, ahora ambos coinciden.
+  - `fitness-ecosystem/bodylab/apps/desktop/src-tauri/tauri.conf.json` — versión
+    `1.0.0-beta.8` y `plugins.updater.endpoints[0]` apuntando a la etiqueta explícita
+    `releases/download/v1.0.0-beta.8/latest.json` en vez de
+    `releases/latest/download/latest.json`, que devolvía 404: `/releases/latest` excluye
+    prereleases y por tanto resolvía a `v1.0.0-beta.6`, donde ese archivo no existe.
+    Apuntar a la etiqueta antigua tampoco habría servido (beta.7 ya está publicada y sin
+    firmar), así que el bump de versión es parte del arreglo y no un cambio aparte.
+  - `.github/workflows/release.yml` — el encabezado documenta el invariante: versión,
+    endpoint y `Cargo.toml` se suben los tres a la vez.
+- **Verificación:** `pnpm typecheck` EXIT 0 · `pnpm lint` 0 avisos / 0 errores ·
+  `pnpm test` 932 tests / 60 archivos OK · `vitest run` (web) 115 OK · `npx tsc -b`
+  (TrainingLab) EXIT 0 · `cargo check --locked` en ambos `src-tauri` EXIT 0 ·
+  `pnpm tauri build` TrainingLab EXIT 0 → `TrainingLab_0.2.0_x64-setup.exe` (15.319.737 B) ·
+  `pnpm tauri build --config tauri-ci-unsigned.json` BodyLab EXIT 0 →
+  `BodyLab_1.0.0-beta.8_x64-setup.exe` (23.349.664 B, cabecera PE `4d5a`) · Playwright
+  21/21 OK en 40,4 s. Una primera ejecución de `vitest run` falló un caso de
+  `page-smoke.test.tsx`; no se reprodujo en 8 ejecuciones posteriores (4 en serie y 3 en
+  paralelo bajo carga) y ese test no referencia Tauri, así que es un flake de la ejecución
+  en frío (42,9 s), no del cambio.
+- **Pendiente / decisión del dueño:**
+  1. **La clave de firma del disco no abre el feed.** `.updater-key` es una clave rsign
+     válida (mismo formato, longitud y prefijo que una recién generada), pero
+     `.updater-key.password` no la descifra: probé las dos formas plausibles (41 caracteres
+     y los 42 bytes con el salto final) y ambas dan `Wrong password for that key`. O sea
+     que cargar los dos secretos tal cual están en el disco **no** basta. No se puede
+     determinar si `.updater-key` es la contraparte del `pubkey` de `tauri.conf.json`
+     (el identificador va cifrado dentro del secreto y no se puede leer sin la contraseña).
+     Como nunca se publicó ninguna release firmada, regenerar el par no deja a nadie sin
+     auto-actualización: es la vía limpia si la contraseña original está perdida.
+  2. **`Cargo.lock` está en `.gitignore` (`fitness-ecosystem/.gitignore:45`) y ningún
+     workflow usa `--locked`.** Cada build de CI y de release resuelve dependencias de
+     nuevo; esa es justamente la causa de que BodyLab se quedase atrás sin que nada lo
+     delatara. Versionarlo daría builds reproducibles.
+  3. Sigue diferido lo de antes: los 3 fallos de contraste medidos, mover
+     `anatomy-xray.spec.ts` (12 de los 13,5 min del job `check`) a un workflow
+     programado, y rotar el PAT que quedó expuesto en el chat.
+- **Siguiente paso seguro:** publicar `v1.0.0-beta.8` desde la etiqueta una vez que el
+  dueño resuelva la clave de firma; el endpoint y la versión ya apuntan a esa etiqueta, así
+  que en cuanto exista un `latest.json` firmado el chequeo funciona sin tocar nada más.
