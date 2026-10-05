@@ -2204,11 +2204,6 @@ textarea {
     min-height: 2.75rem;
   }
 
-  /* The log button is the most-tapped control in the app: thumb-sized. */
-  .tl-set-row button {
-    min-height: 2.75rem;
-  }
-
   input[type="range"] {
     height: 2.75rem;
   }
@@ -2217,22 +2212,7 @@ textarea {
     min-height: 2.75rem;
   }
 
-  /* Logging row: weight × reps + action must never push the card sideways. */
-  .tl-set-row {
-    flex-wrap: wrap;
-  }
-
-  .tl-set-row .tl-swap {
-    margin-left: 0;
-    width: 100%;
-  }
-
-  .tl-set-row .tl-swap > button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  /* The swap control is now a sibling of the entry bar, not inside it. */
+  /* The swap control is a sibling of the entry bar, not inside it. */
   .tl-swap > button {
     width: 100%;
     justify-content: center;
