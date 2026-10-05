@@ -1477,6 +1477,17 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   importadas conservan el número tal como lo escribió Symmetry —no se reinterpretan, que es
   justo lo que él va a corregir— y las 13 de hoy llevan las dos columnas. Se marcan con
   `REVISAR` las filas que rompen su propio patrón; hoy hay una: **19 kg en laterales del 26-09**.
+- **Fallo encontrado al validar el CSV, y corregido:** 17 series no tienen repeticiones (plank,
+  dead hang, estiramientos, bici) porque Symmetry dejó `reps` en `null` y guardó `durationSec`. El
+  CSV **descartaba ese campo**, así que le tiraba el único dato que esas filas tienen — y sus plank
+  de 60 → 90 → 105 s del 29-09 son una progresión real. Añadida la columna `duration_sec`
+  (inmediatamente después de `reps`), poblada desde `st.durationSec`. Reverificado con un parser
+  RFC 4180 estricto, no con `split(',')`: **439 filas, 14 columnas, 0 filas irregulares, 0 filas
+  sin reps *y* sin duración**, 13 filas con per+total+implements coherentes, 0 fechas mal formadas.
+  **Aviso para quien siga:** `.cache/make-owner-csv.mjs` (gitignored) **sobrescribe** el CSV cada vez
+  que se ejecuta, así que regenerarlo **borra las correcciones a mano del dueño**. Si hay que
+  volver a generarlo, primero hay que respaldar el archivo corregido, o mejor, enseñarle al generador a
+  leer el CSV existente y conservar lo ya corregido.
 - **Sobre el desbalance, con los datos y sin diagnosticar a nadie:**
   - **La extensión de tríceps no demuestra nada sobre el brazo izquierdo.** 12,6 kg estaba **por
     encima de su máximo probado** (11,3 kg el 30-09), y a **10 kg hizo 2×10 con ambos brazos
