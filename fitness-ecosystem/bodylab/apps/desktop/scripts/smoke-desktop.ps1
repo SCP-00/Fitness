@@ -32,20 +32,37 @@ $v = (Get-Item $ExePath).VersionInfo
 Write-Host ("version : {0} (product {1})" -f $v.FileVersion, $v.ProductVersion)
 if (-not $v.FileVersion) { $failures += "no version resource" }
 
-# 2. Launch detached
+# 2. Launch detached, then WAIT for the window instead of sleeping a fixed amount.
+#
+# The fixed 8s sleep was an arbitrary assumption about how fast WebView2 boots.
+# On 2026-10-05 it produced a red smoke run with "no main window title" on a
+# machine that had just finished a cargo release build — and the very next run
+# of the same binary passed with the title present. A test that goes red on
+# timing luck is worse than useless, because it teaches you to ignore it. Same
+# deadline, polled, and the assertions below are unchanged: if no window appears
+# in 45s the app is genuinely broken, and that still fails.
+$WindowDeadlineSeconds = 45
 $proc = Start-Process -FilePath $ExePath -PassThru
-Start-Sleep -Seconds 8
-$alive = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
-if (-not $alive) { Write-Host "FAIL: process exited within 8s of launch"; exit 1 }
-if (-not $alive.MainWindowTitle) { $failures += "no main window title after 8s" }
-Write-Host ("launched: pid {0} title='{1}'" -f $alive.Id, $alive.MainWindowTitle)
+$alive = $null
+$windowed = $false
+$waited = 0
+while ($waited -lt $WindowDeadlineSeconds) {
+  Start-Sleep -Milliseconds 500
+  $waited += 0.5
+  $alive = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
+  if (-not $alive) { break }
+  if ($alive.MainWindowTitle) { $windowed = $true; break }
+}
+if (-not $alive) { Write-Host "FAIL: process exited within $waited s of launch"; exit 1 }
+if (-not $windowed) { $failures += "no main window title after ${WindowDeadlineSeconds}s" }
+Write-Host ("launched: pid {0} title='{1}' after {2}s" -f $alive.Id, $alive.MainWindowTitle, $waited)
 
-# 3. Stability window
+# 3. Stability window — still a fixed 6s of "it did not die".
 Start-Sleep -Seconds 6
 $alive2 = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
 if (-not $alive2) { Write-Host "FAIL: process died during stability window"; exit 1 }
 if ($alive2.MainWindowTitle -ne $alive.MainWindowTitle) { $failures += "window title changed mid-run" }
-Write-Host "stability: alive after 14s total, title stable"
+Write-Host ("stability: alive and stable, title '{0}'" -f $alive2.MainWindowTitle)
 
 # 4. WebView2 data container for the identifier
 $udd = Join-Path $env:LOCALAPPDATA "com.bodylab.desktop"

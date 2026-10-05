@@ -1420,9 +1420,43 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   la ficha mostrando «22 kg · repite la anterior» y el campo offering 12; el temporizador de
   descanso salta en ambos casos. Los dos ajustes del punto anterior se comprobaron en pantalla
   antes y después.
-- **Instalador:** NO reconstruido en esta ronda; el que está en el escritorio es el de (i). El
-  cambio es de interfaz, así que hace falta un `pnpm tauri build` (~2 min 20 s) para que lo
-  vea la app instalada.
+- **Instaladores: reconstruidos los DOS desde este mismo commit** (`pnpm tauri build` en cada
+  shell) y copiados al escritorio real. TrainingLab 0.2.0 sale **exit 0**; BodyLab 1.0.0-beta.8
+  sale **exit 1 por `createUpdaterArtifacts`** (la clave de firma solo existe en `release.yml`),
+  pero el NSIS se genera antes de ese paso. De ambos se comprobó el **contenido del bundle**, no
+  solo que existieran: el de TrainingLab lleva dentro «Siguiente serie» y «repite la anterior»,
+  y el de BodyLab lleva dentro «Hacia tu ideal». La regla de cierre que faltaba ya está escrita
+  en `AGENTS.md`: ningún cambio de interfaz se cierra sin `tauri build` y copia al escritorio.
 - **Pendiente de decisión del dueño:** el campo pasa a ser reps siempre. Para ejercicios de
   fuerza (peso-rango 3–6) quizá el número que más cambia sea el peso, no las reps; si quieres,
   se puede invertir el campo por defecto según el rango prescrito.
+
+## 2026-10-05 (k) — La regla de cierre que faltaba: ninguna entrega con el `.exe` viejo
+
+- **Reclamación del dueño:** «aunque no te lo pedí en este turno, tenía la regla en tus
+  conocimientos y en AGENT de que cada cambio realizado en WEB debería verse ejecutado en la
+  aplicación de escritorio, ambas en la misma versión, para las dos aplicaciones. De nada me sirve
+  tener el servidor web funcional y la aplicación diez versiones atrasada». **Tenía razón**, y el
+  incumplimiento era mío: la ronda (j) cerró el rediseño de registro de series con la pirámide en
+  verde, con QA visual en el navegador a 390×844 y 1366×1000, y **sin tocar el instalador**. El
+  `.exe` de su escritorio era el de (i).
+- **Regla escrita en `AGENTS.md`** (sección Conventions, antes de «Things to avoid»), porque estaba
+  solo como registro histórico en `knowledge.md` y no como criterio de cierre: todo cambio de UI o
+  lógica en `bodylab/apps/web` o `traininglab/apps/desktop` termina en `pnpm tauri build` **desde
+  el mismo commit**, con los **dos** instaladores copiados al escritorio real, comprobando el
+  **contenido del bundle** (que la cadena nueva esté en `dist/assets`), no solo que el `.exe`
+  exista. Se anota tamaño y hora, porque un timestamp es la prueba y el exit code de BodyLab miente
+  (sale 1 por la firma del updater).
+- **Cumplido en esta ronda, desde `3b44272`:** TrainingLab 0.2.0 **exit 0**, 15 335 972 bytes,
+  bundle con «Siguiente serie» y «repite la anterior»; BodyLab 1.0.0-beta.8 **exit 1 por
+  `createUpdaterArtifacts`** (esperado), 23 355 369 bytes, bundle con «Hacia tu ideal». Los dos en
+  `C:\Users\andyh\OneDrive\Desktop`.
+- **Un fallo real encontrado al smokear, y arreglado:** la primera ejecución de
+  `smoke-desktop.ps1` dio **FAIL — «no main window title after 8s»**, y la segunda, sobre el mismo
+  binario, dio **SMOKE PASS**. La causa no era la app: el script esperaba con un `Start-Sleep`
+  fijo de 8 s a que WebView2 levantara la ventana, en una máquina que acababa de terminar un build
+  release de Rust. Es un test que se pone rojo por suerte de reloj — y ese job corre también en CI
+  (`e2e-desktop-smoke`). Ahora **espera a la ventana sondeando hasta 45 s**, sin cambiar ninguna
+  aserción: si no aparece en 45 s, la app está rota de verdad y sigue fallando. Dos ejecuciones
+  seguidas: **PASS**, y ahora dicen que la ventana apareció a los **0,5 s**, que es el dato que
+  hacía falta para saber si 8 s eran poco o si el arranque se había colgado.
