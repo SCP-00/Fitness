@@ -1317,3 +1317,63 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
 - **Verificación de los arreglos, en clones de verdad:** clon con el `autocrlf` de esta máquina (CRLF) → shebang en **LF**, `BodyLab.bat` en **CRLF**, `pnpm install --frozen-lockfile` **exit 0**, `pnpm lint` 0/0, `pnpm check` **966/966 + 118/118 + 21/21 E2E, exit 0**, y los dos builds de producción **exit 0**. O sea: el job `check` completo, en el escenario que antes fallaba.
 - **Commits:** `e763ebf` (la functionality, 44 archivos) y `c5db91b` (los dos arreglos). Los dos en `origin/main`.
 - **Pendiente por decidir con el dueño (no es un bloqueo):** los instaladores del escritorio se compilaron con `e763ebf`, que es el mismo código de aplicación que `c5db91b` — los arreglos son de instalación y de fin de línea, no tocan el bundle. Aun así, si quiere installers construidos **exactamente** desde `c5db91b`, hay que rehacer los dos `tauri build` (~2 min 20 s cada uno).
+
+## 2026-10-05 (i) — «actualicé el .exe y perdí los datos»: qué pasó de verdad, y copias + series repetidas
+
+- **Encargo del dueño:** «acabo de descargar la actualización en el .exe de training y perdí
+  todos mis datos, eso no puede suceder en una update. Busca cómo solucionarlo, mira si puedes
+  recuperar mis datos». Más dos cosas sobre las series: «me obliga a registrar un rango en cada
+  serie» y «lo ideal es que por tipo de ejercicio recomiende el fallo en ese rango, el usuario
+  digita las repeticiones y si no las digita se asume la misma cantidad que la anterior».
+- **Diagnóstico (con evidencia, no teoría).** Todo TrainingLab vive en
+  `%LOCALAPPDATA%\com.traininglab.desktop\EBWebView\Default\IndexedDB\http_tauri.localhost_0.indexeddb.leveldb`.
+  Leyendo ese log: **9 registros de `readiness` (2026-09-29), los ajustes, y 3 series de
+  `arnold-press` fechadas hoy 13:09–13:10** — `reps: 0`, `reps: 8`, `reps: 8`. **Ninguna serie
+  anterior, en ningún almacén**: los orígenes de Edge (`localhost:5173`, `:8080`, `:8090`) no
+  tienen ni un `exerciseId`, y `tmp/fitness.sqlite` (almacén LAN) tiene 0 filas.
+- **La actualización no borró nada, y está demostrado en el código:** `DB_NAME`/`DB_VERSION`
+  llevan `traininglab`/1 desde el primer commit, no hay `deleteDatabase()` y las stores se crean
+  solo si no existen. La ruta del perfil tampoco cambió. Lo que sí era verdad —y es el agujero
+  real— es que **no existía ninguna copia fuera del perfil de WebView2**, que es de Windows y
+  puede reiniciarse sin aviso.
+- **Lo recuperable:** su histórico de Symmetry está intacto en
+  `fitness-ecosystem/.cache/symmetry-import.json` (20 sesiones / 410 series) y la app ya tiene
+  Ajustes → Importar Symmetry. Las series de hoy son 3 y se respaldan solas con (i). Su perfil y
+  medidas de BodyLab no se han tocado.
+- **Copia de seguridad automática (lo nuevo).** Tres comandos Rust **muy estrechos** en
+  `src-tauri/src/lib.rs` — `write_autobackup`, `read_autobackup`, `autobackup_dir` — que espejan
+  el log en `%APPDATA%\com.traininglab.desktop\backups\traininglab-<milis>.json` y conservan 8.
+  **No se activa el plugin de filesystem**: el shell declaraba «no filesystem plugin» y esa
+  postura se mantiene; los comandos no aceptan rutas, la carpeta se calcula en Rust.
+  `lib/autobackup.ts` (nuevo) decide **qué** guardar con `logSignature` (fingerprint de recuento
+  + última marca) y colapsa ráfagas con `AUTOBACKUP_DEBOUNCE_MS = 2000`; nada de lo que hace
+  lanza una excepción. Un `useEffect` en `app/store.tsx` cuelga la copia de `sets`, `sessions`,
+  `health`, `settings` y `model`, así que **ninguna vía de guardado se puede saltar** (registrar,
+  editar, deshacer, restaurar, importar Symmetry, Ajustes, readiness). Si la app abre con el log
+  vacío y hay copia, `isWorthRecovering` lo detecta y Ajustes ofrece **«Restaurar mi historial»**,
+  que reutiliza el mismo `importBackup` del import manual: una recuperación no puede comportarse
+  distinto de un restore elegido a mano.
+- **Series: la regla que pidió, y dos bugs que lo choraban.** El rango recomendado **ya existía**
+  (`GOAL_REPS` en `bodylab/core/training/src/session.ts`: hipertrofia compuesto 8–12,
+  aislamiento 10–15), pero la tarjeta lo pintaba como un placeholder tipo «8–12» en el campo de
+  repeticiones, que se lee como «tengo que registrar un rango». Y al dejar el campo en blanco la
+  app asumía `repRange.min` **en silencio**. Sus propias 3 series lo demuestran: las dos que dejó
+  en blanco guardaron 8. La primera guardó **`reps: 0`**, porque `??` solo cae en `null`, no en
+  `0` — un `0` tecleado se guardaba como cero repeticiones. Ahora la regla vive en
+  `lib/set-entry.ts` (puro): lo tecleado gana; vacío = **la serie anterior**; solo si no hay
+  anterior cae al mínimo prescrito. La UI lo dice (`«en blanco repite la anterior (12)»`) en vez
+  de suponer en silencio, y el placeholder muestra el número que se va a usar, no un rango.
+- **Verificación:** `tests/training/test_autobackup.test.ts` (nuevo, **15 tests**): el
+  fingerprint es estable entre instantáneas iguales y cambia al añadir serie, **al editar una
+  serie antigua sin cambiar el recuento**, y al aparecer ajustes; `isWorthRecovering` solo se
+  ofrece con el dispositivo vacío y copia no vacía; y la regla de reps (tecleada gana, vacío
+  repite, una serie sin repeticiones no borra el valor, cero y negativos cuentan como vacío).
+  Suite raíz **981/981 en 65 archivos**, TrainingLab `tsc -b` exit 0, `cargo test --lib` 1/1,
+  `pnpm lint` 0/0, `pnpm tauri build` exit 0. **Y la prueba que no se puede hacer con tests:**
+  lanzar el `.exe` recién compilado durante 25 s → aparece
+  `%APPDATA%\com.traininglab.desktop\backups\traininglab-00000001791208182431.json` con las 3
+  series, los ajustes y la meta `hypertrophy`. Instalador nuevo (15 334 958 bytes) copiado al
+  escritorio real.
+- **Pendiente del dueño (no es un bloqueo):** reimportar las 410 series de Symmetry desde
+  Ajustes → Importar Symmetry, y decidir si el aviso de recuperación debe también aparecer en
+  Inicio en vez de solo en Ajustes.

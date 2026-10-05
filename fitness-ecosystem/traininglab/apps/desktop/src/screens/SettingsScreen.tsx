@@ -74,6 +74,8 @@ export default function SettingsScreen() {
     exportBackup,
     importBackup,
     importSymmetry,
+    recoverable,
+    restoreAutobackup,
     plan,
   } = useStore();
 
@@ -454,6 +456,31 @@ export default function SettingsScreen() {
             {t("backup.hint")}
           </span>
         </div>
+        {/* Recovery: the log is empty but an automatic snapshot has data. The
+            profile that holds IndexedDB was reset behind our back; this is the
+            copy that was being written outside it all along. */}
+        {recoverable && (
+          <div
+            data-testid="autobackup-recover"
+            className="mt-4 p-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40"
+          >
+            <p className="text-sm font-semibold">{t("autobackup.restore.title")}</p>
+            <p className="text-xs text-[var(--tl-text-muted)] mt-1 max-w-lg">
+              {tInterp("autobackup.restore.body", {
+                date: new Date(recoverable.exportedAt).toLocaleString(),
+                sets: recoverable.sets,
+                sessions: recoverable.sessions,
+              })}
+            </p>
+            <Button size="sm" variant="primary" className="mt-3" onClick={() => void restoreAutobackup()}>
+              <Download className="w-3.5 h-3.5" />
+              {t("autobackup.restore.action")}
+            </Button>
+          </div>
+        )}
+        <p className="text-xs text-[var(--tl-text-muted)] mt-3 max-w-lg">
+          {t("autobackup.where")}
+        </p>
         <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-[var(--tl-border)]">
           <label
             data-testid="import-symmetry"

@@ -204,6 +204,26 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Backup read: {n} sets merged.",
     es: "Copia leída: {n} series fusionadas.",
   },
+  "autobackup.restore.title": {
+    en: "We found your log in a safety copy",
+    es: "Encontramos tu historial en una copia de seguridad",
+  },
+  "autobackup.restore.body": {
+    en: "The app opened with an empty log, but a copy from {date} has {sets} sets and {sessions} sessions. Restoring merges them back in; nothing you log from now on is lost.",
+    es: "La app abrió con el historial vacío, pero una copia del {date} tiene {sets} series y {sessions} sesiones. Al restaurar se fusionan; nada de lo que registres desde ahora se pierde.",
+  },
+  "autobackup.restore.action": {
+    en: "Restore my log",
+    es: "Restaurar mi historial",
+  },
+  "autobackup.restore.missing": {
+    en: "There is no safety copy to restore.",
+    es: "No hay ninguna copia de seguridad que restaurar.",
+  },
+  "autobackup.where": {
+    en: "Automatic copies are written outside the app's own storage, so an update cannot take them away.",
+    es: "Las copias automáticas se escriben fuera del almacenamiento de la app, así que una actualización no puede quitarlas.",
+  },
   "backup.error.app": {
     en: "That file is not a TrainingLab backup.",
     es: "Ese archivo no es una copia de TrainingLab.",
@@ -1384,6 +1404,10 @@ const DICT: Record<string, { en: string; es: string }> = {
   "settings.goals.waistPlaceholder": { en: "e.g. 84", es: "p. ej. 84" },
   // ── Reps per set, decided by the user (2026-09-29 e) ─────────────────
   "slot.repsLabel": { en: "Reps per set", es: "Reps por serie" },
+  "slot.repsRepeat": {
+    en: "blank repeats the last set ({n})",
+    es: "en blanco repite la anterior ({n})",
+  },
   "slot.repsMin": { en: "Min reps", es: "Reps mín" },
   "slot.repsMax": { en: "Max reps", es: "Reps máx" },
   "slot.repsCustom": { en: "yours", es: "tuyo" },

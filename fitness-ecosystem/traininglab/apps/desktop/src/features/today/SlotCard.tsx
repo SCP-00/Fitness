@@ -9,7 +9,7 @@
  * @module features/today/SlotCard
  */
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { parseNumberInput } from "../../lib/parse-num";
+import { inheritedReps, resolveReps } from "../../lib/set-entry";
 import { fromKg, toKg, type WeightUnit } from "../../lib/units";
 import {
   getExerciseTechnique,
@@ -106,6 +107,11 @@ export function SlotCard({
     custom: false,
   };
 
+  // What an empty reps field means — the rule lives in lib/set-entry so it can
+  // be tested, and the UI says it out loud instead of assuming silently.
+  const lastLoggedReps = useMemo(() => inheritedReps(todaySets), [todaySets]);
+  const inheritedValue = lastLoggedReps ?? repRange.min;
+
   const startEdit = (set: TLSet) => {
     setEditId(set.id);
     setEditWeight(
@@ -149,7 +155,8 @@ export function SlotCard({
     // The input speaks the display unit; the log speaks kg.
     const effectiveKg =
       w !== null ? toKg(w, unit) : (suggestion.weight ?? null);
-    const effectiveReps = r ?? repRange.min;
+    const effectiveReps = resolveReps({ typed: r, sets: todaySets, prescribedMin: repRange.min })
+      .reps;
     if (effectiveReps === null || effectiveReps <= 0) return;
     onAddSet(row, isCardio ? null : effectiveKg, effectiveReps);
     setWeight("");
@@ -499,7 +506,7 @@ export function SlotCard({
             placeholder={
               isCardio
                 ? String(row.cardioMin ?? 0)
-                : `${repRange.min}–${repRange.max}`
+                : String(inheritedValue)
             }
             aria-label={t("log.reps")}
             className="tl-input w-20 px-3 py-2 text-sm tabular-nums"
@@ -511,6 +518,14 @@ export function SlotCard({
             <Plus className="w-4 h-4" />
             {t("log.add")}
           </button>
+          {/* Say out loud what an empty field will do. It used to assume the
+              bottom of the range without telling anyone, which is how a set of
+              12 quietly became a set of 8. */}
+          {!isCardio && lastLoggedReps !== null && (
+            <span className="text-[11px] text-[var(--tl-text-muted)] w-full sm:w-auto">
+              {tInterp("slot.repsRepeat", { n: lastLoggedReps })}
+            </span>
+          )}
 
           <div className="tl-swap ml-auto relative">
             <button

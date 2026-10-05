@@ -82,6 +82,7 @@ import {
   saveSettings,
 } from "../lib/db";
 import { buildBackup, mergeById, parseBackup } from "../lib/backup";
+import { scheduleAutobackup, readAutobackup, isWorthRecovering, type RecoverableSnapshot } from "../lib/autobackup";
 import { parseSymmetry } from "../lib/symmetry";
 import { getLanguage, setLanguage, t, tInterp } from "../lib/i18n";
 import {
@@ -176,6 +177,9 @@ export interface TrainingLabStore {
   sharedError: string | null;
   loadError: string | null;
   finished: TLSession | null;
+  /** Non-null when the log is empty but an automatic snapshot has data. */
+  recoverable: RecoverableSnapshot | null;
+  restoreAutobackup: () => Promise<{ ok: boolean; message: string }>;
 
   /* ── Actions ─────────────────────────────────────────────────────────── */
   patch: (over: Partial<TLSettingsData>) => void;
@@ -271,6 +275,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [syncing, setSyncing] = useState(false);
   const [sharedError, setSharedError] = useState<string | null>(null);
   const [weekSeed, setWeekSeed] = useState(0);
+  const [recoverable, setRecoverable] = useState<RecoverableSnapshot | null>(null);
 
   // ── Boot ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -322,6 +327,45 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       configureNotifications(settings.notifications);
     }
   }, [settings]);
+
+  // Safety copy outside the WebView profile. Watching the state instead of
+  // patching each save means no write path can forget it — logging, editing,
+  // restoring a backup, importing Symmetry, settings, readiness all land here.
+  // The debounce inside collapses a burst into one file, and `logSignature`
+  // skips the write when nothing actually changed.
+  useEffect(() => {
+    // `settings` is the first thing hydration resolves, so a non-null value
+    // means the store is populated rather than mid-load; the debounce then
+    // swallows the rest of the hydration writes into a single snapshot.
+    if (!settings) return;
+    void scheduleAutobackup({ sets, sessions, health, settings, decisionModel: model });
+  }, [sets, sessions, health, settings, model]);
+
+  // An empty log with a snapshot on disk is the profile having been reset
+  // behind our back. Say so instead of showing an empty app and letting the
+  // owner discover the loss later; the restore itself is one tap, because
+  // silently rewriting someone's history is worse than asking.
+  useEffect(() => {
+    if (!settings) return;
+    if (sets.length > 0 || sessions.length > 0) {
+      setRecoverable(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const backup = await readAutobackup();
+      if (cancelled || !backup) return;
+      if (!isWorthRecovering({ backup, localSets: 0, localSessions: 0 })) return;
+      setRecoverable({
+        sets: backup.sets.length,
+        sessions: backup.sessions.length,
+        exportedAt: backup.exportedAt,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [settings, sets.length, sessions.length]);
 
   // Auto-dismiss the banner. A newer celebration replaces the timer, so a
   // record logged right after an achievement still gets its full moment.
@@ -467,11 +511,6 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     [sets, sessions, health, settings, model],
   );
 
-  /**
-   * Merge a backup into this device: union by id for sets, sessions and health
-   * records, settings and the learned model only when the file carries them.
-   * Nothing is deleted — see `lib/backup.ts` for why a restore must not wipe.
-   */
   const importBackup = useCallback(
     async (file: File): Promise<{ ok: boolean; message: string }> => {
       const parsed = parseBackup(await file.text());
@@ -512,6 +551,23 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     },
     [sets, sessions, health, applySettings],
   );
+
+  /**
+   * Bring back the automatic snapshot by handing it to the very same merge
+   * path a file import uses, so a recovery cannot behave differently from a
+   * restore the owner chose by hand. Silent rewriting of somebody's history
+   * would be worse than asking, hence one explicit tap.
+   */
+  const restoreAutobackup = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
+    const backup = await readAutobackup();
+    if (!backup) return { ok: false, message: t("autobackup.restore.missing") };
+    const file = new File([JSON.stringify(backup)], "traininglab-autobackup.json", {
+      type: "application/json",
+    });
+    const result = await importBackup(file);
+    if (result.ok) setRecoverable(null);
+    return result;
+  }, [importBackup]);
 
   /**
    * Symmetry history import. Same merge semantics as the backup restore —
@@ -1331,6 +1387,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     exportBackup,
     importBackup,
     importSymmetry,
+    recoverable,
+    restoreAutobackup,
   };
 
   return (
