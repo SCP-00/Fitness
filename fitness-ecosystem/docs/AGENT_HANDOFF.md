@@ -1460,3 +1460,44 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   aserción: si no aparece en 45 s, la app está rota de verdad y sigue fallando. Dos ejecuciones
   seguidas: **PASS**, y ahora dicen que la ventana apareció a los **0,5 s**, que es el dato que
   hacía falta para saber si 8 s eran poco o si el arranque se había colgado.
+
+## 2026-10-05 (l) — Su sesión del 05-10, el 26 kg de Symmetry y el CSV que él corrige
+
+- **El dueño entrenó lo prescrito** (hombros/trapecios/tríceps, 13 series) y pasó tres cosas:
+  **(1)** preguntó por un posible desbalance entre brazos, **(2)** descubrió que Symmetry registró
+  26 kg en laterales cuando el peso real es 13 por lado, **(3)** pidió un CSV en la raíz del
+  proyecto con los datos importados para corregirlo él, y `owner-training-log.csv` queda ya
+  generado y **gitignored** (es su cuerpo, no código).
+- **El 26 kg es un problema real, y más amplio que hoy.** Su histórico de laterales es **12,5 kg**
+  durante semanas y su mejor marca, y el 26 de hoy es **la suma de las dos mancuernas**. Si el
+  histórico queda en `weightKg` y hoy en el total, cualquier estadística de progresión lee un
+  **doblamiento falso**. Las columnas del CSV son justamente para que eso no vuelva a pasar:
+  `weight_kg_per_implement` (la carga de UNA mancuerna: es lo que significa algo) y
+  `weight_kg_total` (las dos manos: es lo que Symmetry registró hoy por error). Las 425 filas
+  importadas conservan el número tal como lo escribió Symmetry —no se reinterpretan, que es
+  justo lo que él va a corregir— y las 13 de hoy llevan las dos columnas. Se marcan con
+  `REVISAR` las filas que rompen su propio patrón; hoy hay una: **19 kg en laterales del 26-09**.
+- **Sobre el desbalance, con los datos y sin diagnosticar a nadie:**
+  - **La extensión de tríceps no demuestra nada sobre el brazo izquierdo.** 12,6 kg estaba **por
+    encima de su máximo probado** (11,3 kg el 30-09), y a **10 kg hizo 2×10 con ambos brazos
+    completadas**. Es un problema de elección de carga más el hecho de que la extensión unilateral
+    por encima de la cabeza es el ejercicio más dependiente de control motor de los que hace
+    (depresión escapular, alineación de codo, excéntrica lenta). Y la serie pesada la hizo **solo
+    con la derecha**, así que no hay comparación a igual carga.
+  - **Que el bíceps izquierdo aguante más no contradice nada.** Curl y extensión son
+    calidades distintas; la extensión exige control escapular, que es habilidad, no fuerza.
+  - **El press sí muestra una diferencia pequeña y en el lado habitual:** el derecho se adelantó 2
+    repeticiones (cedió en 7 y 8, el izquierdo en 5 y 6) **solo en las dos series al límite**; las
+    dos primeras a 10 repeticiones fueron simétricas. Carga elegida (19,07 por lado) **por debajo
+    de su mejor marca de 20 kg**, así que fue una buena decisión. Dos repeticiones de diferencia
+    en press bilateral pesado es asimetría normal; lo que dispararía una investigación es que el
+    izquierdo **fallara con una carga que el derecho completa limpiamente**.
+  - **Lo sensato:** usar 10 kg como carga de trabajo (3–4×10–12) y no volver a
+    12,6 hasta que 10 kg dé ≥15 repeticiones en los dos brazos. Si hay dolor (no debilidad), eso
+    es asunto de un profesional.
+- **Formato de interacción con la IA que quiere:** él escribe la sesión en un bloque de código con
+  `ejercicio: series×reps×peso` y notas entre llaves. Es un formato parseable y muy bueno para
+  alimentar un análisis técnico: el siguiente paso natural es un importador que acepte ese bloque
+  directamente y lo escriba en la app, con la convención de una mancuerna ya resuelta.
+- **Pendiente:** el CSV todavía no tiene importador. Hoy se corrige a mano y se puede leer con un
+  script; el trabajo que lo cerraría es un «Importar CSV» en Ajustes, como el de Symmetry.

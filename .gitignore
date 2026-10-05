@@ -137,3 +137,6 @@ fitness-ecosystem/.pages/
 IMPORT_SYMMETRY/
 *.traineddata
 fitness-ecosystem/.cache/
+# The owner's hand-correctable training log. It lives at the repo root on
+# purpose — he opens and edits it — but it is his body data, not source code.
+owner-training-log.csv
