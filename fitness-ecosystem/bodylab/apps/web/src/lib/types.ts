@@ -78,7 +78,32 @@ export type MeasurementType =
   | "calf_left"
   | "calf_right"
   | "shoulders_left"
-  | "shoulders_right";
+  | "shoulders_right"
+  // ── Girths the schema lacked (tape only) ──────────────────────────────────
+  | "hip_upper"
+  | "triceps"
+  | "biceps_flexed"
+  | "forearm_flexed"
+  | "mid_axillary"
+  | "ankle"
+  // ── Segment lengths (tape + wall/ruler; measured, never guessed) ──────────
+  | "stature_sitting"
+  | "arm_span"
+  | "subischial_leg_length"
+  | "upper_arm_length"
+  | "forearm_length"
+  | "hand_length"
+  | "thigh_length"
+  | "lower_leg_length"
+  | "foot_length"
+  // ── Bone breadths (ruler + two books; no caliper, no scanner) ─────────────
+  | "biacromial"
+  | "bi_iliac"
+  | "wrist_breadth"
+  | "elbow_breadth"
+  | "knee_breadth"
+  | "malleolar_breadth"
+  | "hand_width";
 
 export type CompositionType =
   "body_fat_percentage" | "lean_mass" | "bone_mass" | "water_percentage";
@@ -131,7 +156,12 @@ export interface MeasurementTypeInfo {
   unit: string;
   min: number;
   max: number;
-  category: "circumference" | "composition" | "conditioning";
+  category:
+    | "circumference"
+    | "length"
+    | "breadth"
+    | "composition"
+    | "conditioning";
 }
 
 // ============================================================================

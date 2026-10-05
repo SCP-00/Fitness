@@ -39,6 +39,8 @@ import { useStore } from "../app/store";
 import { BodyMap } from "../features/stats/BodyMap";
 import { ConstancyCard } from "../features/stats/ConstancyCard";
 import { NumbersCard } from "../features/stats/NumbersCard";
+import { WeeklyVolumeCard } from "../features/stats/WeeklyVolumeCard";
+import { VolumeTargetCard } from "../features/stats/VolumeTargetCard";
 import ConditionCard from "../features/today/ConditionCard";
 import { conditionProfile, heightMOf } from "../features/stats/condition";
 import {
@@ -161,6 +163,12 @@ export default function ProgressScreen() {
         />
       ) : (
         <>
+          {/* ── Volume target ────────────────────────────────────────────
+              First thing on the page (2026-10-05, owner: "Progreso is hard to
+              read"): the only card that answers "is this week enough?", using
+              the published hypertrophy band instead of our own index. */} 
+          <VolumeTargetCard />
+
           {/* ── KPIs ─────────────────────────────────────────────────────── */}
           <section className="tl-metrics">
             <MetricTile
@@ -360,6 +368,9 @@ export default function ProgressScreen() {
                   </div>
                 </div>
               </section>
+
+              {/* ── Weekly volume (T4): the tonnage ledger ───────── */}
+              <WeeklyVolumeCard />
 
               {/* ── Split per family ─────────────────────────────────────── */}
               <section className="tl-card">

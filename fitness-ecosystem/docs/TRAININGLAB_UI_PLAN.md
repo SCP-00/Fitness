@@ -410,6 +410,7 @@ telemetry · any borrowed artwork · any number from a source we cannot cite.
 | **P4 · Ejercicios + ficha** ✅ _(`Rango` gated on §9)_     | list, filters, four tabs; `Rango` gated on §9                                                                     | the library makes ZEN's _Sustituir_ fast                                                                            |
 | **P5 · Progreso** ✅ _base + condición whole-body reportada_; ⏳ _strength-reference lens_ | selectors, `TrendChart`, KPIs, volume/goal lenses, volume stack, records, coach cards, separate `ConditionCard`; published-standard per-family strength lens is research/owner-gated | needs evidence and a defensible exercise-to-region mapping, not just UI work |
 | **P6 · Media** ⏳                                          | credits manifest, fetch script, curated committed subset, cascade rules                                           | last, and independent: the layout must already look finished without it                                             |
+| **P7 · Histórico Symmetry + volumen semanal** ⏳ _(owner 2026-10-04)_ | T1 curar tabla ÷2 + mapeo de 58 nombres → `exerciseId`; T2 cargar el JSON como sesiones reales (warmups, badges D/F, `durationSec`); T3 encaje de interfaz; T4 tarjeta de volumen semanal en Progreso | su historia real es la base de todo historial/tendencia de la app; el volumen semanal es cómo el dueño valida progresos |
 
 Every phase: `tsc -b`, root + web tests, lint, a build, screenshots at both widths, this
 file updated if a rule moved, one commit.
@@ -466,7 +467,12 @@ unchanged and unsupported regions must not be colored as weak/strong.
 owner decision and independent prototype review; (2) the media manifest and the curated photo subset (§8);
 (3) `Rango` (§9), which waits for a cited source; (4) `Historial` becomes a chart
 when there is history to chart; (5) `src/features/today/ui.tsx`, the deprecated
-re-export shim, disappears with its last import.
+re-export shim, disappears with its last import; (6) **P7 T1–T3** (owner 2026-10-04):
+curate the ÷2 table, map the 58 Symmetry names to `exerciseId` and load the OCR JSON
+as real sessions (warmups, D/F badges, `durationSec`, preview + merge, idempotent);
+(7) **P7 T4**: weekly-volume card in Progreso (tonnage per week, total and per
+family, warmups excluded, trend week over week) to validate strength/mass progress —
+semantically separate from the exposure lens and never labelled as strength itself.
 
 The TrainingLab desktop shell is now **0.2.0** (`src-tauri/tauri.conf.json`,
 `Cargo.toml`, `package.json` and the `APP_VERSION` shown in Ajustes) — the web

@@ -695,3 +695,616 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
 - **Siguiente paso seguro:** publicar `v1.0.0-beta.8` desde la etiqueta una vez que el
   dueño resuelva la clave de firma; el endpoint y la versión ya apuntan a esa etiqueta, así
   que en cuanto exista un `latest.json` firmado el chequeo funciona sin tocar nada más.
+
+## 2026-10-04 — Importador de Symmetry a 20/20 sesiones contra cabecera (E2E)
+
+- **Resultado:** el importador OCR (`scripts/import-symmetry.mjs`) cierra el análisis E2E
+  con **las 20 sesiones cuadrando exactamente con el contador de series de la propia
+  cabecera de Symmetry** (425 series recuperadas; antes: 410 con 7 sesiones descuadradas).
+  Se aplicaron las correcciones del dueño: (a) **último día de gimnasio = 2026-09-26** →
+  cada sesión lleva `location: "gym"` (15) u `"home"` (5), y los pesos altos de máquina
+  (leg press 204,1 kg, Smith 145–163,3 kg, aducción 77,1 kg) son datos reales de gimnasio,
+  con tope de 28,6 kg en casa; (b) **convención de peso**: en ejercicios de DOS mancuernas
+  Symmetry guarda el TOTAL (laterales 2×12,5 → 25) y se importa la mitad por mancuerna
+  (`weightKg` dividido en 70 series, con el crudo en `symmetryWeightKg` y
+  `weightBasis: "bilateral-db-total"`), los unilaterales de una mancuerna (remo a una
+  mano, 25 kg) y el resto de implementos (barra, máquina, cable, peso sostenido) se
+  quedan tal cual (`as-recorded`). La tabla de clasificación es explícita en el script
+  y el dueño puede vetar ejercicio a ejercicio.
+- **Bugs corregidos en esta iteración (todos verificados contra la cabecera):**
+  1. **Series con hora** (`Set Time`: `1 01:00` — Plank, Dead Hang, estiramientos,
+     isométricas de cuello) no se parseaban: explicaban 17 series perdidas en 6 sesiones
+     (−8 el 04/10, −3 el 29/09, −2 el 25/09 y el 24/09, −1 el 05/09, −1 el 24/09).
+     Ahora se parsean con `durationSec` (TLSet no tiene campo de duración).
+  2. **Cabecera de columna corrupta promovida a ejercicio** (`sel Keps` ← "Set Reps"):
+     añadía 4 sets DUPLICADOS el 02/10 (+4). Fix: rechazo por distancia de edición ≤2
+     contra frases de cabecera, más `set time`/variantes en `HEADER_NOISE`.
+  3. **Stats sin kg** (`39min 17`, sesión solo de peso corporal del 29/09): el contador
+     de cabecera de esa sesión se perdía; fallback dedicado → también verificable.
+  4. **Decimal perdido transesión**: `771 → 77,1` (aducción) — el ancla local ya no
+     basta (el 08/09 todas las series salen como 771); ahora hay ancla global por
+     ejercicio con sesiones anteriores. 5 reparaciones en total.
+  5. **Líneas de serie tolerantes**: `1 40.8 kg x reps` (reps ilegible) y
+     `1 N.3 kg x 8 reps` (peso ilegible) ahora parsean con `null` en vez de perderse.
+  6. **`0 kg` explícito de Symmetry → `null`** (peso corporal, coherente con las series
+     sin kg) — 70 series BW.
+  7. **Limpieza de nombres**: token inicial en minúscula (`e Bicycle Crunch`), de dos
+     letras (`Bs Incline Bench Press`), solo símbolos (`[ -.] `, `§ | `, `©» `), y
+     guardas para líneas con unidades (`ko x`) o `rane`.
+- **Recuperación de dígitos ilegibles (el dueño autorizó corregir a mano):**
+  re-OCR a 4× en tres modos (psm 4/6/11) + recorte de la línea + **comparación XOR de
+  píxeles del glifo contra los dígitos de referencia de la misma tipografía** (banco de
+  las 45 capturas): `1 40.8 kg x ?` → **11 reps**; `1 N.3 kg x ?` → **11,3 kg**;
+  `2 31.8 kg x ?` → **9**; y 5 sets con **0 repeticiones literales** en la captura
+  (Pause Squat ×4 el 08/09, remo a una mano F el 24/09; XOR 0,000–0,008 vs 294
+  referencias del dígito 0, glifo de un solo dígito). Quedan registrados en `ocrFixes`.
+  Las sondas de diagnóstico (`scripts/.probe-*`) se borraron tras usarse.
+- **Verificación (comandos reales):**
+  - `node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import.json`
+    → `set counts: all 20 verifiable sessions match the header` · 425 series ·
+    35 bloques solapados cosidos.
+  - Idempotencia: dos corridas seguidas → MD5 idéntico `f48b713e65fe3b62e965f2b3067021df`.
+  - Auditoría del JSON: `location` correcto 20/20, conteos 20/20, 70 conversiones ÷2
+    con matemática exacta, ejemplos del dueño verificados (laterales 25→12,5 · remo
+    25→25), sin basura en nombres (salvo el personalizado conocido), sin `0 kg`.
+  - `node scripts/verify-symmetry-overlap.mjs ../IMPORT_SYMMETRY` → 44 pares,
+    control #1↔#45 XOR 0,2106 separado de los solapes reales (mejor 0,0000).
+    De los 19 cortes entre sesiones, 18 aparecen como discontinuidad (12 con la
+    firma típica 96% @~60 px, XOR ~0,25; el resto, por cabecera nueva o hueco de
+    tiempo) y el par #29→#30 comparte contenido exacto. De los 25 pares
+    intra-sesión: 10 exactos (XOR≤0,018), 10 con XOR 0,02–0,08 y 5 con 0,08–0,29
+    (saltos de scroll de más de una pantalla entre tomas). Ninguna captura falta:
+    cualquier hueco con datos perdidos rompería el cuadre contra cabecera y todo
+    cuadra.
+  - `pnpm lint` → 0 avisos / 0 errores.
+- **Pendiente / decisión del dueño:**
+  1. **Revisar la tabla bilateral ÷2** (7 ejercicios: Alterna bíceps, Bíceps bilateral
+     con rotación, Apertura con mancuernas, Encogimientos, Press martillo tumbado,
+     Laterales, Press de hombro sentado — ver `BILATERAL_DB` en el script). Los
+     crunchs con mancuerna (`Dumbbell Oblique Crunch`, `Sit Up (Weighted)`,
+     `Weighted Crunch`) se dejaron **sin dividir** por ser una sola mancuerna
+     sostenida; si alguno era en realidad de dos, se añade a la tabla.
+  2. **`pa® (Maquina)`** (03/09, 18 kg ×4, junto a "Elevación de pierna tumbado con
+     palanca"): nombre personalizado en español que el OCR no descifra; hace falta
+     el nombre real para el mapeo a `exerciseId`.
+  3. Las 5 series con 0 reps: confirmar si Symmetry mostraba realmente 0 (entradas sin
+     ajustar el contador). No afectan volumen ni 1RM (Epley las ignora).
+  4. Título/desfecha con día de la semana erróneo en 7 sesiones = error de huso de
+     Symmetry (ya verificado en imagen, se replica tal cual) y `11min` dudoso del
+     11/09 (su título dice "Duración real 52 min").
+  5. Mapeo a `exerciseId` de los 58 nombres (22 sin curar) y decisión de commit.
+- **Git:** HEAD `f6c4aef` (sin push). Sucios sin commitear: `.gitignore` (ignora
+  `IMPORT_SYMMETRY/`, `*.traineddata`, `.cache/`), `fitness-ecosystem/package.json` +
+  `pnpm-lock.yaml` (deps `pngjs`/`tesseract.js` del importador) y sin rastrear los
+  tres scripts nuevos (`import-symmetry`, `map-symmetry-exercises`,
+  `verify-symmetry-overlap`); `.cache/symmetry-import.json` queda ignorado y
+  `Modelo2D_Woman.png` es preexistente y no se tocó. Nada se ha commiteado.
+- **Siguiente paso seguro:** que el dueño revise la tabla ÷2 y los puntos 1–3; después,
+  commit del trío de scripts + deps + `.gitignore` (todo local, sin datos personales)
+  y el mapeo de ejercicios al catálogo.
+
+## 2026-10-04 — Encargo del dueño: histórico Symmetry a TrainingLab + volumen semanal (documentación)
+
+- **Fase/tarea:** Fase 2B del brief (T1–T4); esta sesión cubrió el primer punto del
+  pedido del dueño: **actualizar TODA la documentación para las siguientes sesiones**.
+- **Resultado:** la documentación queda alineada con el nuevo encargo en cuatro
+  fuentes, sin tocar código:
+  - `ROADMAP.md` — cabecera a **2026-10-04 (b)**; fila de snapshot «Histórico
+    Symmetry» (20/20, 425 series); bloque **«Histórico Symmetry + volumen semanal»**
+    en Fase B con las tareas T1 (curar ÷2 + mapeo de 58 nombres → `exerciseId`),
+    T2 (carga como sesiones reales: ids deterministas, `warmup` ← W, D/F en
+    `notes`, `durationSec`, vista previa + combinado), T3 (revisión de interfaz) y
+    T4 (volumen semanal en Progreso); líneas de historial 2026-10-04 (a) Tauri y
+    (b) importador E2E.
+  - `knowledge.md` — nueva sección **«Symmetry import»** (rutas, comandos, estado
+    verificado, convención ÷2/per-mancuerna, gym/casa ≤26/09, badges, pendientes
+    T1–T4) y las dos órdenes de script en el bloque de comandos.
+  - `docs/BUFFY_IMPLEMENTATION_BRIEF.md` — nueva **Fase 2B** con el orden de
+    ejecución T1–T4 y sus criterios, y decisión del dueño nº 6 (veto de la tabla
+    ÷2) en §6. La Fase 3 (mapa muscular) y su puerta de aprobación **no se tocan**.
+  - `docs/TRAININGLAB_UI_PLAN.md` — fase **P7** en §14 y pendientes (6)(7) en §15.
+- **Pruebas:** los cambios son solo Markdown — no hay suite que ejecutar para ellos;
+  verificación por grep de anclas (cabeceras insertadas y números de fase) y
+  relectura de cada cambio. Sin cambios de código desde la última verificación verde
+  del importador (20/20, MD5 idéntico, lint 0/0).
+- **Decisiones/gates:** la tabla ÷2 **no está cerrada** hasta el veto del dueño
+  (crunchs con mancuerna + `pa® (Maquina)`); la puerta del mapa muscular sigue
+  cerrada; los datos personales siguen fuera de git (`IMPORT_SYMMETRY/`, `.cache/`).
+- **Estado Git:** sin commits. HEAD `f6c4aef` (sin push). Sucios preservados:
+  `.gitignore`, `fitness-ecosystem/package.json`, `pnpm-lock.yaml`, y ahora además
+  los cuatro documentos de esta entrada + `knowledge.md` + `ROADMAP.md`.
+  Sin rastrear: los tres scripts Symmetry, `.cache/symmetry-import.json` (ignorado)
+  y `Modelo2D_Woman.png` (preexistente, no tocado).
+- **Punto de reanudación:** tarea **T1** — abrir `scripts/map-symmetry-exercises.mjs`
+  con los 58 nombres de `.cache/symmetry-import.json`, contrastar `BILATERAL_DB`
+  contra los traits del catálogo (`loadType`, `unilateral`) y preparar la lista de
+  decisiones del dueño (7 bilaterales ÷2, 3 crunchs sin dividir, `pa®`).
+- **Siguiente paso seguro:** ejecutar el mapeo, producir la tabla curada
+  nombre → `exerciseId` con los huecos marcados, y presentar al dueño la lista de
+  vetos antes de tocar T2.
+
+## 2026-10-04 — T1 curado + T2 carga en la app (Ajustes → Importar Symmetry)
+
+- **Fase/tarea:** Fase 2B del brief, tareas T1 (curación/mapeo) y T2 (carga).
+- **Resultado T1:** `scripts/map-symmetry-exercises.mjs` ahora lleva una tabla
+  `CURATED` con los **58/58 nombres decididos explícitamente**: 45 con id de
+  catálogo (14 son **propuestas vetables** que cruzan variante/equipo — p. ej.
+  `Rowing Machine → seated-cable-row`, `Pause Squat → barbell-squat`) y 13 sin
+  equivalente (crunchs, encogimientos, abducción de cadera en máquina, cuello,
+  movilidad, `pa® (Maquina)`), que quedan con `exerciseId: null` y motivo —
+  **nunca se inventa un id**. Validación automática: un id curado inexistente en
+  el catálogo aborta el script. Resultado: **356/425 series (84%) con id, 35 ids
+  distintos, 0 sin resolver**. Bug real encontrado y corregido: el array plano
+  `session.sets` quedaba con `exerciseId: null` (solo se rellenaba
+  `exercises[]`); ahora el script rellena ambos por nombre.
+- **Resultado T2:** la app importa el JSON en **Ajustes → Datos → «Importar
+  historial de Symmetry»**:
+  - `traininglab/apps/desktop/src/lib/symmetry.ts` (nuevo, puro): JSON →
+    `TLSet`/`TLSession` con **ids deterministas** (FNV-1a de contenido →
+    reimportar es no-op vía `mergeById`), sets sin id de catálogo contados y
+    descartados, `warmup` ← badge W, D/F en `notes`, `durationSec` para series
+    con tiempo, timestamp a **mediodía local** del día de la sesión (el
+    `T00:00Z` del OCR caería en el día anterior en UTC−4 y descolocaría las
+    vistas semanales), `completedAt` = inicio + duración, y
+    `title`/`location`/`source: "symmetry"` en la sesión.
+  - `types.ts`: campos aditivos opcionales `TLSet.durationSec` y
+    `TLSession.title|location|source` (registros/copias viejos no se ven
+    afectados; `parseBackup` ya conservaba campos desconocidos).
+  - `store.tsx`: acción `importSymmetry` con la misma semántica de fusión que
+    la restauración de copias (nunca borra; settings intactos si el archivo no
+    los trae); `SettingsScreen.tsx` + `i18n.ts`: botón, hint y 3 errores ES/EN.
+- **Verificación (comandos reales):**
+  - `npx vitest run tests/training/test_symmetry_import.test.ts` → **7/7**
+    (determinismo, mapeo warmup/notas/tiempo, día local en cualquier TZ,
+    rechazo de no-Symmetry, round-trip `parseBackup` con `dropped: 0`, merge
+    idempotente).
+  - Test temporal contra **el JSON real** (borrado después): 20 sesiones,
+    **356 sets convertidos, 69 descartados sin id, 0 filas corruptas**, 12
+    series con tiempo, 19 warm-ups, ids idénticos entre dos parses.
+  - `pnpm test` → **939/939 (61 archivos)** · `npx tsc -b` (TrainingLab) → 0 ·
+    `pnpm lint` → 0/0 · `npx vite build` → OK (1,11 s).
+- **Decisiones/gates:** pendiente del dueño (no se ha importado nada en su app
+  todavía): (1) veto de las 14 propuestas de mapeo; (2) lista de 13 huecos de
+  catálogo (¿añadir crunch/encogimientos/abducción?); (3) tabla ÷2 (7 ejercicios
+  bilaterales + los 3 crunchs sin dividir). La puerta del mapa muscular sigue
+  cerrada.
+- **Estado Git:** sin commits; HEAD `f6c4aef` (sin push). Además de los sucios
+  previos (`.gitignore`, `package.json`, `pnpm-lock.yaml` y los docs), ahora
+  cambian: `scripts/map-symmetry-exercises.mjs`,
+  `traininglab/apps/desktop/src/lib/{types,symmetry,i18n}.ts`,
+  `src/app/store.tsx`, `src/screens/SettingsScreen.tsx` (nuevo),
+  `tests/training/test_symmetry_import.test.ts` (nuevo) y la caché
+  `.cache/symmetry-import.json` (ignorada, ahora con ids).
+- **Punto de reanudación:** presentar al dueño las tres listas de decisión
+  (14 propuestas ÷13 huecos ÷7 bilaterales); después T3 (revisión de interfaz
+  con datos importados reales) o T4 (volumen semanal en Progreso).
+- **Siguiente paso seguro:** con el visto bueno, ejecutar en la app
+  «Importar historial de Symmetry» con `.cache/symmetry-import.json` y verificar
+  en Progreso/Historial que las 20 sesiones aparecen; después T4.
+
+## 2026-10-05 — T1–T4 cerrados y verificados, datos reales importados en BodyLab, ambos installers reconstruidos
+
+- **Fase/tarea:** cierre del bloque «Histórico Symmetry + volumen semanal» (Fase 2B,
+  T1–T4) del encargo del dueño, más el encargo nuevo del 2026-10-05: **«compila mi
+  aplicación de escritorio con estos cambios y mis datos verdaderos importados, también
+  en BodyLab»**.
+- **T1 · catálogo y mapeo:** los 13 huecos se cerraron **añadiendo 8 ejercicios** en
+  `bodylab/core/exercises/src/catalog-expansion.ts` (`crunch`, `decline-crunch`,
+  `oblique-crunch`, `dumbbell-shrugs`, `tricep-kickback`, `wrist-roller`,
+  `hip-abduction-machine`, `hip-adduction-machine`) con sus `traits` en
+  `traits-expansion.ts` → **143 → 151 ejercicios**. Las 9 curaciones correspondientes
+  en `scripts/map-symmetry-exercises.mjs` cierran también la antigua propuesta de
+  abducción de cadera. Resultado: **53 nombres con id (13 vetables), 410/425 series
+  (96 %), 0 sin resolver** (antes 356/425 = 84 %). Pack LLM regenerado
+  (`node scripts/build-llm-pack.mjs` → 151 ejercicios, 100 con media).
+- **T2/T3 · importación ejecutada en la app:** Ajustes → Mis datos → «Importar historial
+  de Symmetry» → *«Symmetry: 20 sesiones y 410 series fusionadas (15 filas descartadas,
+  sin equivalente en el catálogo)»*; sets 248 → **658**; IndexedDB `traininglab` con
+  **40 sesiones** (20 previas + 20 importadas). **Idempotencia probada en vivo:**
+  reimportar el mismo archivo deja 658/40. Progreso tras importar: 40 sesiones, 50
+  ejercicios distintos, 28 días entrenados, 505 sets / 220.616 kg / 437 kg por serie;
+  Ejercicios: «151 ejercicios · 12 con indicaciones propias de variante».
+- **T4 · volumen semanal:** `weeklyVolume(sets, weeks=8, now?)` en
+  `traininglab/apps/desktop/src/features/stats/derive.ts` (lunes como inicio, warm-ups
+  fuera, series de 0 kg cuentan como series, tonelaje de familia acredita una sola vez
+  por serie, tendencia contra la **misma cantidad de días transcurridos** de la semana
+  anterior con el umbral 10 % ya existente) + `WeeklyVolumeCard.tsx`
+  (`data-testid="weekly-volume"`, 8 barras, kg de la semana, flecha de tendencia, top-5
+  familias y descargo explícito «tonelaje registrado, no fuerza») en
+  `src/screens/ProgressScreen.tsx`, con 11 claves `progress.weekly.*` ES/EN.
+- **Datos reales en BodyLab (encargo nuevo):** nuevo `scripts/build-owner-import.mjs`
+  → `.cache/bodylab-owner.json` + `.cache/bodylab-owner.mapping.json` (**ambos
+  gitignorados**: datos personales en repo público). Perfil 76 kg · 1,76 m · nacimiento
+  **2005-09-28** (dado por el dueño en la sesión; la edad la deriva `lib/age.ts`) · sexo
+  masculino, y 10 mediciones: peso 76, muñeca 16,5, hombros 116, pecho 95, cintura 83,
+  caderas 97, muslo izq/der 55 + **muslo genérico 55** (el Resumen y el mapa leen el
+  tipo genérico; la simetría usa los lados) y pantorrilla 39.
+  - Importado **por la interfaz real** (*Datos → Importar*, forma legacy `format:
+    "bodylab"`), no inyectando en IndexedDB. Resultado en pantalla: «Datos importados
+    correctamente», Resumen «Buenos días, Andy» con **cobertura 83 % (5/6)**, «Faltan 1
+    medidas», edad cronológica **21**, WHtR 0,472, mapa corporal coloreado, Historial
+    9 circunferencias + 1 composición + 2 bilaterales = 10, Simetría Muslo 55/55 =
+    100 % balanceado. `IMPORT_DATA` **reemplaza**, así que reimportar el mismo archivo
+    no duplica (comprobado: 10 filas antes y después).
+  - **No caben en `MEASUREMENT_TYPES` (reportados, nunca inventados):** «manzana» 37,5
+    (no existe el tipo), «boxer» 86 (no existe; la app usa caderas/glúteos), «abdomen
+    templado» 78 (se guardó el abdomen **libre** 83, que es el protocolo de la app),
+    talla de zapato 26 (no es medida corporal), **bíceps izq/der sin valor**. **Nunca
+    dados:** cuello, antebrazos izq/der, pantorrillas izq/der, % grasa, FC en reposo.
+- **Verificación (comandos reales, 2026-10-05):**
+  - `npx vitest run` (raíz) → **947/947, 62 archivos**, exit 0.
+  - `cd bodylab/apps/web && npx vitest run` → **115/115, 8 archivos**, exit 0.
+  - `npx oxlint` (web) → **0 warnings, 0 errores**.
+  - `cd traininglab/apps/desktop && npx tsc -b && npx vite build` → exit 0 (720 ms).
+  - `npx tauri build` (TrainingLab 0.2.0) → **exit 0**, instalador NSIS
+    `traininglab/apps/desktop/src-tauri/target/release/bundle/nsis/TrainingLab_0.2.0_x64-setup.exe` (15,3 MB)
+    + `target/release/traininglab.exe`.
+  - `npx tauri build` (BodyLab 1.0.0-beta.8) → instalador
+    `bodylab/apps/desktop/src-tauri/target/release/bundle/nsis/BodyLab_1.0.0-beta.8_x64-setup.exe` (23,4 MB)
+    + `bodylab.exe`, pero **exit 1**: `createUpdaterArtifacts` pide
+    `TAURI_SIGNING_PRIVATE_KEY`, que solo existe en el workflow de release. El
+    instalador es válido; lo que falta es la firma del updater.
+  - El bundle compilado contiene los cambios: `{id:`crunch`…}` y «Crunch Clásico» /
+    «Abducción de Cadera» en `dist/assets/catalog-exercises-*.js`, `weekly-volume` y
+    «Esta semana» en `index-*.js`, `import-symmetry` 1 vez, `llm/knowledge.json` = 151.
+  - **Nota de honestidad:** una primera pasada de la suite web dio 1 fallo
+    (`page-smoke` → «Test timed out in 5000ms») por compilar Rust en paralelo; el mismo
+    archivo aislado pasó en 2,49 s y la suite completa volvió a **115/115** sin carga.
+    Se reporta como timeout por contención, no como flake del código.
+- **Decisiones/puertas abiertas (del dueño):** (1) vetar o confirmar las 13 propuestas de
+  mapeo variante/equipo; (2) nombrar `pa® (Maquina)` (03/09, 18 kg ×4) — sigue sin
+  equivalente; (3) confirmar la tabla ÷2 de `BILATERAL_DB` (7 ejercicios) y los 3 crunchs
+  con mancuerna sin dividir; (4) decidir si **manzana**, **boxer** y **abdomen templado**
+  entran como tipos nuevos en `MEASUREMENT_TYPES` (hoy se descartan con motivo escrito);
+  (5) confirmar que el nombre del perfil es «Andy» (se infirió del usuario de Windows).
+  **La puerta del mapa muscular por fuerza de referencia externa sigue cerrada.**
+- **Estado Git:** sin commits; rama `main`, HEAD `f6c4aef` (sin push). Cambian además de
+  lo ya anotado: `bodylab/core/exercises/src/{catalog-expansion,traits-expansion}.ts`,
+  `scripts/{map-symmetry-exercises.mjs,build-owner-import.mjs(nuevo)}`,
+  `bodylab/apps/web/src/__tests__/integration-total.test.ts`,
+  `traininglab/apps/desktop/src/features/stats/{derive.ts,WeeklyVolumeCard.tsx(nuevo)}`,
+  `src/screens/ProgressScreen.tsx`, `src/lib/i18n.ts`,
+  `tests/training/test_weekly_volume.test.ts (nuevo)` y el pack regenerado
+  `traininglab/apps/desktop/llm/{knowledge.json,EXERCISES.md}`. `.cache/` ignorado.
+  `Modelo2D_Woman.png` (raíz, sin trackear) **no se ha tocado**.
+- **Punto de reanudación:** enseñar al dueño los dos instaladores y el par de archivos de
+  `.cache/`, con la instrucción exacta de importarlos (BodyLab: *Datos → Importar*;
+  TrainingLab: *Ajustes → Mis datos → Importar historial de Symmetry*). Los datos **no**
+  viajan dentro del instalador: IndexedDB es por dispositivo.
+- **Siguiente paso seguro:** con sus respuestas a las 5 decisiones, cerrar la lista de
+  mapeo y (si lo quiere) añadir los tipos `apple`/`boxer`/`waist_tensed` al esquema con
+  sus tests; luego re-ejecutar `pnpm test` + `pnpm lint` y reconstruir los installers.
+
+## 2026-10-05 (b) — Aclaraciones del dueño, pestaña Historial, ruido de notas y Progreso con punto en el tiempo
+
+- **Fase/tarea:** respuestas del dueño a las preguntas de la mañana + tres arreglos que
+  salieron de verificar en la app con sus datos reales.
+- **Aclaraciones del dueño (2026-10-05):** «manzana» **es el cuello** (37,5 cm);
+  «boxer» es la **cadera alta** (donde empieza el hueso de la cadera, 86 cm), por encima
+  del punto más ancho que mide la app; **bíceps = tríceps = 32 cm**; antebrazo **aún no
+  medido**; **no** añadir plano nutricional; el plan de volumen debe respetar los estudios
+  formales según el objetivo del usuario, con el LLM + fatiga + volumen + ejercicios
+  previos decidiendo el siguiente ejercicio, priorizando **repetir el mismo ejercicio en
+  el mismo orden** para medir la carga progresiva; la cadencia debearse por **horas de
+  recuperación**, no por día de la semana; el **orden de los ejercicios importa**.
+- **BodyLab · Progreso «no funcionaba» (era vacío por diseño):** `ProgressTimeline` chart
+  desde **snapshots** + un punto «Ahora»; con 0 snapshots hay 1 punto y cae en la rama de
+  «sin datos». Ahora `importData` (`src/lib/store.tsx`) siembra **un snapshot con id
+  derivado de los datos** (`snap-import-<primera medición>-<n>`), así que reimportar el
+  mismo archivo reescribe el mismo punto. Verificado en la app: 1 snapshot tras importar
+  **dos veces**, y Progreso dibuja la línea de tiempo con 2 puntos (pecho/caderas/cintura).
+  Backup que ya trae sus propios snapshots: no se toca.
+- **BodyLab · datos reales actualizados:** `scripts/build-owner-import.mjs` → **14
+  mediciones** (se añade `neck` 37,5 y `biceps` 32 + par izq/der 32; assessment completo).
+  Sigue sin equivalente: abdomen templado 78, boxer/cadera alta 86, tríceps 32, talla 26.
+- **TrainingLab · pestaña Historial implementada** (era un `EmptyState` fijo, por eso T3
+  «no tenía encajes pendientes» era inexacto): `exerciseHistory()` en
+  `features/stats/derive.ts` + `HistoryTab`/`HistoryDayCard` en
+  `screens/ExerciseDetailScreen.tsx` + 13 claves `ex.history.*`. Reglas: solo el
+  `exerciseId` exacto, warm-ups listados pero fuera de volumen/series/marca, día solo con
+  tiempos = 0 kg y sin marca (nunca «levantaste 0 kg»), notas D/F conservadas, días más
+  recientes primero y totales sobre **todo** el log, no solo la ventana. **9 tests.**
+  Verificado con sus 20 sesiones: «4 días de entrenamiento · 20 series · 8092,2 kg ·
+  mejor 81,6 kg · 1RM estimado 84,7 kg (Epley, no medido)».
+- **TrainingLab · ruido de notas:** 314 de las 410 series traían el **número de serie**
+  (`"1"`, `"4"`…) en `notes` porque el parser lo mete en el mismo hueco que el badge;
+  `noteOf()` en `lib/symmetry.ts` los descarta (se pierde nada: la posición ya la implica
+  el timestamp). Reimportando limpio: `notes` = **41 `D` + 50 `F`**, 0 numéricos. **1 test.**
+- **Bug encontrado por los tests (arreglado):** con una serie de 0 reps y otra del mismo
+  peso, la de 0 reps se quedaba como «mejor serie» del día. Ahora a igual carga gana la
+  que tiene repeticiones.
+- **Verificación (comandos reales):** raíz **957/957 (63 archivos)** exit 0 · web
+  **115/115** exit 0 · `npx oxlint` **0/0** · `tsc -b` 0 en ambas apps · TrainingLab
+  `tauri build` **exit 0** → `TrainingLab_0.2.0_x64-setup.exe` (00:38, ya incluye Historial
+  y el arreglo de notas).
+- **Pendiente:** (a) **reconstruir el instalador de BodyLab** para que incluya el snapshot
+  automático — el de las 00:10 es anterior al arreglo; (b) **la investigación de cadencia
+  por objetivo** (hipertrofia / pérdida / recomp / mantenimiento) está **pedida y sin
+  empezar**: hay que citar fuentes nombrables, no de memoria; (c) **orden adaptativo por
+  fatiga** en el planificador; (d) nada de módulo nutricional (decisión del dueño).
+- **Estado Git:** sin commits; `main` en `f6c4aef`. Sin trackear nuevos:
+  `scripts/build-owner-import.mjs`, `tests/training/test_exercise_history.test.ts`.
+
+## 2026-10-05 (c) — Investigación: dónde y cómo medir para máximo detalle sin escáner 3D
+
+- **Encargo del dueño:** «investiga de dónde se deben hacer mediciones y cómo, para el
+  MÁXIMO detalle posible del cuerpo del usuario sin un escáner 3D».
+- **Entregable:** `fitness-ecosystem/docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`
+  (~2.400 palabras, español). **Investigación/documentación: no se ha tocado código.**
+- **Fuentes citadas (nombrables):** F1 ISAK *Accreditation scheme* (recuentos por
+  nivel: L1 = 4 base + 8 pliegues + 6 perímetros + 3 anchuras; L2 añade 13 perímetros,
+  9 longitudes/alturas y 9 anchuras/profundidades; L3/L4 = 43 dimensiones; TEM en
+  reacreditación). F2 Whyte & Gallagher, *World Rev Nutr Diet* 2022;124:23–30,
+  PMID 35240646 (técnica de calibre; el %grasa por pliegues **no sirve a nivel
+  individual**). F3 Hodgdon & Beckett 1984 US Navy (SEE ±3,5 %). F4 Jackson & Pollock
+  3/7 pliegues. F5 Drillis, Contini & Bluestein, *Artif Limbs* 1966;8:44–66 (longitudes
+  segmentarias como fracción de la estatura: brazo 0,189 H, antebrazo 0,145 H, mano
+  0,128 H) y *Hum Factors* 1963;5:493–504. F6 Merrill et al., CDC Stacks 2019 (el
+  error al predecir parámetros segmentarios desde antropometría puede llegar al 40 %).
+- **Hallazgo de esquema:** `MEASUREMENT_TYPES` está hecho casi solo de **perímetros**;
+  le faltan las familias de **pliegues** (ya tiene 5 de 8), **anchuras/diámetros
+  óseos**, **longitudes segmentarias** y **ángulos posturales** — que son justamente
+  lo que permite un modelo paramétrico sin escáner (F5).
+- **Propuesta (NO implementada, §5 del documento):** Grupo B `hip_upper` (tu «boxer»,
+  86 cm), `biceps_flexed`, `triceps`; Grupo C `subscapular`/`biceps`/`mid_axillary`
+  skinfolds; Grupo D longitudes/anchuras, que exige **una categoría nueva** en
+  `MeasurementTypeInfo.category` (hoy `circumference|composition|conditioning`).
+- **Regla de honestidad fijada (§6):** con cinta se puede afirmar «esta cintura mide
+  83 cm», ratio cintura/altura con fuente, y anclajes óseos; el %grasa por perímetros es
+  estimación con **SEE ±3,5 %**; el %grasa por pliegues **no** es afirmación individual
+  (F2); el «volumen corporal» y la forma 3D son **aproximación paramétrica** y deben
+  mostrarse con su margen (F6, hasta 40 %).
+- **Cadencia sugerida (§7):** semanal solo al cambiar de objetivo/fase, quincenal en
+  mantenimiento; el motivo es el **error técnico de medición**, no la fisiología —
+  declarar tendencia entre dos puntos dentro del TEM es inventarse una tendencia.
+- **Pendiente de decisión del dueño:** (1) añadir Grupo B; (2) abrir Grupo D y su nueva
+  categoría; (3) exigir nº de réplicas y TEM por medida en el registro; (4) marcar en la
+  UI qué datos del modelo 3D son medidos vs estimados por proporción de estatura.
+- **Estado Git:** sin commits; `main` en `f6c4aef`. Documento nuevo sin trackear:
+  `fitness-ecosystem/docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`.
+- **Checks:** no aplica re-ejecución — el cambio es solo de documentación. Los últimos
+  verdes siguen siendo raíz **957/957 (63 archivos)**, web **115/115**, oxlint **0/0**,
+  `tsc -b` 0 en ambas apps, TrainingLab `tauri build` exit 0 y BodyLab installer
+  reconstruido (exit 1 solo por la clave de firma del updater).
+
+## 2026-10-05 (d) — Esquema ampliado: todo lo medible con cinta o recursos caseros
+
+- **Encargo del dueño:** «en cuanto a las familias de métricas, añade todo lo que se
+  pueda medir con cinta métrica o recursos caseros». Autoriza implementar sobre el
+  protocolo de (c).
+- **22 tipos nuevos en `MEASUREMENT_TYPES`**, todos medibles con cinta/regla/pared/libros:
+  - **Perímetros (6):** `hip_upper` (cadera alta = su «boxer»), `triceps`,
+    `biceps_flexed`, `forearm_flexed`, `mid_axillary`, `ankle`.
+  - **Longitudes (9, categoría nueva `length`):** `stature_sitting`, `arm_span`,
+    `subischial_leg_length`, `upper_arm_length`, `forearm_length`, `hand_length`,
+    `thigh_length`, `lower_leg_length`, `foot_length`.
+  - **Anchuras (7, categoría nueva `breadth`):** `biacromial`, `bi_iliac`,
+    `wrist_breadth`, `elbow_breadth`, `knee_breadth`, `malleolar_breadth`, `hand_width`.
+- **Archivos:** `bodylab/apps/web/src/lib/{types,constants}.ts` (unión + categorías 3→5 +
+  filtros `LENGTH_TYPES`/`BREADTH_TYPES`), `pages/Measurements.tsx` (pestaña «Longitudes y
+  anchuras» con dos subsecciones, guías «dónde y cómo» para los 22, tira de pestañas
+  `overflow-x-auto` porque 6 tabs no caben a 390 px), `__tests__/contract.test.ts`.
+- **Bug arreglado de paso:** las guías de medición se mostraban en **inglés** en la página
+  en español (`{guide.en}` en 3 sitios); ahora `{guide[lang]}`.
+- **Fuera de alcance (decisión explícita):** los **pliegues** exigen plicómetro, que no
+  es recurso casero → no se añadieron; siguen los 5 existentes. Quedan 3 por añadir si
+  algún día hay calibre (`subscapular`, `biceps`, `mid_axillary`).
+- **Datos del dueño importados: 17 mediciones** (antes 14). Entraron `hip_upper` 86,
+  `triceps` 32 y `foot_length` 26 (origen «shoes size 26 cm» — 26 no es talla europea,
+  así que es la longitud del pie, **con aviso de verificación**). «Hombros 116» quedó
+  corregido en las notas: es perímetro sobre deltoides, **no** anchura biacromial (la
+  anchura acromial real se mide aparte y sigue sin tener). Abdomen templado 78 sigue sin
+  tipo (decidido: solo existe una cintura). Reimportar = 1 snapshot, sin duplicados.
+- **Verificación (comandos reales):** `npx vitest run` (raíz) → **958/958, 63 archivos**,
+  exit 0 · web `npx vitest run` → **116/116, 8 archivos**, exit 0 (+1 test nuevo de
+  rangos y de `cm` obligatorio en `length`/`breadth`) · `npx oxlint` → **0/0** ·
+  `npx tsc -b` → exit 0 · **Playwright e2e** (`npx playwright test`) → **21/21 en 40,4 s**,
+  exit 0 (incluye el fit-solver 3D contra las medidas reales y el round-trip de export/import).
+  **En el navegador** (vite 5173): import → «Datos importados
+  correctamente», 17 mediciones, snapshot de 17; pestaña «Longitudes y anchuras» con
+  subsecciones «Longitudes — cinta y pared» y «Anchuras — regla y dos libros»; Circunferencias
+  muestra Cuello 37,5 · Hombros 116 · Pecho 95 · Cintura 83 · Cadera 97 · Bíceps 32 y
+  Antebrazo con «Agregar» (pendiente), con las guías ya en español.
+- **Instalador de BodyLab RECONSTRUIDO a las 01:47** (`BodyLab_1.0.0-beta.8_x64-setup.exe`,
+  22,27 MiB) — comprobado que el bundle compilado lleva los 22 ids nuevos y la pestaña
+  «Longitudes y anchuras». `exit 1` únicamente por `TAURI_SIGNING_PRIVATE_KEY` (updater,
+  workflow de release). **TrainingLab no cambió en esta ronda** (el esquema es de BodyLab),
+  así que su build de las 00:38 sigue siendo válido.
+- **Estado Git:** sin commits; `main` en `f6c4aef`. Nuevos sin trackear:
+  `docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`, `tests/training/test_exercise_history.test.ts`,
+  `scripts/build-owner-import.mjs`.
+
+## 2026-10-05 (e) — Progreso legible por objetivo: panel «Hacia tu ideal» + ideal McCallum del dueño
+
+- **Encargo del dueño:** «la página de progreso aún me parece difícil de leer… quiero
+  verme musculoso como boxeador de peso ligero o mediano», con dos preguntas
+  (¿bíceps y tríceps son el mismo diámetro? ¿cuáles son mis dimensiones ideales?) y
+  la aclaración de que **no usa modelo local: el modelo es Buffy**.
+- **Decisión tomada con el dueño** entre cuatro opciones: implementar el panel
+  «Hacia mi ideal» como primera tarjeta de Progreso. Las otras tres (resumen tipo
+  tarjeta de visita, rediseño completo, no tocar) quedan sin hacer.
+- **Implementación:**
+  - `bodylab/apps/web/src/features/progress/GoalPanel.tsx` (nuevo) — presentación pura
+    sobre `state.assessment`, `state.adonisResult` y `state.whtrResult` que el store
+    calcula con `CALCULATE_ASSESSMENT` (`@fitness/bodylab-anthropometry`). **No inventa
+    ninguna meta**: todo ideal es la proporción publicada y la pie lo declara índice de
+    referencia, no meta de salud ni consejo médico.
+  - `features/progress/index.ts` (export) y `pages/Progress.tsx` (montado antes de las
+    Quick Stats, es decir lo primero que se ve).
+  - `bodylab/apps/web/src/__tests__/goal-panel.test.tsx` (nuevo, 2 tests): siembra el
+    marco del dueño y comprueba que llegan los números publicados tras el
+    `setTimeout(0)` del store (si el panel leyera antes de tiempo saldría vacío y nadie
+    lo notaría), más el estado vacío sin datos.
+- **Qué ve el dueño con sus 13 medidas (verificado en navegador, 1280×1000 y 390×844):**
+  agregado **65/100 «Moderado»** y las 8 filas McCallum — Pecho 95,0/107,3 (54 %) ·
+  Cintura 83,0/75,1 (58 %) · Cadera 97,0/91,2 (74 %) · Bíceps 32,0/38,6 (**32 %**) ·
+  Muslo 55,0/56,8 (87 %) · Cuello 37,5/39,7 (78 %) · Pantorrilla 39,0/36,5 (72 %) ·
+  **Antebrazo «sin medir»** (fila punteada con enlace a Medir). Debajo, tres fichas:
+  **Adonis 1,40 «Cerca»** (meta Φ ≈ 1,62), **WHtR 0,47 «Saludable»** (meta ≤ 0,50) y
+  **Peso 76 kg · 1,76 m**. Los huecos se muestran como «sin medir», nunca como ausencia.
+- **Respuestas al dueño (con su fundamento, sin inventar):**
+  - **Bíceps = tríceps en la misma lectura de cinta.** La cinta rodea todo el brazo
+    (húmero + bíceps + braquial + tríceps) y a media altura el tríceps es ~2/3 de la masa
+    muscular del brazo; el ISAK mide **una** circunferencia de brazo (relajada o
+    contraída) y su «tríceps» es un **pliegue con plicómetro**, que queda fuera del
+    alcance acordado (no es recurso casero). Sus 32/32 son el mismo punto medido dos
+    veces; la lectura que sí distingue es relajado vs `biceps_flexed`, ya en el esquema.
+  - **Sus ideales** salen de McCallum con su muñeca (16,5 cm → pecho 6,5×): tabla en el
+    mensaje del dueño, con Adonis 1,40 (desvío 13,6 % de Φ) y WHtR 0,47. Brechas: bíceps
+    −17 %, cintura +11 %, pecho −11 %; muslo y pantorrilla ya casi en referencia.
+- **Sin modelo local:** el planificador determinista (`session.ts`/`validator.ts`) sigue
+  siendo el suelo y **Buffy es el coach/modelo**; no se habilita el LLM local.
+- **Verificación (comandos reales):** `npx tsc -b` (web) → exit 0 · web `npx vitest run`
+  → **118/118, 9 archivos**, exit 0 (+2) · raíz `npx vitest run` → **958/958, 63
+  archivos**, exit 0 · `npx oxlint` → **0/0** · **Playwright** `npx playwright test` →
+  **21/21 en 39,6 s**, exit 0. **QA visual**: vite en 127.0.0.1:5273, sembrado por el
+  camino legacy de `localStorage` (el mismo que usa `scripts/capture-screenshots.mjs`),
+  recarga y hash `#/progress`; 13 medidas del dueño; sin errores en consola; servidor
+  parado al terminar.
+- **NO se reconstruyó el instalador de BodyLab** en esta ronda: el instalador de (d)
+  (01:47) **no** incluye el panel; hace falta `pnpm build` en `bodylab/apps/desktop`
+  cuando el dueño quiera la app de escritorio con esto.
+- **Estado Git:** sin commits; `main` en `f6c4aef`. Sin trackear, además de los de (d):
+  `bodylab/apps/web/src/features/progress/GoalPanel.tsx` y
+  `bodylab/apps/web/src/__tests__/goal-panel.test.tsx`.
+- **Gates y límites respetados:** mapa muscular y su gate sin tocar; sin módulo de
+  nutrición; sin metas inventadas; «peso ligero/medio» tratado como **categoría de
+  competición**, no como physique, y sin Lean Mass no se afirma ningún peso objetivo.
+- **Pendiente de decisión del dueño:** 13 propuestas de mapeo de ejercicios · nombre
+  `pa® (Maquina)` · confirmación de la tabla ÷2 · nombre de perfil · plicómetro ·
+  TEM/replicación · marcado medido vs estimado en el 3D · **segunda opción de rediseño
+  de Progreso** (resumen o página única), si el panel no le basta.
+- **Siguiente paso seguro:** medir `forearm` y `biceps_flexed` (cierra la 8.ª fila y
+  resuelve la pregunta bíceps/tríceps con datos propios) y decidir la segunda opción de
+  Progreso.
+
+## 2026-10-05 (f) — Training: «Objetivo de volumen» con la banda publicada 12–20 series/semana
+
+- **Aclaración del dueño:** «cuando dije que Progreso era difícil de comprender hablaba de
+  **Training**» (BodyLab ya le vale). Encargos: «mejorar Training basado en investigación
+  real, y una mejor UI», más la pregunta «¿tener la pantorrilla más grande sin grasa es
+  malo? ¿me aleja de mi ideal?».
+- **Respuesta de la pantorrilla (con dato, sin inventar):** no. La literatura clínica
+  señala la circunferencia de pantorrilla **baja** como factor de riesgo (puntos de corte
+  de sarcopenia ~34–36 cm en hombres: González 2021 AJCN con datos NHANES 1999–2006;
+  Champaiboon 2023; Kerminen 2024), y él está en **39 cm con 1,76 m = 22,2 cm/m**, muy por
+  encima de cualquier umbral y sin grasa. Además, sus 39 frente al ideal de McCallum
+  (36,5 = 0,34 × pecho) **no son una desviación mala**: es una proporción de referencia,
+  no un techo. De ahí el cambio de texto en BodyLab (abajo).
+- **Investigación usada (con DOI/PMID en el código, no en la prosa):**
+  - **Baz-Valle 2022**, *J Hum Kinet* 81:199–210, **PMID 35291645** — revisión sistemática
+    + metaanálisis (7 ECA, hombres entrenados 18–35, ≥1 año, medición directa de grosor):
+    **12–20 series semanales por grupo** como recomendación de referencia; moderado
+    (12–20) vs alto (>20) **sin diferencia** en cuádriceps (p = 0,19) ni bíceps
+    (p = 0,59), pero **mejor en tríceps (p = 0,01)** → tríceps con franja **12–24**.
+  - **Pelland 2025/2026**, doi **10.51224/SRXIV.460** — meta-regresiones (67 estudios,
+    2 058 participantes): más volumen → más hipertrofia (100 % de probabilidad posterior de
+    pendiente positivo) **con rendimientos decrecientes**; la **frecuencia** no tiene efecto
+    apreciable en hipertrofia (sí en fuerza). De ahí que sea una **franja** y no «más siempre
+    es mejor».
+  - **Schoenfeld 2017**, *J Sports Sci* 35:1073–1082 — metaanálisis dosis-respuesta que
+    justifica el suelo de la franja (>9 series/semana).
+- **Implementación:**
+  - `traininglab/apps/desktop/src/lib/volume-target.ts` (nuevo, puro) — la franja por
+    familia con su procedencia, más `readVolume` y `summariseVolume`.
+  - `traininglab/apps/desktop/src/features/stats/derive.ts` — `weeklyDirectSets(sets,
+    days=7)`: cuenta **solo series directas** (intensidad 3 del catálogo), sin calentamientos
+    y sin crédito al trabajo secundario/accesorio. Es la lectura literal de «sets per muscle
+    group» y evita que compita con el índice fraccionado del mapa corporal (1/0,66/0,33),
+    que sigue intacto y aparte.
+  - `traininglab/apps/desktop/src/features/stats/VolumeTargetCard.tsx` (nuevo) — tarjeta
+    **primera** de Progreso: «X de Y grupos en rango», filas ordenadas por **mayor déficit**,
+    barra con la franja dibujada sobre la misma escala, y pie con las tres fuentes + el aviso
+    de que no es consejo médico.
+  - `screens/ProgressScreen.tsx` monta la tarjeta antes de los KPI; `lib/i18n.ts` con 12
+    claves nuevas bilingües.
+  - BodyLab `features/progress/GoalPanel.tsx`: «sobre/bajo **la referencia**» en vez de «el
+    ideal», y pie explícito de que **la referencia es una proporción, no un techo ni un
+    mínimo: estar por encima no es un defecto** (era justo el mensaje engañoso de la
+    pantorrilla).
+  - `tests/training/test_volume_target.test.ts` (nuevo, 8 tests): bordes de la franja
+    inclusivos, franja ampliada del tríceps, series directas sin crédito fraccionado,
+    calentamiento excluido, ventana de 7 días, orden por déficit y familia sin series
+    **ausente** en vez de un cero inventado.
+- **Bug de UI encontrado y arreglado en el proceso:** la primera versión usaba `.tl-row`, que
+  es una rejilla de **2 columnas**; la barra añadía una tercera y la fila se partía en dos,
+  dejando media caja vacía (justo el tipo de fila rota que el dueño reclamaba). Las filas
+  de la tarjeta declaran ahora sus tres columnas con `gridTemplateColumns` en línea.
+- **Verificación (comandos reales):** raíz `npx vitest run` → **966/966, 64 archivos** (+8),
+  exit 0 · TrainingLab `npx tsc -b` → **exit 0** · BodyLab `npx tsc -b` → exit 0 · web
+  `npx vitest run` → **118/118**, exit 0 · `npx oxlint` → **0/0** · Playwright e2e →
+  **21/21 en 40,3 s**, exit 0.
+- **QA visual con SUS datos reales** (importados con el `parseSymmetry` real desde
+  `.cache/symmetry-import.json` → 20 sesiones / 410 series, en español): 1366×1100 y
+  390×844, sin desbordes ni texto cortado. Lectura de **los últimos 7 días tal cual**:
+  dorsales 1 · hombros 4 · trapecios 4 · pecho 7 · antebrazos 10 · tríceps 11 · bíceps 12 ·
+  core 46 → **1 de 8 grupos en rango, 6 por debajo**. Lectura de su semana más completa
+  (2026-09-03…09-09, calculada con la misma función dentro de la app): 12 grupos,
+  **3 en rango, 1 por debajo (trapecios 8) y 8 por encima** — el patrón de Symmetry es de
+  volumen alto y su hueco real está en trapecios, no en brazos ni piernas.
+- **NO se reconstruyó ningún instalador** en esta ronda: el de TrainingLab 0.2.0 (00:38) y
+  el de BodyLab beta.8 (01:47) **no** incluyen la tarjeta nueva.
+- **Estado Git:** sin commits; `main` en `f6c4aef`. Sin trackear, además de los de (d) y (e):
+  `traininglab/apps/desktop/src/lib/volume-target.ts`,
+  `traininglab/apps/desktop/src/features/stats/VolumeTargetCard.tsx`,
+  `tests/training/test_volume_target.test.ts`.
+- **Pendiente de decisión del dueño:** si la tarjeta debe respetar el selector de periodo
+  (hoy es fija a 7 días, que es lo que dice la literatura) y qué hacer con las familias «por
+  encima»: la evidencia habla de rendimientos decrecientes, no de castigo, y la pantalla lo
+  dice, pero el planificador todavía **no** usa la franja como restricción.
+- **Siguiente paso seguro:** decidir lo anterior y, si lo aprueba, hacer que el generador de
+  sesiones reparta el volumen dentro de la franja publicada en lugar de solo repartir por los patrones del catálogo.
+
+## 2026-10-05 (g) — CI reproducida en local, ambos installers reconstruidos y publicado a GitHub
+
+- **Encargo del dueño:** «compila todo en mi escritorio y actualiza el github, haz las pruebas
+  CI en local antes».
+- **Los cuatro jobs de `.github/workflows/ci.yml` reproducidos en local, con su exit status:**
+  | Job | Comandos | Resultado |
+  |---|---|---|
+  | `check` | `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm check` → `npx vite build` (BodyLab) → `pnpm --filter traininglab-desktop build` | **exit 0** en los cinco |
+  | `traininglab-desktop` | `pnpm --filter traininglab-desktop build` (`tsc -b` + vite) → `pnpm tauri build --no-bundle` | **exit 0** / compilado |
+  | `desktop` | `pnpm tauri build --no-bundle` (BodyLab) | **exit 0** |
+  | `e2e-desktop-smoke` | `pnpm tauri build --no-bundle` → `smoke-desktop.ps1` | **exit 0** |
+- **Números de la pirámide completa (`pnpm check`):** typecheck web + core exit 0 ·
+  raíz `vitest` **966/966 en 64 archivos** · web `vitest` **118/118 en 9 archivos** ·
+  Playwright **21/21 en 50,7 s** · `oxlint` **0 avisos / 0 errores**.
+- **Un fallo real encontrado y corregido (no era ruido):** la primera pasada de `pnpm check`
+  dejó **rojo** el smoke de páginas — `renders Progress without throwing` **se pasó de los
+  5 000 ms por defecto (7 772 ms)**. Medido: aislado son **933 ms** y en la suite completa
+  **721 ms**, o sea que el test no estaba lento, sino **hambriento de CPU**: vitest lanza los
+  nueve archivos web en paralelo y, bajo contención, la página Progress (recharts + hidratación
+  del store desde IndexedDB + la GoalPanel nueva) se multiplicó ×8. Con el árbol de procesos
+  limpio no había nada corriendo que explicara la lentitud: era contención puntual. Solución en
+  `bodylab/apps/web/src/__tests__/page-smoke.test.tsx`: `MOUNT_TIMEOUT_MS = 20_000` explícito
+  y documentado en los tests de montaje. **No se relajó ninguna aserción** — siguen fallando
+  igual si la página no monta, si el árbol sale vacío o si aparece el `ReferenceError` de
+  zona temporal. El objetivo real era que CI (ubuntu de 2 núcleos, con más contención que
+  esta máquina) no se ponga rojo por un test de integración de página completa.
+- **Instaladores reconstruidos con el código de (e) y (f) dentro** (comprobado en el bundle,
+  no supuesto):
+  - **TrainingLab 0.2.0** → `TrainingLab_0.2.0_x64-setup.exe`, **15 325 376 bytes (14,62 MiB)**,
+    `pnpm tauri build` **exit 0**. El `dist` embebido contiene `ProgressScreen-BFO4Lt5s.js` con
+    la tarjeta «Objetivo de volumen».
+  - **BodyLab 1.0.0-beta.8** → `BodyLab_1.0.0-beta.8_x64-setup.exe`, **23 355 307 bytes
+    (22,27 MiB)**, `pnpm tauri build` **exit 1 por `createUpdaterArtifacts`**: «A public key has
+    been found, but no private key» — la clave de firma solo existe en `release.yml`. El
+    instalador NSIS se genera **antes** de ese paso y es válido; con `--no-bundle` (lo que hace
+    el job `desktop` de CI) el mismo build sale **exit 0**. El `dist` embebido contiene
+    `Progress-Dxps7vm1.js` con «Hacia tu ideal».
+  - Los dos `.exe` están copiados al **escritorio real** (`C:\Users\andyh\OneDrive\Desktop`,
+  que es donde OneDrive redirige el escritorio; no `%USERPROFILE%\Desktop`).
+- **Smoke del binario de BodyLab (job `e2e-desktop-smoke`):** `SMOKE PASS`, exit 0 — versión
+  1.0.0-beta.8 en el recurso de versión, ventana `BodyLab` launched, estable a los 14 s,
+  contenedor WebView2 con su origen `indexeddb.leveldb` y cierre limpio.
+- **Datos personales: decisión del dueño, «Publicar todo».** Se avisó antes de publicar de que
+  el repositorio es **público** y de que `scripts/build-owner-import.mjs`, `knowledge.md` y este
+  documento citan su fecha de nacimiento, estatura, peso y mediciones concretas; el dueño
+  respondió **«Publicar todo»**, así que viaja en el commit tal cual. `.cache/` (donde viven
+  sus exportaciones reales) sigue ignorado y **no se stageó**. `Modelo2D_Woman.png`, sin
+  trackear en la raíz, **no es nuestro** y quedó fuera.
+- **Estado Git:** todo lo de (a)–(f) más esta entrada, en un commit en `main` y **push a
+  `origin/main`**. No hay cambios pendientes sin stagear salvo ese PNG ajeno.
+- **Siguiente paso seguro:** con el push, los jobs Windows de CI y `release.yml` se ejecutan solos con
+  el push; la única diferencia con lo local es la firma del updater, que solo el workflow de
+  release puede hacer. Vigilar el run verde antes de dar por buena la publicación.

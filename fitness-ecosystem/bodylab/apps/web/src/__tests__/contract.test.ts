@@ -14,13 +14,30 @@ import { MEASUREMENT_TYPES } from '../lib/constants';
 import { ALL_EXERCISES, getExercisesForMuscle, getMuscleIntensity } from '../lib/exercises';
 
 describe('Measurement type contract', () => {
-  it('declares weight in kg and every circumference in cm (unit mixups are a product bug)', () => {
+  it('declares weight in kg and every linear measure in cm (unit mixups are a product bug)', () => {
     const weight = MEASUREMENT_TYPES.find(t => t.id === 'weight');
     expect(weight).toBeDefined();
     expect(weight!.unit).toBe('kg');
 
-    for (const t of MEASUREMENT_TYPES.filter(t => t.category === 'circumference')) {
+    // girths, segment lengths and bone breadths are all lengths: a metre or an
+    // inch leaking in here would silently corrupt every ratio downstream.
+    for (const t of MEASUREMENT_TYPES.filter(
+      t => t.category === 'circumference' || t.category === 'length' || t.category === 'breadth',
+    )) {
       expect(t.unit).toBe('cm');
+    }
+  });
+
+  it('every length and breadth sits inside a plausible human range', () => {
+    // Guards the ranges that were added by hand: a typo like min 5 max 500
+    // would accept nonsense without ever failing the ordering check.
+    for (const t of MEASUREMENT_TYPES.filter(t => t.category === 'length')) {
+      expect(t.min).toBeGreaterThanOrEqual(10);
+      expect(t.max).toBeLessThanOrEqual(250);
+    }
+    for (const t of MEASUREMENT_TYPES.filter(t => t.category === 'breadth')) {
+      expect(t.min).toBeGreaterThanOrEqual(3);
+      expect(t.max).toBeLessThanOrEqual(70);
     }
   });
 

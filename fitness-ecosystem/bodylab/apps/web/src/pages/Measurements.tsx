@@ -3,14 +3,14 @@ import { Plus, Trash2, Check, Ruler, Activity, Repeat, X, ChevronRight, Info, Mi
 import { useApp } from '../lib/store';
 import { t } from '../i18n';
 import { parseNumberInput } from '../lib/parse-num';
-import { MEASUREMENT_TYPES, CIRCUMFERENCE_TYPES, COMPOSITION_TYPES, CONDITIONING_TYPES, SYMMETRY_PAIRS, SYMMETRY_GROUP_NAMES } from '../lib/constants';
+import { MEASUREMENT_TYPES, CIRCUMFERENCE_TYPES, COMPOSITION_TYPES, CONDITIONING_TYPES, LENGTH_TYPES, BREADTH_TYPES, SYMMETRY_PAIRS, SYMMETRY_GROUP_NAMES } from '../lib/constants';
 import { MEASUREMENT_GUIDES as METHOD_GUIDES } from '../lib/measurement-guides';
 import { estimateBodyFatNavy, NAVY_SEE_PCT } from '@fitness/bodylab-composition';
 import { getLatestMeasurement } from '../lib/queries';
 import { displayUnitFor, UNIT_LABELS, toDisplay, toCanonical, heightToDisplay, profileUnitFor } from '../lib/units';
 import type { AllMeasurementType } from '../lib/types';
 
-type MeasurementTab = 'overview' | 'circumference' | 'composition' | 'symmetry' | 'conditioning';
+type MeasurementTab = 'overview' | 'circumference' | 'length' | 'composition' | 'symmetry' | 'conditioning';
 
 // Body regions for visual selection
 const BODY_REGIONS = [
@@ -40,6 +40,34 @@ const MEASUREMENT_GUIDES: Record<string, { en: string; es: string; tip: { en: st
   thigh_skinfold: { en: 'Vertical fold on the front of the thigh, halfway between hip and knee (JP3 site, both sexes)', es: 'Pliegue vertical al frente del muslo, entre cadera y rodilla (sitio JP3, ambos sexos)', tip: { en: 'Weight on the other leg so the thigh muscle stays relaxed', es: 'Apoya el peso en la otra pierna para que el muslo quede relajado' } },
   triceps_skinfold: { en: 'Vertical fold at the back of the arm, halfway between shoulder and elbow (female JP3 site)', es: 'Pliegue vertical en la parte posterior del brazo, entre hombro y codo (sitio JP3 femenino)', tip: { en: 'Let the arm hang relaxed; lift only skin+fat', es: 'Deja el brazo colgar relajado; levanta solo piel+grasa' } },
   suprailiac_skinfold: { en: 'Diagonal fold just above the hip bone, following its natural slant (female JP3 site)', es: 'Pliegue diagonal justo encima del hueso de la cadera, siguiendo su inclinación natural (sitio JP3 femenino)', tip: { en: 'Follow the hip crest angle — NOT a vertical fold', es: 'Sigue la inclinación de la cresta ilíaca — NO es un pliegue vertical' } },
+
+  // ── New girths (tape only) ───────────────────────────────────────────────
+  hip_upper: { en: 'Where the underwear sits, over the hip bones — above the widest part of the hips', es: 'Donde llega la ropa interior, sobre los huesos de la cadera — por encima del punto más ancho', tip: { en: 'Distinct from "hips": keep both, they read different fat pockets', es: 'Distinto de «cadera»: guarda los dos, leen bolsas de grasa distintas' } },
+  triceps: { en: 'Back of the upper arm, halfway between shoulder and elbow', es: 'Parte posterior del brazo, entre hombro y codo', tip: { en: 'Arm hanging relaxed — a flexed arm changes the number', es: 'Brazo colgando relajado — un brazo contraído cambia el número' } },
+  biceps_flexed: { en: 'Fullest part of the upper arm with the biceps squeezed', es: 'Parte más amplia del brazo con el bíceps contraído', tip: { en: 'Compare against relaxed biceps — the gap is the arm potential', es: 'Compáralo con el bíceps relajado — la diferencia es tu potencial de brazo' } },
+  forearm_flexed: { en: 'Widest part of the forearm, hand closed', es: 'Parte más amplia del antebrazo, mano cerrada', tip: { en: 'Elbow at 90°, fist clenched hard', es: 'Codo a 90°, puño bien cerrado' } },
+  mid_axillary: { en: 'Torso circumference at armpit level, tape horizontal', es: 'Circunferencia del torso a nivel de axilas, cinta horizontal', tip: { en: 'Arms down and relaxed; stands in for torso depth without a caliper', es: 'Brazos abajo y relajados; sustituye la profundidad del torso sin calibre' } },
+  ankle: { en: 'Smallest part of the ankle, above the malleoli', es: 'Parte más estrecha del tobillo, sobre los maleolos', tip: { en: 'Feet flat and weight shared', es: 'Pies planos y el peso repartido' } },
+
+  // ── Segment lengths ──────────────────────────────────────────────────────
+  stature_sitting: { en: 'Sit on a chair with your back to the wall; measure wall to crown', es: 'Sentado con la espalda a la pared; mide del suelo a la coronilla', tip: { en: 'Height − sitting height = leg length; the ratio drives body proportions', es: 'Estatura − altura sentada = pierna; la relación define tus proporciones' } },
+  arm_span: { en: 'Fingertip to fingertip with arms outstretched against a wall', es: 'Punta de dedos a punta de dedos con los brazos estirados contra la pared', tip: { en: 'Span ≈ height in adults; a big gap is worth double-checking', es: 'En adultos ≈ a la estatura; una gran diferencia conviene verificarla' } },
+  subischial_leg_length: { en: 'From the crotch (sitting on a flat surface) to the floor', es: 'Desde la entrepierna (sentado sobre una superficie) hasta el suelo', tip: { en: 'The honest leg length — the one the model needs', es: 'La longitud de pierna real, la que el modelo necesita' } },
+  upper_arm_length: { en: 'Shoulder point (acromion) to elbow point', es: 'Del hombro (acromion) al codo', tip: { en: 'Mark both landmarks first, then measure the marks', es: 'Marca primero los dos puntos y luego mide entre marcas' } },
+  forearm_length: { en: 'Elbow point to wrist crease', es: 'Del codo a la muñeca', tip: { en: 'Palm up, forearm horizontal', es: 'Palma arriba, antebrazo horizontal' } },
+  hand_length: { en: 'Wrist crease to the tip of the middle finger', es: 'De la muñeca a la punta del dedo medio', tip: { en: 'Fingers together, flat on the ruler', es: 'Dedos juntos, mano plana sobre la regla' } },
+  thigh_length: { en: 'From the crotch to the front of the knee crease', es: 'De la entrepierna al pliegue frontal de la rodilla', tip: { en: 'Stand tall; the tape must not be pulled tight', es: 'De pie erguido; no tires de la cinta' } },
+  lower_leg_length: { en: 'From the front of the knee to the floor', es: 'De la parte frontal de la rodilla al suelo', tip: { en: 'Weight evenly distributed, knees soft', es: 'Peso repartido, rodillas sin bloquear' } },
+  foot_length: { en: 'Heel to the longest toe, standing on the tape', es: 'Del talón a la punta más larga, de pie sobre la cinta', tip: { en: 'Shoe SIZE is not foot length — measure the foot itself', es: 'La TALLA de zapato no es la longitud del pie — mide el pie' } },
+
+  // ── Bone breadths (ruler + two books) ────────────────────────────────────
+  biacromial: { en: 'Between the two shoulder points (acromion), the widest front-back-agnostic shoulder line', es: 'Entre los dos puntos del hombro (acromion), la línea de hombro más ancha', tip: { en: 'Books against each point, then measure the gap', es: 'Apoya un libro contra cada punto y mide la separación' } },
+  bi_iliac: { en: 'Between the outer edges of the hip bones', es: 'Entre los bordes exteriores de los huesos de la cadera', tip: { en: 'Stand with feet together, hands on your hips', es: 'De pie con los pies juntos y las manos en las caderas' } },
+  wrist_breadth: { en: 'Between the two wrist bones', es: 'Entre los dos huesecillos de la muñeca', tip: { en: 'Cup the bones from both sides with your fingers', es: 'Suena los dos huesos con los dedos por ambos lados' } },
+  elbow_breadth: { en: 'Between the elbow bones with the arm straight', es: 'Entre los codos con el brazo estirado', tip: { en: 'Palm up, do not squeeze', es: 'Palma arriba, no aprietes' } },
+  knee_breadth: { en: 'Between the widest points of the knee, just above the kneecap', es: 'Entre los puntos más anchos de la rodilla, justo sobre la rótula', tip: { en: 'Legs apart, thigh relaxed', es: 'Piernas separadas, muslo relajado' } },
+  malleolar_breadth: { en: 'Between the two ankle bones', es: 'Entre los dos huesos del tobillo', tip: { en: 'Ankles together, weight off the feet', es: 'Tobillos juntos, sin apoyar peso' } },
+  hand_width: { en: 'Across the knuckles of an open hand', es: 'A lo largo de los nudillos de la mano abierta', tip: { en: 'Fingers extended, thumb out of the way', es: 'Dedos extendidos, pulgar fuera de la línea' } },
 };
 
 // Composition display config
@@ -346,7 +374,7 @@ export default function Measurements() {
                       </div>
                       {showGuide === typeId && guide && (
                         <div className="mt-1 p-2 bg-indigo-50 rounded-lg text-xs text-indigo-700">
-                          <p>{guide.en}</p>
+                          <p>{guide[lang]}</p>
                           <p className="text-indigo-500 mt-0.5">💡 {guide.tip[lang]}</p>
                         </div>
                       )}
@@ -716,7 +744,7 @@ export default function Measurements() {
           <div key={typeInfo.id} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent">
             <div className="flex items-center justify-between">                <div className="min-w-0">
                 <p className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{typeInfo.label[lang]}</p>
-                {guide && <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">{guide.en}</p>}
+                {guide && <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">{guide[lang]}</p>}
               </div>
               {meas ? (
                 <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{toDisplay(typeInfo.id, meas.value, unitSystem)}<span className="text-sm text-slate-500 ml-1">{UNIT_LABELS[displayUnitFor(typeInfo.id, unitSystem)][lang]}</span></span>
@@ -935,11 +963,13 @@ export default function Measurements() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 bg-slate-100 p-1 rounded-xl w-fit">
+      {/* Tabs — horizontally scrollable: six entries do not fit a 390 px phone,
+          and a wrapped tab strip on mobile is worse than a scrollable one. */}
+      <div className="flex gap-2 bg-slate-100 p-1 rounded-xl w-fit max-w-full overflow-x-auto">
         {[
           { id: 'overview' as const, label: lang === 'es' ? 'Vista General' : 'Overview', icon: Zap },
           { id: 'circumference' as const, label: t('measurements.circumference'), icon: Ruler },
+          { id: 'length' as const, label: lang === 'es' ? 'Longitudes y anchuras' : 'Lengths & breadths', icon: Ruler },
           { id: 'composition' as const, label: t('measurements.composition'), icon: Activity },
           { id: 'symmetry' as const, label: lang === 'es' ? 'Simetría' : 'Symmetry', icon: Repeat },
           { id: 'conditioning' as const, label: lang === 'es' ? 'Condición' : 'Conditioning', icon: Gauge },
@@ -963,15 +993,14 @@ export default function Measurements() {
       {activeTab === 'overview' && renderOverview()}
       {activeTab === 'circumference' && (
         <div className="space-y-3">
-          {CIRCUMFERENCE_TYPES.map(typeInfo => {
-            const meas = getMeasurement(typeInfo.id);
+          {CIRCUMFERENCE_TYPES.map(typeInfo => {            const meas = getMeasurement(typeInfo.id);
             const guide = MEASUREMENT_GUIDES[typeInfo.id];
             return (
               <div key={typeInfo.id} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{typeInfo.label[lang]}</p>
-                    {guide && <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">{guide.en}</p>}
+                    {guide && <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">{guide[lang]}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -990,6 +1019,47 @@ export default function Measurements() {
               </div>
             );
           })}
+        </div>
+      )}
+      {activeTab === 'length' && (
+        <div className="space-y-3">
+          {[
+            { key: 'length', heading: lang === 'es' ? 'Longitudes — cinta y pared' : 'Lengths — tape and a wall', list: LENGTH_TYPES },
+            { key: 'breadth', heading: lang === 'es' ? 'Anchuras — regla y dos libros' : 'Breadths — a ruler and two books', list: BREADTH_TYPES },
+          ].map(group => (
+            <div key={group.key} className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 pt-2">
+                {group.heading}
+              </p>
+              {group.list.map(typeInfo => {
+                const meas = getMeasurement(typeInfo.id);
+                const guide = MEASUREMENT_GUIDES[typeInfo.id];
+                return (
+                  <div key={typeInfo.id} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{typeInfo.label[lang]}</p>
+                        {guide && <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">{guide[lang]}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {meas ? (
+                        <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{toDisplay(typeInfo.id, meas.value, unitSystem)}<span className="text-sm text-slate-500 ml-1">{UNIT_LABELS[displayUnitFor(typeInfo.id, unitSystem)][lang]}</span></span>
+                      ) : (
+                        <button
+                          onClick={() => handleQuickAdd(typeInfo.id as AllMeasurementType)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                          {lang === 'es' ? 'Agregar' : 'Add'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
       {activeTab === 'composition' && renderComposition()}

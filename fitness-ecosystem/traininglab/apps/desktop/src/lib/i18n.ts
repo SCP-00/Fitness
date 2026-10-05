@@ -216,6 +216,30 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "The backup file is not readable.",
     es: "La copia no se puede leer.",
   },
+  "symmetry.import": {
+    en: "Import Symmetry history",
+    es: "Importar historial de Symmetry",
+  },
+  "symmetry.hint": {
+    en: "Turns the Symmetry OCR JSON (sessions, warm-ups, timed holds) into your log. Importing the same file twice changes nothing.",
+    es: "Convierte el JSON OCR de Symmetry (sesiones, calentamientos, series con tiempo) en tu registro. Importar el mismo archivo dos veces no cambia nada.",
+  },
+  "symmetry.imported": {
+    en: "Symmetry: {sessions} sessions and {sets} sets merged ({skipped} rows skipped — no catalog match).",
+    es: "Symmetry: {sessions} sesiones y {sets} series fusionadas ({skipped} filas descartadas, sin equivalente en el catálogo).",
+  },
+  "symmetry.error.file": {
+    en: "That file is not readable JSON.",
+    es: "Ese archivo no es JSON legible.",
+  },
+  "symmetry.error.shape": {
+    en: "That file is not a Symmetry export.",
+    es: "Ese archivo no es una exportación de Symmetry.",
+  },
+  "symmetry.error.empty": {
+    en: "That Symmetry file has no sessions.",
+    es: "Ese archivo de Symmetry no tiene sesiones.",
+  },
   "setup.budget": {
     en: "Minutes available today",
     es: "Minutos disponibles hoy",
@@ -748,6 +772,36 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "No sets logged for this exercise",
     es: "Sin series registradas de este ejercicio",
   },
+  "ex.history.days": { en: "{n} training days", es: "{n} días de entrenamiento" },
+  "ex.history.sets": { en: "{n} working sets", es: "{n} series de trabajo" },
+  "ex.history.volume": { en: "{kg} of tonnage", es: "{kg} de tonelaje" },
+  "ex.history.best": { en: "Best load:", es: "Mejor carga:" },
+  "ex.history.e1rm": {
+    en: "estimated 1RM {kg} (Epley, not measured)",
+    es: "1RM estimado {kg} (Epley, no medido)",
+  },
+  "ex.history.more": {
+    en: "+ {n} earlier training days",
+    es: "+ {n} días de entrenamiento anteriores",
+  },
+  "ex.history.dayVolume": {
+    en: "{n} sets · {kg}",
+    es: "{n} series · {kg}",
+  },
+  "ex.history.daySets": {
+    en: "{n} sets · timed work only",
+    es: "{n} series · solo trabajo con tiempo",
+  },
+  "ex.history.setLoad": { en: "{kg} × {reps}", es: "{kg} × {reps}" },
+  "ex.history.setTime": {
+    en: "held {sec} s",
+    es: "{sec} s mantenidos",
+  },
+  "ex.history.setBodyweight": {
+    en: "bodyweight",
+    es: "peso corporal",
+  },
+  "ex.history.warmup": { en: "warm-up", es: "calentamiento" },
   "ex.history.emptyHint": {
     en: "Log it once and this tab becomes the most useful one: your best set, your estimated 1RM over time and what you did the last time.",
     es: "Regístralo una vez y esta pestaña pasa a ser la más útil: tu mejor serie, tu 1RM estimado en el tiempo y lo que hiciste la última vez.",
@@ -950,6 +1004,79 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "{done} de {target} series completadas",
   },
   "progress.constancy.daySets": { en: "{n} sets", es: "{n} series" },
+  "progress.weekly.title": { en: "Weekly volume", es: "Volumen semanal" },
+  "progress.weekly.hint": {
+    en: "Tonnage (weight × reps) of working sets, warm-ups out — 8 weeks, Monday to Sunday.",
+    es: "Tonelaje (peso × repeticiones) de las series de trabajo, sin calentamientos — 8 semanas, de lunes a domingo.",
+  },
+  "progress.weekly.now": {
+    en: "This week: {kg} kg · {sets} sets",
+    es: "Esta semana: {kg} kg · {sets} series",
+  },
+  "progress.weekly.vsPrevious": {
+    en: "vs the same days of last week",
+    es: "frente a los mismos días de la semana pasada",
+  },
+  "progress.weekly.arrowTrend": { en: "{prev} → {curr}", es: "{prev} → {curr}" },
+  "progress.weekly.bar": {
+    en: "{week}: {kg} kg · {sets} sets",
+    es: "{week}: {kg} kg · {sets} series",
+  },
+  "progress.weekly.peak": { en: "Peak {kg} kg", es: "Máx {kg} kg" },
+  "progress.weekly.families": {
+    en: "By family (target groups)",
+    es: "Por familia (grupos objetivo)",
+  },
+  "progress.weekly.empty": {
+    en: "Nothing logged in these 8 weeks yet — the chart starts with your first working set.",
+    es: "Sin registro en estas 8 semanas — el gráfico empieza con tu primera serie de trabajo.",
+  },
+  "progress.weekly.disclaimer": {
+    en: "Tonnage records what you lifted; on its own it proves neither hypertrophy nor strength. A set can feed more than one family (every target group it trains).",
+    es: "El tonelaje registra lo que levantaste; por sí solo no demuestra hipertrofia ni fuerza. Una serie puede alimentar más de una familia (todos los grupos objetivo que entrena).",
+  },
+  "progress.volumeTarget.title": { en: "Volume target", es: "Objetivo de volumen" },
+  "progress.volumeTarget.hint": {
+    en: "Direct sets per muscle group, last 7 days.",
+    es: "Series directas por grupo muscular, últimos 7 días.",
+  },
+  "progress.volumeTarget.band": {
+    en: "{min}–{max} sets/week",
+    es: "{min}–{max} series/semana",
+  },
+  "progress.volumeTarget.headline": {
+    en: "{inRange} of {total} groups in range",
+    es: "{inRange} de {total} grupos en rango",
+  },
+  "progress.volumeTarget.belowCount": {
+    en: "{n} below",
+    es: "{n} por debajo",
+  },
+  "progress.volumeTarget.missing": {
+    en: "{n} sets short of the minimum",
+    es: "faltan {n} series para el mínimo",
+  },
+  "progress.volumeTarget.over": {
+    en: "{n} sets — above the band (diminishing returns)",
+    es: "{n} series — por encima de la franja (rendimientos decrecientes)",
+  },
+  "progress.volumeTarget.ok": { en: "{n} sets", es: "{n} series" },
+  "progress.volumeTarget.empty": {
+    en: "No direct sets logged in the last 7 days.",
+    es: "Sin series directas en los últimos 7 días.",
+  },
+  "progress.volumeTarget.source": {
+    en: "Band from Baz-Valle 2022 (systematic review + meta-analysis, trained men 18–35); diminishing returns from Pelland 2025 (67 studies); floor from Schoenfeld 2017.",
+    es: "Franja de Baz-Valle 2022 (revisión sistemática + metaanálisis, hombres entrenados 18–35); rendimientos decrecientes de Pelland 2025 (67 estudios); suelo de Schoenfeld 2017.",
+  },
+  "progress.volumeTarget.widerBand": {
+    en: "Triceps has the wider 12–24 band: that review found high volume significantly better there (p = 0.01).",
+    es: "El tríceps tiene la franja ampliada 12–24: esa revisión encontró el volumen alto claramente mejor ahí (p = 0,01).",
+  },
+  "progress.volumeTarget.caveat": {
+    en: "A training-volume reference for trained adults, not medical advice. Counts direct sets only (secondary and accessory work is not credited), and says nothing about proximity to failure.",
+    es: "Referencia de volumen para adultos entrenados, no consejo médico. Cuenta solo series directas (no suma el trabajo secundario ni accesorio) y no dice nada sobre la proximidad al fallo.",
+  },
   "progress.numbers.title": { en: "Your numbers", es: "Tus cifras" },
   "progress.numbers.sessions": { en: "Sessions", es: "Sesiones" },
   "progress.numbers.sets": { en: "Sets logged", es: "Series registradas" },

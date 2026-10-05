@@ -68,6 +68,18 @@ async function renderPage(name: keyof typeof PAGES) {
   return view;
 }
 
+/**
+ * A full-page mount under jsdom is an integration test, not a unit test: the
+ * Progress page pulls in recharts, the store hydration from IndexedDB and the
+ * new GoalPanel card. Alone it mounts in ~0.9 s, but vitest runs the nine web
+ * test files in parallel workers, and under that contention it was measured at
+ * 7.7 s — over the 5 s default, i.e. a red suite that says nothing about the
+ * code. The budget is raised explicitly instead: every assertion below (it
+ * mounts, the tree is not blank, no temporal-dead-zone ReferenceError) still
+ * fails the test exactly the same way.
+ */
+const MOUNT_TIMEOUT_MS = 20_000;
+
 describe('page smoke: every page mounts', () => {
   for (const name of Object.keys(PAGES) as (keyof typeof PAGES)[]) {
     it(`renders ${name} without throwing`, async () => {
@@ -84,7 +96,7 @@ describe('page smoke: every page mounts', () => {
       } finally {
         spy.mockRestore();
       }
-    });
+    }, MOUNT_TIMEOUT_MS);
   }
 
   it('the history (Measurements) page renders real content, not a blank tree', async () => {
@@ -94,5 +106,5 @@ describe('page smoke: every page mounts', () => {
     // whatever language the store defaults to.
     expect(view.container.textContent).toContain('Torso');
     expect(screen.getAllByRole('button').length).toBeGreaterThan(5);
-  });
+  }, MOUNT_TIMEOUT_MS);
 });

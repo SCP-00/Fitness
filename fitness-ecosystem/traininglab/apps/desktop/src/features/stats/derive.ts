@@ -241,6 +241,36 @@ export interface FamilyBalance {
 export type Trend = "up" | "down" | "flat";
 
 /**
+ * Direct (hard) sets per family in the last `days` days — one week by default.
+ *
+ * This is the counter behind `lib/volume-target.ts`, and it is deliberately
+ * **stricter** than `familyTotals`: only sets where the family was the
+ * exercise's *primary* target (catalog `MuscleInvolvement.intensity === 3`)
+ * count, one count per family per set. That is the literal reading of "sets per
+ * muscle group" the hypertrophy literature uses, and it keeps this number from
+ * quietly disagreeing with the body map's fractional exposure index: the map
+ * still credits 0.66 / 0.33 to secondary and accessory work, this does not.
+ *
+ * Families with no direct set in the window are absent from the map rather than
+ * present with a zero — the screen lists what you trained and says separately
+ * how many families never came up.
+ */
+export function weeklyDirectSets(
+  sets: TLSet[],
+  days = 7,
+  now: Date = new Date(),
+): Map<MuscleFamily, number> {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const from = isoDay(new Date(today.getTime() - (days - 1) * DAY_MS));
+  const totals = familyTotals(sets, from);
+  const direct = new Map<MuscleFamily, number>();
+  for (const [family, row] of totals) {
+    if (row.effective > 0) direct.set(family, row.effective);
+  }
+  return direct;
+}
+
+/**
  * A family is rising or falling only when the change clears 10 % — small enough
  * to notice real progress, large enough that one extra set does not paint an
  * arrow.
@@ -392,9 +422,154 @@ export function trainingDays(sets: TLSet[]): number {
   return new Set(workingSets(sets).map((s) => s.timestamp.slice(0, 10))).size;
 }
 
-/** How many sets a family got in the last `days`, for the balance view. */
+/**
+ * How many sets a family got in the last `days`, for the balance view. */
 export function weeklySetsFor(sessions: TLSession[]): number {
   return sessions.reduce((acc, s) => acc + s.setIds.length, 0);
+}
+
+export interface WeekVolume {
+  /** Monday of the week, `YYYY-MM-DD`. */
+  weekStart: string;
+  /** Tonnage: Σ weight × reps over the week's working sets. */
+  kg: number;
+  /** Working sets logged that week (warm-ups excluded, timed holds included). */
+  sets: number;
+}
+
+export interface FamilyWeekTonnage {
+  family: MuscleFamily;
+  /** This week's tonnage where the family was a target (intensity 3). */
+  kg: number;
+  /** The same elapsed days of the previous week — the honest comparison. */
+  previousKg: number;
+  trend: Trend;
+}
+
+export interface WeeklyVolume {
+  /** Oldest first, always `weeks` entries — a week with nothing is a zero. */
+  weeks: WeekVolume[];
+  /** The current week: Monday through today (partial by construction). */
+  current: WeekVolume;
+  /** Previous week truncated to the same elapsed days as `current`. */
+  previousAligned: WeekVolume;
+  /** `current` vs `previousAligned`, same 10 % threshold as everywhere else. */
+  trend: Trend;
+  /** Current-week tonnage per target family, biggest first. */
+  families: FamilyWeekTonnage[];
+}
+
+/**
+ * Weekly tonnage, Monday-based, for the last `weeks` weeks — the ledger behind
+ * Progreso's "volumen semanal" card (T4).
+ *
+ * Two honesty rules, both inherited from the rest of this module:
+ *
+ *   * **warm-ups are not volume**, and neither is a set without weight × reps
+ *     (timed holds and the handful of logged 0-rep sets contribute 0 kg);
+ *   * **the trend never compares a partial week against a full one** — this
+ *     week (Monday…today) is compared against the *same elapsed days* of the
+ *     previous week, or every Monday would look like a collapse.
+ *
+ * Family tonnage credits a set to every family the exercise targets with
+ * intensity 3 (its primary muscles), counting each family once per set. The
+ * families therefore overlap and deliberately do not sum to the week's total
+ * — the same per-set credit rule `familyTotals` uses, so the card and the body
+ * map can never describe different exercises. Families are present only when
+ * one of the two windows has tonnage for them: absent, never a fabricated 0.
+ *
+ * Tonnage is a record of kilograms lifted, nothing more: it neither proves
+ * hypertrophy nor strength on its own, which the card states on screen.
+ */
+export function weeklyVolume(
+  sets: TLSet[],
+  weeks = 8,
+  now: Date = new Date(),
+): WeeklyVolume {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Days of this week already elapsed, Monday = 0 (the planner's convention).
+  const elapsed = (today.getDay() + 6) % 7;
+  const monday = new Date(today.getTime() - elapsed * DAY_MS);
+  const prevMonday = new Date(monday.getTime() - 7 * DAY_MS);
+
+  const series: WeekVolume[] = [];
+  const dayIndex = new Map<string, WeekVolume>();
+  for (let w = weeks - 1; w >= 0; w--) {
+    const start = new Date(monday.getTime() - w * 7 * DAY_MS);
+    const bucket: WeekVolume = { weekStart: isoDay(start), kg: 0, sets: 0 };
+    series.push(bucket);
+    for (let d = 0; d < 7; d++) {
+      dayIndex.set(isoDay(new Date(start.getTime() + d * DAY_MS)), bucket);
+    }
+  }
+
+  const currentFrom = isoDay(monday);
+  const currentTo = isoDay(today);
+  const alignedFrom = isoDay(prevMonday);
+  const alignedTo = isoDay(new Date(prevMonday.getTime() + elapsed * DAY_MS));
+
+  const catalogue = new Map(plannerCatalog().map((e) => [e.exercise.id, e]));
+  const currentFamily = new Map<MuscleFamily, number>();
+  const previousFamily = new Map<MuscleFamily, number>();
+  let alignedKg = 0;
+  let alignedSets = 0;
+
+  for (const set of workingSets(sets)) {
+    const day = set.timestamp.slice(0, 10);
+    const kg = (set.weight ?? 0) * (set.reps ?? 0);
+
+    const bucket = dayIndex.get(day);
+    if (bucket) {
+      bucket.sets += 1;
+      bucket.kg += kg;
+    }
+
+    const isCurrent = day >= currentFrom && day <= currentTo;
+    const isAligned = day >= alignedFrom && day <= alignedTo;
+    if (isAligned) {
+      alignedKg += kg;
+      alignedSets += 1;
+    }
+    if (kg <= 0 || (!isCurrent && !isAligned)) continue;
+
+    const entry = catalogue.get(set.exerciseId);
+    if (!entry) continue;
+    const targets = new Set<MuscleFamily>();
+    for (const involvement of entry.exercise.muscles) {
+      if (involvement.intensity === 3) {
+        targets.add(muscleFamilyOf(involvement.muscle));
+      }
+    }
+    const sink = isCurrent ? currentFamily : previousFamily;
+    for (const family of targets) {
+      sink.set(family, (sink.get(family) ?? 0) + kg);
+    }
+  }
+
+  const families: FamilyWeekTonnage[] = [];
+  const familyKeys = new Set([...currentFamily.keys(), ...previousFamily.keys()]);
+  for (const family of familyKeys) {
+    const kg = currentFamily.get(family) ?? 0;
+    const previousKg = previousFamily.get(family) ?? 0;
+    families.push({ family, kg, previousKg, trend: trendOf(kg, previousKg) });
+  }
+  families.sort((a, b) => b.kg - a.kg || b.previousKg - a.previousKg);
+
+  const current =
+    series[series.length - 1] ?? { weekStart: isoDay(monday), kg: 0, sets: 0 };
+  const previousAligned: WeekVolume = {
+    weekStart: isoDay(prevMonday),
+    kg: alignedKg,
+    sets: alignedSets,
+  };
+
+  return {
+    weeks: series,
+    current,
+    previousAligned,
+    trend: trendOf(current.kg, alignedKg),
+    families,
+  };
 }
 
 /**
@@ -458,3 +633,108 @@ export function trainedWeeksIn(
 }
 
 export { exerciseFamilies };
+// ============================================================================
+// Per-exercise history — the exercise card's "Historial" tab
+// ============================================================================
+
+/** One logged set as the history renders it. */
+export interface HistorySetRow {
+  id: string;
+  /** kg, `null` for a timed hold (plank, dead hang, stretches). */
+  weight: number | null;
+  reps: number | null;
+  durationSec: number | null;
+  /** Warm-up ramp set: listed, but never counted as volume or a record. */
+  warmup: boolean;
+  notes?: string;
+}
+
+/** Everything logged for one exercise on one calendar day. */
+export interface HistoryDay {
+  /** `YYYY-MM-DD`. */
+  date: string;
+  /** Every set of the day, heaviest first, warm-ups included (flagged). */
+  sets: HistorySetRow[];
+  /** Working sets only — the number that means training. */
+  workingSets: number;
+  /** weight × reps over working sets; `0` when the day was only timed work. */
+  volumeKg: number;
+  bestWeightKg: number | null;
+  bestReps: number | null;
+}
+
+/**
+ * The logged history of one exercise, newest day first.
+ *
+ * What this deliberately does **not** do:
+ *
+ *   * **no invented numbers.** A day made only of timed holds reports
+ *     `volumeKg: 0` and `bestWeightKg: null` — "you held a plank" is not
+ *     "you lifted 0 kg", and the UI must be able to say which happened;
+ *   * **no warm-up inflation.** Warm-up ramp sets are listed (they are real
+ *     work you did) but they never add volume, a set count or a best mark;
+ *   * **no cross-exercise guessing.** Only sets whose `exerciseId` matches
+ *     exactly are counted, so an un-mapped exercise cannot borrow another's
+ *     history;
+ *   * **no 1RM theatre.** The heaviest load is reported as the heaviest load.
+ *     Epley lives in `lib/records.ts` for the record sound, and the UI shows it
+ *     only as an explicitly labelled estimate.
+ *
+ * Days are capped by `limitDays` so a two-year-old exercise does not render a
+ * thousand rows; the caller can show "+N more days" from the full count.
+ */
+export function exerciseHistory(
+  sets: TLSet[],
+  exerciseId: string,
+  limitDays = 8,
+): { days: HistoryDay[]; totalDays: number; totalWorkingSets: number; totalVolumeKg: number } {
+  const mine = sets.filter((s) => s.exerciseId === exerciseId);
+  const byDay = new Map<string, HistoryDay>();
+
+  for (const set of mine) {
+    const date = set.timestamp.slice(0, 10);
+    let day = byDay.get(date);
+    if (!day) {
+      day = { date, sets: [], workingSets: 0, volumeKg: 0, bestWeightKg: null, bestReps: null };
+      byDay.set(date, day);
+    }
+    day.sets.push({
+      id: set.id,
+      weight: set.weight ?? null,
+      reps: set.reps ?? null,
+      durationSec: set.durationSec ?? null,
+      warmup: set.warmup === true,
+      ...(set.notes ? { notes: set.notes } : {}),
+    });
+    if (set.warmup === true) continue;
+    day.workingSets += 1;
+    const reps = set.reps ?? 0;
+    // Reps of 0 or less cannot contribute tonnage (they are the literal 0-rep
+    // rows the OCR recovered), so they are counted as sets and nothing more.
+    if ((set.weight ?? 0) > 0 && reps > 0) day.volumeKg += set.weight! * reps;
+    if ((set.weight ?? 0) > 0) {
+      // Heaviest load wins; at an equal load the set that actually carries reps
+      // wins, so a 0-rep artefact row never becomes the day's "best set".
+      const heavier = day.bestWeightKg === null || set.weight! > day.bestWeightKg;
+      const sameLoadWithReps =
+        day.bestWeightKg === set.weight! && reps > 0 && reps > (day.bestReps ?? 0);
+      if (heavier || sameLoadWithReps) {
+        day.bestWeightKg = set.weight ?? null;
+        day.bestReps = reps > 0 ? reps : null;
+      }
+    }
+  }
+
+  const all = [...byDay.values()].sort((a, b) => b.date.localeCompare(a.date));
+  for (const day of all) {
+    day.sets.sort((a, b) => (b.weight ?? -1) - (a.weight ?? -1) || (b.reps ?? -1) - (a.reps ?? -1));
+    day.volumeKg = Math.round(day.volumeKg * 10) / 10;
+  }
+
+  return {
+    days: all.slice(0, Math.max(0, limitDays)),
+    totalDays: all.length,
+    totalWorkingSets: all.reduce((acc, d) => acc + d.workingSets, 0),
+    totalVolumeKg: Math.round(all.reduce((acc, d) => acc + d.volumeKg, 0) * 10) / 10,
+  };
+}

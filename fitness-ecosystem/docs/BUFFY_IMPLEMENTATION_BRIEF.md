@@ -93,6 +93,54 @@ Completa F2 por entregas verticales; evita mostrar una pantalla “bonita” sin
 
 **Criterio P1:** Inicio → entreno → guardar → historial/Progreso → ajustar la próxima acción se puede completar sin inventar datos, con retorno claro y en menos desplazamiento que la pantalla actual.
 
+### Fase 2B — Histórico Symmetry → TrainingLab + volumen semanal (encargo del dueño 2026-10-04)
+
+El dueño pidió explícitamente guardar su historia real de Symmetry en la app de
+escritorio y trabajar sobre ella. El importador OCR ya está cerrado (20/20 sesiones
+cuadradas con la cabecera, 425 series — ver la última entrada de `AGENT_HANDOFF.md` y
+la sección «Symmetry import» de `knowledge.md`). Este encargo NO toca la puerta del
+mapa muscular (Fase 3): son datos de entrenamiento, no la lente de fuerza.
+
+Orden de ejecución:
+
+1. **T1 · Curación (con el dueño):** revisar la tabla `BILATERAL_DB` (7 ejercicios ÷2)
+   — en particular si los crunchs con mancuerna (`Dumbbell Oblique Crunch`,
+   `Sit Up (Weighted)`, `Weighted Crunch`) se dividen o se quedan tal cual —, resolver
+   `pa® (Maquina)` (03/09, 18 kg ×4) y cerrar el mapeo de los 58 nombres → `exerciseId`
+   con `map-symmetry-exercises.mjs` + curaduría manual. Los no catalogados quedan con
+   su nombre original; nunca inventar ids ni ejercicios.
+2. **T2 · Carga como sesiones reales:** JSON → `TLSession`/`TLSet` en IndexedDB de la
+   app. Ids deterministas (idempotencia, re-importar no duplica), `dayId` por fecha,
+   `warmup` ← badge W (records.ts ya los excluye de volumen/PR), D/F en `notes`, y
+   campo opcional `durationSec` en `TLSet` (decisión de esquema: ampliación aditiva +
+   migración de registros viejos, o notes; preferencia: campo tipado). Vista previa
+   antes de insertar, combinar sin reemplazar datos existentes, reporte de filas
+   aceptadas/rechazadas con motivo (mismos criterios de importación de la Fase 3.7).
+3. **T3 · Revisión de interfaz:** comprobar con datos históricos reales el Historial
+   por ejercicio (fechas pasadas, PRs antiguos), visibilidad de badges D/F, series con
+   duración, estados «importado» ≠ «sin datos» (cero no es sin datos), y que el
+   planner no sugiera cargas fuera del equipo (la convención per-mancuerna ya está
+   aplicada en el JSON). Corregir lo que no encaje, sin rehacer entregas que ya
+   funcionan.
+4. **T4 · Volumen semanal en Progreso:** tonelaje semanal (total y por familia,
+   calentamientos fuera) semana a semana con tendencia y deltas, para validar
+   progresos de fuerza y masa. Separado semánticamente del mapa de exposición y de
+   «fuerza/hipertrofia»: es registro de trabajo; para fuerza mostrar PRs/e1RM y para
+   masa enlazar los KPIs de composición que ya existen. Estados sin datos ≠ 0;
+   i18n ES/EN; tests de lógica + capturas PC/móvil.
+
+Criterio de entrega por tarea: comando de verificación real + prueba + captura, y
+entrada de handoff. La tabla ÷2 no se da por cerrada sin el visto bueno del dueño.
+
+**Estado 2026-10-05 (tarea implementada, pendiente de visto bueno):** T1–T4 están
+**hechas y verificadas en la app** — el mapeo sube a **410/425 series (96 %)** tras
+añadir 8 ejercicios al catálogo (143 → **151**), la importación se ejecutó de verdad
+(20 sesiones, 658 sets, **reimportar es no-op**) y la tarjeta de volumen semanal está
+en Progreso con 8 tests. Lo que **no** está cerrado y depende del dueño: vetar las 13
+propuestas variante/equipo, nombrar `pa® (Maquina)`, confirmar la tabla ÷2 de
+`BILATERAL_DB` y los 3 crunchs con mancuerna. Detalle y comandos en la última entrada
+de `AGENT_HANDOFF.md`. La puerta del mapa muscular (Fase 3) sigue **cerrada**.
+
 ### Fase 3 — Prototipo independiente de mapa muscular 2D (P1, aprobación bloqueante)
 
 El HTML base está en `docs/prototypes/muscle-map-2d.html`; hay recursos en `docs/prototypes/assets/`. El usuario aportó `Modelo2D.png` para colorear y pidió explícitamente **primero un HTML independiente y preguntar antes de incorporarlo a TrainingLab**. Esta frontera sigue activa.
@@ -158,6 +206,9 @@ Investiga, presenta 2–3 opciones con fuente, población, fórmula, cobertura, 
 3. ¿Cómo se autoriza visualizar un levantamiento compuesto en una figura anatómica sin dar a entender que mide la fuerza aislada de cada región?
 4. ¿La lente `Objetivos` debe convivir como tercer modo de la figura, sección independiente o dejarse temporalmente como hoy? No eliminar/rebautizar sin confirmación.
 5. ¿Qué alcance entra en la versión candidata (plantillas, varios perfiles de equipo y deportes sin estándar externo)? Mantén lo ya funcionando mientras se decide.
+6. **Tabla ÷2 del import Symmetry (Fase 2B):** presentar la lista de ejercicios
+   divididos y los que no, y esperar el veto/confirmación del dueño antes de darla
+   por cerrada — en particular los crunchs con mancuerna y `pa® (Maquina)`.
 
 No vuelvas a preguntar decisiones ya resueltas en los documentos: “ideal” significa una norma externa publicada; la estatura solo se usa cuando la fuente la respalda; la lente whole-body de condición no reemplaza fuerza per-muscular.
 

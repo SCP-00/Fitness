@@ -30,6 +30,8 @@ pnpm dev                      # BodyLab web dev server (http://localhost:5173)
 pnpm lan                      # build + serve BOTH apps on the LAN (http://<ip>:8090/) for phone testing
                               #   Windows: double-click `LAN Server.bat`. Flags: --port 8090, --build, --no-build, --open [app]
 node scripts/render-brand-icons.mjs      # masters → favicons + apple-touch + 512 + multi-size .ico (no ImageMagick)
+node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import.json   # OCR de la historia Symmetry (caché + idempotente)
+node scripts/verify-symmetry-overlap.mjs ../IMPORT_SYMMETRY   # cadena de solape píxel a píxel entre capturas
 powershell -File install-shortcut.ps1    # (re)write the desktop shortcuts with the real icons
 cd bodylab/apps/web && pnpm dev          # same, run from the package
 pnpm test                     # root vitest: core tests (node env, vitest 1.x)
@@ -70,6 +72,99 @@ TrainingLab's root-suite tests (`tests/training/`, `tests/exercises/`) import th
 - **Measurement guides + tape-only body fat (done 2026-09-27)**: `estimateBodyFatNavy` (core/composition; Hodgdon & Beckett 1984 metric form, SEE ±3.5%, hip required for females, null on waist≤neck / out-of-domain / non-physical density) serves users WITHOUT calipers. `apps/web/src/lib/measurement-guides.ts` is the bilingual tutorial registry (equipment tiers: none/tape/GPS/caliper, certainty levels, no-equipment fallbacks like string+ruler and printable tape). **Science stance encoded: skinfold sites DIFFER BY SEX (J-P female = triceps/suprailiac/thigh) because fat storage distribution varies; single-abdominal-fold is a male-biased proxy** — caveats pinned in tests. Guides are linked from the Measurements page's **Conditioning tab** (full tutorials + per-type mini-guides).
 - **J-P female sites + Navy form + illustrated sites (done 2026-09-27, later)**: conditioning's female J-P branch was replaced with the **published JPW 1980 equation** (`D = 1.0994921 − 0.0009929·Σ + 0.0000023·Σ²`, no age term) — the old form was dead code (density ≥ 1.12 for ANY plausible Σ → always null). New `jacksonPollockBodyFatPct` (sites → density → Siri), `JP3_SITES` and an independent `jacksonPollockFemaleBodyFatPct` profile axis; 46 conditioning tests. The Conditioning tab has a **Navy tape form** (neck/waist/hip per sex, height from the profile, live preview) that saves `body_fat_measured` with `confidence:'low'` + SEE in notes, and the JP3 guide renders **schematic ♀/♂ figures** with numbered sites and per-sex fat-distribution warnings. **Routing gotcha: `pages/Measurements.tsx` was historically orphaned (not mounted anywhere) — it now lives at `/history`** (sidebar 'History' + `H` shortcut); the legacy `/measurements` redirect targets `/history`.
 
+## Symmetry import (histórico real del dueño, 2026-10-04)
+
+- Los 45 capturas de pantalla de su historia en Symmetry viven en `IMPORT_SYMMETRY/`
+  (raíz del workspace, **gitignored** — el repo es público, nunca commitear datos
+  crudos ni `.ocr-cache.json`). Importador: `fitness-ecosystem/scripts/import-symmetry.mjs`
+  (OCR local tesseract.js, sin red); cadena de capturas: `verify-symmetry-overlap.mjs`;
+  mapeo a catálogo: `map-symmetry-exercises.mjs`.
+- Comando: `node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import.json`
+  (usa caché OCR; idempotente — dos corridas, mismo MD5).
+- **Estado verificado 2026-10-04: 20/20 sesiones cuadran con el contador de series de
+  la cabecera de Symmetry, 425 series, 58 nombres distintos.** Convención de peso del
+  dueño: ejercicios de DOS mancuernas guardan el TOTAL en Symmetry → se importa ÷2
+  (tabla `BILATERAL_DB`, crudo preservado en `symmetryWeightKg`); unilaterales de una
+  mancuerna y máquinas/barra/cable se quedan tal cual. `location` por fecha:
+  `gym` ≤ 2026-09-26 (su último día), `home` después (tope real 28,6 kg). Badges:
+  número=serie normal, W=warm-up (flag `warmup`), D=drop, F=failure (en `notes`).
+  Series con hora (`Set Time`) llevan `durationSec`. 5 series aparecen con 0 reps
+  literales en la captura (confirmado por XOR de píxeles); `pa® (Maquina)` (03/09) es
+  un nombre propio ilegible pendiente del dueño.
+- **Cerrado 2026-10-05 (T1–T4):** los 13 huecos de mapeo se resolvieron **añadiendo 8
+  ejercicios al catálogo** (`crunch`, `decline-crunch`, `oblique-crunch`,
+  `dumbbell-shrugs`, `tricep-kickback`, `wrist-roller`, `hip-abduction-machine`,
+  `hip-adduction-machine` → **151 ejercicios**) → mapeo **410/425 series (96 %)**,
+  53 nombres con id, 0 sin resolver. La importación se ejecutó en la app: 20 sesiones,
+  658 sets, **reimportar es no-op**. T4 = `weeklyVolume()` + `WeeklyVolumeCard` en
+  Progreso. Sigue pendiente del dueño: vetar 13 propuestas y nombrar `pa® (Maquina)`.
+
+## Datos corporales reales del dueño (2026-10-05)
+
+- `node scripts/build-owner-import.mjs` genera **`.cache/bodylab-owner.json`** (forma
+  de export legacy de BodyLab) + `.cache/bodylab-owner.mapping.json` (qué se guardó, qué
+  no y por qué). Ambos están bajo `.cache/`, que `.gitignore` excluye: son datos
+  personales reales y el repo es público — **nunca commitearlos**.
+- Perfil importado: 76 kg · 1,76 m · **nacimiento 2005-09-28** (la edad la deriva
+  `lib/age.ts`; no se congela un número) · sexo masculino. 10 mediciones: peso, muñeca
+  16,5, hombros 116, pecho 95, cintura 83, caderas 97, muslo 55/55 + muslo genérico
+  (el Resumen lee el tipo genérico, la simetría los lados), pantorrilla 39.
+- **Lo que NO cabe en `MEASUREMENT_TYPES`** (reportado, nunca inventado): «manzana»
+  (37,5), «boxer» (86), «abdomen templado» (78 — se guardó el abdomen *libre* 83, que es
+  el protocolo de la app), talla de zapato 26, bíceps izq/der sin valor, y cuello /
+  antebrazos / %grasa / FC reposo nunca dados. El «muslo» genérico sí se derivó
+  (media 55/55) y lleva la procedencia en `notes`.
+- La importación se probó por la interfaz real (**Datos → Importar**, `format: "bodylab"`),
+  no inyectando en IndexedDB: `IMPORT_DATA` **reemplaza**, así que reimportar el mismo
+  archivo no duplica (verificado: 10 filas antes y después).
+
+## Objetivo del dueño y cómo se lee Progreso (2026-10-05, e)
+
+- **Físico objetivo:** «musculoso como boxeador de peso ligero o mediano», con músculos
+  bien desarrollados. **No usa modelo local para las rutinas: el modelo es Buffy** — el
+  planificador determinista sigue siendo el suelo y no hay que habilitar el LLM.
+- **Progreso empieza por el panel «Hacia tu ideal»** (`features/progress/GoalPanel.tsx`,
+  montado en `pages/Progress.tsx`): agregado de cercanía al ideal + las 8 filas McCallum
+  con barra, fichas Adonis / WHtR / peso y los huecos como «sin medir». Con sus 13
+  medidas sale **65/100** y las brechas son bíceps 32 %, pecho 54 %, cintura 58 %.
+- **Bíceps vs tríceps (respuesta dada y aceptada):** con cinta son **la misma lectura** —
+  la cinta rodea todo el brazo y el tríceps es ~2/3 de su masa a media altura; el «tríceps»
+  del ISAK es un pliegue con plicómetro, fuera del alcance sin calibre. Sus 32/32 eran el
+  mismo punto; lo que sí distingue es relajado vs `biceps_flexed`. **Pendiente de que
+  mida `forearm` y `biceps_flexed`** para cerrar la 8.ª fila del panel.
+- Los ideales salen de la proporción **publicada** (McCallum con su muñeca de 16,5 cm);
+  la pie lo declara índice de referencia, no meta de salud. «Peso ligero/medio» es
+  categoría de competición, no un physique: sin Lean Mass medido no se afirma ningún
+  peso objetivo.
+- **Training Progreso arranca con «Objetivo de volumen»** (2026-10-05, f): la tarjeta
+  `features/stats/VolumeTargetCard.tsx` compara las **series directas** de los últimos 7
+  días (familia, `weeklyDirectSets`) con la franja publicada **12–20 series/semana por
+  grupo** (Baz-Valle 2022, PMID 35291645; tríceps **12–24** porque ahí el volumen alto sí
+  fue mejor, p = 0,01), y declara en pantalla los rendimientos decrecientes de Pelland 2025
+  y el suelo de Schoenfeld 2017. La franja vive **una sola vez**, en
+  `traininglab/apps/desktop/src/lib/volume-target.ts`, con sus citas; el índice fraccionado
+  del mapa corporal (1/0,66/0,33) sigue siendo otra métrica, sin mezcla.
+  Ojo: `.tl-row` es rejilla de **2 columnas**; una fila con barra debe declarar su propio
+  `gridTemplateColumns` o se parte en dos.
+- **Pantorrilla grande y sin grasa: no es malo.** El riesgo clínico documentado es la
+  pantorrilla **pequeña** (cortes de sarcopenia 34–36 cm en hombres; González 2021 AJCN
+  NHANES). Con 39 cm / 1,76 m = 22,2 cm/m está muy por encima. El ideal de McCallum es una
+  **proporción, no un techo**: por eso el panel de BodyLab ahora dice «sobre la referencia» y
+  avisa de que estar por encima no es un defecto.
+
+## Escritorio (2026-10-05)
+
+- **TrainingLab SÍ tiene shell Tauri** (`traininglab/apps/desktop/src-tauri`, NSIS);
+  instalar con `npx tauri build` desde `traininglab/apps/desktop`. Los installers
+  reconstruidos: `…/traininglab/apps/desktop/src-tauri/target/release/bundle/nsis/TrainingLab_0.2.0_x64-setup.exe`
+  (15,3 MB) y `…/bodylab/apps/desktop/…/BodyLab_1.0.0-beta.8_x64-setup.exe` (23,4 MB).
+- `npx tauri build` de **BodyLab sale con código 1 aunque el installer salga bien**:
+  `createUpdaterArtifacts: true` exige `TAURI_SIGNING_PRIVATE_KEY`, que solo existe en el
+  workflow de release. El instalador es válido; lo que falta es la firma del updater.
+- **Los datos del dueño no van dentro del instalador**: IndexedDB es por dispositivo.
+  El flujo real es instalar → *Datos → Importar* (BodyLab) / *Ajustes → Mis datos →
+  Importar historial de Symmetry* (TrainingLab) con los dos JSON de `.cache/`.
+
 ## Freebuff session communication
 
 - Read `AGENTS.md`, this file, and the relevant source-of-truth doc before acting; read/update root `ROADMAP.md` for roadmap work.
@@ -91,3 +186,25 @@ TrainingLab's root-suite tests (`tests/training/`, `tests/exercises/`) import th
 - **Routing is `HashRouter`** (App.tsx): survives hard reload on GitHub Pages/WebView2 with no server rewrites; all E2E navigation uses the hash-aware `gotoRoute` helper. Static 3D/anatomy asset URLs must stay `BASE_URL`-aware (`import.meta.env.BASE_URL`) for subpath hosting. **CSP is mirrored**: vite.config.ts injects a prod-only meta CSP and `tauri.conf.json` carries the same policy — change them together.
 - **Tauri desktop build gotchas:** (1) `tauri.conf.json` paths resolve relative to `src-tauri/`, so `frontendDist` is `../../web/dist`; (2) `beforeDevCommand`/`beforeBuildCommand` must be explicit `cd ../web && …` or a bare `pnpm build` recurses into `tauri build`; (3) bundle `category` must be `Healthcare and Fitness`; (4) MSI/WiX rejects semver pre-release tags like `1.0.0-beta.1` — NSIS is the beta target; (5) building needs Rust stable + VS Build Tools with the C++ workload (MSVC linker + Windows SDK). Static 3D assets live in `apps/web/public/` (`oxihuman-core-v1.ohpk`, `wasm/`).
 - `pnpm-workspace.yaml` globs `bodylab/{apps,packages,core}/*`, `traininglab/{apps,packages,core}/*`, and `corpus`; `allowBuilds: esbuild`.
+
+## Protocolo de medición corporal sin escáner (investigación 2026-10-05)
+
+- Documento: `fitness-ecosystem/docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`. Fuentes
+  ISAK, Whyte & Gallagher (PMID 35240646), US Navy, Jackson–Pollock, Drillis–Contini y
+  Merrill (CDC 2019). **Solo investigación: ningún tipo de medición nuevo implementado.**
+- El esquema de BodyLab (`MEASUREMENT_TYPES`) es casi todo perímetros; faltan pliegues,
+  anchuras óseas, longitudes segmentarias y ángulos posturales, que son lo que permite
+  un modelo paramétrico sin escáner. Los ids propuestos son `hip_upper` (el «boxer» del
+  dueño), `biceps_flexed`, `triceps`, más `subscapular`/`biceps` skinfold.
+- Límites que la app debe seguir respetando: %grasa por pliegues **no** es afirmación
+  individual (Whyte & Gallagher); US Navy da **SEE ±3,5 %**; el volumen/forma 3D desde
+  cinta es **estimación** (error publicado hasta 40 %, Merrill).
+- **2026-10-05 (d): esquema ampliado con «todo lo medible con cinta o recursos caseros»**
+  (mandato del dueño): 22 tipos nuevos — 6 perímetros (`hip_upper`, `triceps`,
+  `biceps_flexed`, `forearm_flexed`, `mid_axillary`, `ankle`), 9 longitudes (categoría
+  `length`) y 7 anchuras (categoría `breadth`), con guías en `Measurements.tsx`. Las
+  categorías de `MeasurementTypeInfo.category` pasaron de 3 a 5. **Pliegues NO**: exigen
+  plicómetro, que no es recurso casero. Arreglo incluido: las guías se mostraban en
+  inglés en la página en español (`guide.en` → `guide[lang]`). Su archivo de datos es
+  `.cache/bodylab-owner.json` (17 mediciones) y se genera con
+  `node scripts/build-owner-import.mjs`.

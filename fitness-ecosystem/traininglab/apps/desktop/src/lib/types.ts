@@ -42,6 +42,13 @@ export interface TLSet {
   timestamp: string;
   weight: number | null;
   reps: number | null;
+  /**
+   * Timed hold instead of repetitions (imported Symmetry «Set Time» rows:
+   * plank, dead hang, stretches). Additive and optional — old records and old
+   * backups simply do not carry it, and consumers that only understand reps
+   * treat the set as unloaded instead of crashing.
+   */
+  durationSec?: number;
   rpe?: number;
   notes?: string;
   /**
@@ -62,6 +69,12 @@ export interface TLSession {
   readiness?: Readiness;
   /** Time budget the session was planned for, minutes. */
   budgetMin?: number;
+  /** Display title carried by imported history (Symmetry names its workouts). */
+  title?: string;
+  /** Where it happened, when the importer knows it (last gym day 2026-09-26). */
+  location?: "gym" | "home";
+  /** Provenance of an imported session, e.g. "symmetry". */
+  source?: string;
 }
 
 export type TlGoal = SessionGoal;

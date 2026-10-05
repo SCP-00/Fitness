@@ -12,7 +12,8 @@ import { createContext, useContext, useReducer, useCallback, useEffect, useRef, 
 import type {
   Profile, Measurement, BodySnapshot, ReferenceProfile,
   AnthropometricAssessment, Language, ViewMode, BodyViewMode,
-  MeasurementCreate, ProfileCreate, ExerciseSet, MaxEffort, UnitSystem
+  MeasurementCreate, ProfileCreate, ExerciseSet, MaxEffort, UnitSystem,
+  AllMeasurementType
 } from './types';
 import { calculateScore, getScoreStatus, calculateMcCallum, calculateAdonisIndex, calculateWHtR, BUILT_IN_REFERENCES } from './constants';
 import { getLatestValue } from './queries';
@@ -433,7 +434,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.profile, state.measurements, state.selectedReference, state.assessment]);
 
   const importData = useCallback((data: { profile: Profile | null; measurements: Measurement[]; snapshots: BodySnapshot[] }) => {
-    dispatch({ type: 'IMPORT_DATA', payload: data });
+    // An imported measurement set is a moment in time, and **Progreso charts
+    // snapshots** (`features/progress/ProgressTimeline.tsx`): zero snapshots
+    // means a single "Ahora" point, which cannot be charted, so the screen looks
+    // broken after a perfectly good import. Seeding one snapshot fixes that.
+    //
+    // The id is derived from the data (earliest measurement + row count), so
+    // re-importing the same file rewrites the same snapshot instead of piling
+    // duplicates up. A backup that already carries its own snapshots is left
+    // untouched — its history is the real one.
+    const snapshots =
+      data.snapshots.length > 0 || data.measurements.length === 0
+        ? data.snapshots
+        : [...data.snapshots, importedSnapshot(data.measurements, data.profile)];
+
+    dispatch({ type: 'IMPORT_DATA', payload: { ...data, snapshots } });
     setTimeout(() => dispatch({ type: 'CALCULATE_ASSESSMENT' }), 0);
   }, []);
 
@@ -449,6 +464,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+/**
+ * The snapshot an imported measurement set implies.
+ *
+ * `id` is data-derived on purpose: importing the same file twice must land on
+ * the same snapshot (the store and IndexedDB both key by id), never on two
+ * near-identical points that would make Progreso show a fake trend. The
+ * timestamp is the earliest measurement, i.e. when the imported session
+ * actually happened rather than the moment it was imported.
+ */
+function importedSnapshot(
+  measurements: Measurement[],
+  profile: Profile | null,
+): BodySnapshot {
+  const ordered = [...measurements].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const first = ordered[0];
+  const latest = (type: AllMeasurementType) =>
+    [...measurements].reverse().find((m) => m.type === type)?.value;
+  return {
+    id: `snap-import-${first.timestamp}-${measurements.length}`,
+    profileId: first.profileId,
+    timestamp: first.timestamp,
+    measurements: [...measurements],
+    bodyParameters: {
+      height: profile?.height ?? 0,
+      weight: latest('weight') ?? profile?.weight ?? 0,
+      ...(latest('body_fat_percentage') !== undefined
+        ? { bodyFatPercentage: latest('body_fat_percentage') }
+        : {}),
+      ...(latest('lean_mass') !== undefined ? { leanMass: latest('lean_mass') } : {}),
+    },
+    referenceProfileId: 'golden',
+    assessmentResults: [],
+    algorithmVersion: '1.0.0',
+    notes: 'Import',
+  };
 }
 
 // Co-located with AppProvider on purpose — splitting the hook into its own file

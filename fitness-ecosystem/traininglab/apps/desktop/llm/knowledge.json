@@ -2,7 +2,7 @@
   "$schema": "traininglab-llm-knowledge/1.0",
   "generatedFrom": "@fitness/bodylab-exercises",
   "counts": {
-    "exercises": 143,
+    "exercises": 151,
     "families": 34,
     "patterns": 28,
     "withMedia": 100
@@ -225,6 +225,9 @@
       "bench"
     ],
     [
+      "bench"
+    ],
+    [
       "bench",
       "box"
     ],
@@ -263,6 +266,9 @@
     [
       "box",
       "bench"
+    ],
+    [
+      "cable"
     ],
     [
       "cable"
@@ -380,6 +386,15 @@
       "dumbbell"
     ],
     [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
+      "dumbbell"
+    ],
+    [
       "dumbbell",
       "kettlebell"
     ],
@@ -409,6 +424,12 @@
     ],
     [
       "kettlebell"
+    ],
+    [
+      "machines"
+    ],
+    [
+      "machines"
     ],
     [
       "machines"
@@ -7127,6 +7148,61 @@
       "hasMedia": true
     },
     {
+      "id": "dumbbell-shrugs",
+      "name": {
+        "en": "Dumbbell Shrugs",
+        "es": "Encogimientos con Mancuernas"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "traps_upper",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbells",
+        "es": "Mancuernas"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
       "id": "dumbbell-curl",
       "name": {
         "en": "Dumbbell Curl",
@@ -7457,6 +7533,114 @@
         "anchor": "ankle",
         "watch": [
           "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "tricep-kickback",
+      "name": {
+        "en": "Tricep Kickback",
+        "es": "Patada de Tríceps"
+      },
+      "category": "cable",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "triceps_long",
+          "intensity": 3
+        },
+        {
+          "muscle": "triceps_lateral",
+          "intensity": 3
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Cable Machine",
+        "es": "Máquina de Poleas"
+      },
+      "pattern": "elbow_extension",
+      "loadType": "cable",
+      "unilateral": false,
+      "requires": [
+        [
+          "cable"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "wrist-roller",
+      "name": {
+        "en": "Wrist Roller",
+        "es": "Rodillo de Muñeca"
+      },
+      "category": "isolation",
+      "difficulty": 2,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 3
+        },
+        {
+          "muscle": "forearm_extensors",
+          "intensity": 2
+        },
+        {
+          "muscle": "brachioradialis",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Wrist Roller + Weight",
+        "es": "Rodillo de Muñeca + Peso"
+      },
+      "pattern": "forearm_flexion",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "time"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "2-1-2",
+      "rir": "0-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "wrist"
         ]
       },
       "hasMedia": false
@@ -8142,6 +8326,106 @@
       "hasMedia": true
     },
     {
+      "id": "hip-abduction-machine",
+      "name": {
+        "en": "Machine Hip Abduction",
+        "es": "Abducción de Cadera en Máquina"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_maximus",
+          "intensity": 2
+        }
+      ],
+      "equipment": {
+        "en": "Hip Abduction Machine",
+        "es": "Máquina de Abducción de Cadera"
+      },
+      "pattern": "hip_abduction",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "hip-adduction-machine",
+      "name": {
+        "en": "Machine Hip Adduction",
+        "es": "Aducción de Cadera en Máquina"
+      },
+      "category": "machine",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "adductors",
+          "intensity": 3
+        },
+        {
+          "muscle": "gluteus_medius",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Hip Adduction Machine",
+        "es": "Máquina de Aducción de Cadera"
+      },
+      "pattern": "hip_adduction",
+      "loadType": "machine",
+      "unilateral": false,
+      "requires": [
+        [
+          "machines"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 1,
+      "tempo": "1-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "hip"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
       "id": "hanging-knee-raise",
       "name": {
         "en": "Hanging Knee Raise",
@@ -8468,6 +8752,168 @@
         ]
       },
       "hasMedia": true
+    },
+    {
+      "id": "crunch",
+      "name": {
+        "en": "Crunch",
+        "es": "Crunch Clásico"
+      },
+      "category": "bodyweight",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 1
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Bodyweight",
+        "es": "Peso corporal"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "reps",
+        "tempo",
+        "volume"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "decline-crunch",
+      "name": {
+        "en": "Decline Crunch",
+        "es": "Crunch en Declínio"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 3
+        },
+        {
+          "muscle": "obliques",
+          "intensity": 2
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Decline Bench",
+        "es": "Banco en Declínio"
+      },
+      "pattern": "core_flexion",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [
+        [
+          "bench"
+        ]
+      ],
+      "jointStress": 2,
+      "spineLoad": 2,
+      "progression": [
+        "reps",
+        "tempo"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-2",
+      "rir": "0-1",
+      "demo": {
+        "view": "side",
+        "anchor": "hip",
+        "watch": [
+          "hip",
+          "spine"
+        ]
+      },
+      "hasMedia": false
+    },
+    {
+      "id": "oblique-crunch",
+      "name": {
+        "en": "Oblique Crunch",
+        "es": "Crunch Oblicuo"
+      },
+      "category": "isolation",
+      "difficulty": 1,
+      "hypertrophy": 3,
+      "muscles": [
+        {
+          "muscle": "obliques",
+          "intensity": 3
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 2
+        },
+        {
+          "muscle": "iliopsoas",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "Dumbbell",
+        "es": "Mancuerna"
+      },
+      "pattern": "core_rotation",
+      "loadType": "dumbbell",
+      "unilateral": false,
+      "requires": [
+        [
+          "dumbbell"
+        ]
+      ],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "load",
+        "reps"
+      ],
+      "setupMin": 0,
+      "techniqueLevel": 2,
+      "tempo": "2-0-2",
+      "rir": "1-2",
+      "demo": {
+        "view": "front",
+        "anchor": "hip",
+        "watch": [
+          "spine",
+          "shoulder"
+        ]
+      },
+      "hasMedia": false
     },
     {
       "id": "shadow-boxing-intervals",

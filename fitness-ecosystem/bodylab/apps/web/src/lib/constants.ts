@@ -81,6 +81,37 @@ export const MEASUREMENT_TYPES: MeasurementTypeInfo[] = [
   { id: 'calf_right', label: { en: 'Calf R', es: 'Pantorrilla D' }, unit: 'cm', min: 25, max: 60, category: 'circumference' },
   { id: 'shoulders_left', label: { en: 'Shoulder L', es: 'Hombro I' }, unit: 'cm', min: 40, max: 90, category: 'circumference' },
   { id: 'shoulders_right', label: { en: 'Shoulder R', es: 'Hombro D' }, unit: 'cm', min: 40, max: 90, category: 'circumference' },
+  // Girths the schema lacked — all of them tape-measurable (2026-10-05, owner
+  // asked for "everything measurable with tape or household resources").
+  { id: 'hip_upper', label: { en: 'High hip', es: 'Cadera alta' }, unit: 'cm', min: 60, max: 140, category: 'circumference' },
+  { id: 'triceps', label: { en: 'Triceps', es: 'Tríceps' }, unit: 'cm', min: 15, max: 60, category: 'circumference' },
+  { id: 'biceps_flexed', label: { en: 'Biceps flexed', es: 'Bíceps contraído' }, unit: 'cm', min: 20, max: 75, category: 'circumference' },
+  { id: 'forearm_flexed', label: { en: 'Forearm flexed', es: 'Antebrazo contraído' }, unit: 'cm', min: 18, max: 55, category: 'circumference' },
+  { id: 'mid_axillary', label: { en: 'Mid-axillary', es: 'Torso en axilas' }, unit: 'cm', min: 30, max: 120, category: 'circumference' },
+  { id: 'ankle', label: { en: 'Ankle', es: 'Tobillo' }, unit: 'cm', min: 15, max: 45, category: 'circumference' },
+
+  // Segment lengths — tape + wall/ruler. Every one of these feeds the parametric
+  // body model that stands in for a 3D scanner (docs/ANTHROPOMETRY_MEASUREMENT_
+  // PROTOCOL.md §4.5); a value entered here is a MEASUREMENT, never an estimate.
+  { id: 'stature_sitting', label: { en: 'Sitting height', es: 'Estatura sentado' }, unit: 'cm', min: 40, max: 120, category: 'length' },
+  { id: 'arm_span', label: { en: 'Arm span', es: 'Envergadura' }, unit: 'cm', min: 100, max: 240, category: 'length' },
+  { id: 'subischial_leg_length', label: { en: 'Leg length (sacrotrochanteric)', es: 'Longitud de pierna' }, unit: 'cm', min: 50, max: 120, category: 'length' },
+  { id: 'upper_arm_length', label: { en: 'Upper arm length', es: 'Longitud del brazo' }, unit: 'cm', min: 20, max: 60, category: 'length' },
+  { id: 'forearm_length', label: { en: 'Forearm length', es: 'Longitud del antebrazo' }, unit: 'cm', min: 15, max: 55, category: 'length' },
+  { id: 'hand_length', label: { en: 'Hand length', es: 'Longitud de la mano' }, unit: 'cm', min: 10, max: 35, category: 'length' },
+  { id: 'thigh_length', label: { en: 'Thigh length', es: 'Longitud del muslo' }, unit: 'cm', min: 25, max: 75, category: 'length' },
+  { id: 'lower_leg_length', label: { en: 'Lower leg length', es: 'Longitud de la pierna baja' }, unit: 'cm', min: 15, max: 65, category: 'length' },
+  { id: 'foot_length', label: { en: 'Foot length', es: 'Longitud del pie' }, unit: 'cm', min: 15, max: 40, category: 'length' },
+
+  // Bone breadths — a ruler and two books are enough; no caliper, no scanner.
+  // They do not move with body fat, which is exactly why they anchor a model.
+  { id: 'biacromial', label: { en: 'Shoulder breadth', es: 'Anchura de hombros' }, unit: 'cm', min: 25, max: 70, category: 'breadth' },
+  { id: 'bi_iliac', label: { en: 'Hip breadth (iliac crest)', es: 'Anchura de cadera' }, unit: 'cm', min: 15, max: 45, category: 'breadth' },
+  { id: 'wrist_breadth', label: { en: 'Wrist breadth', es: 'Anchura de muñeca' }, unit: 'cm', min: 3, max: 12, category: 'breadth' },
+  { id: 'elbow_breadth', label: { en: 'Elbow breadth', es: 'Anchura de codo' }, unit: 'cm', min: 3, max: 14, category: 'breadth' },
+  { id: 'knee_breadth', label: { en: 'Knee breadth', es: 'Anchura de rodilla' }, unit: 'cm', min: 5, max: 20, category: 'breadth' },
+  { id: 'malleolar_breadth', label: { en: 'Ankle breadth', es: 'Anchura de tobillo' }, unit: 'cm', min: 3, max: 14, category: 'breadth' },
+  { id: 'hand_width', label: { en: 'Hand width', es: 'Anchura de la mano' }, unit: 'cm', min: 4, max: 16, category: 'breadth' },
   // Body
   { id: 'weight', label: { en: 'Weight', es: 'Peso' }, unit: 'kg', min: 30, max: 250, category: 'composition' },
   // Composition
@@ -100,6 +131,8 @@ export const MEASUREMENT_TYPES: MeasurementTypeInfo[] = [
 ];
 
 export const CIRCUMFERENCE_TYPES = MEASUREMENT_TYPES.filter(m => m.category === 'circumference');
+export const LENGTH_TYPES = MEASUREMENT_TYPES.filter(m => m.category === 'length');
+export const BREADTH_TYPES = MEASUREMENT_TYPES.filter(m => m.category === 'breadth');
 export const COMPOSITION_TYPES = MEASUREMENT_TYPES.filter(m => m.category === 'composition');
 export const CONDITIONING_TYPES = MEASUREMENT_TYPES.filter(m => m.category === 'conditioning');
 

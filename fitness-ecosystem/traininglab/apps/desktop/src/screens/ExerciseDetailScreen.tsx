@@ -9,7 +9,10 @@
  *                    variant-specific cues when they exist.
  *   * **Resumen**  ← `catalog.ts` + `traits.ts`: muscles with their role,
  *                    equipment, load type, progression levers and joint load.
- *   * **Historial** ← TrainingLab's own logged sets (empty until you log).
+ *   * **Historial** ← `exerciseHistory()` over TrainingLab's own logged sets: one
+ *                    block per training day, heaviest first, warm-ups flagged
+ *                    and excluded from volume. Real data or an honest empty
+ *                    state — never a placeholder.
  *   * **Rango**    ← nothing yet. It is disabled with the reason written on it
  *                    rather than hidden or faked (`TRAININGLAB_UI_PLAN.md` §9).
  *
@@ -17,6 +20,8 @@
  */
 
 import { useMemo, useState } from "react";
+import { marksOf } from "../lib/records";
+import { exerciseHistory, type HistoryDay } from "../features/stats/derive";
 import {
   getExerciseById,
   getExerciseTechnique,
@@ -26,7 +31,7 @@ import {
 } from "@fitness/bodylab-exercises";
 import { getTraits } from "@fitness/bodylab-exercises";
 import { muscleFamilyOf } from "@fitness/bodylab-training";
-import { getLanguage, t } from "../lib/i18n";
+import { getLanguage, t, tInterp } from "../lib/i18n";
 import { categoryLabel, familyLabel, muscleLabel } from "../lib/format";
 import { ExerciseThumbLarge } from "../features/exercises/ExerciseThumb";
 import {
@@ -39,6 +44,7 @@ import {
 } from "../ui/primitives";
 import { IconBack, IconInfo, IconLayers } from "../ui/icons";
 import { navigate } from "../app/router";
+import { useStore } from "../app/store";
 
 /** Progression levers in the user's words (see `traits.ts`). */
 const PROGRESSION_LABEL: Record<string, string> = {
@@ -185,13 +191,7 @@ export default function ExerciseDetailScreen({
         </Card>
       )}
 
-      {tab === "history" && (
-        <EmptyState
-          icon={<IconInfo size={28} />}
-          title={t("ex.history.empty")}
-          body={t("ex.history.emptyHint")}
-        />
-      )}
+      {tab === "history" && <HistoryTab exerciseId={exerciseId} />}
     </div>
   );
 }
@@ -437,5 +437,142 @@ function Fact({ label, value }: { label: string; value: string }) {
       </div>
       <div className="text-sm font-semibold mt-0.5">{value}</div>
     </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Historial
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** `1234,5 kg` in Spanish, `1234.5 kg` in English — storage stays kg. */
+function kg(n: number): string {
+  const lang = getLanguage();
+  const formatted = new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
+    maximumFractionDigits: 1,
+  }).format(n);
+  return `${formatted} kg`;
+}
+
+function formatDayDate(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  if (!y || !m || !d) return date;
+  const lang = getLanguage();
+  return new Date(y, m - 1, d).toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/**
+ * The logged history of this exercise, one block per training day.
+ *
+ * Warm-up sets are shown (they are real work) but struck through as warm-ups and
+ * excluded from the day's tonnage; a `D`/`F` note from an imported log is kept as
+ * a chip instead of being dropped, because losing it would rewrite the owner's
+ * history. The estimated 1RM is labelled as an estimate — it is Epley, and only
+ * shown when there is a real load with reps.
+ */
+function HistoryTab({ exerciseId }: { exerciseId: string }) {
+  const { sets } = useStore();
+  const history = useMemo(() => exerciseHistory(sets, exerciseId), [sets, exerciseId]);
+  // All-time marks over **every** logged set, not just the days rendered below:
+  // a "best ever" that silently forgot older sessions would be a lie.
+  const marks = useMemo(
+    () =>
+      marksOf(sets.filter((s) => s.exerciseId === exerciseId && s.warmup !== true)),
+    [sets, exerciseId],
+  );
+
+  if (history.totalDays === 0) {
+    return (
+      <EmptyState
+        icon={<IconInfo size={28} />}
+        title={t("ex.history.empty")}
+        body={t("ex.history.emptyHint")}
+      />
+    );
+  }
+
+  const hiddenDays = history.totalDays - history.days.length;
+
+  return (
+    <div className="flex flex-col gap-3" data-testid="exercise-history">
+      <Card>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span className="text-[var(--tl-text-secondary)]">
+            {tInterp("ex.history.days", { n: history.totalDays })}
+          </span>
+          <span className="text-[var(--tl-text-secondary)]">
+            {tInterp("ex.history.sets", { n: history.totalWorkingSets })}
+          </span>
+          <span className="text-[var(--tl-text-secondary)]">
+            {tInterp("ex.history.volume", { kg: kg(history.totalVolumeKg) })}
+          </span>
+        </div>
+        {marks.bestWeightKg !== null && (
+          <p className="text-sm mt-2">
+            <span className="font-semibold">{t("ex.history.best")}</span>{" "}
+            {kg(marks.bestWeightKg)}
+            {marks.bestEst1RmKg !== null && (
+              <span className="text-[var(--tl-text-secondary)]">
+                {" · "}
+                {tInterp("ex.history.e1rm", { kg: kg(marks.bestEst1RmKg) })}
+              </span>
+            )}
+          </p>
+        )}
+      </Card>
+
+      {history.days.map((day) => (
+        <HistoryDayCard key={day.date} day={day} />
+      ))}
+
+      {hiddenDays > 0 && (
+        <p className="text-xs text-[var(--tl-text-muted)]">
+          {tInterp("ex.history.more", { n: hiddenDays })}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function HistoryDayCard({ day }: { day: HistoryDay }) {
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="font-semibold text-sm">{formatDayDate(day.date)}</p>
+        <p className="text-xs text-[var(--tl-text-secondary)]">
+          {day.volumeKg > 0
+            ? tInterp("ex.history.dayVolume", {
+                n: day.workingSets,
+                kg: kg(day.volumeKg),
+              })
+            : tInterp("ex.history.daySets", { n: day.workingSets })}
+        </p>
+      </div>
+      <ul className="mt-2 flex flex-col gap-1">
+        {day.sets.map((set) => (
+          <li
+            key={set.id}
+            className="flex flex-wrap items-center gap-2 text-sm"
+            data-testid="history-set"
+          >
+            <span className={set.warmup ? "text-[var(--tl-text-muted)] line-through" : ""}>
+              {set.weight !== null
+                ? tInterp("ex.history.setLoad", {
+                    kg: kg(set.weight),
+                    reps: set.reps ?? 0,
+                  })
+                : set.durationSec !== null
+                  ? tInterp("ex.history.setTime", { sec: set.durationSec })
+                  : t("ex.history.setBodyweight")}
+            </span>
+            {set.warmup && <Badge tone="neutral">{t("ex.history.warmup")}</Badge>}
+            {!set.warmup && set.notes && <Badge tone="info">{set.notes}</Badge>}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }

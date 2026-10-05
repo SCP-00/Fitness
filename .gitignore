@@ -130,3 +130,10 @@ fitness-ecosystem/.pages/
 !.env.example
 *.pem
 *.p12
+
+# ── Personal training data (never commit) ──────────────────────────────────
+# Symmetry screenshots used by the OCR importer, plus the cached language data
+# tesseract.js downloads on first run.
+IMPORT_SYMMETRY/
+*.traineddata
+fitness-ecosystem/.cache/

@@ -480,6 +480,28 @@ export const EXPANSION_PULL_EXERCISES: Exercise[] = [
       es: "Agarre y descompresión de hombro entre series de tirón — no es una serie de hipertrofia",
     },
   },
+  // ── Pull, the Symmetry import gap (2026-10-04): traps ──────────────────
+  {
+    id: "dumbbell-shrugs",
+    name: { en: "Dumbbell Shrugs", es: "Encogimientos con Mancuernas" },
+    category: "isolation",
+    difficulty: 1,
+    hypertrophy: 4,
+    muscles: [
+      { muscle: "traps_upper", intensity: 3 },
+      { muscle: "traps_mid", intensity: 2 },
+      { muscle: "forearm_flexors", intensity: 1 },
+    ],
+    equipment: { en: "Dumbbells", es: "Mancuernas" },
+    description: {
+      en: "Stand tall, shrug the shoulders straight up to the ears, hold a beat, lower under control — no rolling",
+      es: "De pie, encoge los hombros rectos hacia las orejas, aguanta un momento, baja controlado — sin girar",
+    },
+    hypertrophyNote: {
+      en: "Direct traps volume with a stretch at the bottom — the pull-family movement no plan had",
+      es: "Volumen directo de trapecio con estiramiento abajo — el movimiento de tirón que ningún plan tenía",
+    },
+  },
 ];
 
 // ============================================================================
@@ -611,6 +633,49 @@ export const EXPANSION_ARM_EXERCISES: Exercise[] = [
     hypertrophyNote: {
       en: "Puts the triceps under load in the stretched position, which most pushdowns never do",
       es: "Carga el tríceps en posición estirada, algo que casi ningún jalón hace",
+    },
+  },
+  // ── Arms, the Symmetry import gaps (2026-10-04): kickback + wrist roller
+  {
+    id: "tricep-kickback",
+    name: { en: "Tricep Kickback", es: "Patada de Tríceps" },
+    category: "cable",
+    difficulty: 2,
+    hypertrophy: 4,
+    muscles: [
+      { muscle: "triceps_long", intensity: 3 },
+      { muscle: "triceps_lateral", intensity: 3 },
+      { muscle: "posterior_deltoid", intensity: 1 },
+    ],
+    equipment: { en: "Cable Machine", es: "Máquina de Poleas" },
+    description: {
+      en: "Hinge forward, upper arm pinned parallel to the floor, extend the elbow fully and squeeze, return slowly",
+      es: "Inclínate al frente, brazo superior paralelo al suelo, estira el codo del todo y aprieta, vuelve lento",
+    },
+    hypertrophyNote: {
+      en: "Peak contraction at lockout under constant cable tension — the point a pushdown never loads",
+      es: "Contracción máxima en el bloqueo con tensión constante de polea — el punto que el pushdown nunca carga",
+    },
+  },
+  {
+    id: "wrist-roller",
+    name: { en: "Wrist Roller", es: "Rodillo de Muñeca" },
+    category: "isolation",
+    difficulty: 2,
+    hypertrophy: 3,
+    muscles: [
+      { muscle: "forearm_flexors", intensity: 3 },
+      { muscle: "forearm_extensors", intensity: 2 },
+      { muscle: "brachioradialis", intensity: 2 },
+    ],
+    equipment: { en: "Wrist Roller + Weight", es: "Rodillo de Muñeca + Peso" },
+    description: {
+      en: "Arms extended, roll the weight up by alternating the wrists, then unroll it just as slowly",
+      es: "Brazos extendidos, sube el peso alternando las muñecas y desenróllalo igual de lento",
+    },
+    hypertrophyNote: {
+      en: "Forearm volume no curl matches — the limit is grip, not the elbows",
+      es: "Volumen de antebrazo que ninguna curl iguala — el límite es el agarre, no los codos",
     },
   },
 ];
@@ -881,6 +946,53 @@ export const EXPANSION_LEG_EXERCISES: Exercise[] = [
       es: "La posición de rodilla flexionada alcanza el sóleo, que las elevaciones de pie se saltan",
     },
   },
+  // ── Legs, the Symmetry import gaps (2026-10-04): hip machine pair ──────
+  {
+    id: "hip-abduction-machine",
+    name: { en: "Machine Hip Abduction", es: "Abducción de Cadera en Máquina" },
+    category: "machine",
+    difficulty: 1,
+    hypertrophy: 3,
+    muscles: [
+      { muscle: "gluteus_medius", intensity: 3 },
+      { muscle: "gluteus_maximus", intensity: 2 },
+    ],
+    equipment: {
+      en: "Hip Abduction Machine",
+      es: "Máquina de Abducción de Cadera",
+    },
+    description: {
+      en: "Seated, press the pads outward against the stack, pause at the top, return slowly — no leaning forward",
+      es: "Sentado, empuja los almohadones hacia fuera contra la polea, pausa arriba, regresa lento — sin inclinarte",
+    },
+    hypertrophyNote: {
+      en: "The easiest way to load the gluteus medius, which squats and hinges barely touch",
+      es: "La forma más fácil de cargar el glúteo medio, al que sentadillas y peso muerto apenas tocan",
+    },
+  },
+  {
+    id: "hip-adduction-machine",
+    name: { en: "Machine Hip Adduction", es: "Aducción de Cadera en Máquina" },
+    category: "machine",
+    difficulty: 1,
+    hypertrophy: 3,
+    muscles: [
+      { muscle: "adductors", intensity: 3 },
+      { muscle: "gluteus_medius", intensity: 1 },
+    ],
+    equipment: {
+      en: "Hip Adduction Machine",
+      es: "Máquina de Aducción de Cadera",
+    },
+    description: {
+      en: "Seated, squeeze the pads inward against the stack, control the opening — no slamming the weight down",
+      es: "Sentado, aprieta los almohadones hacia dentro contra la polea, controla la apertura — sin dejar caer el peso",
+    },
+    hypertrophyNote: {
+      en: "The adductors the hinge and the squat leave out — groin insurance in the most boring machine there is",
+      es: "Los aductores que peso muerto y sentadilla dejan fuera — seguro de ingle en la máquina más aburrida",
+    },
+  },
 ];
 
 // ============================================================================
@@ -1014,6 +1126,70 @@ export const EXPANSION_CORE_EXERCISES: Exercise[] = [
     hypertrophyNote: {
       en: "The exercise everyone knows: fine as a beginner entry, better replaced by the hanging raise later",
       es: "El ejercicio que todos conocen: sirve de entrada para principiantes y luego mejor sustituirlo",
+    },
+  },
+  // ── Core, the Symmetry import gaps (2026-10-04): crunch family ─────────
+  {
+    id: "crunch",
+    name: { en: "Crunch", es: "Crunch Clásico" },
+    category: "bodyweight",
+    difficulty: 1,
+    hypertrophy: 3,
+    muscles: [
+      { muscle: "rectus_abdominis", intensity: 3 },
+      { muscle: "obliques", intensity: 1 },
+      { muscle: "iliopsoas", intensity: 1 },
+    ],
+    equipment: { en: "Bodyweight", es: "Peso corporal" },
+    description: {
+      en: "Knees bent, curl only the shoulders and upper back off the floor, lower one vertebra at a time",
+      es: "Rodillas flexionadas, separa solo hombros y espalda alta del suelo, baja vértebra a vértebra",
+    },
+    hypertrophyNote: {
+      en: "The short range keeps tension on the rectus and spares the hip flexors the sit-up hands the work to",
+      es: "El recorrido corto mantiene la tensión en el recto y libera los flexores de cadera a los que el sit-up se la cede",
+    },
+  },
+  {
+    id: "decline-crunch",
+    name: { en: "Decline Crunch", es: "Crunch en Declínio" },
+    category: "bodyweight",
+    difficulty: 2,
+    hypertrophy: 4,
+    muscles: [
+      { muscle: "rectus_abdominis", intensity: 3 },
+      { muscle: "obliques", intensity: 2 },
+      { muscle: "iliopsoas", intensity: 1 },
+    ],
+    equipment: { en: "Decline Bench", es: "Banco en Declínio" },
+    description: {
+      en: "Feet hooked on a decline bench, curl the torso up against the angle, control the way down",
+      es: "Pies enganchados en un banco en declínio, sube el torso contra el ángulo, controla la bajada",
+    },
+    hypertrophyNote: {
+      en: "The steeper angle buys range and tension the floor crunch cannot — the price is more hip-flexor help",
+      es: "El ángulo compra recorrido y tensión que el crunch de suelo no da — el precio es más ayuda de los flexores",
+    },
+  },
+  {
+    id: "oblique-crunch",
+    name: { en: "Oblique Crunch", es: "Crunch Oblicuo" },
+    category: "isolation",
+    difficulty: 1,
+    hypertrophy: 3,
+    muscles: [
+      { muscle: "obliques", intensity: 3 },
+      { muscle: "rectus_abdominis", intensity: 2 },
+      { muscle: "iliopsoas", intensity: 1 },
+    ],
+    equipment: { en: "Dumbbell", es: "Mancuerna" },
+    description: {
+      en: "On your back with a dumbbell at the chest, curl up rotating the shoulder towards the opposite hip",
+      es: "Boca arriba con la mancuerna en el pecho, sube rotando el hombro hacia la cadera opuesta",
+    },
+    hypertrophyNote: {
+      en: "Loads the rotational half of the core that plain crunches leave untouched",
+      es: "Carga la mitad rotatoria del core que los crunch normales no tocan",
     },
   },
 ];

@@ -10,7 +10,18 @@
 > Dirección de producto (visión, IA, branding, plataforma): `docs/ECOSYSTEM_STRATEGY.md`.
 > Fases de TrainingLab: `fitness-ecosystem/docs/TRAININGLAB_UI_PLAN.md`.
 >
-> Última actualización: **2026-10-01 (m)** (se refinaron zonas de la máscara y drilldown
+> Última actualización: **2026-10-05 (a)** (T1–T4 del bloque Symmetry cerrados y
+> verificados en la app; **datos antropométricos reales del dueño importados en
+> BodyLab** con un import reproducible; **ambos instaladores de escritorio
+> reconstruidos** — TrainingLab 0.2.0 y BodyLab 1.0.0-beta.8 — ver
+> `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-10-04 (b)** (encargo del dueño: histórico Symmetry →
+> sesiones reales en TrainingLab + **volumen semanal** en Progreso para validar
+> progresos de fuerza/masa; el importador OCR ya está en 20/20 sesiones contra
+> cabecera — ver `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-10-04 (a)** (Tauri 2 a la última estable en ambas apps y endpoint
+> del updater arreglado, commit `f6c4aef`).
+> Anterior: **2026-10-01 (m)** (se refinaron zonas de la máscara y drilldown
 > anatómico a ejercicios del catálogo; no cambia que la fuerza relativa externa siga pendiente).
 > Anterior: **2026-09-30 (g)** (el handoff reporta la tarjeta whole-body
 > `Condición física` implementada; no sustituye el mapa muscular de fuerza externa, aún
@@ -45,6 +56,7 @@
 | Marca                  | Iconos reales (BodyLab índigo / TrainingLab naranja) como maestros raster en `resources/brand/`, rasterizados a favicon/apple-touch/512 + launcher Tauri + **`.ico` multinivel y accesos de escritorio con `IconLocation` propio** | 2026-09-28 (c)                                                           |
 | Perfil                 | **`birthDate` es el dato; la edad se deriva** (`lib/age.ts`, migración de `age` al cargar) — se acabó la edad congelada                                                                                                            | 2026-09-28 (c)                                                           |
 | Feedback en el entreno | **3 avisos sonoros sintetizados** (campana fin de sesión · logro al completar series · fanfarria al batir récord) + banner visual + **notificación local** al terminar el descanso                                                 | 2026-09-28 (c)                                                           |
+| Histórico Symmetry    | **importador OCR completo** (`scripts/import-symmetry.mjs`): 45 capturas → **20/20 sesiones cuadradas con la cabecera de Symmetry, 425 series**; convención ÷2 en mancuernas bilaterales (crudo en `symmetryWeightKg`), `location` gym/casa por ≤26/09, series con hora, idempotente. **Pendiente: cargarlo en la app** | 2026-10-04                                                               |
 | Estrategia             | `docs/ECOSYSTEM_STRATEGY.md` (JEV = producto de terceros, «clase JEV» = lo nuestro; JEV ≠ JEPA; arquitectura IA, branding, plataforma pública)                                                                                     | 2026-09-28                                                               |
 
 **Siguiente acción recomendada:** cerrar Gate A de BodyLab (BL-REF-003) **y** en
@@ -155,6 +167,30 @@ matemática y las reglas duras disponen; el usuario decide.
 - [ ] Plantillas manuales (PPL, Upper/Lower, Full body) como datos editables.
 - [ ] **Multi-perfil de equipamiento**: «casa» vs. «gimnasio» (hoy hay un único
       inventario; el owner quiere poder alternar).
+
+**Bloque «Histórico Symmetry + volumen semanal» (encargo del dueño 2026-10-04):**
+
+- [x] **T1 · Curar la tabla ÷2 y mapear los 58 nombres → `exerciseId`** (2026-10-05) —
+      los 13 huecos se cerraron **añadiendo 8 ejercicios al catálogo** (`crunch`,
+      `decline-crunch`, `oblique-crunch`, `dumbbell-shrugs`, `tricep-kickback`,
+      `wrist-roller`, `hip-abduction-machine`, `hip-adduction-machine` → **151**), con
+      sus `traits` obligatorios y el pack LLM regenerado. Resultado: **53 nombres con
+      id (13 vetables) y 410/425 series mapeadas (96 %)**, 0 sin resolver.
+      **Pendiente del dueño:** vetar esas 13 propuestas y nombrar `pa® (Maquina)`
+      (03/09, 18 kg ×4), que sigue sin equivalente.
+- [x] **T2 · Carga del JSON en TrainingLab como sesiones reales** (2026-10-05) —
+      `lib/symmetry.ts` (puro) + acción `importSymmetry` con fusión por id
+      determinista: **reimportar es no-op** (probado en la app: 658 sets / 40 sesiones
+      antes y después del segundo import). `warmup` ← badge W, D/F en `notes`,
+      `durationSec`, timestamp a mediodía local.
+- [x] **T3 · Revisión de interfaz con datos reales** (2026-10-05) — import executed en
+      la app («20 sesiones y 410 series fusionadas»); Progreso, Ejercicios e Historial
+      se ven con el histórico real. Sin encajes pendientes detectados.
+- [x] **T4 · Volumen semanal en Progreso** (2026-10-05) — `weeklyVolume()` en
+      `features/stats/derive.ts` (8 semanas, lunes como inicio, calentamientos fuera,
+      lbs→kg) + `WeeklyVolumeCard` con total, tendencia contra la semana anterior
+      (mismos días transcurridos) y top-5 familias. 8 tests nuevos. Semántica
+      explícita: **tonelajelogged, no fuerza ni hipertrofia**.
 
 ### Fase C — IA local (clase JEV + LLM opt-in)
 
@@ -397,3 +433,23 @@ the intermediate maximum (18)` + `rhomboids 3 below minimum (6)` → _ningún_
   Línea base medida antes de entrenar; entrenamiento real pendiente de datos. Vulkan
   descartado con evidencia (PyTorch no lo soporta; ONNX Runtime nunca lo publicó).
   Informe: `docs/LAYAS_MODELO_DECISION.md`.
+- **2026-10-05 (a)** — **T1–T4 del bloque Symmetry cerrados**: 8 ejercicios nuevos en
+  el catálogo (151) y mapeo a **410/425 series (96 %)**; importación ejecutada en la
+  app (20 sesiones, 658 sets, **idempotente al reimportar**); tarjeta de **volumen
+  semanal** en Progreso con 8 tests; **installers reconstruidos** (TrainingLab 0.2.0,
+  BodyLab beta.8). **947 root · 115 web · lint 0/0**. Nuevo
+  `scripts/build-owner-import.mjs` → `.cache/bodylab-owner.json`: perfil (76 kg,
+  1,76 m, 28/09/2005) + 10 medidas reales importadas por la propia interfaz de
+  BodyLab; 8 valores del dueño **no** caben en `MEASUREMENT_TYPES` y quedan
+  reportados, nunca inventados. Handoff: `fitness-ecosystem/docs/AGENT_HANDOFF.md`.
+- **2026-10-04 (a)** — **Tauri 2 a la última estable** en ambas apps (tauri 2.12.1,
+  tauri-build 2.7.1, updater 2.13.1, un único CLI 2.12.1, `rust-version` 1.90) y
+  **endpoint del updater** a la etiqueta explícita `v1.0.0-beta.8/latest.json`
+  (release y endpoint suben juntos). Commit `f6c4aef` (sin push).
+- **2026-10-04 (b)** — **Importador E2E de Symmetry cerrado al 100%**: 20/20 sesiones
+  cuadran con la cabecera de Symmetry (425 series), convención de peso bilateral ÷2
+  aplicada con crudo preservado, `location` gimnasio/casa (último gym 26/09), series
+  con hora, dígitos ilegibles recuperados por re-OCR + XOR de píxeles, verificador de
+  cadena de capturas re-ejecutado. Encargo nuevo del dueño: cargarlo en TrainingLab,
+  curar el mapeo a `exerciseId` y añadir **volumen semanal** a Progreso. Handoff:
+  `fitness-ecosystem/docs/AGENT_HANDOFF.md`.

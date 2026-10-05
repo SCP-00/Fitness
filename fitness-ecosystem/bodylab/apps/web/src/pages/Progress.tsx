@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Camera, GitCompare, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { useApp } from '../lib/store';
 import { t } from '../i18n';
-import { ProgressTimeline, CurrentValues, SnapshotComparison, ConditioningPanel, METRIC_CONFIG } from '../features/progress';
+import { ProgressTimeline, CurrentValues, SnapshotComparison, ConditioningPanel, GoalPanel, METRIC_CONFIG } from '../features/progress';
 
 /**
  * Progress — Thin orchestrator using feature components.
@@ -100,6 +100,10 @@ export default function Progress() {
           </div>
         </div>
       )}
+
+      {/* "Hacia tu ideal" — distance to the published reference ideals, first
+          thing on the page: the owner reads Progreso against a goal (2026-10-05). */}
+      <GoalPanel />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

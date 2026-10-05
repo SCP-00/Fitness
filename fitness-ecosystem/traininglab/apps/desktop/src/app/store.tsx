@@ -82,6 +82,7 @@ import {
   saveSettings,
 } from "../lib/db";
 import { buildBackup, mergeById, parseBackup } from "../lib/backup";
+import { parseSymmetry } from "../lib/symmetry";
 import { getLanguage, setLanguage, t, tInterp } from "../lib/i18n";
 import {
   configureSounds,
@@ -230,6 +231,11 @@ export interface TrainingLabStore {
    * adopt it in memory. Reports a translated message for the settings screen.
    */
   importBackup: (file: File) => Promise<{ ok: boolean; message: string }>;
+  /**
+   * Import the OCR-processed Symmetry history (`lib/symmetry.ts`): convert to
+   * records, merge by id (importing twice is a no-op), persist and report.
+   */
+  importSymmetry: (file: File) => Promise<{ ok: boolean; message: string }>;
 }
 
 const StoreContext = createContext<TrainingLabStore | null>(null);
@@ -505,6 +511,47 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       };
     },
     [sets, sessions, health, applySettings],
+  );
+
+  /**
+   * Symmetry history import. Same merge semantics as the backup restore —
+   * deterministic ids make a second import a no-op — but the input is the OCR
+   * JSON, not this app's own format, so it goes through `lib/symmetry.ts`.
+   * Sets whose exercise has no catalog equivalent are skipped by the converter
+   * and surfaced in the message; they are never given an invented id.
+   */
+  const importSymmetry = useCallback(
+    async (file: File): Promise<{ ok: boolean; message: string }> => {
+      const parsed = parseSymmetry(await file.text());
+      if (!parsed.ok) {
+        return {
+          ok: false,
+          message: t(
+            parsed.error === "not-json"
+              ? "symmetry.error.file"
+              : parsed.error === "no-sessions"
+                ? "symmetry.error.empty"
+                : "symmetry.error.shape",
+          ),
+        };
+      }
+      const nextSets = mergeById(sets, parsed.sets);
+      const nextSessions = mergeById(sessions, parsed.sessions);
+      await saveSetsMany(nextSets);
+      await saveSessionsMany(nextSessions);
+      setSets(nextSets);
+      setSessions(nextSessions);
+      const skipped = parsed.report.skippedNoId + parsed.report.skippedBadRow;
+      return {
+        ok: true,
+        message: tInterp("symmetry.imported", {
+          sessions: parsed.report.sessions,
+          sets: parsed.report.sets,
+          skipped,
+        }),
+      };
+    },
+    [sets, sessions],
   );
 
   const handleFile = useCallback(
@@ -1283,6 +1330,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     logWarmup,
     exportBackup,
     importBackup,
+    importSymmetry,
   };
 
   return (

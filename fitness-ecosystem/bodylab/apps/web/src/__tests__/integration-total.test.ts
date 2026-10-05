@@ -85,10 +85,11 @@ const TRAINING_MUSCLE_IDS: MuscleGroup[] = [
 // ============================================================================
 
 describe('Integration: Exercise DB structure', () => {
-  it('contains exactly 143 exercises: 64 gym + 30 home + 49 technique-expansion entries', () => {
+  it('contains exactly 151 exercises: 64 gym + 30 home + 57 technique-expansion entries', () => {
     // 64 (full-gym catalog, 2026-09) + 30 added 2026-09-28 (home athlete) +
-    // 49 added 2026-09-29 (catalog expansion: home focus, owner equipment).
-    expect(ALL_EXERCISES.length).toBe(143);
+    // 49 added 2026-09-29 (catalog expansion: home focus, owner equipment) +
+    // 8 added 2026-10-04 (the Symmetry import mapping gaps).
+    expect(ALL_EXERCISES.length).toBe(151);
   });
 
   it('every exercise id is a unique, kebab-case slug', () => {
@@ -245,13 +246,17 @@ describe('Integration: exercise GIF assets (filesystem)', () => {
     const mediaLess = ALL_EXERCISES.filter(e => !gifIds.has(e.id) && !stillIds.has(e.id)).map(e => e.id);
     expect(gifCovered.length).toBe(36);
     expect(stillCovered.length).toBe(64);
-    // 43 remain media-less after the 2026-09-29 free-exercise-db expansion.
-    // They fall back to the drawn stick-figure animation in the app until we
-    // record our own GIFs with OxiHuman (content backlog).
-    expect(mediaLess.length).toBe(43);
+    // 51 remain media-less after the 2026-10-04 Symmetry-gap additions (43
+    // + the 8 new entries). They fall back to the drawn stick-figure
+    // animation in the app until we record our own GIFs with OxiHuman
+    // (content backlog).
+    expect(mediaLess.length).toBe(51);
     expect(mediaLess).toEqual(expect.arrayContaining([
       'push-up-plus', 'lying-hip-abduction', 'tibialis-raise', 'sumo-squat',
       'banded-hip-abduction', 'clamshells', 'fire-hydrants',
+      'crunch', 'decline-crunch', 'oblique-crunch', 'dumbbell-shrugs',
+      'tricep-kickback', 'wrist-roller', 'hip-abduction-machine',
+      'hip-adduction-machine',
     ]));
   });
 });

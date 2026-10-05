@@ -73,6 +73,7 @@ export default function SettingsScreen() {
     runSharedSync,
     exportBackup,
     importBackup,
+    importSymmetry,
     plan,
   } = useStore();
 
@@ -148,6 +149,12 @@ export default function SettingsScreen() {
 
   const restoreBackup = async (file: File) => {
     const result = await importBackup(file);
+    setBackupNote(result.message);
+  };
+
+  /** Symmetry history (OCR JSON from `scripts/import-symmetry.mjs`). */
+  const restoreSymmetry = async (file: File) => {
+    const result = await importSymmetry(file);
     setBackupNote(result.message);
   };
 
@@ -445,6 +452,28 @@ export default function SettingsScreen() {
           </label>
           <span className="text-xs text-[var(--tl-text-muted)] max-w-md">
             {t("backup.hint")}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-[var(--tl-border)]">
+          <label
+            data-testid="import-symmetry"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tl-btn-ghost text-xs font-semibold cursor-pointer tl-focusable"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            {t("symmetry.import")}
+            <input
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void restoreSymmetry(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <span className="text-xs text-[var(--tl-text-muted)] max-w-md">
+            {t("symmetry.hint")}
           </span>
         </div>
         {backupNote && (
