@@ -9,20 +9,19 @@
  * @module features/today/SlotCard
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import {
   AlertTriangle,
   Check,
   Info,
   Pencil,
-  Plus,
   Repeat,
   Trash2,
   TrendingUp,
   X,
 } from "lucide-react";
 import { parseNumberInput } from "../../lib/parse-num";
-import { inheritedReps, resolveReps } from "../../lib/set-entry";
+import SetEntryBar from "./SetEntryBar";
 import { fromKg, toKg, type WeightUnit } from "../../lib/units";
 import {
   getExerciseTechnique,
@@ -80,10 +79,6 @@ export function SlotCard({
   customReps?: { min: number; max: number; custom: boolean } | null;
 }) {
   const lang = getLanguage();
-  const weightRef = useRef<HTMLInputElement>(null);
-  const repsRef = useRef<HTMLInputElement>(null);
-  const [weight, setWeight] = useState("");
-  const [reps, setReps] = useState("");
   const [swapping, setSwapping] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
   const [expanded, setExpanded] = useState(autoOpen);
@@ -106,11 +101,6 @@ export function SlotCard({
     max: row.repsMax,
     custom: false,
   };
-
-  // What an empty reps field means — the rule lives in lib/set-entry so it can
-  // be tested, and the UI says it out loud instead of assuming silently.
-  const lastLoggedReps = useMemo(() => inheritedReps(todaySets), [todaySets]);
-  const inheritedValue = lastLoggedReps ?? repRange.min;
 
   const startEdit = (set: TLSet) => {
     setEditId(set.id);
@@ -149,20 +139,6 @@ export function SlotCard({
     setEditingReps(false);
   };
 
-  const submit = () => {
-    const w = parseNumberInput(weight);
-    const r = parseNumberInput(reps);
-    // The input speaks the display unit; the log speaks kg.
-    const effectiveKg =
-      w !== null ? toKg(w, unit) : (suggestion.weight ?? null);
-    const effectiveReps = resolveReps({ typed: r, sets: todaySets, prescribedMin: repRange.min })
-      .reps;
-    if (effectiveReps === null || effectiveReps <= 0) return;
-    onAddSet(row, isCardio ? null : effectiveKg, effectiveReps);
-    setWeight("");
-    setReps("");
-    weightRef.current?.focus();
-  };
 
   return (
     <div className={`tl-card p-5 ${complete ? "border-emerald-500/40" : ""}`}>
@@ -181,7 +157,7 @@ export function SlotCard({
             <button
               onClick={() => setDemoOpen(true)}
               title={t("slot.seeHow")}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-medium tl-focusable bg-[var(--tl-accent)]/10 text-[var(--tl-accent)] border-transparent hover:bg-[var(--tl-accent)]/20 transition-colors"
+              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded-md border text-[11px] font-medium tl-focusable bg-[var(--tl-accent)]/10 text-[var(--tl-accent)] border-transparent hover:bg-[var(--tl-accent)]/20 transition-colors"
             >
               ▶ {t("slot.seeHow")}
               {techLvl !== null && ` · T${techLvl}`}
@@ -209,7 +185,7 @@ export function SlotCard({
             )}
           </div>
         </div>
-        <div className="flex items-end gap-2 text-right shrink-0">
+        <div className="flex items-end gap-2 text-right shrink-0 max-w-[52%]">
           {!isCardio && (
             <span
               className={`text-xs font-semibold tabular-nums ${complete ? "text-emerald-400" : "text-[var(--tl-text-muted)]"}`}
@@ -218,7 +194,7 @@ export function SlotCard({
             </span>
           )}
           {lastSession && (
-            <p className="text-[11px] text-[var(--tl-text-muted)] mt-1">
+            <p className="text-[11px] text-[var(--tl-text-muted)] mt-1 truncate">
               {tInterp("log.last", { d: lastSession.split("T")[0]!, n: done })}
             </p>
           )}
@@ -462,72 +438,20 @@ export function SlotCard({
           </ul>
         )}
 
-        {/* Keyboard-first input row (wraps on phones — see .tl-set-row) */}
-        <div className="tl-set-row flex items-center gap-2 mt-3">
-          {!isCardio && (
-            <>
-              <input
-                ref={weightRef}
-                type="text"
-                inputMode="decimal"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    repsRef.current?.focus();
-                  }
-                }}
-                placeholder={
-                  suggestion.weight !== null
-                    ? String(
-                        Math.round(fromKg(suggestion.weight, unit) * 10) / 10,
-                      )
-                    : unit
-                }
-                aria-label={t("log.weight")}
-                className="tl-input w-24 px-3 py-2 text-sm tabular-nums"
-              />
-              <span className="text-[var(--tl-text-muted)] text-sm">×</span>
-            </>
-          )}
-          <input
-            ref={repsRef}
-            type="text"
-            inputMode="numeric"
-            value={reps}
-            onChange={(e) => setReps(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            placeholder={
-              isCardio
-                ? String(row.cardioMin ?? 0)
-                : String(inheritedValue)
-            }
-            aria-label={t("log.reps")}
-            className="tl-input w-20 px-3 py-2 text-sm tabular-nums"
-          />
-          <button
-            onClick={submit}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl tl-btn-primary text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            {t("log.add")}
-          </button>
-          {/* Say out loud what an empty field will do. It used to assume the
-              bottom of the range without telling anyone, which is how a set of
-              12 quietly became a set of 8. */}
-          {!isCardio && lastLoggedReps !== null && (
-            <span className="text-[11px] text-[var(--tl-text-muted)] w-full sm:w-auto">
-              {tInterp("slot.repsRepeat", { n: lastLoggedReps })}
-            </span>
-          )}
+        {/* One big field, weight inherited — see SetEntryBar. */}
+        <SetEntryBar
+          isCardio={isCardio}
+          unit={unit}
+          cardioMin={row.cardioMin}
+          prescribedMin={repRange.min}
+          suggestionKg={suggestion.weight}
+          sets={todaySets}
+          onSubmit={(weightKg, reps) => onAddSet(row, weightKg, reps)}
+        />
 
-          <div className="tl-swap ml-auto relative">
+        {/* Exercise swap — secondary, so it lives on its own line under the
+            primary action rather than competing with it. */}
+        <div className="tl-swap relative mt-2">
             <button
               onClick={() => setSwapping((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl tl-btn-ghost text-xs"
@@ -567,7 +491,6 @@ export function SlotCard({
                 )}
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>

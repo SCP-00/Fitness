@@ -20,7 +20,9 @@ import {
 } from "../../traininglab/apps/desktop/src/lib/autobackup";
 import {
   inheritedReps,
+  inheritedWeight,
   resolveReps,
+  resolveWeight,
 } from "../../traininglab/apps/desktop/src/lib/set-entry";
 import type { TLSet } from "../../traininglab/apps/desktop/src/lib/types";
 import { buildBackup } from "../../traininglab/apps/desktop/src/lib/backup";
@@ -146,5 +148,47 @@ describe("logging a set: what an empty reps field means", () => {
 
   it("has nothing to inherit from an empty log", () => {
     expect(inheritedReps([])).toBeNull();
+  });
+});
+describe("logging a set: the weight is shown, not asked for", () => {
+  it("inherits the load of the previous set", () => {
+    expect(inheritedWeight([set({ id: "a", weight: 60 })])).toBe(60);
+  });
+
+  it("uses the most recent load, not the first", () => {
+    expect(inheritedWeight([set({ id: "a", weight: 50 }), set({ id: "b", weight: 65 })])).toBe(65);
+  });
+
+  it("falls back to the suggestion when nothing was logged", () => {
+    expect(inheritedWeight([], 42.5)).toBe(42.5);
+  });
+
+  it("ignores a trailing bodyweight set instead of poisoning the chain", () => {
+    // A dip-bar set with no load must not make the next set bodyweight.
+    expect(inheritedWeight([set({ id: "a", weight: 60 }), set({ id: "b", weight: null })], 42)).toBe(60);
+  });
+
+  it("has no load at all with neither a set nor a suggestion", () => {
+    expect(inheritedWeight([], null)).toBeNull();
+  });
+
+  it("a typed weight wins over inheritance", () => {
+    const r = resolveWeight({ typed: 70, sets: [set({ id: "a", weight: 60 })], suggestionKg: 42 });
+    expect(r).toEqual({ weightKg: 70, inherited: false, source: "typed" });
+  });
+
+  it("a blank weight repeats the previous set, and says so", () => {
+    const r = resolveWeight({ typed: null, sets: [set({ id: "a", weight: 60 })], suggestionKg: 42 });
+    expect(r).toEqual({ weightKg: 60, inherited: true, source: "previous-set" });
+  });
+
+  it("a blank weight with no sets uses the suggestion, and says so", () => {
+    const r = resolveWeight({ typed: null, sets: [], suggestionKg: 42 });
+    expect(r).toEqual({ weightKg: 42, inherited: true, source: "suggestion" });
+  });
+
+  it("treats a zero or negative typed load as blank", () => {
+    const r = resolveWeight({ typed: 0, sets: [set({ id: "a", weight: 60 })], suggestionKg: 42 });
+    expect(r.weightKg).toBe(60);
   });
 });

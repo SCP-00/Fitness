@@ -423,6 +423,28 @@ const DICT: Record<string, { en: string; es: string }> = {
   // ── Logging ───────────────────────────────────────────────────────────────
   "log.weight": { en: "Weight (kg)", es: "Peso (kg)" },
   "log.reps": { en: "Reps", es: "Reps" },
+  "log.nextSet": {
+    en: "Next set",
+    es: "Siguiente serie",
+  },
+  "log.weightRepeat": {
+    en: "repeats the last set",
+    es: "repite la anterior",
+  },
+  "log.weightSuggested": {
+    en: "suggested for today",
+    es: "sugerido para hoy",
+  },
+  "log.bodyweight": {
+    en: "Bodyweight",
+    es: "Peso corporal",
+  },
+  "log.cardioHint": {
+    en: "Aim for {n} or more",
+    es: "Apunta a {n} o más",
+  },
+  "log.kg": { en: "kg", es: "kg" },
+  "log.lb": { en: "lb", es: "lb" },
   "log.add": { en: "Add set", es: "Añadir serie" },
   "log.last": {
     en: "Last: {d} · {n} sessions",
@@ -1407,6 +1429,10 @@ const DICT: Record<string, { en: string; es: string }> = {
   "slot.repsRepeat": {
     en: "blank repeats the last set ({n})",
     es: "en blanco repite la anterior ({n})",
+  },
+  "slot.repsRange": {
+    en: "untouched, it logs {min} — the bottom of the prescribed range",
+    es: "sin tocar, registra {min}: el mínimo del rango recomendado",
   },
   "slot.repsMin": { en: "Min reps", es: "Reps mín" },
   "slot.repsMax": { en: "Max reps", es: "Reps máx" },

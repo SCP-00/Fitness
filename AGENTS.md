@@ -8,7 +8,7 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
 - The real codebase is the pnpm monorepo in `fitness-ecosystem/` — run commands from there. Requires Node >=20, pnpm >=9.
 - Install: `pnpm install`
 - Dev (web): `pnpm dev` (or `cd bodylab/apps/web && pnpm dev`) → http://localhost:5173
-- Test: `pnpm test` (981 root tests, 65 files: core + contract + data-integrity + adversarial + training + exercises + **lan**) · `cd bodylab/apps/web && npx vitest run` (118 web tests) · `pnpm check` (typecheck + core + web + Playwright e2e)
+- Test: `pnpm test` (990 root tests, 65 files: core + contract + data-integrity + adversarial + training + exercises + **lan**) · `cd bodylab/apps/web && npx vitest run` (118 web tests) · `pnpm check` (typecheck + core + web + Playwright e2e)
 - CI/release/Pages workflows live in **`.github/workflows/` at the repository root** (GitHub never reads a subdirectory's `.github/`). Each job runs from `fitness-ecosystem`, and step-level `working-directory:` overrides must spell out `fitness-ecosystem/...`.
 - TrainingLab (own app): `cd traininglab/apps/desktop && pnpm dev` (→ http://localhost:5174) / `npx tsc -b` / `npx vite build`. Its root-suite tests live in `fitness-ecosystem/tests/training/` and import the app modules by relative path.
 - Typecheck: `pnpm typecheck` (web `tsc -b` is the effective whole-monorepo check)

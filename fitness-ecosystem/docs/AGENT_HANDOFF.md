@@ -1377,3 +1377,52 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
 - **Pendiente del dueño (no es un bloqueo):** reimportar las 410 series de Symmetry desde
   Ajustes → Importar Symmetry, y decidir si el aviso de recuperación debe también aparecer en
   Inicio en vez de solo en Ajustes.
+
+## 2026-10-05 (j) — Registro de series para móvil: un número grande, «Siguiente serie», peso heredado
+
+- **Encargo del dueño:** «rediseña el registro de series para móvil: un único campo numérico
+  grande, acción "siguiente serie" y el peso heredado de la serie anterior salvo que se cambie».
+  Viene detrás de «el manejo de las series todavía es horrible», así que el criterio no era
+  que se viera bien: era que se pudiera registrar una serie con una mano, entre series, sin
+  leer.
+- **Qué hay ahora** (`features/today/SetEntryBar.tsx`, nuevo, montado por `SlotCard`):
+  - **Un solo campo grande**, y es el de **repeticiones**, porque es el único número que
+    cambia serie a serie. Va **prellenado** con el valor que se va a registrar, seleccionado al
+    enfocar: escribir sustituye, y vaciarlo vuelve a heredar. El placeholder ya no es un
+    rango, que es lo que se leía como «tengo que registrar un rango».
+  - **El peso no se pide, se muestra.** Vive en una ficha a la derecha con lo que se va a usar y
+    de dónde sale («repite la anterior» o «sugerido para hoy»). Un toque la convierte en el
+    campo grande, y se vuelve a reps al registrar. La carga casi nunca cambia; pedirla cada vez
+    era el ruido.
+  - **Acción principal «Siguiente serie»**: barra ancha, la que un pulgar no puede no pulsar.
+    En escritorio es un botón compacto con la misma acción, y Enter hace lo mismo.
+  - Las reglas viven en `lib/set-entry.ts` (`resolveReps`, `resolveWeight`, `inheritedWeight`),
+    puras y testeadas; el componente no decide nada.
+- **Reglas de precedencia (idénticas en ambos lados):** lo tecleado gana → si no, la serie
+  anterior → si no hay anterior, el mínimo prescrito (reps) o la sugerencia del plan (peso). Un
+  `0` o un negativo cuentan como «en blanco», que era el bug de (i). Una última serie sin carga
+  **no** envenena la cadena: una serie de peso corporal no convierte la siguiente en peso
+  corporal si las dos anteriores usaron 60 kg.
+- **Dos defectos encontrados viéndolo, no leyéndolo:**
+  1. **El CSS nuevo estaba dentro del media query de móvil**, así que en escritorio la barra
+     salía sin estilos: campo de 12 px, chip aplastado y el botón partido en dos líneas. La
+     base está ahora **fuera** del media query y solo el tamaño del campo, el ancho de la ficha
+     y el ancho de la barra son específicos de móvil. El comentario del CSS lo dice, porque
+     volver a meterlo ahí es el error fácil.
+  2. **El botón «Ver cómo se hace» se estampaba letra a letra** al aparecer la línea
+     «Last: 2026-10-05 · 1 sessions»: el bloque derecho de la cabecera era `shrink-0` sin tope
+     y empujaba el botón hasta no dejarle ancho. Corregido con `shrink-0 whitespace-nowrap` en
+     el botón, `max-w-[52%]` y `truncate` en la línea de la derecha.
+- **Verificación (comandos reales):** raíz `npx vitest run` → **990/990, 65 archivos** (+9
+  tests de peso heredado) · `pnpm lint` **0/0** · `pnpm --filter traininglab-desktop build`
+  **exit 0** · TrainingLab `npx tsc -b` **exit 0**. **QA visual en el navegador a 390×844 y
+  1366×1000**, registrando de verdad: serie 1 = 12 reps sin peso, serie 2 = **22 kg × 12** con
+  la ficha mostrando «22 kg · repite la anterior» y el campo offering 12; el temporizador de
+  descanso salta en ambos casos. Los dos ajustes del punto anterior se comprobaron en pantalla
+  antes y después.
+- **Instalador:** NO reconstruido en esta ronda; el que está en el escritorio es el de (i). El
+  cambio es de interfaz, así que hace falta un `pnpm tauri build` (~2 min 20 s) para que lo
+  vea la app instalada.
+- **Pendiente de decisión del dueño:** el campo pasa a ser reps siempre. Para ejercicios de
+  fuerza (peso-rango 3–6) quizá el número que más cambia sea el peso, no las reps; si quieres,
+  se puede invertir el campo por defecto según el rango prescrito.

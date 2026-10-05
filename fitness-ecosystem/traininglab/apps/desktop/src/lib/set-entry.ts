@@ -57,3 +57,45 @@ export function resolveReps(input: {
   }
   return { reps: input.prescribedMin, inherited: true, source: "prescribed-min" };
 }
+
+/**
+ * The load the next set should use: whatever the last set actually used, and
+ * only the planner's suggestion when there is no set to copy it from.
+ *
+ * A trailing bodyweight set (weight `null`) is skipped rather than poisoning the
+ * chain: a set logged with no load does not mean the next one should have none
+ * when the two before it used 60 kg.
+ */
+export function inheritedWeight(
+  sets: readonly TLSet[],
+  suggestionKg: number | null = null,
+): number | null {
+  for (let i = sets.length - 1; i >= 0; i -= 1) {
+    const weight = sets[i].weight;
+    if (typeof weight === "number" && weight > 0) return weight;
+  }
+  return suggestionKg;
+}
+
+export interface WeightResolution {
+  /** Kilograms, or `null` for bodyweight / no external load. */
+  weightKg: number | null;
+  inherited: boolean;
+  source: "typed" | "previous-set" | "suggestion";
+}
+
+/** Same precedence for the weight side of the row. */
+export function resolveWeight(input: {
+  typed: number | null;
+  sets: readonly TLSet[];
+  suggestionKg: number | null;
+}): WeightResolution {
+  if (input.typed !== null && input.typed > 0) {
+    return { weightKg: input.typed, inherited: false, source: "typed" };
+  }
+  const previous = inheritedWeight(input.sets, input.suggestionKg);
+  if (inheritedWeight(input.sets) !== null) {
+    return { weightKg: previous, inherited: true, source: "previous-set" };
+  }
+  return { weightKg: previous, inherited: true, source: "suggestion" };
+}
