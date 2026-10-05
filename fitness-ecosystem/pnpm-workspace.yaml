@@ -16,3 +16,11 @@ packages:
   - "traininglab/apps/*"
 allowBuilds:
   esbuild: true
+  # tesseract.js (used by scripts/import-symmetry.mjs for the OCR of the
+  # Symmetry screenshots) has a `postinstall` that only runs the OpenCollective
+  # donation banner. pnpm 11 fails a whole install with ERR_PNPM_IGNORED_BUILDS
+  # when a dependency ships a build script that nothing declared — which is what
+  # turned every CI job red at "Install dependencies" on 2026-10-05. Declaring
+  # `false` says "we read it and we don't want it", which is the honest answer
+  # for a donation banner, and keeps the lockfile check strict for everything else.
+  tesseract.js: false

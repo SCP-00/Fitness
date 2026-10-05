@@ -1,0 +1,37 @@
+# Line endings, decided once here instead of per machine.
+#
+# Why this file exists (2026-10-05): this machine has `core.autocrlf=true`, so a
+# fresh clone checked every text file out as CRLF while the Linux CI checkout is
+# LF. `scripts/lan-store.mjs` starts with `#!/usr/bin/env node`, and vitest 1
+# feeds the transformed module to `vm.runInThisContext`, which rejects a shebang
+# line that ends in `\r` with `SyntaxError: Invalid or unexpected token`. On
+# Windows that silently took out `tests/lan/test_lan_store.test.ts` and
+# `tests/training/test_data_cli.test.ts` — the only two root suites that import a
+# shebang script — while CI stayed green and the failure looked like a mystery.
+#
+# `eol=lf` makes the working tree byte-identical on every platform: the same bytes
+# in the editor, in vitest, in Rust's build and in CI. Only the Windows launchers
+# below keep CRLF, because cmd.exe and the double-click path are the least
+# forgiving readers in the repo.
+
+* text=auto eol=lf
+
+# Windows launchers and PowerShell scripts: cmd.exe's `goto`/labels and the
+# double-click .bat path are the constructs that misbehave with bare LF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binaries — never touched by the eol machinery.
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.wasm binary
+*.exe binary
+*.msi binary
+*.pdf binary
+*.zip binary
+*.traineddata binary
