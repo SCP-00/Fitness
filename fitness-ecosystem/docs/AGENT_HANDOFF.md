@@ -1512,3 +1512,65 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   directamente y lo escriba en la app, con la convención de una mancuerna ya resuelta.
 - **Pendiente:** el CSV todavía no tiene importador. Hoy se corrige a mano y se puede leer con un
   script; el trabajo que lo cerraría es un «Importar CSV» en Ajustes, como el de Symmetry.
+
+## 2026-10-06 (m) — Plan de hipertrofia de abdomen + "Enfoque de hoy" + instaladores al día
+
+- **Resultado:** (1) **Plan de hipertrofia de abdomen** en
+  `fitness-ecosystem/docs/plan_hipertrofia_abdomen.md`, con el **registro explícito de cambios de
+  suposición** que el dueño pidió: se **retira** el déficit de 3-4 kg como palanca principal (él no
+  baja de peso con facilidad ni lo sube), el plan va **sin déficit y a peso estable**, y la
+  visibilidad pasa a explicarse por grasa *y* grosor de la pared abdominal. El déficit queda como
+  **etapa opcional** registrada como decisión suya, no como olvido. (2) La app gana **"Enfoque de
+  hoy"** (Automático · Empuje · Tracción · Pierna · **Core**), que es lo que hace el plan ejecutable.
+  (3) Los **dos instaladores están instalados y verificados** con los datos del dueño intactos.
+- **Cambios:** `docs/plan_hipertrofia_abdomen.md` (nuevo);
+  `traininglab/apps/desktop/src/lib/plan.ts` (`focusFamilies` + filtrado de los avisos de cobertura
+  que un enfoque vuelve ruido), `app/store.tsx` (`dayFocus`, efímero a propósito: persistirlo
+  convertiría todos los días futuros en días de core), `screens/TodayScreen.tsx` (`DayFocusBar`),
+  `lib/i18n.ts` (claves de enfoque + contadores + build), `screens/SettingsScreen.tsx` (sello de
+  build); `bodylab/apps/web/src/pages/Settings.tsx` + `i18n.ts` (línea "Installed/Instalada");
+  `__BUILD_STAMP__` en los 4 configs y los 2 `vite-env.d.ts`; `tests/training/test_day_focus.test.ts`
+  (nuevo). Sin dependencias nuevas.
+- **Verificación:**
+  - `pnpm typecheck` 0 · `pnpm --filter traininglab-desktop exec tsc -b` 0 · **995/995 root (66
+    archivos)** · **118/118 web (9)** · `pnpm lint` 0/0.
+  - **Preview de Buffy sirviendo el bundle real** (puerto 8131): el día automático sigue mostrando el
+    defecto conocido ("No hay ningún ejercicio de tracción posible con tu equipamiento"); **Core**
+    deja solo core (V-Up · Crunch Clásico · Sit-Up · Roca Hueca · Hueco · Bicho Muerto) y **desaparece**
+    ese aviso; una serie registrada **con teclado real** (0/20 → 1/20) persiste tras recargar; se leen
+    las cadenas nuevas ("series guardadas", "de trabajo, … de calentamiento", "Series de trabajo",
+    "Compilación …"). **Aviso de herramienta:** `preview_click` no entregó clics en esta sesión (las
+    coordenadas eran correctas y el elemento estaba en el punto); `preview_type` y las teclas sí
+    funcionan, y el clic por DOM confirmó que el handler y el planner responden.
+  - **Contenido del bundle comprobado, no solo que el `.exe` exista:** `Enfoque de hoy` y sello
+    `2026-10-06 22:50` en `traininglab/apps/desktop/dist/assets/`; `Instalada: v{version}` y sello
+    `2026-10-06 22:54` en `bodylab/apps/web/dist/assets/`.
+  - `pnpm tauri build` TrainingLab **exit 0** (14,63 MiB); BodyLab **exit 1 esperado**
+    (`createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`) con NSIS válido (22,27 MiB).
+  - **Instaladores copiados al escritorio real** (`C:\Users\andyh\OneDrive\Desktop`): TrainingLab
+    15 336 755 B @22:59 MD5 `eaebaaa812c6486e442f53f1b4b6b996`; BodyLab 23 355 826 B @22:59 MD5
+    `168271c344f60b234c072138e4bbcf60`.
+  - **Instalados** con `/S` (per-user, sin admin), exit 0 los dos:
+    `%LOCALAPPDATA%\TrainingLab\traininglab.exe` 15 761 920 B (@10-05 07:11) → **15 783 424 B**;
+    `bodylab.exe` 18 569 728 B (@09-29) → **24 442 368 B**. `VersionInfo`: TrainingLab 0.2.0,
+    BodyLab **1.0.0-beta.8** (antes beta.6).
+  - **Verificado en el binario instalado, no en el código.** Leído el DOM real de las dos apps por el
+    puerto de depuración de WebView2 (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port`,
+    `node .tmp-verify/cdp-read.mjs <puerto> "<expr>"`): TrainingLab muestra `ENFOQUE DE HOY`,
+    `Compilación 2026-10-06 22:50`, `TrainingLab v0.2.0` y **`3 series guardadas | 2 de trabajo,
+    1 de calentamiento`** (sus 3 series reales de `arnold-press` del 05-10); pulsando **Core** *en el
+    binario* la sesión pasa a core y sin avisos de tracción; el plan automático usa **sus** ajustes
+    (nivel avanzado, 60 min, techo 24 series, mancuernas ajustables). BodyLab muestra su perfil
+    (69 kg, IMC 22,3, 100 % de cobertura, 21 años) y `Installed: v1.0.0-beta.8 · build 2026-10-06 22:54`.
+  - **Datos del dueño intactos:** `com.traininglab.desktop` 12 MB y `com.bodylab.desktop` 16 MB antes
+    y después de instalar; las cuatro copias automáticas contienen exactamente sus 3 series.
+- **Límites / no hecho:** el aviso de "plan sin tracción" en modo **automático** sigue siendo un aviso
+  entre otros — **sigue pendiente** hacerlo imposible de leer como nota menor. El histórico de
+  Symmetry (20 sesiones / 410 series) **sigue sin estar** en la app instalada: "Restaurar mi historial"
+  solo se ofrece con el log vacío (`isWorthRecovering` exige 0 series y 0 sesiones), y meterlo
+  requiere el import de un clic en Ajustes → Mis datos.
+- **Pendiente / decisión del dueño:** (1) importar el histórico de Symmetry en la app instalada;
+  (2) decidir si el aviso de plan incompleto debe **bloquear** o solo gritar; (3) publicar release
+  (beta.8 sigue sin publicarse y el updater apunta a un `latest.json` que no existe).
+- **Siguiente paso seguro:** abrir TrainingLab instalada, `Enfoque de hoy → Core`, y registrar la
+  primera sesión del plan. No hace falta reconstruir nada.
