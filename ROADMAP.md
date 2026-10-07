@@ -45,8 +45,8 @@
 | Frente                 | Estado                                                                                                                                                                                                                             | Verificación                                                             |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | BodyLab web            | Beta pública de alta calidad                                                                                                                                                                                                       | **775 root · 110 web · lint 0/0 · typecheck OK · build OK** (2026-09-29) |
-| BodyLab desktop        | **beta.6 construida y publicada** (primera con el arreglo del Historial); iconos de launcher regenerados                                                                                                                           | 2026-09-29                                                               |
-| TrainingLab            | **app de escritorio propia** (`traininglab/apps/desktop`): plan del día de 90 min, readiness, inventario de equipo, coach local opcional, modelo de decisión aprendiendo, **shell Tauri 2 + instalador NSIS publicados**           | 2026-09-29                                                               |
+| BodyLab desktop        | **beta.8 construida y en el escritorio** (10-05 09:55, 23 355 369 B). **Última release publicada: beta.7** (10-02, con alias estable). **Instalado en el equipo: beta.6** (`VersionInfo` del `.exe`, 09-29) — dos betas por detrás. Arranca en 2,3 s. | **2026-10-06 (integración: `VersionInfo` + arranque real)** |
+| TrainingLab            | **app de escritorio propia** (`traininglab/apps/desktop`): plan del día, readiness, inventario, coach local opcional, modelo de decisión, **shell Tauri 2 + instalador NSIS**. **0.2.0.** ⚠ **El binario instalado es de las 07:11 del 10-05 y NO lleva ni el rediseño del registro de series (`7973baf`, 09:19) ni el autobackup (`0a0923a`, 08:52)**; el instalador del escritorio (09:48) sí los lleva. Las dos builds se llaman 0.2.0, así que **por número no se distingue cuál está en uso**. | **2026-10-06 (integración: `VersionInfo` + arranque 1,7 s)** |
 | Historial compartido   | **mini servidor SQLite** (`scripts/lan-store.mjs` + `lan-api.mjs`, `pnpm lan --shared`): miembros/sesiones/series/registros de salud, login no estricto en LAN, aviso de que no es privado                                         | 2026-09-29                                                               |
 | Plataforma pública     | **Release en GitHub** con los dos instaladores y alias estables (`releases/latest/download/<app>-setup.exe`), **README con vitrina**, **capturas generadas** y **Pages sirviendo ambas apps**                                      | 2026-09-29                                                               |
 | Catálogo de ejercicios | **paquete core compartido `@fitness/bodylab-exercises`**: 94 ejercicios + traits de equipamiento/patrón/carga/progresión                                                                                                           | 2026-09-28                                                               |
@@ -56,8 +56,48 @@
 | Marca                  | Iconos reales (BodyLab índigo / TrainingLab naranja) como maestros raster en `resources/brand/`, rasterizados a favicon/apple-touch/512 + launcher Tauri + **`.ico` multinivel y accesos de escritorio con `IconLocation` propio** | 2026-09-28 (c)                                                           |
 | Perfil                 | **`birthDate` es el dato; la edad se deriva** (`lib/age.ts`, migración de `age` al cargar) — se acabó la edad congelada                                                                                                            | 2026-09-28 (c)                                                           |
 | Feedback en el entreno | **3 avisos sonoros sintetizados** (campana fin de sesión · logro al completar series · fanfarria al batir récord) + banner visual + **notificación local** al terminar el descanso                                                 | 2026-09-28 (c)                                                           |
-| Histórico Symmetry    | **importador OCR completo** (`scripts/import-symmetry.mjs`): 45 capturas → **20/20 sesiones cuadradas con la cabecera de Symmetry, 425 series**; convención ÷2 en mancuernas bilaterales (crudo en `symmetryWeightKg`), `location` gym/casa por ≤26/09, series con hora, idempotente. **Pendiente: cargarlo en la app** | 2026-10-04                                                               |
+| Histórico Symmetry     | **importador OCR completo** (`scripts/import-symmetry.mjs`): 45 capturas → **20/20 sesiones, 425 series**; convención ÷2 en mancuernas bilaterales (crudo en `symmetryWeightKg`), `location` gym/casa por ≤26/09, series con hora, idempotente. **YA CARGADO EN LA APP** (Ajustes → Mis datos → Importar historial de Symmetry): **20 sesiones y 410 de 425 series**; las **15 descartadas tienen `exerciseId: null`** en el origen y la app lo indica en su mensaje. Roundtrip export = 412 series / 20 sesiones, JSON válido. | **2026-10-06 (integración: import real + export roundtrip)** |
 | Estrategia             | `docs/ECOSYSTEM_STRATEGY.md` (JEV = producto de terceros, «clase JEV» = lo nuestro; JEV ≠ JEPA; arquitectura IA, branding, plataforma pública)                                                                                     | 2026-09-28                                                               |
+
+### Verificación de integración (2026-10-06)
+
+Hecho con la app real, no con tests unitarios. **Las suites no se volvieron a ejecutar hoy**: los últimos
+recuentos registrados son los de 2026-10-05 (root 990/990 · web 118/118 · Playwright 21/21 · lint 0/0
+· `tsc -b` 0) y se deben tratar como históricos hasta la próxima ejecución.
+
+| Qué se probó | Cómo | Resultado |
+| --- | --- | --- |
+| `.exe` de escritorio | Lanzado el binario instalado y esperada la ventana | **TrainingLab 1,7 s** · **BodyLab 2,3 s**, ambos con título correcto |
+| Versión instalada | `VersionInfo` del `.exe` (el grep de strings no sirve: Tauri/NSIS comprime los assets) | BodyLab **`1.0.0-beta.6`** vs instalador `beta.8` · TrainingLab `0.2.0` en ambos |
+| Bundle de producción en navegador | Sirviendo los `dist` reales en la raíz (`8123`/`8124`; los bundles usan base absoluta `/assets/`, solo cargan en raíz) | Plan → sesión → registrar serie → `1/4`, `1/18` → descanso → **recarga y persiste** → Progreso se actualiza |
+| Importación | JSON real de Symmetry, 20 sesiones / 425 series | **`sessions 0→20`, `sets 2→412`**; la app reporta *«410 series fusionadas (15 filas descartadas)»*; verificado que las 15 tienen `exerciseId: null` |
+| Exportación | `Descargar copia completa (JSON)` y `Exportar backup` de BodyLab | Ambos JSON válidos; roundtrip = 412 series · 20 sesiones · settings · decisionModel (111 KB) |
+| Historial | Pantalla Progreso tras el import | 20 sesiones · **391 series de trabajo** · 43 ejercicios · 18 días · 6 marcas; Epley correcto (204,1×10 → ~272 kg) |
+| Esquema de datos | IndexedDB leída desde la página | `traininglab` v1 → `meta` / `sessions` / `sets` |
+
+**Hallazgo principal — los binarios instalados están viejos.** La REGLA DE CIERRE cierra en el
+instalador, pero **nada comprueba que el instalador se haya instalado**, y como el número de versión
+no cambia entre builds, la app no avisa. La última release es `v1.0.0-beta.7` (10-02): **beta.8 nunca
+se publicó**, solo está en el escritorio, y nadie la ejecutó.
+
+**Otros hallazgos de integración:**
+
+- **Contadores con la misma etiqueta**: Ajustes dice *412 series registradas* y Progreso *391*. La
+  diferencia son 21 calentamientos; el dato es correcto pero el rótulo es ambiguo.
+- **Calentamientos guardados con `reps: 0`** — la misma forma de dato que hizo desconfiar al dueño.
+- **`0 sesiones` con series existentes**: la sesión solo cuenta al pulsar *Terminar sesión*.
+- **Cuatro versiones hardcodeadas y tres valores distintos** (hallazgo de la verificación; **ARREGLADO
+  el mismo día** en `1209eb3`): `Onboarding.tsx:624` = `v1.0.0-rc` · `ExportImport.tsx:68,108` y
+  `db.ts:310` = `1.0.0` · `SettingsScreen.tsx:51` = `0.2.0`, frente al real `1.0.0-beta.8`. Ahora cada
+  app deriva su versión de su único `apps/desktop/package.json` vía `define` en Vite.
+- **Plan sin tracción**: con inventario vacío el planner avisa *«No hay ningún ejercicio de tracción
+  posible con tu equipamiento»* y aun así emite un día **sin espalda** (Flexión Declinada · Pistol ·
+  V-Up · Diamante · Crunch). Debería negarse o bloquear, no emitirlo en silencio.
+- **`Symmetry_Corregido.xlsx` del dueño es estructuralmente inconsistente** (fechas como serial de
+  Excel, `implements` reutilizado como equipo en las filas 2–157 y `13` en las 158–439, `source` vacío
+  en 269 filas, 24 filas sin `exercise_name`). Acordar el esquema **antes** de que termine de corregirlo.
+
+**Acción inmediata (2026-10-06):** (1) **ejecutar los dos instaladores del escritorio** — BodyLab beta.6→beta.8 y TrainingLab al build de 09:48, que es el único que lleva el rediseño del registro y el autobackup —; (2) **importar el histórico de Symmetry en la app instalada**, ya probado. Sin eso, el plan sigue diciendo «0 series esta semana».
 
 **Siguiente acción recomendada:** cerrar Gate A de BodyLab (BL-REF-003) **y** en
 paralelo la biblioteca/historial de TrainingLab (F2), que es lo que falta para
