@@ -5,7 +5,7 @@
     "exercises": 151,
     "families": 34,
     "patterns": 28,
-    "withMedia": 100
+    "withMedia": 115
   },
   "families": [
     "adductors",
@@ -5390,7 +5390,7 @@
           "shoulder"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "ab-wheel-rollout",
@@ -5450,7 +5450,7 @@
           "hip"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "dead-bug",
@@ -5551,7 +5551,7 @@
           "spine"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "mountain-climber",
@@ -6143,7 +6143,7 @@
           "elbow"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "pseudo-planche-push-up",
@@ -6970,7 +6970,7 @@
           "spine"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "straight-arm-pulldown",
@@ -7200,7 +7200,7 @@
           "spine"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "dumbbell-curl",
@@ -7535,7 +7535,7 @@
           "elbow"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "tricep-kickback",
@@ -7589,7 +7589,7 @@
           "elbow"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "wrist-roller",
@@ -7643,7 +7643,7 @@
           "wrist"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "dumbbell-split-squat",
@@ -8373,7 +8373,7 @@
           "hip"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "hip-adduction-machine",
@@ -8423,7 +8423,7 @@
           "hip"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "hanging-knee-raise",
@@ -8588,7 +8588,7 @@
           "spine"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "bird-dog",
@@ -8803,7 +8803,7 @@
           "spine"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "decline-crunch",
@@ -8858,7 +8858,7 @@
           "spine"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "oblique-crunch",
@@ -8913,7 +8913,7 @@
           "shoulder"
         ]
       },
-      "hasMedia": false
+      "hasMedia": true
     },
     {
       "id": "shadow-boxing-intervals",

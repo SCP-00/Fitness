@@ -43,7 +43,12 @@ interface ManifestEntry {
  */
 let manifestPromise: Promise<Record<string, ManifestEntry>> | null = null;
 function getManifest(): Promise<Record<string, ManifestEntry>> {
-  manifestPromise ??= fetch('/exercises/asset-manifest.json')
+  // BASE_URL and never a root-absolute path: the Pages demo serves BodyLab from
+  // `/<repo>/bodylab/`, where `/exercises/...` resolves to nothing. Vite rewrites
+  // `<img src>` inside index.html but never a URL built at runtime, so this one
+  // has to be joined by hand — same as anatomy-loader / oxihuman-loader.
+  const base = import.meta.env.BASE_URL || '/';
+  manifestPromise ??= fetch(`${base}exercises/asset-manifest.json`)
     .then(r => (r.ok ? r.json() : {}))
     .then((m: Record<string, ManifestEntry>) => m)
     .catch(() => ({})); // network offline → fall back to onError path
@@ -66,8 +71,10 @@ export default function ExerciseGif({
   const [isVisible, setIsVisible] = useState(false);
 
   const { width, height } = SIZE_MAP[size];
-  const gifUrl = `/exercises/gifs/${exerciseId}.gif`;
-  const imageUrl = entry?.image ? `/exercises/${entry.image}` : null;
+  // See getManifest(): root-absolute media URLs 404 under the Pages subpath.
+  const base = import.meta.env.BASE_URL || '/';
+  const gifUrl = `${base}exercises/gifs/${exerciseId}.gif`;
+  const imageUrl = entry?.image ? `${base}exercises/${entry.image}` : null;
   const isGif = !!entry?.gif;
 
   // Load the manifest entry once.

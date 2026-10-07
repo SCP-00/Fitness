@@ -190,8 +190,9 @@ describe('Integration: exercise GIF assets (filesystem)', () => {
     const fileBases = files.map(f => f.replace(/\.gif$/, '')).sort();
     expect(manifestKeys).toEqual([...fileBases, ...stillIds].sort());
     // 21 original Gym Visual stills + 43 public-domain free-exercise-db pairs
-    // (added 2026-09-29; see public/exercises/NOTICE.md).
-    expect(stillIds.length).toBe(64);
+    // (added 2026-09-29) + 15 more of the same public-domain source
+    // (added 2026-10-06; see public/exercises/NOTICE.md).
+    expect(stillIds.length).toBe(79);
   });
 
   it('every manifest entry references real assets and has instructions', async () => {
@@ -245,18 +246,18 @@ describe('Integration: exercise GIF assets (filesystem)', () => {
     const stillCovered = ALL_EXERCISES.filter(e => stillIds.has(e.id));
     const mediaLess = ALL_EXERCISES.filter(e => !gifIds.has(e.id) && !stillIds.has(e.id)).map(e => e.id);
     expect(gifCovered.length).toBe(36);
-    expect(stillCovered.length).toBe(64);
-    // 51 remain media-less after the 2026-10-04 Symmetry-gap additions (43
-    // + the 8 new entries). They fall back to the drawn stick-figure
-    // animation in the app until we record our own GIFs with OxiHuman
-    // (content backlog).
-    expect(mediaLess.length).toBe(51);
+    expect(stillCovered.length).toBe(79);
+    // 36 remain media-less after the 2026-10-06 public-domain batch took the
+    // count from 51 to 36. They fall back to the drawn stick-figure animation
+    // in the app until we record our own GIFs with OxiHuman (content backlog).
+    // The 15 that left this list were all covered from free-exercise-db, the
+    // only source NOTICE.md clears for redistribution besides our own art.
+    expect(mediaLess.length).toBe(36);
     expect(mediaLess).toEqual(expect.arrayContaining([
       'push-up-plus', 'lying-hip-abduction', 'tibialis-raise', 'sumo-squat',
       'banded-hip-abduction', 'clamshells', 'fire-hydrants',
-      'crunch', 'decline-crunch', 'oblique-crunch', 'dumbbell-shrugs',
-      'tricep-kickback', 'wrist-roller', 'hip-abduction-machine',
-      'hip-adduction-machine',
+      'pike-push-up', 'diamond-push-up', 'hollow-body-hold', 'hollow-rock',
+      'nordic-curl', 'copenhagen-plank', 'bird-dog',
     ]));
   });
 });

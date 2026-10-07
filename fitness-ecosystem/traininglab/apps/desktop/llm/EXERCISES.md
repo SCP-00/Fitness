@@ -1,7 +1,7 @@
 # TrainingLab exercise knowledge (auto-generated)
 
 > Generated from `@fitness/bodylab-exercises` — **do not edit by hand**.
-> 151 exercises · 34 muscle families · 28 movement patterns · 100 with photo/GIF media.
+> 151 exercises · 34 muscle families · 28 movement patterns · 115 with photo/GIF media.
 
 ## Hard rules
 
@@ -133,10 +133,10 @@ vertical_push
 | copenhagen-plank | Copenhagen Plank | Plancha Copenhague | hip_adduction | bodyweight | 2/5 | 3/5 | 1/5 | 0-1 | 1/3 | 1/3 | - |
 | single-leg-calf-raise | Single-Leg Calf Raise | Elevación de Talones a Una Pierna | plantar_flexion | bodyweight | 3/5 | 1/5 | 1/5 | 0-2 | 1/3 | 1/3 | yes |
 | hollow-body-hold | Hollow Body Hold | Hueco (Hollow Body) | core_anti_extension | bodyweight | 3/5 | 2/5 | 2/5 | n/a (isometric) | 1/3 | 1/3 | - |
-| bicycle-crunch | Bicycle Crunch | Crunch Bicicleta | core_rotation | bodyweight | 3/5 | 1/5 | 2/5 | 1-2 | 1/3 | 1/3 | - |
-| ab-wheel-rollout | Ab Wheel Rollout | Rueda Abdominal | core_anti_extension | bodyweight | 4/5 | 4/5 | 2/5 | n/a (isometric) | 2/3 | 2/3 | - |
+| bicycle-crunch | Bicycle Crunch | Crunch Bicicleta | core_rotation | bodyweight | 3/5 | 1/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
+| ab-wheel-rollout | Ab Wheel Rollout | Rueda Abdominal | core_anti_extension | bodyweight | 4/5 | 4/5 | 2/5 | n/a (isometric) | 2/3 | 2/3 | yes |
 | dead-bug | Dead Bug | Bicho Muerto | core_anti_extension | bodyweight | 2/5 | 1/5 | 2/5 | n/a (isometric) | 1/3 | 1/3 | yes |
-| side-plank | Side Plank | Plancha Lateral | core_anti_lateral | bodyweight | 2/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | - |
+| side-plank | Side Plank | Plancha Lateral | core_anti_lateral | bodyweight | 2/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
 | mountain-climber | Mountain Climber | Escalador (Mountain Climber) | core_flexion | bodyweight | 2/5 | 2/5 | 2/5 | 0-1 | 2/3 | 1/3 | yes |
 | mtb-steady-ride | MTB / Bike — Steady Ride (Z2) | Bici de Montaña — Rodada Continua (Z2) | cardio_steady | time | 1/5 | 1/5 | 1/5 | n/a (pace) | 1/3 | 1/3 | - |
 | mtb-hill-intervals | MTB / Bike — Hill Intervals | Bici de Montaña — Intervalos de Subida | cardio_interval | time | 1/5 | 3/5 | 2/5 | n/a (intervals) | 1/3 | 1/3 | - |
@@ -146,7 +146,7 @@ vertical_push
 | metcon-circuit | Metabolic Bodyweight Circuit | Circuito Metabólico | cardio_interval | time | 2/5 | 2/5 | 2/5 | n/a (intervals) | 2/3 | 2/3 | - |
 | dumbbell-floor-press | Dumbbell Floor Press | Press en Suelo con Mancuernas | horizontal_push | dumbbell | 4/5 | 2/5 | 3/5 | 2-3 | 1/3 | 1/3 | yes |
 | deficit-push-up | Deficit Push-Up | Flexión con Déficit | horizontal_push | bodyweight | 4/5 | 3/5 | 3/5 | 2-3 | 2/3 | 1/3 | - |
-| decline-push-up | Decline Push-Up | Flexión Declinada | horizontal_push | bodyweight | 4/5 | 3/5 | 3/5 | 2-3 | 2/3 | 1/3 | - |
+| decline-push-up | Decline Push-Up | Flexión Declinada | horizontal_push | bodyweight | 4/5 | 3/5 | 3/5 | 2-3 | 2/3 | 1/3 | yes |
 | pseudo-planche-push-up | Pseudo Planche Push-Up | Flexión Pseudo Plancha | horizontal_push | bodyweight | 4/5 | 5/5 | 3/5 | 2-3 | 3/3 | 1/3 | - |
 | archer-push-up | Archer Push-Up | Flexión Arquero | horizontal_push | bodyweight | 4/5 | 4/5 | 3/5 | 2-3 | 3/3 | 1/3 | - |
 | dumbbell-squeeze-press | Dumbbell Squeeze Press | Press de Apretón con Mancuernas | horizontal_push | dumbbell | 4/5 | 2/5 | 3/5 | 2-3 | 1/3 | 1/3 | - |
@@ -160,19 +160,19 @@ vertical_push
 | band-lat-pulldown | Band Lat Pulldown | Jalón Dorsal con Banda | vertical_pull | band | 3/5 | 1/5 | 4/5 | 1-2 | 1/3 | 1/3 | - |
 | inverted-row-feet-elevated | Elevated Inverted Row | Remo Invertido con Pies Elevados | horizontal_pull | bodyweight | 4/5 | 3/5 | 2/5 | 1-2 | 2/3 | 1/3 | yes |
 | dumbbell-renegade-row | Renegade Row | Remo Renegado | horizontal_pull | dumbbell | 3/5 | 4/5 | 2/5 | 1-2 | 2/3 | 2/3 | yes |
-| chest-supported-dumbbell-row | Chest-Supported Dumbbell Row | Remo con Mancuernas Apoyado en Banco | horizontal_pull | dumbbell | 4/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | - |
+| chest-supported-dumbbell-row | Chest-Supported Dumbbell Row | Remo con Mancuernas Apoyado en Banco | horizontal_pull | dumbbell | 4/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
 | straight-arm-pulldown | Straight-Arm Pulldown | Pull-over en Polea | shoulder_extension | cable | 3/5 | 2/5 | 2/5 | 2-3 | 2/3 | 1/3 | yes |
 | kettlebell-row | Kettlebell Row | Remo con Pesa Rusa | horizontal_pull | kettlebell | 4/5 | 2/5 | 2/5 | 1-2 | 1/3 | 2/3 | yes |
 | dead-hang | Dead Hang | Colgado Muerto en Barra | carry | bodyweight | 2/5 | 1/5 | 2/5 | n/a (distance or time) | 2/3 | 1/3 | yes |
-| dumbbell-shrugs | Dumbbell Shrugs | Encogimientos con Mancuernas | horizontal_pull | dumbbell | 4/5 | 1/5 | 2/5 | 1-2 | 1/3 | 1/3 | - |
+| dumbbell-shrugs | Dumbbell Shrugs | Encogimientos con Mancuernas | horizontal_pull | dumbbell | 4/5 | 1/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
 | dumbbell-curl | Dumbbell Curl | Curl con Mancuernas | elbow_flexion | dumbbell | 4/5 | 1/5 | 1/5 | 1-2 | 1/3 | 1/3 | yes |
 | concentration-curl | Concentration Curl | Curl Concentrado | elbow_flexion | dumbbell | 3/5 | 2/5 | 1/5 | 1-2 | 1/3 | 1/3 | yes |
 | spider-curl | Spider Curl | Curl Araña | elbow_flexion | dumbbell | 3/5 | 2/5 | 1/5 | 1-2 | 1/3 | 1/3 | yes |
 | incline-hammer-curl | Incline Hammer Curl | Curl Martillo Inclinado | elbow_flexion | dumbbell | 3/5 | 2/5 | 1/5 | 1-2 | 1/3 | 1/3 | yes |
 | band-overhead-triceps-extension | Band Overhead Triceps Extension | Extensión de Tríceps sobre la Cabeza con Banda | elbow_extension | band | 3/5 | 1/5 | 2/5 | 1-2 | 2/3 | 1/3 | yes |
-| tate-press | Tate Press | Press Tate | elbow_extension | dumbbell | 3/5 | 3/5 | 2/5 | 1-2 | 2/3 | 1/3 | - |
-| tricep-kickback | Tricep Kickback | Patada de Tríceps | elbow_extension | cable | 4/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | - |
-| wrist-roller | Wrist Roller | Rodillo de Muñeca | forearm_flexion | dumbbell | 3/5 | 2/5 | 1/5 | 0-2 | 2/3 | 1/3 | - |
+| tate-press | Tate Press | Press Tate | elbow_extension | dumbbell | 3/5 | 3/5 | 2/5 | 1-2 | 2/3 | 1/3 | yes |
+| tricep-kickback | Tricep Kickback | Patada de Tríceps | elbow_extension | cable | 4/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
+| wrist-roller | Wrist Roller | Rodillo de Muñeca | forearm_flexion | dumbbell | 3/5 | 2/5 | 1/5 | 0-2 | 2/3 | 1/3 | yes |
 | dumbbell-split-squat | Dumbbell Split Squat | Sentadilla Dividida con Mancuernas | lunge | dumbbell | 4/5 | 3/5 | 3/5 | 1-2 | 2/3 | 1/3 | yes |
 | reverse-lunge | Reverse Lunge | Zancada Inversa | lunge | bodyweight | 3/5 | 2/5 | 3/5 | 1-2 | 2/3 | 1/3 | yes |
 | walking-lunge | Walking Lunge | Zancada Caminando | lunge | bodyweight | 3/5 | 3/5 | 3/5 | 1-2 | 2/3 | 1/3 | yes |
@@ -185,17 +185,17 @@ vertical_push
 | kettlebell-swing | Kettlebell Swing | Swing con Pesa Rusa | hinge | kettlebell | 3/5 | 3/5 | 4/5 | 2-3 | 1/3 | 2/3 | yes |
 | box-jump | Box Jump | Salto al Cajón | squat | bodyweight | 2/5 | 3/5 | 3/5 | 1-3 | 3/3 | 2/3 | yes |
 | donkey-calf-raise | Donkey Calf Raise | Elevación de Gemelos Burro | plantar_flexion | bodyweight | 3/5 | 3/5 | 1/5 | 0-2 | 1/3 | 1/3 | yes |
-| hip-abduction-machine | Machine Hip Abduction | Abducción de Cadera en Máquina | hip_abduction | machine | 3/5 | 1/5 | 1/5 | 0-1 | 1/3 | 1/3 | - |
-| hip-adduction-machine | Machine Hip Adduction | Aducción de Cadera en Máquina | hip_adduction | machine | 3/5 | 1/5 | 1/5 | 0-1 | 1/3 | 1/3 | - |
+| hip-abduction-machine | Machine Hip Abduction | Abducción de Cadera en Máquina | hip_abduction | machine | 3/5 | 1/5 | 1/5 | 0-1 | 1/3 | 1/3 | yes |
+| hip-adduction-machine | Machine Hip Adduction | Aducción de Cadera en Máquina | hip_adduction | machine | 3/5 | 1/5 | 1/5 | 0-1 | 1/3 | 1/3 | yes |
 | hanging-knee-raise | Hanging Knee Raise | Elevación de Rodillas Colgado | core_flexion | bodyweight | 3/5 | 3/5 | 2/5 | 0-1 | 2/3 | 1/3 | yes |
 | hollow-rock | Hollow Rock | Roca Hueca | core_flexion | bodyweight | 3/5 | 3/5 | 2/5 | 0-1 | 1/3 | 1/3 | - |
-| v-up | V-Up | V-Up (Navaja) | core_flexion | bodyweight | 3/5 | 4/5 | 2/5 | 0-1 | 2/3 | 2/3 | - |
+| v-up | V-Up | V-Up (Navaja) | core_flexion | bodyweight | 3/5 | 4/5 | 2/5 | 0-1 | 2/3 | 2/3 | yes |
 | bird-dog | Bird Dog | Bird Dog (Cuadrupedia Alterna) | core_anti_extension | bodyweight | 2/5 | 2/5 | 2/5 | n/a (isometric) | 1/3 | 1/3 | - |
 | pallof-press | Pallof Press | Pallof Press | core_anti_lateral | band | 2/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
 | sit-up | Sit-Up | Abdominales (Sit-Up) | core_flexion | bodyweight | 2/5 | 1/5 | 2/5 | 0-1 | 2/3 | 2/3 | yes |
-| crunch | Crunch | Crunch Clásico | core_flexion | bodyweight | 3/5 | 1/5 | 2/5 | 0-1 | 2/3 | 2/3 | - |
-| decline-crunch | Decline Crunch | Crunch en Declínio | core_flexion | bodyweight | 4/5 | 2/5 | 2/5 | 0-1 | 2/3 | 2/3 | - |
-| oblique-crunch | Oblique Crunch | Crunch Oblicuo | core_rotation | dumbbell | 3/5 | 1/5 | 2/5 | 1-2 | 1/3 | 1/3 | - |
+| crunch | Crunch | Crunch Clásico | core_flexion | bodyweight | 3/5 | 1/5 | 2/5 | 0-1 | 2/3 | 2/3 | yes |
+| decline-crunch | Decline Crunch | Crunch en Declínio | core_flexion | bodyweight | 4/5 | 2/5 | 2/5 | 0-1 | 2/3 | 2/3 | yes |
+| oblique-crunch | Oblique Crunch | Crunch Oblicuo | core_rotation | dumbbell | 3/5 | 1/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
 | shadow-boxing-intervals | Shadow Boxing Intervals | Intervalos de Sombra (Boxeo) | cardio_interval | time | 1/5 | 2/5 | 2/5 | n/a (intervals) | 1/3 | 1/3 | - |
 | tabata-bodyweight | Bodyweight Tabata | Tabata con Peso Corporal | cardio_interval | time | 1/5 | 3/5 | 2/5 | n/a (intervals) | 2/3 | 1/3 | - |
 | jump-rope-steady | Jump Rope (Steady) | Cuerda Continua | cardio_steady | time | 1/5 | 2/5 | 1/5 | n/a (pace) | 2/3 | 1/3 | - |

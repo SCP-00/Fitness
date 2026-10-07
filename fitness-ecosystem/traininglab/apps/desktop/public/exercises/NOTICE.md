@@ -29,6 +29,14 @@ no usage restrictions). We list the source anyway as good practice:
 
 > Images sourced from https://github.com/yuhonas/free-exercise-db (Unlicense)
 
+Coverage grew on 2026-10-06: 15 more exercises moved from the drawn fallback to a
+free-exercise-db still pair (64 → 79 stills; media-less 51 → 36). Only this
+source was used, and only where the exercise matched one of its entries by exact
+name — a wrong photo is worse than no photo. The `side-plank` entry is the one
+exception to "verbatim source text": free-exercise-db ships no instructions for
+its still, so that entry says so in its own `source` field and the sentence was
+written here.
+
 ## What we deliberately did NOT ship
 
 - **ExerciseDB** GIFs — their terms forbid redistribution as bundled files.
