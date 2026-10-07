@@ -65,7 +65,7 @@ export default function ExportImport() {
       zip.file('manifest.json', JSON.stringify({
         format: 'bodylab',
         formatVersion: 1,
-        appVersion: '1.0.0',
+        appVersion: __BODYLAB_VERSION__,
         schemaVersion: allData.meta?.schemaVersion ?? 1,
         createdAt: new Date().toISOString(),
         contains: ['profile', 'measurements', 'snapshots', 'metadata'],
@@ -105,7 +105,7 @@ export default function ExportImport() {
     const data = {
       format: 'bodylab',
       formatVersion: 1,
-      appVersion: '1.0.0',
+      appVersion: __BODYLAB_VERSION__,
       exportedAt: new Date().toISOString(),
       data: {
         profile: state.profile,

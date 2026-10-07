@@ -1,10 +1,20 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Same single source as vite.config.ts: `bodylab/apps/desktop/package.json`.
+// Without this, any test that loads `src/lib/db.ts` dies on an undefined
+// `__BODYLAB_VERSION__` — see src/vite-env.d.ts.
+const APP_VERSION = (
+  JSON.parse(
+    readFileSync(path.resolve(__dirname, '../desktop/package.json'), 'utf8'),
+  ) as { version: string }
+).version
 
 // Mirrors resolve.alias in vite.config.ts + paths in tsconfig.app.json.
 // Keep all three in sync — see docs/ARCHITECTURE.md.
@@ -24,6 +34,9 @@ const coreAliases = {
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __BODYLAB_VERSION__: JSON.stringify(APP_VERSION),
+  },
   resolve: {
     alias: coreAliases,
   },

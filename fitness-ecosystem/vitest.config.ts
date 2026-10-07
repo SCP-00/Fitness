@@ -1,7 +1,23 @@
 import { defineConfig } from 'vitest/config';
+import { readFileSync } from 'node:fs';
 import path from 'path';
 
+// Both apps inject their version at build time from their own package.json
+// (see each app's vite.config.ts). The root suite loads app sources too —
+// `bodylab/apps/web/src/__tests__/data-integrity.test.ts` pulls in `lib/db.ts`
+// — so it must define the same keys or those tests die on an undefined global.
+const appVersion = (file: string) =>
+  (JSON.parse(readFileSync(path.resolve(__dirname, file), 'utf8')) as {
+    version: string;
+  }).version;
+
 export default defineConfig({
+  define: {
+    __BODYLAB_VERSION__: JSON.stringify(appVersion('bodylab/apps/desktop/package.json')),
+    __TRAININGLAB_VERSION__: JSON.stringify(
+      appVersion('traininglab/apps/desktop/package.json'),
+    ),
+  },
   test: {
     globals: true,
     environment: 'node',

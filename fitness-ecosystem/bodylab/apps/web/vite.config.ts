@@ -1,11 +1,33 @@
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'url'
 import path from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// BodyLab's version has ONE home: `bodylab/apps/desktop/package.json`, the
+// package that actually ships (it must match `src-tauri/tauri.conf.json` for
+// Tauri). `apps/web/package.json` stays `0.0.0` on purpose — it is a private
+// workspace entry, not the product, so treating it as the version would give
+// the web build a version nobody releases.
+//
+// Exposed to the app as `__BODYLAB_VERSION__`; declared in `src/vite-env.d.ts`.
+// Never hardcode a version string in `src/` — that is how the UI ended up
+// saying `v1.0.0-rc` while the exports said `1.0.0` and the product was
+// `1.0.0-beta.8`.
+export const APP_VERSION = (
+  JSON.parse(
+    readFileSync(path.resolve(__dirname, '../desktop/package.json'), 'utf8'),
+  ) as { version: string }
+).version
+
+// Mirrored in `vitest.config.ts` so tests see the same value — keep both in sync.
+export const bodylabVersionDefine = {
+  __BODYLAB_VERSION__: JSON.stringify(APP_VERSION),
+}
 
 // Production-only CSP injected into index.html at build time. Dev is left
 // open because Vite HMR needs ws:// + inline eval that the policy forbids.
@@ -44,6 +66,7 @@ export default defineConfig({
   // NOTE: no WASM plugin. The OxiHuman 0.2.1 engine is vendored under public/wasm/
   // and loaded at runtime (oxihuman-loader.ts) — the bundler never sees the .wasm.
   plugins: [react(), tailwindcss(), cspMeta()],
+  define: bodylabVersionDefine,
   resolve: {
     alias: {
       '@': '/src',

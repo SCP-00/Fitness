@@ -44,11 +44,14 @@ import { SharedPanel } from "../features/today/SharedPanel";
 import { MobileCard } from "../features/today/MobileCard";
 
 /**
- * Shown in "Acerca de". Kept in sync by hand with `src-tauri/tauri.conf.json`:
- * it is a display string, and reading it from the shell would mean a build-time
- * dependency for one line of text.
+ * Shown in "Acerca de". Injected at build time by `define` in `vite.config.ts`
+ * from `traininglab/apps/desktop/package.json` — the very file Tauri requires to
+ * match `src-tauri/tauri.conf.json`, so there is nothing left to sync by hand.
+ * Declared in `src/vite-env.d.ts`.
+ *
+ * It used to be a hand-written constant here, and it drifted from the build.
  */
-const APP_VERSION = "0.2.0";
+const APP_VERSION = __TRAININGLAB_VERSION__;
 
 export default function SettingsScreen() {
   /** Result of the last restore attempt (or null). Hooks run before the guard. */

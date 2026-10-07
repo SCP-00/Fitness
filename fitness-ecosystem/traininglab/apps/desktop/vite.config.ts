@@ -1,10 +1,22 @@
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// TrainingLab's version has ONE home: this package.json, which must match
+// `src-tauri/tauri.conf.json` for Tauri. Exposed to the app as
+// `__TRAININGLAB_VERSION__` (declared in `src/vite-env.d.ts`) so Ajustes shows
+// the version that was actually built instead of a constant someone forgets to
+// bump. The root `vitest.config.ts` defines the same key — keep them in sync.
+const APP_VERSION = (
+  JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as {
+    version: string;
+  }
+).version;
 
 /**
  * The same config drives two very different hosts:
@@ -21,6 +33,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  */
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    __TRAININGLAB_VERSION__: JSON.stringify(APP_VERSION),
+  },
   resolve: {
     alias: {
       '@fitness/bodylab-training': path.resolve(__dirname, '../../../bodylab/core/training/src'),

@@ -621,7 +621,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
         <p className="text-center text-slate-400 dark:text-slate-600 text-xs mt-6">
-          BodyLab v1.0.0-rc
+          BodyLab v{__BODYLAB_VERSION__}
         </p>
       </div>
     </div>

@@ -307,7 +307,7 @@ export async function setMeta(meta: Partial<DatabaseMeta>): Promise<void> {
   const data: DatabaseMeta & { id: string } = {
     id: "app",
     schemaVersion: DB_VERSION,
-    appVersion: "1.0.0",
+    appVersion: __BODYLAB_VERSION__,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ...meta,
