@@ -112,8 +112,13 @@ Para que el plan no viva en un papel, la app permite **pedir un día con enfoque
 4. `Ajustes → Acerca de` muestra la versión **y el identificador de compilación** para saber qué
    build está instalado.
 
-> Cuando este plan se escribió, el enfoque de core se está implementando en el mismo bloque de
-> trabajo; si la app instalada aún no lo muestra, la sesión A/B se sigue pudiendo registrar a mano
+Comprobado en la app instalada (build del 10-06 22:54), un día `Core` sale así: V-Up (Navaja) ·
+Crunch Clásico · Crunch Oblicuo · Abdominales (Sit-Up) · **Paseo del Maletín** · Roca Hueca. Es la
+misma familia de trabajo que las sesiones A/B; el **Paseo del Maletín** cubre la anti-rotación con
+su mancuerna y **también es cargable**, así que vale como sustituto de `Pallof Press` / `Giros Rusos`
+cuando toque en casa.
+
+> Si la app instalada fuera anterior a ese build, la sesión A/B se sigue pudiendo registrar a mano
 > buscando cada ejercicio en **Ejercicios**.
 
 ## 6. Etapa opcional (no ahora): si algún día quiere el abdomen «de verdad»
