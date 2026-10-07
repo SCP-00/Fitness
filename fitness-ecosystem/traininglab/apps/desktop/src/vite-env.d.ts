@@ -11,3 +11,11 @@
  * tsconfig.app.json is pinned to `["vite/client"]`.
  */
 declare const __TRAININGLAB_VERSION__: string;
+
+/**
+ * When this bundle was built ("YYYY-MM-DD HH:mm", local time). Two TrainingLab
+ * builds called themselves `0.2.0`, and the installed one was missing a whole
+ * feature while the About box looked identical to the new installer's.
+ * Ajustes renders this stamp so a stale binary is visible, not guessed.
+ */
+declare const __BUILD_STAMP__: string;

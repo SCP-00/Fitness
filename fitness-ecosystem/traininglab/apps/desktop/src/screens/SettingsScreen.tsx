@@ -53,6 +53,17 @@ import { MobileCard } from "../features/today/MobileCard";
  */
 const APP_VERSION = __TRAININGLAB_VERSION__;
 
+/**
+ * When this bundle was produced, injected the same way as the version.
+ *
+ * Two different TrainingLab builds called themselves `0.2.0`, so nothing on
+ * screen could tell which one was installed — the owner ran a binary missing a
+ * whole feature and the About box said the same thing as the new installer.
+ * The stamp is the answer to "is the app I just opened actually the build I
+ * just made?".
+ */
+const BUILD_STAMP = __BUILD_STAMP__;
+
 export default function SettingsScreen() {
   /** Result of the last restore attempt (or null). Hooks run before the guard. */
   const [backupNote, setBackupNote] = useState<string | null>(null);
@@ -421,6 +432,14 @@ export default function SettingsScreen() {
           </Badge>
         }
       >
+        {/* The badge counts every stored row; Progreso counts working sets.
+            Spelling the split out here is what makes 412 and 391 add up. */}
+        <p className="text-xs text-[var(--tl-text-muted)] mb-3 tabular-nums">
+          {tInterp("data.setsBreakdown", {
+            work: sets.filter((s) => s.warmup !== true).length,
+            warm: sets.filter((s) => s.warmup === true).length,
+          })}
+        </p>
         <div className="flex flex-wrap items-center gap-3">
           <span data-testid="export-csv">
             <Button size="sm" onClick={exportCsv}>
@@ -566,6 +585,9 @@ export default function SettingsScreen() {
           <div className="text-sm">
             <p className="font-semibold">
               TrainingLab <span className="tabular-nums">v{APP_VERSION}</span>
+            </p>
+            <p className="text-xs text-[var(--tl-text-muted)] mt-0.5 tabular-nums">
+              {tInterp("settings.about.build", { stamp: BUILD_STAMP })}
             </p>
             <p className="text-xs text-[var(--tl-text-muted)] mt-1">
               {t("settings.about.privacy")}

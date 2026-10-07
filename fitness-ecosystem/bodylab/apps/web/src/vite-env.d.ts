@@ -12,3 +12,13 @@
  * widen just to carry one constant.
  */
 declare const __BODYLAB_VERSION__: string;
+
+/**
+ * When this bundle was built ("YYYY-MM-DD HH:mm", local time), injected by the
+ * same `define` blocks as the version.
+ *
+ * The version alone cannot tell two builds apart when nobody bumps it, so the
+ * installed app could look identical to a newer installer. Ajustes shows this
+ * stamp so "which build am I running?" has an answer on screen.
+ */
+declare const __BUILD_STAMP__: string;

@@ -156,6 +156,8 @@ export interface TrainingLabStore {
   model: DecisionModel;
   readiness: Readiness;
   soreFamilies: MuscleFamily[];
+  /** Today's focus ([] = automatic). Ephemeral: see the comment on the state. */
+  dayFocus: MuscleFamily[];
   /** True until settings and the plan are ready — the screens show a loader. */
   loading: boolean;
 
@@ -204,6 +206,7 @@ export interface TrainingLabStore {
   removeHealthRecord: (id: string) => void;
   setReadinessAndPersist: (next: Readiness) => void;
   toggleSoreFamily: (family: MuscleFamily) => void;
+  setDayFocus: (families: MuscleFamily[]) => void;
   finishSession: () => void;
   swapRow: (from: string, to: string) => void;
   clearCoach: () => void;
@@ -260,6 +263,10 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [model, setModel] = useState<DecisionModel>(() => emptyModel());
   const [readiness, setReadiness] = useState<Readiness>(NEUTRAL);
   const [soreFamilies, setSoreFamilies] = useState<MuscleFamily[]>([]);
+  // Ephemeral on purpose: a focus is a decision about *today* ("hoy toca
+  // abdomen"), not a setting. Persisting it would silently turn every future
+  // day into a core day, which is the opposite of what the plan wants.
+  const [dayFocus, setDayFocus] = useState<MuscleFamily[]>([]);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [rest, setRest] = useState<RestState | null>(null);
   const [finished, setFinished] = useState<TLSession | null>(null);
@@ -661,8 +668,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       model: settings.useDecisionModel ? model : emptyModel(),
       payload,
       fatiguedFamilies: soreFamilies,
+      focusFamilies: dayFocus,
     });
-  }, [settings, readiness, planningStats, model, payload, soreFamilies]);
+  }, [settings, readiness, planningStats, model, payload, soreFamilies, dayFocus]);
 
   /**
    * This week — horizontalised plan. Recomputed only when the inputs that
@@ -1346,6 +1354,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     model,
     readiness,
     soreFamilies,
+    dayFocus,
     loading: !settings || !plan,
     plan,
     weekPlan,
@@ -1373,6 +1382,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     removeHealthRecord,
     setReadinessAndPersist,
     toggleSoreFamily,
+    setDayFocus,
     finishSession,
     swapRow,
     clearCoach,

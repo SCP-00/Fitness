@@ -12,7 +12,7 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { useApp } from "../lib/store";
-import { t } from "../i18n";
+import { t, tInterpolate } from "../i18n";
 import { parseNumberInput } from "../lib/parse-num";
 import {
   heightToDisplay,
@@ -380,6 +380,15 @@ export default function Settings() {
         </div>
         <p className="text-sm text-slate-500 dark:text-[var(--color-text-muted)] mb-4">
           {t("settings.updatesHint")}
+        </p>
+        {/* Which build is running. The version alone cannot separate two builds
+            when nobody bumps it, and the installed app gave no way to tell it
+            was older than the installer sitting next to it. */}
+        <p className="text-xs text-slate-400 dark:text-[var(--color-text-muted)] mb-4 tabular-nums">
+          {tInterpolate("settings.installedBuild", {
+            version: __BODYLAB_VERSION__,
+            stamp: __BUILD_STAMP__,
+          })}
         </p>
         {updateState.status === "available" ||
         updateState.status === "downloading" ||

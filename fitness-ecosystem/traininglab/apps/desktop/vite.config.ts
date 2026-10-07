@@ -18,6 +18,16 @@ const APP_VERSION = (
   }
 ).version;
 
+// Local build time, minute resolution. Version alone cannot separate two
+// builds when nobody bumps it (TrainingLab shipped two different 0.2.0
+// binaries); the stamp can, and Ajustes renders it. Declared in
+// `src/vite-env.d.ts`. The root `vitest.config.ts` defines the same key.
+const BUILD_STAMP = (() => {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+})();
+
 /**
  * The same config drives two very different hosts:
  *
@@ -35,6 +45,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: {
     __TRAININGLAB_VERSION__: JSON.stringify(APP_VERSION),
+    __BUILD_STAMP__: JSON.stringify(BUILD_STAMP),
   },
   resolve: {
     alias: {

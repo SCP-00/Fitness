@@ -31,6 +31,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Activity, CalendarDays, Info, Moon, Zap } from "lucide-react";
+import type { MuscleFamily } from "@fitness/bodylab-training";
 import { navigate } from "../app/router";
 import { SORE_FAMILIES, useStore } from "../app/store";
 import { exerciseName, suggestLoadFor } from "../lib/plan";
@@ -57,7 +58,9 @@ export default function TodayScreen() {
     weekPlan,
     readiness,
     soreFamilies,
+    dayFocus,
     toggleSoreFamily,
+    setDayFocus,
     setReadinessAndPersist,
     todaySets,
     todayVolume,
@@ -121,6 +124,8 @@ export default function TodayScreen() {
             doneSets={totalSetsToday}
             withBodyLab={payload !== null}
           />
+
+          <DayFocusBar value={dayFocus} onChange={setDayFocus} />
 
           {/*
            * The session: the reason the app exists. It is **not** wrapped in a
@@ -551,6 +556,73 @@ function formatElapsed(seconds: number): string {
 }
 
 /** "Press de banca · Sentadilla · Remo"-style focus line, from today's rows. */
+/**
+ * "Enfoque de hoy": the user asking for a focused day.
+ *
+ * Why it exists: the automatic plan balances the whole body across the week,
+ * which is right most days — but a 10-week abdominal plan needs days that say
+ * "hoy toca abdomen", and there was no way to ask for one. The engine already
+ * supports it (`focusFamilies` in `buildSession`); this is the switch that
+ * reaches it.
+ *
+ * Ephemeral by design (see `dayFocus` in the store), and `Automático` is the
+ * empty list, i.e. exactly the behaviour the app had before this control.
+ */
+const FOCUS_OPTIONS: { key: string; label: string; families: MuscleFamily[] }[] = [
+  { key: "auto", label: "home.focus.auto", families: [] },
+  {
+    key: "push",
+    label: "home.focus.push",
+    families: ["chest", "shoulders", "triceps"],
+  },
+  {
+    key: "pull",
+    label: "home.focus.pull",
+    families: ["lats", "traps", "rhomboids", "biceps", "forearms"],
+  },
+  {
+    key: "legs",
+    label: "home.focus.legs",
+    families: ["glutes", "quadriceps", "hamstrings", "calves"],
+  },
+  { key: "core", label: "home.focus.core", families: ["core"] },
+];
+
+function DayFocusBar({
+  value,
+  onChange,
+}: {
+  value: MuscleFamily[];
+  onChange: (families: MuscleFamily[]) => void;
+}) {
+  // Compare by set, not by reference: the store may hand back a new array.
+  const activeKey =
+    FOCUS_OPTIONS.find(
+      (option) =>
+        option.families.length === value.length &&
+        option.families.every((family) => value.includes(family)),
+    )?.key ?? "auto";
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <span className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+        {t("home.focus.label")}
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {FOCUS_OPTIONS.map((option) => (
+          <Chip
+            key={option.key}
+            active={activeKey === option.key}
+            onClick={() => onChange(option.families)}
+          >
+            {t(option.label)}
+          </Chip>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function focusLine(names: string[]): string {
   if (names.length === 0) return t("home.restDay");
   return names.slice(0, 3).join(" · ");

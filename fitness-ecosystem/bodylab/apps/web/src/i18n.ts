@@ -257,6 +257,10 @@ const translations: Record<string, { en: string; es: string }> = {
     en: "Manual check only — BodyLab never downloads anything in the background. A check is a single request to the project's GitHub releases page; nothing else leaves your device.",
     es: "Comprobación manual — BodyLab nunca descarga nada en segundo plano. Cada comprobación es una única petición a la página de releases de GitHub del proyecto; nada más sale de tu equipo.",
   },
+  "settings.installedBuild": {
+    en: "Installed: v{version} · build {stamp}",
+    es: "Instalada: v{version} · compilación {stamp}",
+  },
   "settings.updatesCheck": {
     en: "Check for updates",
     es: "Buscar actualizaciones",

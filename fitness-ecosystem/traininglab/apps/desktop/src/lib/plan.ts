@@ -213,6 +213,13 @@ export interface TodayPlanInput {
   payload?: ImportPayload | null;
   /** Families still sore from a previous session (today's self-report). */
   fatiguedFamilies?: MuscleFamily[];
+  /**
+   * The user asking for a focused day ("hoy, core"). When set, today looks
+   * only at movements whose primary family is in this list. Undefined or empty
+   * keeps the automatic behaviour untouched — the session is still subject to
+   * gear, fatigue and the weekly volume ceilings.
+   */
+  focusFamilies?: MuscleFamily[];
 }
 
 export interface TodayPlan {
@@ -314,6 +321,7 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
     level: input.level,
     goal: input.goal,
     fatiguedFamilies: input.fatiguedFamilies ?? [],
+    focusFamilies: input.focusFamilies,
     conditioningScore,
     modelScores,
     seed: 7,
@@ -345,10 +353,23 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
     };
   });
 
+  /*
+   * A focused day asked for one family on purpose, so "no push exercise is
+   * possible with your equipment" is not information — it is noise that reads
+   * as a defect. `gearNote` still reports what the inventory excluded, and the
+   * volume ceilings still speak. Nothing else changes.
+   */
+  const focused = (input.focusFamilies?.length ?? 0) > 0;
+  const advisories = focused
+    ? session.advisories.filter(
+        (a) => a.code !== "group_no_equipment" && a.code !== "group_no_time",
+      )
+    : session.advisories;
+
   return {
     session,
     rows,
-    advisories: session.advisories,
+    advisories,
     usable,
     gearNote: { excluded: all.length - usable.length, usable: usable.length },
     weakness,

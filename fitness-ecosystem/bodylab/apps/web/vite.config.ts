@@ -24,9 +24,19 @@ export const APP_VERSION = (
   ) as { version: string }
 ).version
 
+// When this bundle was produced, minute resolution, local time. Version alone
+// cannot tell two builds apart when nobody bumps it; the stamp can. Declared in
+// `src/vite-env.d.ts` and rendered in Ajustes.
+const BUILD_STAMP = (() => {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+})()
+
 // Mirrored in `vitest.config.ts` so tests see the same value — keep both in sync.
 export const bodylabVersionDefine = {
   __BODYLAB_VERSION__: JSON.stringify(APP_VERSION),
+  __BUILD_STAMP__: JSON.stringify(BUILD_STAMP),
 }
 
 // Production-only CSP injected into index.html at build time. Dev is left

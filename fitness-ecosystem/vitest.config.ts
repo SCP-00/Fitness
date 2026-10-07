@@ -11,8 +11,18 @@ const appVersion = (file: string) =>
     version: string;
   }).version;
 
+// Same treatment for the build stamp, for the same reason: app sources that
+// render it (both Ajustes screens) must not die on an undefined global here.
+// Tests never assert its value, so a test-run timestamp is fine.
+const buildStamp = (() => {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+})();
+
 export default defineConfig({
   define: {
+    __BUILD_STAMP__: JSON.stringify(buildStamp),
     __BODYLAB_VERSION__: JSON.stringify(appVersion('bodylab/apps/desktop/package.json')),
     __TRAININGLAB_VERSION__: JSON.stringify(
       appVersion('traininglab/apps/desktop/package.json'),

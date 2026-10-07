@@ -36,6 +36,15 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __BODYLAB_VERSION__: JSON.stringify(APP_VERSION),
+    // Any test that renders a screen showing the installed build (Ajustes)
+    // needs this key defined here too — see src/vite-env.d.ts.
+    __BUILD_STAMP__: JSON.stringify(
+      (() => {
+        const d = new Date()
+        const p = (n: number) => String(n).padStart(2, '0')
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+      })(),
+    ),
   },
   resolve: {
     alias: coreAliases,

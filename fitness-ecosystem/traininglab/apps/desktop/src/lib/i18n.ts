@@ -190,7 +190,15 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Your logged sets as CSV — opens in Excel and any local assistant can read it. Nothing leaves the device.",
     es: "Tus series registradas en CSV: se abre en Excel y cualquier asistente local puede leerlo. Nada sale del dispositivo.",
   },
-  "data.setsCount": { en: "{n} sets logged", es: "{n} series registradas" },
+  // "sets saved" and not "sets logged": this badge counts every stored row,
+  // warm-ups included, while Progreso's "working sets" excludes them. Same
+  // number, two labels, two meanings — the owner read 412 here and 391 there
+  // and thought the data was wrong.
+  "data.setsCount": { en: "{n} sets saved", es: "{n} series guardadas" },
+  "data.setsBreakdown": {
+    en: "{work} working, {warm} warm-up",
+    es: "{work} de trabajo, {warm} de calentamiento",
+  },
   "backup.export": {
     en: "Download full backup (JSON)",
     es: "Descargar copia completa (JSON)",
@@ -931,6 +939,17 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "A recovery day — the plan already took it into account.",
     es: "Hoy toca recuperar. El plan ya lo tiene en cuenta.",
   },
+  // ── Enfoque de hoy ────────────────────────────────────────────────────
+  "home.focus.label": { en: "Focus", es: "Enfoque de hoy" },
+  "home.focus.auto": { en: "Automatic", es: "Automático" },
+  "home.focus.push": { en: "Push", es: "Empuje" },
+  "home.focus.pull": { en: "Pull", es: "Tracción" },
+  "home.focus.legs": { en: "Legs", es: "Pierna" },
+  "home.focus.core": { en: "Core", es: "Core" },
+  "home.focus.hint": {
+    en: "Automatic balances the week. Picking a family builds today around it.",
+    es: "Automático equilibra la semana. Si eliges una familia, el día se construye alrededor de ella.",
+  },
   "home.badge.zen": { en: "ZEN", es: "ZEN" },
   "home.today": { en: "Today", es: "HOY" },
   "home.rest": { en: "Rest", es: "DESCANSO" },
@@ -1121,7 +1140,7 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "progress.numbers.title": { en: "Your numbers", es: "Tus cifras" },
   "progress.numbers.sessions": { en: "Sessions", es: "Sesiones" },
-  "progress.numbers.sets": { en: "Sets logged", es: "Series registradas" },
+  "progress.numbers.sets": { en: "Working sets", es: "Series de trabajo" },
   "progress.numbers.exercises": {
     en: "Distinct exercises",
     es: "Ejercicios distintos",
@@ -1537,6 +1556,13 @@ const DICT: Record<string, { en: string; es: string }> = {
   "settings.about.privacy": {
     en: "100 % local: no accounts, no telemetry, no background downloads.",
     es: "100 % local: sin cuentas, sin telemetría y sin descargas en segundo plano.",
+  },
+  // The build stamp is what makes two builds of the same version
+  // distinguishable — TrainingLab shipped two different 0.2.0 binaries and
+  // nothing on screen could tell them apart.
+  "settings.about.build": {
+    en: "Build {stamp}",
+    es: "Compilación {stamp}",
   },
   "settings.about.offline": {
     en: "Everything works without a connection.",
