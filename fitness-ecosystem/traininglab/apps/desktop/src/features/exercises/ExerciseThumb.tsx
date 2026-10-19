@@ -1,27 +1,33 @@
 /**
  * The media slot — one fixed square, four possible fillings.
  *
- * The design calls for a photo thumbnail on every row. We have no photos yet, so
- * this component defines the *slot* first: a fixed 44 × 44 (or 72 × 72) box that
- * never changes size when the content changes, which is what stops the list from
- * reflowing the day photographs arrive.
+ * A fixed 44 × 44 (or 46/72 × 72) box that never changes size when the content
+ * changes, which is what stops a list from reflowing as it fills in.
  *
- * Cascade (see `docs/TRAININGLAB_UI_PLAN.md` §8):
+ * Two ways to use it, and the difference matters:
  *
- *   1. licensed GIF          — the only level that moves
- *   2. free-license photo    — `source` set, `kind: "photo"`
- *   3. generated silhouette  — `kind: "silhouette"`
- *   4. monogram              — this file's fallback: the family's first letter on
- *                              an accent wash. Never a broken-image icon.
+ *   * **named** — pass `exerciseId` and the slot resolves the reference itself
+ *     through the shared cascade (`features/exercises/media.ts`): GIF → still →
+ *     monogram. This is what the rows of Inicio and of the library do, and it is
+ *     why they show the movement instead of initials;
+ *   * **explicit** — pass `src` (+ `kind`) and the caller owns the picture.
+ *
+ * The monogram is the last level, never a broken-image icon: the *family's*
+ * first letter over an accent wash, so a list reads as grouped blocks (all the
+ * chest work together) instead of a wall of identical grey squares.
  *
  * @module features/exercises/ExerciseThumb
  */
 
 import type { ReactNode } from "react";
 
+import { isAnimated, primaryMediaSrc, useExerciseMedia } from "./media";
+
 export type ThumbKind = "gif" | "photo" | "silhouette" | "monogram";
 
 export function ExerciseThumb({
+  /** Names the exercise: the slot then resolves the reference by itself. */
+  exerciseId,
   kind = "monogram",
   /** For `gif` / `photo` / `silhouette`: a URL resolved through BASE_URL. */
   src,
@@ -32,6 +38,7 @@ export function ExerciseThumb({
   size = 44,
   className = "",
 }: {
+  exerciseId?: string;
   kind?: ThumbKind;
   src?: string;
   label?: string;
@@ -39,15 +46,27 @@ export function ExerciseThumb({
   size?: number;
   className?: string;
 }) {
+  const media = useExerciseMedia(exerciseId);
+  // An explicit `src` wins: the caller asked for that picture. Otherwise the
+  // cascade answers, and an exercise with no reference keeps its monogram.
+  const image = src ?? primaryMediaSrc(media, exerciseId);
+  const filled: ThumbKind =
+    src !== undefined
+      ? kind
+      : image === null
+        ? "monogram"
+        : isAnimated(media, exerciseId)
+          ? "gif"
+          : "photo";
   return (
     <div
       className={`shrink-0 rounded-xl overflow-hidden border border-[var(--tl-border)] bg-[var(--tl-surface-3)] flex items-center justify-center ${className}`}
       style={{ width: size, height: size }}
     >
-      {kind !== "monogram" && src ? (
+      {filled !== "monogram" && image ? (
         // `loading="lazy"` matters: the library is 143 rows.
         <img
-          src={src}
+          src={image}
           alt={alt}
           width={size}
           height={size}
@@ -86,28 +105,53 @@ function Monogram({
   );
 }
 
-/** The larger hero slot used by the exercise detail screen. */
+/**
+ * The larger hero slot used by the exercise detail screen.
+ *
+ * It resolves the same cascade as the small slot when it is given
+ * `exerciseId` (GIF → still → monogram). The detail screen shipped for weeks
+ * with a 16:10 box of empty wash and an initial in the middle while
+ * `barbell-squat.gif` sat in the bundle unused: the hero only rendered `src`,
+ * and nobody passed one. Naming the exercise is what fixes that class of bug.
+ *
+ * `object-contain`, not `cover`: the catalogue's references are square line
+ * art, and cropping the movement out of a technique picture is worse than
+ * leaving a margin.
+ */
 export function ExerciseThumbLarge({
+  exerciseId,
   kind = "monogram",
   src,
   label,
   alt = "",
   children,
 }: {
+  /** Names the exercise: the slot then resolves the reference by itself. */
+  exerciseId?: string;
   kind?: ThumbKind;
   src?: string;
   label?: string;
   alt?: string;
   children?: ReactNode;
 }) {
+  const media = useExerciseMedia(exerciseId);
+  const image = src ?? primaryMediaSrc(media, exerciseId);
+  const filled: ThumbKind =
+    src !== undefined
+      ? kind
+      : image === null
+        ? "monogram"
+        : isAnimated(media, exerciseId)
+          ? "gif"
+          : "photo";
   return (
     <div className="tl-card overflow-hidden">
       <div className="relative w-full aspect-[16/10] bg-[var(--tl-surface-3)] tl-media-wash flex items-center justify-center">
-        {kind !== "monogram" && src ? (
+        {filled !== "monogram" && image ? (
           <img
-            src={src}
+            src={image}
             alt={alt}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
           />
         ) : (
           <span

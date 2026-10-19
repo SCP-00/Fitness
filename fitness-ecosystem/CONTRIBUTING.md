@@ -9,7 +9,7 @@ Gracias por tu interés en contribuir al Fitness Ecosystem.
 3. **Tests obligatorios** — Todo código nuevo debe incluir tests (ver [TESTING.md](docs/TESTING.md))
 4. **TypeScript estricto** — No usar `any`, mantener tipado completo
 5. **Convenciones de commits** — Usar [Conventional Commits](https://www.conventionalcommits.org/)
-6. **Documentación viva** — Si el cambio afecta arquitectura, comandos o rendimiento, actualiza la doc correspondiente (READMEs, [ARCHITECTURE.md](docs/ARCHITECTURE.md), [UI_DESIGN.md](docs/UI_DESIGN.md))
+6. **Documentación viva** — Si el cambio afecta arquitectura, comandos o rendimiento, actualiza la doc correspondiente (READMEs, [ARCHITECTURE.md](docs/ARCHITECTURE.md), [REDESIGN_STORM.md](docs/REDESIGN_STORM.md))
 
 ## 🔄 Flujo de Trabajo
 
@@ -201,8 +201,8 @@ Usa [GitHub Issues](https://github.com/tu-usuario/fitness-ecosystem/issues) con 
 - [PLAN.md](PLAN.md) — Plan maestro del proyecto
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Arquitectura verificada (fuente de verdad)
 - [TESTING.md](docs/TESTING.md) — Estrategia y comandos de testing
-- [UI_DESIGN.md](docs/UI_DESIGN.md) — Reglas de interfaz y contrato responsive
-- [TRAININGLAB_UI_PLAN.md](docs/TRAININGLAB_UI_PLAN.md) — Contrato de diseño de TrainingLab
+- [REDESIGN_STORM.md](docs/REDESIGN_STORM.md) — Contrato de interfaz de TrainingLab (personas, invariantes, pantallas)
+- [MCP_TOOL_SURFACE.md](docs/MCP_TOOL_SURFACE.md) — Superficie de herramientas de los modelos locales
 - [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) — Especificación del producto
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — Licencias de terceros
 - [LICENSE](LICENSE) — Licencia del proyecto

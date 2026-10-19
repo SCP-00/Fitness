@@ -1,9 +1,10 @@
 /**
- * Sound cues — three moments worth hearing.
+ * Sound cues — four moments worth hearing.
  *
  *   bell         a session was completed
  *   achievement  one exercise reached its prescribed number of sets
  *   record       a personal record just fell
+ *   rest         the rest countdown reached zero (go again)
  *
  * Why synthesised and not audio files
  * -----------------------------------
@@ -11,10 +12,10 @@
  * free of binary assets (no licensing to track, no attribution, nothing to
  * `import` that a bundler can mangle), works with the app's offline-first
  * guarantee, and lets a cue be tweaked by editing numbers instead of
- * re-exporting a `.mp3`. The three cues are deliberately distinguishable by
+ * re-exporting a `.mp3`. The cues are deliberately distinguishable by
  * *shape*, not just pitch — a long decaying bell, a rising three-note arpeggio,
- * a four-note fanfare — so they still read as different events through a phone
- * speaker at arm's length in a gym.
+ * a four-note fanfare, a short high double beep — so they still read as
+ * different events through a phone speaker at arm's length in a gym.
  *
  * The two browser rules that shape the API
  * ----------------------------------------
@@ -32,16 +33,17 @@
  * @module lib/sounds
  */
 
-/** The three events that get a sound. */
-export type CueKind = "bell" | "achievement" | "record";
+/** The events that get a sound. */
+export type CueKind = "bell" | "achievement" | "record" | "rest";
 
-export const CUE_KINDS: CueKind[] = ["bell", "achievement", "record"];
+export const CUE_KINDS: CueKind[] = ["bell", "achievement", "record", "rest"];
 
 /** Bilingual labels, so the Settings panel can render a preview list. */
 export const CUE_LABELS: Record<CueKind, { en: string; es: string }> = {
   bell: { en: "Session finished", es: "Entrenamiento terminado" },
   achievement: { en: "Exercise completed", es: "Ejercicio completado" },
   record: { en: "New personal record", es: "Nuevo récord personal" },
+  rest: { en: "Rest finished", es: "Descanso terminado" },
 };
 
 interface SoundConfig {
@@ -324,10 +326,32 @@ function playRecord(context: AudioContext, out: GainNode): void {
   });
 }
 
+/**
+ * Rest over — two short high "go" beeps, ~0.45 s in total.
+ *
+ * The other cues are events that close something (a bell, an arpeggio, a
+ * fanfare); this one *starts* something, so it is deliberately the shortest
+ * and highest of the four: a punchy double beep that cuts through a gym floor
+ * without competing with the longer celebration shapes it must not be
+ * mistaken for.
+ */
+function playRest(context: AudioContext, out: GainNode): void {
+  const notes = [1318.5, 1760]; // E6 → A6
+  notes.forEach((freq, i) => {
+    partials(
+      context,
+      out,
+      { freq, at: i * 0.14, dur: 0.3, gain: 0.4, type: "sine" },
+      [{ ratio: 1, gain: 0.5, decay: 0.1 }],
+    );
+  });
+}
+
 const PLAYERS: Record<CueKind, (ctx: AudioContext, out: GainNode) => void> = {
   bell: playBell,
   achievement: playAchievement,
   record: playRecord,
+  rest: playRest,
 };
 
 /**

@@ -106,31 +106,43 @@ export default function AnalyticsDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-[var(--color-text)]">
+        <p className="bl-eyebrow mb-1.5">
           {lang === "es" ? "Análisis Corporal" : "Body Analytics"}
-        </h2>
-        <p className="text-sm text-slate-500 dark:text-[var(--color-text-muted)]">
+        </p>
+        <h2 className="bl-section-title">
           {lang === "es"
             ? "Métricas derivadas de tus mediciones"
             : "Metrics derived from your measurements"}
-        </p>
+        </h2>
       </div>
 
       {/* Body Age Score — Hero */}
       {bodyAge && (
-        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 dark:from-indigo-500/80 dark:to-indigo-600/80 rounded-2xl p-6 text-white">
+        <div className="bl-card bl-card-raise relative overflow-hidden p-6">
+          {/* ambient accent wash instead of a flat fill — the v2 slab read as
+              a solid block of brand colour; this keeps the card in the same
+              surface language as the rest of the page */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(34rem 18rem at 108% -30%, rgba(99,102,241,0.22), transparent 60%), radial-gradient(24rem 14rem at -10% 130%, rgba(56,189,248,0.14), transparent 62%)',
+            }}
+          />
+          <div className="relative">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-indigo-200 text-sm font-medium">
+              <p className="bl-eyebrow" style={{ color: 'var(--color-primary)' }}>
                 {lang === "es" ? "Tu Edad Corporal" : "Your Body Age"}
               </p>
-              <div className="flex items-baseline gap-3 mt-1">
-                <span className="text-4xl font-bold">{bodyAge.bodyAge}</span>
-                <span className="text-indigo-200">
+              <div className="flex items-baseline gap-3 mt-1.5">
+                <span className="numeric-xl text-slate-900 dark:text-[var(--color-text)]">{bodyAge.bodyAge}</span>
+                <span className="text-sm font-semibold text-slate-500 dark:text-[var(--color-text-muted)]">
                   {lang === "es" ? "años" : "years"}
                 </span>
               </div>
-              <p className="text-indigo-200 text-sm mt-1">
+              <p className="text-sm mt-1 text-slate-500 dark:text-[var(--color-text-muted)]">
                 {lang === "es" ? "Edad cronológica:" : "Chronological age:"}{" "}
                 {bodyAge.chronologicalAge}
               </p>
@@ -138,10 +150,10 @@ export default function AnalyticsDashboard() {
             <div
               className={`px-4 py-2 rounded-xl text-sm font-bold ${
                 bodyAge.difference < 0
-                  ? "bg-emerald-500"
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                   : bodyAge.difference > 0
-                    ? "bg-amber-500"
-                    : "bg-white/20"
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                    : "bg-slate-500/10 text-slate-500"
               }`}
             >
               {bodyAge.difference < 0
@@ -153,14 +165,14 @@ export default function AnalyticsDashboard() {
           </div>
 
           {/* Components breakdown */}
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-5 grid grid-cols-2 gap-2.5">
             {bodyAge.components.map((comp) => (
-              <div key={comp.name} className="bg-white/10 rounded-lg p-2.5">
-                <p className="text-xs font-medium text-indigo-100">
+              <div key={comp.name} className="bl-card p-3">
+                <p className="text-xs font-semibold text-slate-600 dark:text-[var(--color-text-secondary)]">
                   {comp.name}
                 </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 h-1.5 bg-white/20 rounded-full">
+                <div className="flex items-center gap-2 mt-1.5">
+                  <div className="flex-1 h-1.5 bg-slate-200/70 dark:bg-slate-700/60 rounded-full">
                     <div
                       className="h-1.5 rounded-full transition-all"
                       style={{
@@ -174,10 +186,11 @@ export default function AnalyticsDashboard() {
                       }}
                     />
                   </div>
-                  <span className="text-xs font-medium">{comp.score}</span>
+                  <span className="text-xs font-semibold tabular-nums text-slate-700 dark:text-[var(--color-text)]">{comp.score}</span>
                 </div>
               </div>
             ))}
+          </div>
           </div>
         </div>
       )}
@@ -186,7 +199,7 @@ export default function AnalyticsDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Body Composition */}
         {composition && (
-          <div className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent ">
+          <div className="bl-card p-5 ">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
               <h3 className="font-semibold text-slate-900 dark:text-[var(--color-text)]">
@@ -252,7 +265,7 @@ export default function AnalyticsDashboard() {
 
         {/* Health Risk */}
         {healthRisk && (
-          <div className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent ">
+          <div className="bl-card p-5 ">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
               <h3 className="font-semibold text-slate-900 dark:text-[var(--color-text)]">
@@ -361,7 +374,7 @@ export default function AnalyticsDashboard() {
 
       {/* Progress Predictions */}
       {predictions.length > 0 && (
-        <div className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent">
+        <div className="bl-card p-5 ">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-indigo-500" />
             <h3 className="font-semibold text-slate-900 dark:text-[var(--color-text)]">
@@ -430,7 +443,7 @@ export default function AnalyticsDashboard() {
 
       {/* Correlations */}
       {correlations.length > 0 && (
-        <div className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent ">
+        <div className="bl-card p-5 ">
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
             <h3 className="font-semibold text-slate-900 dark:text-[var(--color-text)]">

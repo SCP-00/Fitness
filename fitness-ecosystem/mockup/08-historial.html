@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Historial</title>
+<link rel="stylesheet" href="css/tl.css" />
+<style>
+  .hi-page { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 18px; align-items: start; }
+  .hi-row {
+    display: grid; grid-template-columns: 92px 26px minmax(0,1fr) auto auto 20px;
+    gap: 14px; align-items: center; padding: 13px 16px;
+    border-top: 1px solid var(--tl-border); transition: background 120ms;
+  }
+  .hi-row:first-of-type { border-top: none; }
+  .hi-row:hover { background: var(--tl-surface-2); }
+  .hi-date { font-size: 12.5px; font-weight: 700; }
+  .hi-date span { display: block; font-size: 10.5px; color: var(--tl-text-muted); font-weight: 500; }
+  .hi-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--tl-success); margin: 0 auto; }
+  .hi-name { font-weight: 600; font-size: 13.5px; }
+  .hi-tags { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+  .hi-stat { text-align: right; }
+  .hi-stat b { display: block; font-size: 13px; }
+  .hi-stat span { font-size: 10.5px; color: var(--tl-text-muted); }
+  .month-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--tl-surface-2); border-top: 1px solid var(--tl-border); }
+  .month-head b { font-size: 12.5px; }
+  .month-head span { font-size: 11px; color: var(--tl-text-muted); }
+  @media (max-width: 1300px) { .hi-page { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body data-page="historial">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Historial</div>
+        <div class="topbar-sub">Todo lo que has entrenado, con lo que hiciste en cada serie.</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="seg" data-switch="filtro">
+        <button class="seg-item is-active" data-value="todas">Todas</button>
+        <button class="seg-item" data-value="completas">Completadas</button>
+        <button class="seg-item" data-value="incompletas">Incompletas</button>
+        <button class="seg-item" data-value="records">Con récords</button>
+      </div>
+      <button class="pill"><i data-icon="calendar"></i>Todo el historial <i data-icon="chevronDown"></i></button>
+      <span class="rail-logo" style="width:32px;height:32px;border-radius:50%;background:var(--tl-surface-3);color:var(--tl-text-secondary)"><i data-icon="users"></i></span>
+    </header>
+
+    <div class="content">
+      <div class="hi-page">
+        <div class="stack">
+          <div class="stat-grid">
+            <div class="stat"><div class="stat-label"><i data-icon="dumbbell"></i>Sesiones</div><div class="stat-value">128</div></div>
+            <div class="stat"><div class="stat-label"><i data-icon="clock"></i>Tiempo total</div><div class="stat-value">104 <small>h</small></div></div>
+            <div class="stat"><div class="stat-label"><i data-icon="bars"></i>Volumen total</div><div class="stat-value">486 <small>mil kg</small></div></div>
+            <div class="stat"><div class="stat-label"><i data-icon="trophy"></i>Récords</div><div class="stat-value">37</div></div>
+          </div>
+
+          <section class="card" style="overflow:hidden">
+            <div class="card-head">
+              <h2 class="card-title grow">Todas las sesiones</h2>
+              <span class="tiny muted">Pulsa una sesión para ver el detalle</span>
+            </div>
+
+            <div class="month-head"><i data-icon="calendar" style="width:15px;height:15px;color:var(--tl-accent)"></i><b>Junio 2025</b><div class="spacer"></div><span>7 sesiones · 28.400 kg</span></div>
+
+            <a class="hi-row" href="#">
+              <span class="hi-date">7 jun<span>Sáb</span></span>
+              <span class="hi-dot"></span>
+              <span><span class="hi-name">Piernas + Trapecios</span><span class="hi-tags">
+                <span class="tag" style="color:var(--fam-quadriceps)"><i class="dot"></i>Piernas</span>
+                <span class="tag" style="color:var(--fam-traps)"><i class="dot"></i>Trapecios</span>
+                <span class="badge badge-accent"><i data-icon="trophy"></i>1 récord</span>
+              </span></span>
+              <span class="hi-stat"><b>57 min</b><span>22 series</span></span>
+              <span class="hi-stat"><b>4.320 kg</b><span>volumen</span></span>
+              <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+            </a>
+
+            <a class="hi-row" href="#">
+              <span class="hi-date">5 jun<span>Jue</span></span>
+              <span class="hi-dot"></span>
+              <span><span class="hi-name">Espalda + Bíceps</span><span class="hi-tags">
+                <span class="tag" style="color:var(--fam-lats)"><i class="dot"></i>Espalda</span>
+                <span class="tag" style="color:var(--fam-biceps)"><i class="dot"></i>Bíceps</span>
+              </span></span>
+              <span class="hi-stat"><b>52 min</b><span>18 series</span></span>
+              <span class="hi-stat"><b>3.980 kg</b><span>volumen</span></span>
+              <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+            </a>
+
+            <a class="hi-row" href="#">
+              <span class="hi-date">2 jun<span>Lun</span></span>
+              <span class="hi-dot" style="background:var(--tl-warning)"></span>
+              <span><span class="hi-name">Pecho + Hombro</span><span class="hi-tags">
+                <span class="tag" style="color:var(--fam-chest)"><i class="dot"></i>Pecho</span>
+                <span class="tag" style="color:var(--fam-shoulders)"><i class="dot"></i>Hombro</span>
+                <span class="badge badge-warning"><i data-icon="alert"></i>Incompleta · 5/6</span>
+              </span></span>
+              <span class="hi-stat"><b>60 min</b><span>20 series</span></span>
+              <span class="hi-stat"><b>4.650 kg</b><span>volumen</span></span>
+              <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+            </a>
+
+            <div class="month-head"><i data-icon="calendar" style="width:15px;height:15px;color:var(--tl-accent)"></i><b>Mayo 2025</b><div class="spacer"></div><span>12 sesiones · 47.900 kg</span></div>
+
+            <a class="hi-row" href="#">
+              <span class="hi-date">30 may<span>Vie</span></span>
+              <span class="hi-dot"></span>
+              <span><span class="hi-name">Piernas + Core</span><span class="hi-tags">
+                <span class="tag" style="color:var(--fam-quadriceps)"><i class="dot"></i>Piernas</span>
+                <span class="tag" style="color:var(--fam-core)"><i class="dot"></i>Core</span>
+              </span></span>
+              <span class="hi-stat"><b>49 min</b><span>17 series</span></span>
+              <span class="hi-stat"><b>3.760 kg</b><span>volumen</span></span>
+              <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+            </a>
+
+            <a class="hi-row" href="#">
+              <span class="hi-date">28 may<span>Mié</span></span>
+              <span class="hi-dot"></span>
+              <span><span class="hi-name">Hombro + Core</span><span class="hi-tags">
+                <span class="tag" style="color:var(--fam-shoulders)"><i class="dot"></i>Hombro</span>
+                <span class="tag" style="color:var(--fam-core)"><i class="dot"></i>Core</span>
+                <span class="badge badge-accent"><i data-icon="trophy"></i>1 récord</span>
+              </span></span>
+              <span class="hi-stat"><b>46 min</b><span>15 series</span></span>
+              <span class="hi-stat"><b>3.420 kg</b><span>volumen</span></span>
+              <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+            </a>
+
+            <a class="hi-row" href="#">
+              <span class="hi-date">25 may<span>Dom</span></span>
+              <span class="hi-dot" style="background:var(--tl-info)"></span>
+              <span><span class="hi-name">Tren superior (peso corporal)</span><span class="hi-tags">
+                <span class="tag" style="color:var(--fam-chest)"><i class="dot"></i>Pecho</span>
+                <span class="tag" style="color:var(--fam-lats)"><i class="dot"></i>Espalda</span>
+              </span></span>
+              <span class="hi-stat"><b>38 min</b><span>14 series</span></span>
+              <span class="hi-stat"><b>—</b><span>peso corporal</span></span>
+              <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+            </a>
+          </section>
+        </div>
+
+        <!-- ── One session, in full ───────────────────────────────────────── -->
+        <section class="card">
+          <div class="card-head">
+            <div class="grow">
+              <h2 class="card-title" style="font-size:17px">Piernas + Trapecios</h2>
+              <div class="tiny muted" style="margin-top:4px">Sábado, 7 jun 2025 · 10:12 – 11:09</div>
+            </div>
+            <button class="icon-btn"><i data-icon="x"></i></button>
+          </div>
+          <div class="card-body" style="padding-top:0">
+            <div class="row-wrap" style="margin-bottom:12px">
+              <span class="tag" style="color:var(--fam-quadriceps)"><i class="dot"></i>Piernas</span>
+              <span class="tag" style="color:var(--fam-traps)"><i class="dot"></i>Trapecios</span>
+              <span class="badge badge-accent"><i data-icon="trophy"></i>Récord: 26 kg × 12</span>
+            </div>
+
+            <div class="summary-grid" style="grid-template-columns:repeat(3,1fr)">
+              <div class="summary-cell"><i data-icon="clock"></i><b>57</b><span>min</span></div>
+              <div class="summary-cell"><i data-icon="bars"></i><b>22</b><span>series</span></div>
+              <div class="summary-cell"><i data-icon="trendingUp"></i><b>4.320</b><span>kg</span></div>
+            </div>
+
+            <div class="divider" style="margin:14px 0"></div>
+
+            <table class="table">
+              <thead><tr><th>Ejercicio</th><th class="num">Series</th><th class="num">Mejor</th><th class="num">Volumen</th></tr></thead>
+              <tbody>
+                <tr><td>Sentadilla con Barra</td><td class="num">4</td><td class="num">26 × 12</td><td class="num">1.180 kg</td></tr>
+                <tr><td>Prensa de Piernas</td><td class="num">4</td><td class="num">90 × 12</td><td class="num">4.320 kg</td></tr>
+                <tr><td>Curl de Piernas Acostado</td><td class="num">3</td><td class="num">45 × 12</td><td class="num">1.560 kg</td></tr>
+                <tr><td>Elevación de Talones de Pie</td><td class="num">4</td><td class="num">60 × 15</td><td class="num">3.480 kg</td></tr>
+                <tr><td>Encogimientos con Mancuernas</td><td class="num">3</td><td class="num">24 × 12</td><td class="num">850 kg</td></tr>
+                <tr><td>Remo al Mentón con Mancuernas</td><td class="num">3</td><td class="num">16 × 15</td><td class="num">710 kg</td></tr>
+              </tbody>
+            </table>
+
+            <div class="divider" style="margin:14px 0"></div>
+            <div class="small bold secondary" style="margin-bottom:6px">Notas</div>
+            <div class="note-box">Buena energía hoy. La sentadilla se sintió sólida con 26 kg; probé 30 kg en la última serie y bajó la técnica, así que la dejé en 26.</div>
+
+            <div class="row" style="gap:10px;margin-top:16px">
+              <button class="btn btn-primary btn-lg" style="flex:1"><i data-icon="repeat"></i>Repetir esta sesión</button>
+              <button class="btn btn-lg"><i data-icon="copy"></i>Copiar a hoy</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

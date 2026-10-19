@@ -66,6 +66,32 @@ export default function ExercisesScreen({
 
   const active = filters.family !== null || filters.category !== null;
 
+  /* Grouped by muscle family for the A–Z view — 94 rows in one flat list is
+     what made this screen unreadable. Searching or difficulty-sorting keeps
+     a single flat list (grouping would scramble a ranked order). */
+  const grouped: [string, ExerciseRowData[]][] | null =
+    !result.searching && sort === "az" && result.rows.length > 0
+      ? (() => {
+          const map = new Map<string, ExerciseRowData[]>();
+          for (const row of result.rows) {
+            const list = map.get(row.familyLabel);
+            if (list) list.push(row);
+            else map.set(row.familyLabel, [row]);
+          }
+          const ordered: [string, ExerciseRowData[]][] = [];
+          for (const family of families) {
+            const key = familyLabel(family);
+            const list = map.get(key);
+            if (list) {
+              ordered.push([key, list]);
+              map.delete(key);
+            }
+          }
+          for (const rest of map) ordered.push(rest); // safety net
+          return ordered;
+        })()
+      : null;
+
   return (
     <div className="mx-auto w-full max-w-3xl flex flex-col gap-4">
       <SectionHeader
@@ -109,7 +135,9 @@ export default function ExercisesScreen({
       <div className="flex flex-col gap-2">
         {/* Horizontal strips rather than a wrapping block: on a phone 13 family
             chips would eat a third of the screen. `tl-hscroll` hides the bar. */}
-        <div className="tl-hscroll -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto">
+        {/* `-mx-3.5` = the 14 px `.content` gutter on a phone; `-mx-4` (16 px)
+            stuck out 2 px and widened the page (audited 2026-10-18). */}
+        <div className="tl-hscroll -mx-3.5 px-3.5 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto">
           {families.map((family) => (
             <Chip
               key={family}
@@ -125,7 +153,7 @@ export default function ExercisesScreen({
             </Chip>
           ))}
         </div>
-        <div className="tl-hscroll -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto items-center">
+        <div className="tl-hscroll -mx-3.5 px-3.5 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto items-center">
           {CATEGORIES.map((category) => (
             <Chip
               key={category}
@@ -150,6 +178,21 @@ export default function ExercisesScreen({
         </div>
       </div>
 
+      {/* ── Legend: "what does Level mean?" answered on screen (owner, 2026-10-08) ── */}
+      <div className="rounded-xl border border-[var(--tl-border)] bg-[var(--tl-surface-2)] px-3.5 py-2.5 text-xs text-[var(--tl-text-secondary)] flex items-start gap-2">
+        <span className="mt-0.5 flex shrink-0 items-center gap-0.5" aria-hidden>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <span
+              key={i}
+              className={`w-1.5 h-1.5 rounded-full ${i <= 3 ? "bg-[var(--tl-accent)]" : "bg-[var(--tl-border-strong)]"}`}
+            />
+          ))}
+        </span>
+        <p>
+          <span className="font-semibold text-[var(--tl-text)]">{t("ex.level")}</span> — {t("ex.difficultyHint")}
+        </p>
+      </div>
+
       {/* ── The list ─────────────────────────────────────────────────────── */}
       {result.rows.length === 0 ? (
         <EmptyState
@@ -168,6 +211,28 @@ export default function ExercisesScreen({
             ) : undefined
           }
         />
+      ) : grouped ? (
+        /* Grouped by muscle family (A–Z sort): 94 rows in one flat list is
+           what made this screen unreadable — headers give it structure. */
+        <div className="flex flex-col">
+          {grouped.map(([label, groupRows]) => (
+            <section key={label}>
+              <div className="sticky top-0 z-10 flex items-baseline justify-between gap-2 px-4 py-2 bg-[var(--tl-surface-2)] border-b border-[var(--tl-border)]">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tl-text-muted)]">
+                  {label}
+                </h3>
+                <span className="text-[11px] tabular-nums text-[var(--tl-text-muted)]">
+                  {groupRows.length} {t("ex.exercises")}
+                </span>
+              </div>
+              <div className="divide-y divide-[var(--tl-border)]">
+                {groupRows.map((row) => (
+                  <ExerciseListRow key={row.id} row={row} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       ) : (
         <Card padded={false} className="divide-y divide-[var(--tl-border)]">
           {result.rows.map((row) => (
@@ -195,7 +260,11 @@ function ExerciseListRow({ row }: { row: ExerciseRowData }) {
     <NavRow
       className="rounded-none px-4 py-3"
       onClick={() => navigate("exercises", [row.id])}
-      leading={<ExerciseThumb label={row.familyLabel} size={44} />}
+      leading={
+        // The reference the row is actually about: without `exerciseId` this slot
+        // was a monogram for all 151 exercises while 115 of them have media.
+        <ExerciseThumb exerciseId={row.id} label={row.familyLabel} size={44} />
+      }
       title={row.name}
       subtitle={`${muscles} · ${row.equipment}`}
       trailing={
@@ -204,9 +273,24 @@ function ExerciseListRow({ row }: { row: ExerciseRowData }) {
               an extra coaching layer for this variant, and a conditioning slot. */}
           {row.hasVariantCues && <Badge tone="accent">{t("ex.variant")}</Badge>}
           {row.isCardio && <Badge tone="info">{t("ex.cardio")}</Badge>}
-          <Badge tone="neutral">
-            {t("ex.level")} {row.difficulty}
-          </Badge>
+          {/* Difficulty as a 5-dot meter — a wordless scale reads faster than
+              "Nivel 3", and the title spells out what the dots mean. */}
+          <span
+            className="flex items-center gap-0.5 pl-1"
+            title={`${t("ex.level")} ${row.difficulty}/5`}
+            aria-label={`${t("ex.level")} ${row.difficulty}/5`}
+          >
+            {[1, 2, 3, 4, 5].map((i) => (
+              <span
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full ${
+                  i <= row.difficulty
+                    ? "bg-[var(--tl-accent)]"
+                    : "bg-[var(--tl-border-strong)]"
+                }`}
+              />
+            ))}
+          </span>
         </div>
       }
     />

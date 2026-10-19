@@ -28,6 +28,7 @@ export const FEATURE_ORDER = [
   "weaknessGap", // how weak the exercise's main muscle family is
   "weeklyGap", // how far below its rolling weekly target it is
   "freshness", // days since that family was last trained
+  "consistency", // did you do THIS exercise in last week's slot? (stable weeks)
   "readinessFit", // 1 = suits today's energy/soreness, 0 = fights it
   "variety", // 1 = movement pattern not used yet today
   "preference", // how often the user has chosen/completed it before
@@ -40,11 +41,14 @@ export type DecisionFeatures = Record<DecisionFeature, number>;
 /**
  * Hand-set priors, in `FEATURE_ORDER`. They encode the coaching logic that a
  * good trainer applies before knowing anything about you: train the weak and
- * the under-trained, respect freshness, respect readiness, keep variety,
- * prefer what you actually stick to, and keep the setup cheap.
+ * the under-trained, respect freshness, **repeat last week's slot** (owner
+ * 2026-10-08: stable weekly records are how progressive overload gets
+ * evaluated — a plan that invents new exercises every week cannot be judged),
+ * respect readiness, keep variety, prefer what you actually stick to, and
+ * keep the setup cheap.
  */
 export const PRIOR_WEIGHTS: readonly number[] = [
-  0.9, 1.0, 0.6, 0.8, 0.5, 0.4, 0.3,
+  0.9, 1.0, 0.6, 0.7, 0.8, 0.5, 0.4, 0.3,
 ];
 
 /** Weights may drift from the prior, but only this far (stability guard). */
@@ -79,6 +83,11 @@ export function normalizeModel(raw: unknown): DecisionModel {
           ),
         )
       : [...PRIOR_WEIGHTS];
+  // A model saved before the feature set grew (weight array length mismatch)
+  // falls back to the prior — and its update count must go with the weights,
+  // otherwise the UI would claim N learned outcomes that no longer exist.
+  const weightsMatched =
+    Array.isArray(o.weights) && o.weights.length === FEATURE_ORDER.length;
   const biases: Record<string, number> = {};
   if (o.biases && typeof o.biases === "object") {
     for (const [k, v] of Object.entries(o.biases)) {
@@ -90,7 +99,10 @@ export function normalizeModel(raw: unknown): DecisionModel {
     version: 1,
     weights,
     biases,
-    updates: typeof o.updates === "number" && o.updates >= 0 ? o.updates : 0,
+    updates:
+      weightsMatched && typeof o.updates === "number" && o.updates >= 0
+        ? o.updates
+        : 0,
   };
 }
 

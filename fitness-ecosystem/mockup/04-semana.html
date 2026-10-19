@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Semana</title>
+<link rel="stylesheet" href="css/tl.css" />
+<style>
+  .week-page { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
+  .week-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .daycol { min-height: 420px; }
+  .day-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; }
+  .day-status.done { color: var(--tl-success); }
+  .day-status.planned { color: var(--tl-text-muted); }
+  .day-status.now { color: var(--tl-accent); }
+  .day-status .icon { width: 14px; height: 14px; }
+  .daycard { gap: 8px; }
+  .daycard-title { font-size: 13.5px; }
+  .daycard-line { display: flex; align-items: center; gap: 6px; color: var(--tl-text-muted); font-size: 11px; }
+  .daycard-line .icon { width: 13px; height: 13px; }
+  .daycard-vol { font-size: 12px; font-weight: 700; color: var(--tl-text-secondary); }
+  .realized { border-top: 1px dashed var(--tl-border); padding-top: 7px; font-size: 11px; color: var(--tl-text-secondary); }
+  .realized b { display: block; color: var(--tl-success); font-weight: 600; margin-bottom: 2px; }
+  .daycard.is-now { border-color: var(--tl-accent); box-shadow: 0 0 0 2px var(--tl-accent-wash); }
+  .week-foot {
+    display: flex; align-items: center; gap: 16px; padding: 12px 16px;
+    border: 1px solid var(--tl-border); border-radius: var(--radius); background: var(--tl-surface);
+    flex-wrap: wrap;
+  }
+  .week-foot .cell { display: flex; align-items: center; gap: 9px; }
+  .week-foot .cell .icon { width: 17px; height: 17px; color: var(--tl-text-muted); }
+  .week-foot .cell b { display: block; font-size: 12.5px; }
+  .week-foot .cell span { font-size: 10.5px; color: var(--tl-text-muted); }
+  .week-foot .bar { min-width: 180px; flex: 1; }
+  .detail-row {
+    display: grid; grid-template-columns: 20px 52px minmax(0,1fr) auto 20px;
+    gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(41,49,58,.5);
+  }
+  .detail-row:last-of-type { border-bottom: none; }
+  .detail-thumb { width: 52px; height: 38px; border-radius: 8px; overflow: hidden; border: 1px solid var(--tl-border); background: var(--tl-surface-3); }
+  .detail-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .detail-name { font-weight: 600; font-size: 12.5px; }
+  .detail-rx { color: var(--tl-text-muted); font-size: 11px; }
+  .detail-ok { color: var(--tl-success); }
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+</head>
+<body data-page="semana">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <header class="topbar">
+      <i data-icon="calendar" style="width:24px;height:24px;color:var(--tl-accent)"></i>
+      <div>
+        <div class="topbar-title" style="font-size:22px">Semana 41</div>
+        <div class="topbar-sub">Previsto 18 series vs banda 12–20 · 2 huecos</div>
+      </div>
+      <span class="row" style="gap:2px;margin-left:8px">
+        <button class="icon-btn"><i data-icon="chevronLeft"></i></button>
+        <button class="icon-btn"><i data-icon="chevronRight"></i></button>
+      </span>
+      <div class="spacer"></div>
+      <button class="pill"><i data-icon="shuffle"></i>Volver a hoy</button>
+      <button class="pill"><i data-icon="calendar"></i>7 jun – 13 jun 2025 <i data-icon="chevronDown"></i></button>
+    </header>
+
+    <div class="content">
+      <div class="week-page">
+        <div class="stack">
+          <!-- 7 columns. Empty = rest. Drag any card to another day. -->
+          <div class="week-grid">
+            <!-- LUN -->
+            <div class="daycol" data-drop="day">
+              <div class="daycol-head"><b>Lun</b><span>7 jun</span></div>
+              <div class="day-status done"><i data-icon="circleCheck"></i>Completada</div>
+              <article class="daycard" data-drag="lun">
+                <div class="daycard-title">Piernas + Tríceps</div>
+                <div class="daycard-line"><i data-icon="layers"></i>6 ejercicios</div>
+                <div class="daycard-line"><i data-icon="clock"></i>57 min</div>
+                <div class="daycard-tags">
+                  <span class="tag" style="color:var(--fam-quadriceps)"><i class="dot"></i>Piernas</span>
+                  <span class="tag" style="color:var(--fam-triceps)"><i class="dot"></i>Tríceps</span>
+                </div>
+                <div class="daycard-vol">Vol. 4.320 kg</div>
+                <div class="daycard-art" data-media="barbell-squat"></div>
+                <div class="realized"><b>Realizado</b>18 series · 4.120 kg · 56 min</div>
+              </article>
+            </div>
+
+            <!-- MAR -->
+            <div class="daycol" data-drop="day">
+              <div class="daycol-head"><b>Mar</b><span>8 jun</span></div>
+              <div class="day-status done"><i data-icon="circleCheck"></i>Completada</div>
+              <article class="daycard" data-drag="mar">
+                <div class="daycard-title">Espalda + Bíceps</div>
+                <div class="daycard-line"><i data-icon="layers"></i>6 ejercicios</div>
+                <div class="daycard-line"><i data-icon="clock"></i>58 min</div>
+                <div class="daycard-tags">
+                  <span class="tag" style="color:var(--fam-lats)"><i class="dot"></i>Espalda</span>
+                  <span class="tag" style="color:var(--fam-biceps)"><i class="dot"></i>Bíceps</span>
+                </div>
+                <div class="daycard-vol">Vol. 3.980 kg</div>
+                <div class="daycard-art" data-media="barbell-row"></div>
+                <div class="realized"><b>Realizado</b>16 series · 3.760 kg · 52 min</div>
+              </article>
+            </div>
+
+            <!-- MIÉ -->
+            <div class="daycol" data-drop="day">
+              <div class="daycol-head"><b>Mié</b><span>9 jun</span></div>
+              <div class="day-status done"><i data-icon="circleCheck"></i>Completada</div>
+              <article class="daycard" data-drag="mie">
+                <div class="daycard-title">Pecho + Hombro</div>
+                <div class="daycard-line"><i data-icon="layers"></i>6 ejercicios</div>
+                <div class="daycard-line"><i data-icon="clock"></i>60 min</div>
+                <div class="daycard-tags">
+                  <span class="tag" style="color:var(--fam-chest)"><i class="dot"></i>Pecho</span>
+                  <span class="tag" style="color:var(--fam-shoulders)"><i class="dot"></i>Hombro</span>
+                </div>
+                <div class="daycard-vol">Vol. 4.650 kg</div>
+                <div class="daycard-art" data-media="barbell-bench-press"></div>
+                <div class="realized"><b>Realizado</b>20 series · 4.540 kg · 60 min</div>
+              </article>
+            </div>
+
+            <!-- JUE — hoy, and the card being moved -->
+            <div class="daycol is-rest" data-drop="day" style="border-style:solid;border-color:var(--tl-accent-border)">
+              <div class="daycol-head"><b>Jue</b><span>10 jun</span></div>
+              <div class="day-status now"><i data-icon="zap"></i>En curso</div>
+              <article class="daycard is-now" data-drag="jue">
+                <div class="row" style="gap:6px">
+                  <div class="daycard-title grow">Piernas + Trapecios</div>
+                  <i data-icon="grip" style="color:var(--tl-text-muted)"></i>
+                </div>
+                <div class="daycard-line"><i data-icon="layers"></i>6 ejercicios · 57 min</div>
+                <div class="daycard-tags">
+                  <span class="tag" style="color:var(--fam-quadriceps)"><i class="dot"></i>Piernas</span>
+                  <span class="tag" style="color:var(--fam-traps)"><i class="dot"></i>Trapecios</span>
+                </div>
+                <div class="daycard-vol">Vol. 4.210 kg</div>
+              </article>
+              <div class="dropzone">Suelta aquí para mover</div>
+            </div>
+
+            <!-- VIE -->
+            <div class="daycol" data-drop="day">
+              <div class="daycol-head"><b>Vie</b><span>11 jun</span></div>
+              <div class="day-status planned"><i data-icon="clock"></i>Planificado</div>
+              <article class="daycard" data-drag="vie">
+                <div class="daycard-title">Hombro + Core</div>
+                <div class="daycard-line"><i data-icon="layers"></i>5 ejercicios</div>
+                <div class="daycard-line"><i data-icon="clock"></i>52 min</div>
+                <div class="daycard-tags">
+                  <span class="tag" style="color:var(--fam-shoulders)"><i class="dot"></i>Hombro</span>
+                  <span class="tag" style="color:var(--fam-core)"><i class="dot"></i>Core</span>
+                </div>
+                <div class="daycard-vol">Vol. 3.860 kg</div>
+              </article>
+            </div>
+
+            <!-- SÁB -->
+            <div class="daycol" data-drop="day">
+              <div class="daycol-head"><b>Sáb</b><span>12 jun</span></div>
+              <div class="day-status planned"><i data-icon="clock"></i>Planificado</div>
+              <article class="daycard" data-drag="sab">
+                <div class="daycard-title">Pecho + Bíceps</div>
+                <div class="daycard-line"><i data-icon="layers"></i>5 ejercicios</div>
+                <div class="daycard-line"><i data-icon="clock"></i>50 min</div>
+                <div class="daycard-tags">
+                  <span class="tag" style="color:var(--fam-chest)"><i class="dot"></i>Pecho</span>
+                  <span class="tag" style="color:var(--fam-biceps)"><i class="dot"></i>Bíceps</span>
+                </div>
+                <div class="daycard-vol">Vol. 3.720 kg</div>
+              </article>
+            </div>
+
+            <!-- DOM — empty means rest -->
+            <div class="daycol is-rest" data-drop="day">
+              <div class="daycol-head"><b>Dom</b><span>13 jun</span></div>
+              <div class="day-status planned"><i data-icon="clock"></i>Descanso</div>
+              <div class="rest-art">
+                <i data-icon="flame"></i>
+                <div class="small bold secondary">Descanso</div>
+                <div class="tiny">Recupera. Tu cuerpo también progresa.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="gap:10px">
+            <button class="btn btn-primary btn-lg"><i data-icon="plus"></i>Añadir día</button>
+            <button class="btn btn-lg"><i data-icon="calendar"></i>Ver todas las semanas</button>
+          </div>
+
+          <div class="week-foot">
+            <div class="cell"><i data-icon="calendar"></i><span><b>Semana 41</b><span>7 – 13 jun</span></span></div>
+            <div class="cell"><i data-icon="swap" data-icon-class=""></i><span><b>18 series</b><span>previsto</span></span></div>
+            <div class="cell"><i data-icon="gauge"></i><span><b>12–20</b><span>rango de volumen</span></span></div>
+            <div class="cell" style="color:var(--tl-warning)"><i data-icon="alert" style="color:var(--tl-warning)"></i><span><b>2 huecos</b><span>por completar</span></span></div>
+            <div class="bar"><i style="width:83%"></i></div>
+            <span class="tiny muted mono">10 / 12 series</span>
+          </div>
+        </div>
+
+        <!-- ── Day detail: what was done, and what comes next ─────────────── -->
+        <section class="card">
+          <div class="card-head">
+            <div class="grow">
+              <h2 class="card-title" style="font-size:17px">Piernas + Tríceps <span class="badge badge-success" style="margin-left:6px"><i data-icon="circleCheck"></i>Completada</span></h2>
+              <div class="tiny muted" style="margin-top:4px">Lun, 7 jun 2025 · 57 min · 6 ejercicios</div>
+            </div>
+            <button class="icon-btn"><i data-icon="x"></i></button>
+          </div>
+          <div class="card-body" style="padding-top:0">
+            <div class="row-wrap" style="margin-bottom:12px">
+              <span class="tag" style="color:var(--fam-quadriceps)"><i class="dot"></i>Piernas</span>
+              <span class="tag" style="color:var(--fam-triceps)"><i class="dot"></i>Tríceps</span>
+              <div class="spacer"></div>
+              <span class="row" style="gap:7px"><i data-icon="bars" style="width:15px;height:15px;color:var(--tl-accent)"></i><span class="tiny muted">Volumen total</span><b class="small">4.320 kg</b></span>
+            </div>
+
+            <div class="tabs" data-switch="dia">
+              <button class="tab" data-value="antes">Antes</button>
+              <button class="tab is-active" data-value="despues">Después</button>
+            </div>
+
+            <div class="action-grid" style="margin:14px 0">
+              <button class="btn"><i data-icon="copy"></i>Duplicar</button>
+              <button class="btn"><i data-icon="layers"></i>Copiar semana anterior</button>
+              <button class="btn"><i data-icon="clock"></i>Marcar descanso</button>
+              <button class="btn"><i data-icon="shuffle"></i>Reubicar lo saltado</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- «Antes»: what the plan asked for, before anything was logged. -->
+            <div data-panel="dia:antes" class="hide">
+              <div class="small bold secondary" style="margin:12px 0 4px">Lo que pedía el plan</div>
+              <div class="detail-row"><span class="bold muted">1</span><span class="detail-thumb" data-media="barbell-squat"></span><span><span class="detail-name">Sentadilla con Barra</span><span class="detail-rx">4 × 8–12 · RIR 1–2 · 120 s</span></span><span class="tag">24 kg sugeridos</span><i data-icon="grip" style="color:var(--tl-text-muted)"></i></div>
+              <div class="detail-row"><span class="bold muted">2</span><span class="detail-thumb" data-media="leg-press"></span><span><span class="detail-name">Prensa de Piernas</span><span class="detail-rx">4 × 10–12 · RIR 1–2 · 120 s</span></span><span class="tag">88 kg sugeridos</span><i data-icon="grip" style="color:var(--tl-text-muted)"></i></div>
+              <div class="detail-row"><span class="bold muted">3</span><span class="detail-thumb" data-media="romanian-deadlift"></span><span><span class="detail-name">Peso Muerto Rumano</span><span class="detail-rx">3 × 8–10 · RIR 2 · 120 s</span></span><span class="tag">24 kg sugeridos</span><i data-icon="grip" style="color:var(--tl-text-muted)"></i></div>
+              <div class="detail-row"><span class="bold muted">4</span><span class="detail-thumb" data-media="tricep-pushdown"></span><span><span class="detail-name">Extensiones de Tríceps</span><span class="detail-rx">3 × 12–15 · RIR 2 · 60 s</span></span><span class="tag">18 kg sugeridos</span><i data-icon="grip" style="color:var(--tl-text-muted)"></i></div>
+              <div class="detail-row"><span class="bold muted">5</span><span class="detail-thumb" data-media="dips"></span><span><span class="detail-name">Fondos</span><span class="detail-rx">3 × 8–12 · RIR 2 · 90 s</span></span><span class="tag">peso corporal</span><i data-icon="grip" style="color:var(--tl-text-muted)"></i></div>
+              <div class="detail-row"><span class="bold muted">6</span><span class="detail-thumb" data-media="calf-raises"></span><span><span class="detail-name">Elevación de Talones de Pie</span><span class="detail-rx">4 × 12–15 · RIR 1–2 · 60 s</span></span><span class="tag">60 kg sugeridos</span><i data-icon="grip" style="color:var(--tl-text-muted)"></i></div>
+              <div class="note-box" style="margin-top:12px">
+                Sexta y última sesión del bloque de acumulación: el sistema subió una serie a
+                cuádriceps porque las dos anteriores cerraron con RIR 3.
+              </div>
+            </div>
+
+            <!-- «Después»: what actually happened, set by set. -->
+            <div data-panel="dia:despues">
+            <div class="small bold secondary" style="margin:12px 0 4px">Ejercicios y series</div>
+
+            <div class="detail-row">
+              <span class="bold muted">1</span>
+              <span class="detail-thumb" data-media="barbell-squat"></span>
+              <span><span class="detail-name">Sentadilla con Barra</span><span class="detail-rx">4 × 8–12 · 120 s · 24 kg</span></span>
+              <i data-icon="circleCheck" class="detail-ok" style="width:17px;height:17px"></i>
+              <i data-icon="grip" style="color:var(--tl-text-muted)"></i>
+            </div>
+            <div class="detail-row">
+              <span class="bold muted">2</span>
+              <span class="detail-thumb" data-media="leg-press"></span>
+              <span><span class="detail-name">Prensa de Piernas</span><span class="detail-rx">4 × 10–12 · 120 s · 90 kg</span></span>
+              <i data-icon="circleCheck" class="detail-ok" style="width:17px;height:17px"></i>
+              <i data-icon="grip" style="color:var(--tl-text-muted)"></i>
+            </div>
+            <div class="detail-row">
+              <span class="bold muted">3</span>
+              <span class="detail-thumb" data-media="romanian-deadlift"></span>
+              <span><span class="detail-name">Peso Muerto Rumano</span><span class="detail-rx">3 × 8–10 · 120 s · 24 kg</span></span>
+              <i data-icon="circleCheck" class="detail-ok" style="width:17px;height:17px"></i>
+              <i data-icon="grip" style="color:var(--tl-text-muted)"></i>
+            </div>
+            <div class="detail-row">
+              <span class="bold muted">4</span>
+              <span class="detail-thumb" data-media="tricep-pushdown"></span>
+              <span><span class="detail-name">Extensiones de Tríceps</span><span class="detail-rx">3 × 12–15 · 60 s · 18 kg</span></span>
+              <i data-icon="circleCheck" class="detail-ok" style="width:17px;height:17px"></i>
+              <i data-icon="grip" style="color:var(--tl-text-muted)"></i>
+            </div>
+            <div class="detail-row">
+              <span class="bold muted">5</span>
+              <span class="detail-thumb" data-media="dips"></span>
+              <span><span class="detail-name">Fondos</span><span class="detail-rx">3 × 8–12 · 90 s · +5 kg</span></span>
+              <i data-icon="circleCheck" class="detail-ok" style="width:17px;height:17px"></i>
+              <i data-icon="grip" style="color:var(--tl-text-muted)"></i>
+            </div>
+            <div class="detail-row">
+              <span class="bold muted">6</span>
+              <span class="detail-thumb" data-media="calf-raises"></span>
+              <span><span class="detail-name">Elevación de Talones de Pie</span><span class="detail-rx">4 × 12–15 · 60 s · 24 kg</span></span>
+              <i data-icon="circleCheck" class="detail-ok" style="width:17px;height:17px"></i>
+              <i data-icon="grip" style="color:var(--tl-text-muted)"></i>
+            </div>
+
+            <div class="divider" style="margin:14px 0"></div>
+            <div class="small bold secondary" style="margin-bottom:6px">Notas</div>
+            <div class="note-box">Buena sesión. Mantén la técnica en la sentadilla y controla el tempo en las repeticiones.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

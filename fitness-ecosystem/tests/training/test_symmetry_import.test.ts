@@ -112,21 +112,25 @@ describe("parseSymmetry", () => {
     expect(a.sessions[0].id).toBe("sym-65726a70e0f335ce");
   });
 
-  it("maps warm-up, badge notes and timed holds", () => {
+  it("maps warm-up, effort badges and timed holds", () => {
     const result = parseSymmetry(FILE);
     if (!result.ok) throw new Error("expected ok");
     const [warmup, drop, timed, zero] = result.sets;
     expect(warmup.warmup).toBe(true);
     expect(drop.warmup).toBeUndefined();
-    expect(drop.notes).toBe("D");
+    // The badge used to land in `notes` as free text; since 2026-10-09 it is a
+    // structured `effort` marker, which is what the fatigue and progression
+    // models read. The information is not lost — it moved where it can be used.
+    expect(drop.effort).toBe("D");
+    expect(drop.notes).toBeUndefined();
     expect(timed.durationSec).toBe(70);
     expect(timed.reps).toBeNull();
     expect(timed.weight).toBeNull();
     expect(zero.reps).toBe(0);
-    expect(zero.notes).toBe("F");
+    expect(zero.effort).toBe("F");
   });
 
-  it("treats a numeric set index as no note at all, and keeps real notes", () => {
+  it("treats a numeric set index as no note at all, and reads the real badges", () => {
     // The owner's real import: 314 of 410 rows carry the *set number* in the
     // same slot as the badge. Those must not become notes.
     const payload = {
@@ -146,7 +150,18 @@ describe("parseSymmetry", () => {
     };
     const result = parseSymmetry(JSON.stringify(payload));
     if (!result.ok) throw new Error("expected ok");
-    expect(result.sets.map((s) => s.notes)).toEqual([undefined, undefined, "D", "F"]);
+    expect(result.sets.map((s) => s.notes)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    expect(result.sets.map((s) => s.effort)).toEqual([
+      undefined,
+      undefined,
+      "D",
+      "F",
+    ]);
     // The rows themselves survive — only the misleading note is dropped.
     expect(result.sets.map((s) => s.reps)).toEqual([10, 10, 8, 6]);
   });

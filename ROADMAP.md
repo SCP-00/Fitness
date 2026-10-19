@@ -8,9 +8,25 @@
 > Marcadores: `[ ]` pendiente · `[~]` en curso · `[x]` hecho (fecha) · `[!]` bloqueado (por qué) · `[?]` decisión abierta
 >
 > Dirección de producto (visión, IA, branding, plataforma): `docs/ECOSYSTEM_STRATEGY.md`.
-> Fases de TrainingLab: `fitness-ecosystem/docs/TRAININGLAB_UI_PLAN.md`.
+> Fases de TrainingLab: `fitness-ecosystem/docs/REDESIGN_STORM.md`.
 >
-> Última actualización: **2026-10-05 (a)** (T1–T4 del bloque Symmetry cerrados y
+> Última actualización: **2026-10-13 (a)** (**auditoría CSS↔clases**: `pnpm audit:css` compara, en
+> cuatro direcciones, las clases que piden los componentes con las que define la hoja de estilos
+> —usada y no definida, definida y sin uso con lista blanca motivada, nombrada sólo dentro de un
+> `:has()`/`:not()`, y nombres montados en runtime— y el test raíz la ejecuta sobre la app real, así que
+> CI ya cubre lo que ningún job miraba; primer barrido de TrainingLab **limpio** (tres clases sin regla,
+> una rama muerta `:has()`, CSS muerto borrado) e instalador **TrainingLab 0.2.0** reconstruido y copiado
+> al escritorio real 13-10 07:30 — ver `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-10-12 (a)** (**el día del registro es el día
+> local**, no el UTC — el bug partía el día a las 19:00, archivaba la sesión de
+> la noche bajo mañana e inflaba «entrenos esta semana»; la **barra de registro
+> rápido** de Inicio recupera su CSS (el port del mockup la había dejado sin
+> estilos), **decide la carga de la siguiente serie** con la misma regla que ZEN,
+> **acepta la marca D/F sin abrir la sesión** (armada y escrita con la serie) y
+> convierte lb→kg al escribir la carga; instalador **TrainingLab 0.2.0**
+> reconstruido y copiado al escritorio real 12-10 23:27 — ver
+> `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-10-05 (a)** (T1–T4 del bloque Symmetry cerrados y
 > verificados en la app; **datos antropométricos reales del dueño importados en
 > BodyLab** con un import reproducible; **ambos instaladores de escritorio
 > reconstruidos** — TrainingLab 0.2.0 y BodyLab 1.0.0-beta.8 — ver
@@ -102,6 +118,34 @@ obliga a *ejecutar* el instalador, y que **beta.8 no se ha publicado** (la últi
   Pistol · V-Up · Diamante · Crunch). Un día **enfocado** ya no arrastra ese ruido, pero el día
   **automático** lo sigue presentando como una nota más. Falta decidir con el dueño si debe bloquear o
   solo gritar, y hacerlo visualmente imposible de leer como nota menor.
+- **El día se calculaba en UTC** (**ARREGLADO 2026-10-12**): todo el registro agrupaba por
+  `timestamp.slice(0, 10)`, que es la fecha UTC. Al oeste de Greenwich eso parte el día a las 19:00
+  locales: la serie de la mañana dejaba de contar como «hoy» por la tarde, la sesión de las 21:38 se
+  archivaba bajo el día siguiente y «Entrenos esta semana» subía un día al registrar de noche. Ahora
+  hay **una sola definición de día** (`lib/day.ts`, local) usada por store, Progreso, Semana, la
+  biblioteca de ejercicios y la importación; test de regresión en `tests/training/test_day_key.test.ts`.
+- **La barra de registro rápido de Inicio estaba sin estilos** (**ARREGLADO 2026-10-12**): el port del
+  CSS de los mockups borró las 16 reglas `.tl-entry*` mientras `SetEntryBar.tsx` seguía usándolas, así
+  que el campo grande de reps, el chip de carga y la barra «Siguiente serie» se dibujaban con los
+  estilos por defecto del navegador. Restauradas desde `HEAD` (base + overrides de móvil).
+- **Nada comparaba las clases usadas con las definidas** (**ARREGLADO 2026-10-13**): lo de arriba no lo
+  vio ningún job porque TypeScript no lee una hoja de estilos, el linter no lee cadenas de clases y
+  ningún test monta esas pantallas. Ahora `pnpm audit:css` (`scripts/css-class-audit.mjs`, con la lógica
+  pura en `scripts/css-class-audit-lib.mjs`) compara las dos mitades en **cuatro** direcciones —una clase
+  usada y no definida (sin lista blanca: siempre es un defecto), una definida y sin uso (aparqueada en
+  `UNUSED_ALLOWLIST` con su motivo, y falla el día que recupera usuario), una nombrada **sólo** dentro de
+  un `:has()`/`:not()` (rama que ya no puede casar), y entradas obsoletas de esa lista— y
+  `tests/training/test_css_class_audit.test.ts` lo ejecuta sobre la app real dentro de `pnpm test`, así
+  que CI ya lo protege. Primer barrido de TrainingLab: **limpio** — tres clases usadas sin regla
+  (`.tl-entry`, `.tl-swap`, `.tl-offline-title`/`-hint`), una sin regla en el mapa (`.tl-body-goal-note`),
+  la rama muerta `tl-zen-input`, y CSS muerto borrado (`.tl-set-row*`, `.tl-zen-fact*`). De paso, la
+  tarjeta «Modo local» del raíl plegado ya no se dibuja como una caja vacía (queda el punto encendido) y
+  el arnés de comportamiento, que enfocaba la clase renombrada `.tl-zen-input`, vuelve a recorrer la app
+  entera: **76 PASS · 10 FAIL · 10 WARN**, con los diez fallos ajenos a este cambio (BodyLab sin bundle
+  de LAN, cuatro expectativas del arnés sobre bloques **aún sin portar** —justo los que la lista blanca
+  tiene aparcados— y uno del ZEN en móvil).
+- **La carga tecleada en lb se guardaba como kg** (**ARREGLADO 2026-10-12**): el formulario escribía el
+  número tal cual, sin `toKg`. Ahora pasa por `resolveEntryWeight` (`lib/set-entry.ts`), con test.
 - **`Symmetry_Corregido.xlsx` del dueño es estructuralmente inconsistente** (fechas como serial de
   Excel, `implements` reutilizado como equipo en las filas 2–157 y `13` en las 158–439, `source` vacío
   en 269 filas, 24 filas sin `exercise_name`). Acordar el esquema **antes** de que termine de corregirlo.
@@ -156,6 +200,10 @@ matemática y las reglas duras disponen; el usuario decide.
 - [ ] **BL-REF-003** — perfiles de referencia personalizados (crear/editar/
       borrar además de los built-in). Medium. **Es el último MUST de producto.**
 - [ ] **BL-3D-005** — export GLB del modelo 3D (medium; puede ir a V1.1).
+      **Activo (2026-10-08):** el modelo anatómico por capas que el dueño pidió ya está
+      en disco y verificado en Blender 5.2 (Z-Anatomy CC BY-SA 4.0 →
+      `fitness-ecosystem/resources/anatomy/README.md`); el cuello de botella del 3D ya
+      no es el asset sino el flujo/valor de `BodyViewer3D` (queja «no es útil»).
 
 **A.2 Gates restantes**
 
@@ -217,10 +265,17 @@ matemática y las reglas duras disponen; el usuario decide.
 - [ ] **Vista de programa semanal** — el generador determinista
       (`generateRoutine`) sigue existiendo y probado (17 goldens) pero ya no está en
       la UI: añadir una pestaña «Semana» que lo muestre con `validateRoutine`.
-- [ ] **Historial por ejercicio** (series, volumen, PR, tendencia) — hoy la
-      tarjeta muestra la última sesión.
-- [ ] **Editar/borrar una serie y una sesión completa + E2E** (criterio de
-      salida T3: registrar→ver→editar→borrar).
+      **Actualizado (2026-10-08):** la pestaña/pantalla Semana **existe** y ahora es
+      **editable por el usuario con estrés estimado** (§4.4); lo que sigue sin UI es
+      `generateRoutine` + `validateRoutine` (el plan mostrado sale de
+      `buildWeekPlan`, no del generador semanal de rutinas).
+- [x] **Historial por ejercicio con edición y borrado in-situ (2026-10-08)** —
+      en `ExerciseDetailScreen.tsx`: series listadas por día con opción de editar peso/reps
+      y botón de eliminar serie con recálculo automático de marcas y volumen.
+- [~] **Editar/borrar una serie y una sesión completa + E2E** (2026-10-08):
+      primitivas de base de datos (`deleteSession`, `updateSession`, `deleteSetsMany`) en `db.ts`
+      y store (`removeSession`, `editSession`) completadas; edición de series en `SlotCard` y
+      `ExerciseDetailScreen` operativas; pendiente lista visual de sesiones en Progreso y test E2E.
 - [ ] Biblioteca con filtros (músculo/equipo/patrón/nivel) + favoritos.
 - [ ] Plantillas manuales (PPL, Upper/Lower, Full body) como datos editables.
 - [ ] **Multi-perfil de equipamiento**: «casa» vs. «gimnasio» (hoy hay un único
@@ -390,6 +445,185 @@ the intermediate maximum (18)` + `rhomboids 3 below minimum (6)` → _ningún_
     larga, arpegio, fanfarria), no solo por tono: así se reconocen desde el
     altavoz de un teléfono a distancia de brazo.
 
+### 4.1 — 2026-10-07: rediseño de interfaz «desde cero» (PC) + tres carencias del dueño
+
+El dueño pidió **reformular toda la UI sin tocar el backend**, enfocado 100 % en PC, y
+señaló tres carencias esenciales: (1) UI cómoda, (2) assets de calidad, (3) **telemetría
+que se guarde de verdad entre actualizaciones y sesiones**. (1) se atacó en esta pasada;
+(2) y (3) **requieren decisión y trabajo de backend**, y quedan anotados aquí:
+
+11. **Telemetría durable entre actualizaciones — requiere backend (pendiente).** Hoy la
+    persistencia es IndexedDB dentro del perfil de la WebView2: sobrevive a sesiones, pero
+    **no es un almacén propio de la app** y una actualización/reinstalación limpia del
+    perfil puede perderlo (TrainingLab ya tiene autobackup JSON en
+    `%APPDATA%\com.traininglab.desktop\backups`, que es el precedente a seguir). Lo que
+    falta para «telemetría que se guarda de verdad» es un **esquema versionado + migrações**
+    y, si se quiere histórico agregado, **exportación/importación o espejo local
+    (`node:sqlite`) con claves estables**. Decisión del dueño antes de construir:
+    ¿qué se mide (sesiones, series, PRs, uso de pantallas?), ¿dónde vive (IndexedDB
+    versionado vs SQLite en disco vía Tauri), y **nunca sale de la máquina** (modelo
+    offline actual) o hay servidor. **No implementado: tocarlo cambia el backend.**
+12. **Assets de calidad — requiere pipeline de assets (pendiente).** Los GIFs de
+    ejercicio y la máscara corporal son el cuello de botella de la percepción de calidad.
+    Queda: GIFs propios con OxiHuman para los ejercicios legacy + los 30 nuevos
+    (ver backlog §6), y mantener el manifiesto auditado
+    (`scripts/audit-exercise-coverage.mjs`). Es trabajo de **core/asset pipeline**, no de
+    frontend, por eso no entró en esta pasada.
+13. **Densidad PC a 1440 px — medido, no solo intuido.** El plan de QA del dueño
+    (borrado el 2026-10-09) marcaba «la columna central parece una app móvil
+    estirada». Verificado con Playwright a 1440×900: **0 rutas con overflow horizontal**
+    (8 de BodyLab + 5 de TrainingLab) y el contenedor nuevo `.bl-page` (1180 px) sustituye
+    al `max-w-4xl` (896 px) que dejaba ~270 px muertos por lado.
+14. **Contraste de `text-slate-400` corregido en la raíz, no en 121 archivos.**
+    Tailwind v4 resuelve la utilidad a `var(--color-slate-400)` (verificado en el bundle
+    construido), y el valor por defecto medía **2.63:1 sobre blanco** en 121 etiquetas
+    pequeñas. El token se oscurece en `:root` (`#6b7a90`) y se restaura en `.dark`
+    (`#90a1b9`, donde el contraste corre al revés): una regla, todas las llamadas.
+15. **La paleta de TrainingLab NO cambió.** El contrato de interfaz condiciona el cambio de
+    paleta al dueño; el rediseño tocó **forma** (radios 16→18 px, elevación en capas,
+    gradiente en el pill activo y en `.tl-btn-primary`, segunda luz ambiental fría,
+    tipografía con tracking negativo) con el ember `#ff7300` intacto y sus ratios de
+    contraste medidos siguen valiendo.
+
+---
+
+### 4.2 — 2026-10-08: modelo muscular por capas localizado, licenciado y abierto en Blender
+
+- **El encargo «descarga un modelo muscular anatómico en capas y ábrelo en Blender»
+  estaba más avanzado de lo que se creía:** el disco ya llevaba desde el 2026-09-07 la
+  descarga oficial de **Z-Anatomy** (`fitness-ecosystem/resources/anatomy/Z-Anatomy.zip`,
+  86,7 MB) con su `Startup.blend` de 306 MB y el pipeline de exportación a GLB que
+  alimenta `bodylab/apps/web/public/anatomy/` (está gitignored a propósito en `.gitignore`).
+- **Lo que faltaba —y ahora está— es la verificación y la licencia:**
+  - **Licencia comprobada en la fuente** (README del repo `Z-Anatomy/Models-of-human-anatomy`):
+    **CC BY-SA 4.0**, derivada de **BodyParts3D (CC BY-SA 2.1 JP)**, con submodelos
+    sueltos **NoComercial** (oído interno CC BY-NC-SA 4.0, riñón CC BY-NC 4.0) → uso
+    personal del dueño compatible; **esta carpeta nunca se redistribuye** (los que se
+    envían son los GLB compilados en `public/anatomy/`). Texto completo de atribución en
+    `resources/anatomy/LICENSE-Z-Anatomy.txt` y procedencia en `resources/anatomy/README.md`.
+  - **Cargado en Blender 5.2.1 LTS headless (exit 0):** 7 184 objetos / 4 569 mallas /
+    1 944 colecciones, con **9 capas numeradas** (`1: Skeletal system` … `4: Muscular
+    system` … `9: Regions of human body`), colecciones regionales por grupo muscular y
+    **~983 objetos de músculo lateralizados `.l`/`.r`** → **no es una malla monolítica**,
+    es exactamente «capas con distinciones de grupos musculares». Único aviso: 1 ciclo de
+    dependencia en el esófago (no bloquea la carga). Render de prueba
+    `resources/anatomy/preview-blender.png` (Cycles 16 spp, sin errores).
+- **Candidatos alternativos** (solo registro; no hizo falta bajar ninguno): Sketchfab
+  exige cuenta para descargar, Blend Swap exige cuenta, Free3D mezcla licencias;
+  Smithsonian Open Access (CC0), BODYParts3D/Anatomography y NIH 3D Print Exchange
+  siguen como plan B si algún día se quiere otro estilo.
+- **Esto NO cerraba por sí solo la queja del 3D («no es útil»):** el asset estaba listo;
+  el flujo/valor de `BodyViewer3D` era el problema. **Resuelto en §4.3 (mismo día).**
+
+---
+
+### 4.3 — 2026-10-08 (b): visor 3D rediseñado + P0 de predicción y Historial + sugerencias por volumen/frecuencia
+
+Sesión grande del dueño (lista de quejas + SPEC del 3D). Todo **sin tocar el backend**:
+los cambios de núcleo son en paquetes TS puros (`analytics`, `training`),
+**ningún servicio/servidor nuevo** — la única dependencia nueva es el **asset GLB del
+atlas** ya presente en `apps/web/public/anatomy/` (gitignored, compilado localmente).
+
+1. **SPEC «el 3D no es útil» → visor por grupos musculares (CERRADO, verificado en
+   vivo):** `BodyView.tsx` tenía un crash real (el componente lazy pasado sin envolver a
+   `useState` se ejecutaba como inicializador con `props === undefined` bajo StrictMode);
+   arreglado. Ahora el modo 3D (rayos X) carga el atlas Z-Anatomy y ofrece el panel
+   **GRUPOS MUSCULARES**: 9 grupos con conteo (Pecho 16 · Espalda 92 · Hombros 28 ·
+   Brazos 190 · Core 48 · Glúteos 42 · Piernas 194 · Cuello 185 · Tejidos 117),
+   **aislar/foco** («7 en foco», `Ver todo`), **ojo de visibilidad** por grupo y
+   **insignias de relevancia con los datos del dueño** (p. ej. `Pecho 96,0 cm (−9,0)`,
+   `Bíceps 32,0 cm · Antebrazo 28,0 cm`) calculadas de sus mediciones vs referencia.
+   Nuevos módulos: `bodylab/apps/web/src/lib/muscle-groups.ts` (clasificación +
+   `computeMuscleRelevance`), `lib/anatomy-loader.ts` (etiquetado de grupos del atlas,
+   visibilidad y tinte por grupo). Capturas + evaluación en vivo hechas; e2e
+   `anatomy-xray.spec.ts` en verde (EN y ES).
+2. **P0 «pecho >600 cm» (predicción inflada) → arreglado con modelo tortuga:**
+   `bodylab/core/analytics/src/index.ts` `predictProgress` regresaba contra el **índice
+   de muestra** (un import el mismo día explotaba → 681 cm de pecho); ahora usa el
+   **eje de días real**, **tope `MAX_MONTHLY_RATE = 0.06`** (6 cm/mes) y **proyección
+   de Zenón/media vida de 30 días** (`gain = s30/ln2 × (1 − 0.5^(t/30))`): la ganancia
+   mensual **se reduce a la mitad cada mes** al acercarse al techo — la ley «Hércules /
+   tortuga» que pidió el dueño. Tests nuevos de realismo en
+   `tests/adversarial/test_analytics_adversarial.test.ts` (29/29).
+3. **P0 «Agregar solo en Vista General» (Historial) → arreglado:** el panel flotante
+   de lectura rápida vivía dentro de `renderOverview` y se desmontaba al cambiar de
+   pestaña; movido al nivel de página en `Measurements.tsx` + botón «+» junto a cada
+   valor existente en Longitudes/Anchuras/Composición. **Todas las medidas dictadas
+   por el dueño quedaron registradas por UI** (estatura sentado 89 · envergadura 185 ·
+   pierna 90 · brazo 33 · antebrazo 28 · mano 21.5 · muslo 40 · pantorrilla 55 · pie
+   26.5 · biacromial 50 · anchuras 6/23/14/10 · grasa 17 % · muñeca 16.5).
+4. **Sugerencias por volumen/semanal (docs de volumen-frecuencia):** `core/training/decision.ts`
+   gana el rasgo **`consistencia`** (rasgo 3 de 8; pesos anteriores se **reinician
+   automáticamente** en `normalizeModel` al cambiar la longitud — migración automática,
+   sin dato corrupto) y `traininglab/lib/plan.ts` registra `lastDays` por familia +
+   objetivo semanal **10/12/15** (banda 12–20, Baz-Valle 2022 en `lib/volume-target.ts`).
+   Objetivo: **subir la probabilidad de repetición semanal** de las rutinas estables
+   (no rotar cientos de ejercicios: sin repetición no hay sobrecarga progresiva).
+   Tests: `tests/training/test_plan_consistency.test.ts` 8/8; suite training 327/327.
+5. **Rediseños de interfaz:** **Ejercicios (TrainingLab)** reagrupada por familia con
+   cabeceras fijas, **medidor de 5 puntos «Dificultad»** sustituyendo el «Nivel n"
+   incomprensible + leyenda; **Progreso (BodyLab)** gana la tarjeta **Somatotipo**
+   (ectomorfo/endomorfo/mesonormofobia Heath-Carter oficial: dueño **2.3-5.8-1.8 →
+   mesomorfo dominante**, con las adaptaciones declaradas en la propia tarjeta); y
+   **Ajustes → Objetivos (TrainingLab)** reagrupados V-taper/Brazos/Piernas con su
+   ratio áureo visible y botón «Rellenar vacíos con la proporción áurea» (13 metas
+   rellenadas al probar con su cintura 80).
+6. **Verificación de la sesión:** `pnpm lint` 0/0 · `tsc -b` 0 en ambas apps · web
+   **167/167 (11 archivos)** · root **1062/1062 (70 archivos)** · `pnpm check` EXIT 0
+   con **21/21 e2e**. **Pendientes grandes** (no autorizados aún): rediseño completo de
+   Progreso, semana editable por el dueño con estrés estimado (nunca alterar contenido
+   del usuario sin autorización), sincronización entre dispositivos (requiere backend —
+   ver decisión abierta §5), modelos/formulas 3D y de composición validados para
+   mujeres, y respuesta LLM a preguntas de genética (el puente LLM local opcional ya
+   existe; falta definir herramientas de respuesta).
+
+---
+
+### 4.4 — 2026-10-08 (c): Semana editable con estrés estimado + Progreso rediseñado
+
+1. **Semana editable por el dueño — su contenido nunca se toca sin su acción
+   (CERRADO, verificado en vivo):** `settings.weekOverrides` guarda un día
+   autorado por índice (lunes = 0) que se superpone sobre el plan generado en
+   `lib/week-stress.ts` (`applyWeekOverrides`): los días automáticos salen
+   intactos — **regenerar solo rehace los automáticos** —, «Restaurar día del
+   planificador» es la única vía de borrado (y es su pulsación), y hasta un día
+   a medias (entrenar sin familias) se conserva como borrador en vez de
+   borrarlo. Un día suyo de entrenamiento es además el **enfoque automático de
+   Hoy** (la selección manual del día sigue ganando). UI en `WeekScreen`:
+   botón Editar por día, chips de las 13 familias, insignia **Tuyo** en la fila
+   y en la tira, aviso junto a Regenerar («Tus días son tuyos…»).
+2. **Estrés estimado de su diseño (nuevo módulo puro `lib/week-stress.ts`):**
+   puntuación 0–10 por día = `0.40·volumen + 0.30·articular + 0.20·densidad +
+   0.10·duración` (volumen = series del día tope 24; articular = media
+   `jointStress`/`spineLoad` (1–3) del catálogo por familia; densidad = días
+   vecinos que también entrenan; duración = min/90), **+1 si la semana no
+   tiene descanso y +1 si alguna familia se pasa de la banda 12–20**
+   (`DEFAULT_WEEKLY_BAND`, Baz-Valle). Avisos: `no_rest_week`, `dense_day`
+   (>5 familias), `back_to_back`, `family_over`, `family_zero`. Las series de
+   un día suyo son **estimación declarada** (4 series/familia-día, la mitad de
+   la banda sobre 4 días) — etiquetada como «estimado» en la UI, nunca se
+   registra. Tests nuevos `tests/training/test_week_stress.test.ts` **14/14**.
+3. **Progreso de BodyLab rediseñado para legibilidad (todo el contenido
+   conservado):** `pages/Progress.tsx` pasa de un pilón de tarjetas a dos
+   regiones con el ritmo editorial del design system — **«DÓNDE ESTÁS → Tu
+   cuerpo hoy»** (meta áurea + tira de stats + Condición física ∥ Somatotipo
+   en grid 2 columnas a ≥1024 px) y **«CÓMO EVOLUCIONA → Tu progreso en el
+   tiempo»** (las 4 pestañas con su contenido). El somatotipo deja de ser un
+   muro de texto: tres fichas (valor · banda · barra) y la honestidad del
+   método plegada en `Adaptaciones del método` (sigue íntegra). Nada eliminado:
+   GoalPanel, stats, condición, somatotipo, timeline, valores, comparación e
+   historial siguen todos.
+4. **Verificación de la pasada:** `pnpm lint` 0/0 · `tsc -b` exit 0 (ambas
+   apps) · root **1076/1076 (71 archivos)** · web **167/167 (11)** ·
+   `pnpm check` exit 0 con **21/21 e2e** · verificación en vivo en los dos dev
+   servers (autorar descanso en Viernes → regenerar → el suyo intacto con
+   insignia Tuyo → recarga → persiste → restaurar; Progreso con la rejilla
+   `546px 546px` medida en DOM). REGLA DE CIERRE: instaladores construidos y
+   copiados al escritorio real a las **15:04** (TrainingLab exit 0, 16.54 MiB ·
+   BodyLab bundle 24.19 MiB con el código 1 esperado de firma), cadenas nuevas
+   verificadas en `dist/assets` («Tus días son tuyos», «Restaurar día del
+   planificador», «Dónde estás», «Adaptaciones del método»).
+
 ---
 
 ## 5. Decisiones abiertas
@@ -407,6 +641,12 @@ the intermediate maximum (18)` + `rhomboids 3 below minimum (6)` → _ningún_
       el motor calcula 4-6; validar con uso real.
 - [ ] **¿NutriLab** con la misma estética negro/naranja o paleta propia (verde)? —
       decidir cuando se descongele.
+- [ ] **[BACKEND] Telemetría durable entre actualizaciones (2026-10-07)** — ¿qué se
+      mide, dónde vive (IndexedDB versionado vs `node:sqlite` local vía Tauri) y si
+      alguna vez sale de la máquina? Es requisito explícito del dueño y **no se puede
+      construir en el frontend**; ver hallazgo 11 de §4.1.
+- [ ] **[BACKEND] Assets de calidad (2026-10-07)** — pipeline de GIFs propios
+      (OxiHuman) para los ejercicios que aún no tienen; ver hallazgo 12 de §4.1 y §6.
 
 ---
 
@@ -503,11 +743,15 @@ the intermediate maximum (18)` + `rhomboids 3 below minimum (6)` → _ningún_
 - **2026-10-04 (a)** — **Tauri 2 a la última estable** en ambas apps (tauri 2.12.1,
   tauri-build 2.7.1, updater 2.13.1, un único CLI 2.12.1, `rust-version` 1.90) y
   **endpoint del updater** a la etiqueta explícita `v1.0.0-beta.8/latest.json`
-  (release y endpoint suben juntos). Commit `f6c4aef` (sin push).
-- **2026-10-04 (b)** — **Importador E2E de Symmetry cerrado al 100%**: 20/20 sesiones
+  - **2026-10-04 (b)** — **Importador E2E de Symmetry cerrado al 100%**: 20/20 sesiones
   cuadran con la cabecera de Symmetry (425 series), convención de peso bilateral ÷2
-  aplicada con crudo preservado, `location` gimnasio/casa (último gym 26/09), series
-  con hora, dígitos ilegibles recuperados por re-OCR + XOR de píxeles, verificador de
-  cadena de capturas re-ejecutado. Encargo nuevo del dueño: cargarlo en TrainingLab,
-  curar el mapeo a `exerciseId` y añadir **volumen semanal** a Progreso. Handoff:
+  aplicada con crudo preservado, `location` gimnasio/casa, series con hora, dígitos
+  ilegibles recuperados por re-OCR; cargado en TrainingLab con volumen semanal. Handoff:
   `fitness-ecosystem/docs/AGENT_HANDOFF.md`.
+- **2026-10-08 (u)** — **Sincronización de datos del dueño + Servidor MCP local + CRUD de series y sesiones**:
+  import reproducible con 36 variables del dueño regenerado (`.cache/bodylab-owner.json`, 17% BF,
+  longitudes y anchuras); modal de registro en BodyLab reparado para admitir coma decimal (`16,5`)
+  sin truncar en Chromium; servidor MCP local `fitness-mcp-server.mjs` con 6 herramientas operativas;
+  primitivas `deleteSession`, `updateSession`, `deleteSetsMany` en `db.ts` y store; edición in-situ y
+  borrado de series en `ExerciseDetailScreen.tsx`.
+

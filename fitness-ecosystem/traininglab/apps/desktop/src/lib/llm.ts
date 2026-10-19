@@ -284,6 +284,25 @@ export const TOOL_SPECS: ToolSpec[] = [
   {
     type: "function",
     function: {
+      name: "get_progression_verdict",
+      description:
+        "What to do the NEXT time each exercise is trained, decided by the multi-day log: raise the load (with the exact kilos), make the movement harder by another lever when the load has hit the gear's ceiling, repeat and add reps, rebuild below the range, or drop to an easier variant. Today's own sets are excluded on purpose — inside a day the D/F mark decides the load. Call it before you propose any load.",
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseId: {
+            type: "string",
+            description:
+              "Optional: one exercise from today's plan. Omit it for every slot of today's session.",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "report_fatigue_and_query_safe",
       description:
         "Report soreness, fatigue, or joint pain in specific muscle groups/joints to receive safe, alternative exercises from the user's available gear that completely avoid stressing those compromised areas.",
@@ -394,6 +413,17 @@ export function validateProposal(
     /** Primary family per exercise id, for the once-per-family rule. */
     primaryFamilyOf: (exerciseId: string) => string;
     setupMinOf?: (exerciseId: string) => number;
+    /**
+     * Every direct family of an exercise — the fatigue rule needs the whole
+     * list, not just the primary one (pull-ups load lats, biceps AND forearms).
+     */
+    familiesOf?: (exerciseId: string) => string[];
+    /**
+     * Families inside their recovery window or flagged sore by the user. A
+     * proposal that touches one is rejected with a readable reason, so a small
+     * local model cannot prescribe yesterday's muscles today (2026-10-09).
+     */
+    fatiguedFamilies?: string[];
   },
 ): ProposalCheck {
   const errors: string[] = [];
@@ -434,6 +464,14 @@ export function validateProposal(
       continue;
     }
     const family = ctx.primaryFamilyOf(id);
+    const loaded = ctx.familiesOf?.(id) ?? [family];
+    const fatigued = loaded.find((f) => ctx.fatiguedFamilies?.includes(f));
+    if (fatigued) {
+      errors.push(
+        `"${id}" loads ${fatigued}, which is still inside its recovery window today`,
+      );
+      continue;
+    }
     if (seenFamilies.has(family)) {
       errors.push(
         `"${id}" repeats the ${family} work already programmed today`,
@@ -482,8 +520,11 @@ export function buildSystemPrompt(extraContext?: string): string {
     "for TODAY (time available, energy, motivation, soreness, equipment at hand) and to explain your choices",
     "in one short paragraph, in the language of the user (Spanish unless told otherwise).",
     "Hard rules: respect the time budget; never program equipment the user does not own; never repeat a muscle",
-    "family twice in one session; leave more reps in reserve (higher RIR) when readiness is low; prefer the",
-    "weakest muscle family first. Finish by calling propose_session. Be concise.",
+    "family twice in one session; never program a movement pattern already used in today's session; never",
+    "program a family the tools report as sore or still recovering; leave more reps in reserve (higher RIR)",
+    "when readiness is low; prefer the weakest muscle family first. Before you propose any load, call",
+    "get_progression_verdict: it carries the multi-day verdict with the exact kilos and the lever to use when",
+    "the load cannot grow. Finish by calling propose_session. Be concise.",
   ].join(" ");
   if (extraContext) {
     return `${base} ${extraContext}`;

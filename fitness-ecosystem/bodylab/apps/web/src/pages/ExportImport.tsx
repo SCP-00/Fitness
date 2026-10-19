@@ -220,7 +220,7 @@ export default function ExportImport() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="bl-page space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl leading-8 sm:text-[28px] sm:leading-9 font-bold tracking-tight text-slate-900 dark:text-[var(--color-text)]">
@@ -248,17 +248,17 @@ export default function ExportImport() {
 
       {/* Data Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border-card)] p-4 text-center">
+        <div className=" bl-card p-4 text-center">
           <Database className="w-5 h-5 text-slate-400 mx-auto mb-2" />
           <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{stats.measurements}</p>
           <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">{lang === 'es' ? 'medidas' : 'measurements'}</p>
         </div>
-        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border-card)] p-4 text-center">
+        <div className=" bl-card p-4 text-center">
           <Clock className="w-5 h-5 text-slate-400 mx-auto mb-2" />
           <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{stats.snapshots}</p>
           <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">snapshots</p>
         </div>
-        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border-card)] p-4 text-center">
+        <div className=" bl-card p-4 text-center">
           <HardDrive className="w-5 h-5 text-slate-400 mx-auto mb-2" />
           <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{stats.profiles}</p>
           <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">{lang === 'es' ? 'perfil' : 'profile'}</p>
@@ -266,7 +266,7 @@ export default function ExportImport() {
       </div>
 
       {/* Backup Section */}
-      <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border-card)] p-6">
+      <div className=" bl-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900 dark:text-[var(--color-text)]">
@@ -281,7 +281,7 @@ export default function ExportImport() {
           <button
             onClick={handleExportBackup}
             disabled={isExporting}
-            className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 bl-btn bl-btn-primary text-sm font-medium  disabled:opacity-50"
           >
             <span className="flex items-center gap-2">
               <Package className="w-4 h-4" />
@@ -297,7 +297,7 @@ export default function ExportImport() {
       </div>
 
       {/* Export Section */}
-      <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border-card)] p-6">
+      <div className=" bl-card p-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-[var(--color-text)] mb-1">
           {lang === 'es' ? 'Exportar' : 'Export'}
         </h2>
@@ -354,7 +354,7 @@ export default function ExportImport() {
       </div>
 
       {/* Import Section */}
-      <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border-card)] p-6">
+      <div className=" bl-card p-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-[var(--color-text)] mb-1">
           {lang === 'es' ? 'Importar' : 'Import'}
         </h2>
@@ -394,7 +394,7 @@ export default function ExportImport() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-[var(--color-surface)] rounded-xl border border-red-200 dark:border-red-900/30 p-6">
+      <div className="bl-card border border-red-200 dark:border-red-900/30 p-6">
         <h2 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-1">
           {lang === 'es' ? 'Zona de peligro' : 'Danger zone'}
         </h2>

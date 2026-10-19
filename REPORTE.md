@@ -3,9 +3,9 @@
 > **Fecha:** 2026-10-01  
 > **Ámbito:** TrainingLab (PC Desktop / Laptop vs. Móvil Web)  
 > **Documentos de Referencia Analizados:**  
-> - `fitness-ecosystem/docs/UI_DESIGN.md`  
-> - `fitness-ecosystem/docs/TRAININGLAB_UI_PLAN.md`  
-> - `fitness-ecosystem/docs/plan_evaluacion_qa_ui_ux.md`  
+> - `fitness-ecosystem/docs/REDESIGN_STORM.md`  
+> - `fitness-ecosystem/docs/MCP_TOOL_SURFACE.md`  
+> - `fitness-ecosystem/docs/PRODUCT_SPEC.md`  
 > - Componentes clave: `TodayScreen.tsx`, `ProgressScreen.tsx`, `BodyMap.tsx`, `ZenSession.tsx`, `SettingsScreen.tsx`  
 
 ---
@@ -77,10 +77,14 @@ Tras una lectura exhaustiva de los contratos de diseño y las auditorías ergon�
 ---
 
 ## 4. Estado de Verificación y Entregables
-- Suites de pruebas (`pnpm test`): **932/932, 60 archivos, EXIT 0** (actualizado el 2026-10-01 (o)).
-- Verificación de tipos (`pnpm typecheck` y TrainingLab `tsc -b`) y empaquetado (`vite build`): Exitoso.
-- Lint (`pnpm lint`): **0 avisos / 0 errores**.
-- Auditoría de comportamiento responsivo (97 PASS / 0 FAIL a 320–1440 px).
+- Suites de pruebas raíz (`pnpm test`): **1.076/1.076 tests pasados en 71 archivos, EXIT 0**.
+- Suite web de BodyLab (`vitest run`): **167/167 tests pasados en 11 archivos, EXIT 0**.
+- Verificación de tipos (`pnpm typecheck` y TrainingLab `tsc -b`): **EXIT 0** en ambos proyectos.
+- Lint (`pnpm lint` con `oxlint`): **0 avisos / 0 errores** (77 archivos inspeccionados).
+- Suite E2E Playwright (`playwright test`): **21/21 tests pasados en 49.1s**.
+- Instaladores de escritorio generados y copiados a `%OneDrive%\Desktop`:
+  - `BodyLab_1.0.0-beta.8_x64-setup.exe` (25.360.785 bytes) y su alias estable `BodyLab-setup.exe`.
+  - `TrainingLab_0.2.0_x64-setup.exe` (17.340.188 bytes) y su alias estable `TrainingLab-setup.exe`.
 
 ---
 
@@ -114,3 +118,32 @@ Tras una lectura exhaustiva de los contratos de diseño y las auditorías ergon�
 - **Puertas que siguen cerradas:** el heatmap de fuerza frente a referencia externa publicada y
   la integración del prototipo independiente del mapa. Este trabajo decide **qué ejercicio**,
   nunca **cuánta fuerza**.
+
+---
+
+## 6. Actualización Operativa (2026-10-08): Datos del Dueño, Servidor MCP y Edición/Borrado de Sesiones
+
+### 6.1. Sincronización y Validación de Datos del Dueño (BodyLab)
+- **Problema diagnosticado:** Los datos antropométricos del usuario no se reflejaban correctamente porque el modal de `Measurements.tsx` (`/history`) utilizaba un elemento flotante poco accesible y `<input type="number">`. En navegadores Chromium con localización en español, introducir comas decimales (como `16,5`) provocaba que el input se vaciara o se bloqueara el botón de guardar. Además, no se disponía de un diálogo centralizado de confirmación y feedback.
+- **Solución implementada:**
+  - `build-owner-import.mjs` actualizado con las 36 variables antropométricas facilitadas por el usuario: % grasa corporal 17%, antebrazos 28 cm (máximo) y 16.5 cm (muñeca), todas las longitudes óseas y anchuras biepicondilares. Regenerado `.cache/bodylab-owner.json`.
+  - En `Measurements.tsx`, se transformó el diálogo a un modal accesible centrado con fondo oscuro semitransparente (`fixed inset-0 z-50 bg-black/60`). Los inputs se cambiaron a `type="text" inputMode="decimal"` acoplados con `parseNumberInput`, permitiendo procesar comas (`16,5`) y puntos sin truncar.
+  - **Aclaración anatómica/educativa:** Se añadió una nota explicativa diferenciando **Perímetro/Circunferencia** (medido con cinta flexible que envuelve) de **Diámetro/Anchura Ósea** (medido con compás antropométrico o dos libros paralelos + regla entre cóndilos óseos). La rodilla de 23 cm facilitada corresponde al arco anterior de la cinta sobre la rótula; la anchura biepicondilar femoral de un adulto oscila anatómicamente entre 8 y 12 cm.
+
+### 6.2. Servidor MCP Local (`scripts/fitness-mcp-server.mjs`)
+- **Implementación:** Servidor MCP (Model Context Protocol) 100% local basado en Node.js y comunicación por stdio (JSON-RPC 2.0).
+- **Herramientas registradas:**
+  1. `read_training_stats`: Lee resumen de volumen, series y adherencia en TrainingLab.
+  2. `log_training_set`: Permite a un agente LLM registrar una serie de entrenamiento (ejercicio, peso kg, reps, RPE).
+  3. `read_body_stats`: Consulta el último perfil antropométrico y composición (% grasa) de BodyLab.
+  4. `log_body_measurement`: Registra una nueva medida corporal validando límites anatómicos.
+  5. `propose_training_session`: Genera una propuesta de sesión validada por tiempo y equipamiento.
+  6. `explain_biomechanics`: Devuelve patrones, músculos involucrados y precauciones articulares.
+- **Estado:** Probado con el comando `node scripts/fitness-mcp-server.mjs --test` con salida exitosa de las 6 herramientas.
+
+### 6.3. Edición y Eliminación de Series y Sesiones (TrainingLab)
+- **Base de datos (`lib/db.ts`):** Añadidas primitivas `deleteSession(id)`, `updateSession(id, patch)` y `deleteSetsMany(ids)` en IndexedDB.
+- **Gestor de estado (`app/store.tsx`):** Añadidas acciones `removeSession(id, { deleteSets?: boolean })` y `editSession(id, patch)` expuestas en el contexto de la aplicación, manteniendo persistencia y salvaguarda automática en la copia de seguridad.
+- **Historial de Ejercicio (`ExerciseDetailScreen.tsx`):** En la pestaña Historial (`HistoryDayCard`), cada serie muestra botones para editar carga/reps in-situ o eliminarla, actualizando instantáneamente las marcas y el volumen acumulado.
+- **Próximos pasos inmediatos:** Renderizar la lista de sesiones completadas en `ProgressScreen.tsx`, escribir la suite de pruebas unitarias/E2E para el ciclo completo de sesión (crear → editar → borrar) y compilar los dos ejecutables de escritorio (`pnpm tauri build`).
+

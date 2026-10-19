@@ -71,7 +71,7 @@ Dos aplicaciones independientes conectadas por un contrato de datos compartido:
 | V1.1 — Multi-profile | ⏳ DEFERRED | Track family/clients |
 | V1.1 — Body Story | ⏳ DEFERRED | Narrative timeline |
 | V1.1 — Gym Companion | ⏳ DEFERRED | Ultra-simple gym mode |
-| V2.0 — TrainingLab | 📋 PLANEADO | Rutinas + LLM — plan en `docs/TRAININGLAB_UI_PLAN.md` |
+| V2.0 — TrainingLab | 📋 PLANEADO | Rutinas + LLM — contrato de interfaz en `docs/REDESIGN_STORM.md` |
 
 ---
 
@@ -129,8 +129,8 @@ fitness-ecosystem/
 ├── docs/
 │   ├── PRODUCT_SPEC.md              # What we're building
 │   ├── ARCHITECTURE.md              # Verified architecture (single source of truth)
-│   ├── UI_DESIGN.md                 # Interface rules + responsive contract
-│   ├── TRAININGLAB_UI_PLAN.md       # TrainingLab redesign contract (v2)
+│   ├── REDESIGN_STORM.md            # TrainingLab interface contract (8 personas, 8 screens)
+│   ├── MCP_TOOL_SURFACE.md          # How local models read/write the apps
 │   ├── TESTING.md                   # Test strategy + commands
 │   └── ieee/                        # Two IEEE technical reports (.tex + .pdf)
 │
@@ -276,7 +276,7 @@ tests/data/golden/
 - Performance improvements
 
 ### V2.0+ Candidates
-- TrainingLab integration — **plan completo en `docs/TRAININGLAB_UI_PLAN.md`** (registro de sesión, biblioteca, rutinas deterministas + IA local opcional vía Ollama, ciclo rendimiento↔medidas)
+- TrainingLab integration — **contrato de interfaz en `docs/REDESIGN_STORM.md`** (registro de sesión, biblioteca, rutinas deterministas + IA local opcional vía Ollama, ciclo rendimiento↔medidas)
 - LLM integration
 - Cloud sync
 - Mobile app

@@ -30,6 +30,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Bike, CalendarDays, Dumbbell, Flame, Trophy } from "lucide-react";
+import { localDayKey } from "../lib/day";
 import { familyLabel } from "../lib/format";
 import { t, tInterp } from "../lib/i18n";
 import { resolveBodyMapFigure } from "../lib/settings";
@@ -39,8 +40,6 @@ import { useStore } from "../app/store";
 import { BodyMap } from "../features/stats/BodyMap";
 import { ConstancyCard } from "../features/stats/ConstancyCard";
 import { NumbersCard } from "../features/stats/NumbersCard";
-import { WeeklyVolumeCard } from "../features/stats/WeeklyVolumeCard";
-import { VolumeTargetCard } from "../features/stats/VolumeTargetCard";
 import ConditionCard from "../features/today/ConditionCard";
 import { conditionProfile, heightMOf } from "../features/stats/condition";
 import {
@@ -126,13 +125,13 @@ export default function ProgressScreen() {
   );
 
   const periodSets = workingSets(sets).filter(
-    (s) => s.timestamp.slice(0, 10) >= (buckets[0]?.date ?? ""),
+    (s) => localDayKey(s.timestamp) >= (buckets[0]?.date ?? ""),
   );
   const periodVolume = periodSets.reduce(
     (acc, s) => acc + (s.weight ?? 0) * (s.reps ?? 0),
     0,
   );
-  const periodDays = new Set(periodSets.map((s) => s.timestamp.slice(0, 10)))
+  const periodDays = new Set(periodSets.map((s) => localDayKey(s.timestamp)))
     .size;
   const peak = Math.max(1, ...buckets.map((b) => b.sets));
   const maxFamily = Math.max(1, ...families.map((f) => f.total));
@@ -163,12 +162,6 @@ export default function ProgressScreen() {
         />
       ) : (
         <>
-          {/* ── Volume target ────────────────────────────────────────────
-              First thing on the page (2026-10-05, owner: "Progreso is hard to
-              read"): the only card that answers "is this week enough?", using
-              the published hypertrophy band instead of our own index. */} 
-          <VolumeTargetCard />
-
           {/* ── KPIs ─────────────────────────────────────────────────────── */}
           <section className="tl-metrics">
             <MetricTile
@@ -206,48 +199,12 @@ export default function ProgressScreen() {
 
           {/* ── Body analysis: the figure, the legend, the families ──────── */}
           <section className="tl-card">
-            <div className="tl-card-head flex flex-wrap items-center justify-between gap-3">
+            <div className="tl-card-head">
               <div className="min-w-0">
                 <h2>{t("progress.body.title")}</h2>
-                <span>
-                  {mapMode === "training"
-                    ? t("progress.body.sub")
-                    : t("progress.body.subGoal")}
-                </span>
+                <span>{t("progress.body.sub")}</span>
               </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <div
-                  className="flex items-center border border-[var(--tl-border)] rounded-xl p-0.5 bg-[var(--tl-surface-2)]"
-                  role="group"
-                  aria-label={t("settings.figure.title")}
-                >
-                  <button
-                    type="button"
-                    onClick={() => patch({ bodyMapFigure: "male" })}
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                      figure.figure === "male"
-                        ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)]"
-                        : "text-[var(--tl-text-secondary)] hover:text-[var(--tl-text)]"
-                    }`}
-                    title={t("settings.figure.male")}
-                    aria-label={t("settings.figure.male")}
-                  >
-                    ♂ {t("settings.figure.male")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => patch({ bodyMapFigure: "female" })}
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                      figure.figure === "female"
-                        ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)]"
-                        : "text-[var(--tl-text-secondary)] hover:text-[var(--tl-text)]"
-                    }`}
-                    title={t("settings.figure.female")}
-                    aria-label={t("settings.figure.female")}
-                  >
-                    ♀ {t("settings.figure.female")}
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="tl-pill is-accent">
                   {tInterp("progress.periodHint", { n: days })}
                 </span>
@@ -368,9 +325,6 @@ export default function ProgressScreen() {
                   </div>
                 </div>
               </section>
-
-              {/* ── Weekly volume (T4): the tonnage ledger ───────── */}
-              <WeeklyVolumeCard />
 
               {/* ── Split per family ─────────────────────────────────────── */}
               <section className="tl-card">

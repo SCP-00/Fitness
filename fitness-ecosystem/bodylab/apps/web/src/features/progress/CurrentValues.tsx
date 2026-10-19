@@ -39,7 +39,7 @@ export default function CurrentValues() {
   return (
     <div className="space-y-4">
       {/* Circumferences */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <h2 className="text-lg font-semibold mb-4">
           {lang === 'es' ? '📏 Circunferencias' : '📏 Circumferences'}
         </h2>
@@ -71,7 +71,7 @@ export default function CurrentValues() {
       </div>
 
       {/* Conditioning — measured %BF (incl. Navy estimates, flagged) */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <h2 className="text-lg font-semibold mb-4">
           {lang === 'es' ? '🏃 Condición' : '🏃 Conditioning'}
         </h2>
@@ -101,7 +101,7 @@ export default function CurrentValues() {
       </div>
 
       {/* Composition */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <h2 className="text-lg font-semibold mb-4">
           {lang === 'es' ? '🔬 Composición Corporal' : '🔬 Body Composition'}
         </h2>
@@ -122,7 +122,7 @@ export default function CurrentValues() {
       </div>
 
       {/* Bilateral */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <h2 className="text-lg font-semibold mb-4">
           {lang === 'es' ? '⚖️ Simetría Bilateral' : '⚖️ Bilateral Symmetry'}
         </h2>

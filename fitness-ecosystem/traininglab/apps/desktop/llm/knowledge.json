@@ -515,6 +515,8 @@
     "Never program equipment the user does not own.",
     "Respect the time budget: sum of slot minutes (setup + sets × (work + rest)) must fit.",
     "Never repeat the same primary muscle family twice in one session.",
+    "Never repeat the same movement pattern twice in one session (chin-ups AND pull-ups are one pattern).",
+    "Never program a family reported as sore or still inside its recovery window: read_training_stats says which, and it is derived from the real log.",
     "Lower readiness ⇒ higher RIR (fewer reps in reserve), never lower.",
     "Weakest muscle family first.",
     "The deterministic plan is the baseline; improve it, do not replace it wholesale."

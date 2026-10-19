@@ -115,14 +115,35 @@ describe("exerciseHistory", () => {
     expect(day.bestReps).toBe(8);
   });
 
-  it("keeps D/F notes so an imported log is not silently rewritten", () => {
+  it("keeps D/F marks so an imported log is not silently rewritten", () => {
     const sets = [
-      mk("tricep-pushdown", "2026-09-05T17:00:00.000Z", 31.8, 4, { notes: "F" }),
-      mk("tricep-pushdown", "2026-09-05T17:10:00.000Z", 40.8, 10, { notes: "D" }),
+      mk("tricep-pushdown", "2026-09-05T17:00:00.000Z", 31.8, 4, { effort: "F" }),
+      mk("tricep-pushdown", "2026-09-05T17:10:00.000Z", 40.8, 10, { effort: "D" }),
+      // A row that only ever had the badge as free text still carries it into
+      // the row — the history badge falls back to the note (see lib/effort).
+      mk("tricep-pushdown", "2026-09-05T17:20:00.000Z", 27.2, 12, { notes: "D" }),
     ];
     const history = exerciseHistory(sets, "tricep-pushdown");
-    // Heaviest set first, so the drop set (40.8 kg) leads the failure set.
-    expect(history.days[0]!.sets.map((s) => s.notes)).toEqual(["D", "F"]);
+    // Heaviest set first, so the 40.8 kg set leads the failure set.
+    expect(history.days[0]!.sets.map((s) => s.effort)).toEqual([
+      "D",
+      "F",
+      undefined,
+    ]);
+    expect(history.days[0]!.sets[2]!.notes).toBe("D");
+  });
+
+  it("never lets a mark change the numbers — it is a badge, not tonnage", () => {
+    const plain = [
+      mk("bench-press", "2026-10-02T17:00:00.000Z", 60, 8),
+      mk("bench-press", "2026-10-02T17:10:00.000Z", 60, 8),
+    ];
+    const marked = plain.map((s, i) => (i === 1 ? { ...s, effort: "F" as const } : s));
+    const a = exerciseHistory(plain, "bench-press").days[0]!;
+    const b = exerciseHistory(marked, "bench-press").days[0]!;
+    expect(b.workingSets).toBe(a.workingSets);
+    expect(b.volumeKg).toBe(a.volumeKg);
+    expect(b.bestWeightKg).toBe(a.bestWeightKg);
   });
 
   it("caps the rendered days but keeps the totals over the whole log", () => {

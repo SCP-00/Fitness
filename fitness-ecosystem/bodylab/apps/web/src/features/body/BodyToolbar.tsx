@@ -34,7 +34,7 @@ function SegButton({
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-[13px] transition-all duration-150 ${
         active
           ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm'
-          : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+          : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
       }`}
     >
       {children}

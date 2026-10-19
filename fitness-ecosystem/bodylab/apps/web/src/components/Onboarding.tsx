@@ -603,7 +603,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             {step < totalSteps - 1 ? (
               <button
                 onClick={() => setStep((s) => s + 1)}
-                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+                className="flex items-center gap-2 px-6 py-2.5 bl-btn bl-btn-primary font-medium "
               >
                 {language === "es" ? "Siguiente" : "Next"}
                 <ChevronRight className="w-4 h-4" />
@@ -611,7 +611,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             ) : (
               <button
                 onClick={handleComplete}
-                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+                className="flex items-center gap-2 px-6 py-2.5 bl-btn bl-btn-primary font-medium "
               >
                 <Check className="w-4 h-4" />
                 {language === "es" ? "¡Comenzar!" : "Get Started!"}

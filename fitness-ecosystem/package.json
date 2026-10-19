@@ -26,6 +26,7 @@
     "clean:tauri": "cargo clean --manifest-path bodylab/apps/desktop/src-tauri/Cargo.toml && cargo clean --manifest-path traininglab/apps/desktop/src-tauri/Cargo.toml",
     "data": "node scripts/fitness-data-cli.mjs",
     "audit:behavior": "node scripts/audit-app-behavior.mjs",
+    "audit:css": "node scripts/css-class-audit.mjs",
     "check": "pnpm typecheck && pnpm test && pnpm --filter web test && pnpm --filter web test:e2e"
   },
   "devDependencies": {

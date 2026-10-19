@@ -14,6 +14,7 @@
  */
 
 import type { Group, Scene } from 'three';
+import { classifyMuscleName, type MuscleGroupId } from './muscle-groups';
 
 /** Public-dir asset URL, honoring any Vite `base` (GitHub Pages subpaths). */
 function assetUrl(path: string): string {
@@ -122,6 +123,82 @@ export function setLayerOpacity(group: Group, opacity: number): void {
     }
   });
   group.visible = opacity > 0.01;
+}
+
+/**
+ * Tag every muscle mesh with its UI group (`userData.muscleGroup`) and return
+ * the per-group mesh counts the panel renders. Pure classification — see
+ * `lib/muscle-groups` for the rules and their GLB-scan test.
+ */
+export function tagAtlasGroups(muscles: Group): Partial<Record<MuscleGroupId, number>> {
+  const counts: Partial<Record<MuscleGroupId, number>> = {};
+  muscles.traverse((o) => {
+    const mesh = o as import('three').Mesh;
+    if (!mesh.isMesh) return;
+    const g = classifyMuscleName(mesh.name);
+    mesh.userData.muscleGroup = g;
+    counts[g] = (counts[g] ?? 0) + 1;
+  });
+  return counts;
+}
+
+/** Per-group visibility: `hidden` hides, `active` isolates (null = all shown). */
+export function applyGroupVisibility(
+  muscles: Group,
+  hidden: ReadonlySet<MuscleGroupId>,
+  active: MuscleGroupId | null,
+): void {
+  muscles.traverse((o) => {
+    const mesh = o as import('three').Mesh;
+    if (!mesh.isMesh) return;
+    const g = (mesh.userData.muscleGroup as MuscleGroupId | undefined) ?? 'other';
+    mesh.visible = !hidden.has(g) && (active === null || g === active);
+  });
+}
+
+/**
+ * Tint the groups the user's own data says are relevant (measurement recency
+ * + recent training). Materials are cloned on the first pass so the accent
+ * never leaks across shared atlas materials; the base color/emissive are kept
+ * on `userData` so un-highlighting restores the atlas exactly.
+ */
+export function applyGroupTint(
+  muscles: Group,
+  scores: Partial<Record<MuscleGroupId, number>>,
+  accentHex: string,
+  THREEmod: typeof import('three'),
+): void {
+  const accent = new THREEmod.Color(accentHex);
+  muscles.traverse((o) => {
+    const mesh = o as import('three').Mesh;
+    if (!mesh.isMesh) return;
+    if (!mesh.userData.tintReady) {
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map((m) => m.clone())
+        : mesh.material.clone();
+      const mat = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as import('three').MeshStandardMaterial;
+      mesh.userData.baseColor = mat.color.clone();
+      mesh.userData.tintReady = true;
+    }
+    const g = (mesh.userData.muscleGroup as MuscleGroupId | undefined) ?? 'other';
+    const score = scores[g] ?? 0;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const raw of mats) {
+      const mat = raw as import('three').MeshStandardMaterial;
+      const base = mesh.userData.baseColor as import('three').Color;
+      if (score > 0) {
+        const strength = Math.min(0.75, 0.3 + score * 0.075);
+        mat.color.copy(base).lerp(accent, strength);
+        if (mat.emissive) {
+          mat.emissive.copy(accent).multiplyScalar(0.18 + strength * 0.25);
+        }
+      } else {
+        mat.color.copy(base);
+        if (mat.emissive) mat.emissive.setRGB(0, 0, 0);
+      }
+      mat.needsUpdate = true;
+    }
+  });
 }
 
 /** Dispose every geometry/material under a group (cleanup on unmount). */

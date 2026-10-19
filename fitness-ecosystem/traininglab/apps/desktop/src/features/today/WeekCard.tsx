@@ -15,6 +15,7 @@
  */
 
 import { RefreshCw } from "lucide-react";
+import { localDayKey } from "../../lib/day";
 import { t, tInterp } from "../../lib/i18n";
 import type { WeekPlan } from "../../lib/plan";
 import type { TLSet } from "../../lib/types";
@@ -39,7 +40,7 @@ export function WeekCard({
   const loggedByDay = new Map<string, number>();
   for (const set of sets) {
     if (set.warmup) continue;
-    const day = set.timestamp.slice(0, 10);
+    const day = localDayKey(set.timestamp);
     loggedByDay.set(day, (loggedByDay.get(day) ?? 0) + 1);
   }
 
@@ -64,6 +65,7 @@ export function WeekCard({
               "tl-day",
               done ? "is-done" : "",
               row.isToday ? "is-today" : "",
+              row.isCustom ? "is-custom" : "",
             ]
               .filter(Boolean)
               .join(" ");
@@ -72,11 +74,12 @@ export function WeekCard({
                 key={row.label}
                 className={classes}
                 title={
-                  row.isRest
+                  (row.isRest
                     ? t("week.rest")
                     : `${row.preview.join(" · ")} — ${tInterp("week.sets", {
                         n: row.sets,
-                      })}`
+                      })}`) +
+                  (row.isCustom ? ` · ${t("week.customBadge")}` : "")
                 }
               >
                 {/* Icon, then the day name, then the state — the order the mockup
@@ -116,6 +119,9 @@ export function WeekCard({
             {t("week.regenerate")}
           </button>
         </div>
+        <p className="text-[11px] text-[var(--tl-text-muted)] mt-2">
+          {t("week.editHint")}
+        </p>
       </div>
     </section>
   );

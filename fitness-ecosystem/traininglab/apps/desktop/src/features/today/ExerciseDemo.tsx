@@ -29,48 +29,18 @@ import {
 } from "@fitness/bodylab-exercises";
 import { t, getLanguage } from "../../lib/i18n";
 
-/** Shape of one asset-manifest entry (only what this component needs). */
-interface MediaEntry {
-  gif?: string;
-  image?: string;
-  /** Second public-domain still (end position) when the source provides one. */
-  imageAlt?: string | null;
-}
-
 /**
- * The shipped manifest is fetched once per session and cached at module level:
- * exercises absent from it render the drawn fallback immediately instead of
- * firing a guaranteed 404.
+ * The media cascade (GIF → stills → drawn figure) lives in
+ * `features/exercises/media.ts`, shared with the rows of the two lists: the
+ * answer to "what does this exercise look like" must not depend on which screen
+ * is asking.
  */
-let manifestPromise: Promise<Record<string, MediaEntry>> | null = null;
-function getManifest(): Promise<Record<string, MediaEntry>> {
-  manifestPromise ??= fetch(
-    `${import.meta.env.BASE_URL}exercises/asset-manifest.json`,
-  )
-    .then((r) => (r.ok ? r.json() : {}))
-    .catch(() => ({}));
-  return manifestPromise;
-}
-
-function useExerciseMedia(exerciseId: string): MediaEntry | null | undefined {
-  const [entry, setEntry] = useState<MediaEntry | null | undefined>(undefined);
-  useEffect(() => {
-    let alive = true;
-    getManifest().then((m) => {
-      if (alive) setEntry(m[exerciseId] ?? null);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [exerciseId]);
-  return entry;
-}
-
-/** The GIF naming convention is `<exerciseId>.gif`; stills come from the entry. */
-const gifUrlFor = (exerciseId: string): string =>
-  `${import.meta.env.BASE_URL}exercises/gifs/${exerciseId}.gif`;
-const stillUrlFor = (entry: MediaEntry): string | null =>
-  entry.image ? `${import.meta.env.BASE_URL}exercises/${entry.image}` : null;
+import {
+  altStillUrlFor,
+  gifUrlFor,
+  stillUrlFor,
+  useExerciseMedia,
+} from "../exercises/media";
 
 /** Bone lengths in SVG units — proportions of a figure, not measurements. */
 const BONE = {
@@ -99,7 +69,10 @@ const fromUp = (deg: number): Pt => ({
   x: Math.sin(rad(deg)),
   y: -Math.cos(rad(deg)),
 });
-const add = (a: Pt, d: Pt, k = 1): Pt => ({ x: a.x + d.x * k, y: a.y + d.y * k });
+const add = (a: Pt, d: Pt, k = 1): Pt => ({
+  x: a.x + d.x * k,
+  y: a.y + d.y * k,
+});
 
 /** A pose with every optional angle resolved, so interpolation is total. */
 interface FullPose {
@@ -141,16 +114,25 @@ const lerpPose = (a: FullPose, b: FullPose, k: number): FullPose => ({
 /**
  * Where in the cycle we are: frames played forward then backward, so authors
  * never write the return trip and the loop can never look like a teleport.
+ *
+ * `elapsedMs` is clamped at zero because the first rAF callback carries the
+ * **frame's** start timestamp, which can be a few ms *before* the
+ * `performance.now()` the effect captured. A negative elapsed made `%` return a
+ * negative phase, the index fell to `-1` and `normalize(undefined)` threw inside
+ * the animation loop — killing the figure mid-session and leaving a red console
+ * (seen in the ported session, 2026-10-14). Clamping the index as well makes the
+ * arithmetic total: no input can produce an out-of-range frame.
  */
 function poseAt(demo: PatternDemo, elapsedMs: number): FullPose {
   const frames = demo.frames;
   if (frames.length === 1) return normalize(frames[0]!);
   const legMs = demo.cycleMs;
   const travel = legMs * (frames.length - 1);
-  const phase = elapsedMs % (2 * travel);
+  const elapsed = Math.max(0, elapsedMs);
+  const phase = elapsed % (2 * travel);
   const forward = phase <= travel ? phase : 2 * travel - phase;
-  const pos = (forward / legMs) * 1;
-  const i = Math.min(frames.length - 2, Math.floor(pos));
+  const pos = forward / legMs;
+  const i = Math.min(frames.length - 2, Math.max(0, Math.floor(pos)));
   const k = Math.min(1, Math.max(0, pos - i));
   return lerpPose(normalize(frames[i]!), normalize(frames[i + 1]!), k);
 }
@@ -289,9 +271,7 @@ function watchPoint(s: Skeleton, joint: DemoJoint): Pt | null {
 
 /** The looping drawn figure — the last step of the media cascade. */
 export function DemoFigure({ demo }: { demo: PatternDemo }) {
-  const [pose, setPose] = useState<FullPose>(() =>
-    normalize(demo.frames[0]!),
-  );
+  const [pose, setPose] = useState<FullPose>(() => normalize(demo.frames[0]!));
 
   useEffect(() => {
     if (
@@ -410,6 +390,165 @@ export function DemoFigure({ demo }: { demo: PatternDemo }) {
 const cueText = (c: Cue, lang: "en" | "es"): string => c[lang];
 
 /**
+ * The media cascade in one place: reference GIF → still(s) → drawn figure.
+ *
+ * Two looks, because the same assets are read differently in each place:
+ *
+ *   * `modal` — the fact sheet. The GIF is capped so a 180 px source is never
+ *     blown up past readability, and the caption below says which of the three
+ *     the reader is looking at.
+ *   * `stage` — the session stage (mockup `03-sesion.html`). The frame is the
+ *     page's `.frame` (16:9, `contain`) with the page's own `.media-toggle` on
+ *     top: the loop, and the start/end position **one at a time** — at 16:9 on a
+ *     phone, comparing the two ends of a movement means looking at one, then the
+ *     other, not at two thumbnails side by side.
+ *
+ * Returns `null` when the exercise has none of the three, so the caller hides the
+ * slot instead of drawing an empty box.
+ */
+type StageView = "gif" | "start" | "end";
+export function ExerciseMediaFrame({
+  exerciseId,
+  pattern,
+  name,
+  variant = "modal",
+}: {
+  exerciseId: string;
+  pattern: MovementPattern;
+  name: string;
+  variant?: "modal" | "stage";
+}) {
+  const media = useExerciseMedia(exerciseId);
+  const demo = PATTERN_DEMOS[pattern];
+  const stillUrl = media?.image ? stillUrlFor(media) : null;
+  const altStillUrl = media ? altStillUrlFor(media) : null;
+  const hasGif = !!media?.gif;
+  const isStage = variant === "stage";
+
+  /** The views the stage can offer, in the mockup's own order. */
+  const stageViews: StageView[] = [
+    ...(hasGif ? (["gif"] as const) : []),
+    ...(stillUrl ? (["start"] as const) : []),
+    ...(altStillUrl ? (["end"] as const) : []),
+  ];
+  const [preferredView, setPreferredView] = useState<StageView>("gif");
+  const firstView: StageView = stageViews[0] ?? "gif";
+  /*
+   * The stored view is a **preference**, honoured only while this frame can
+   * offer it. The manifest arrives asynchronously, so the first paint of a new
+   * exercise has no views at all: reading a stale `preferredView` there used to
+   * fall through to the drawn figure for one frame (a flash of the line-art, and
+   * the only path that could ever mount its animation loop on a view the owner
+   * had not asked for). Falling back to the frame's own first view is what makes
+   * the cascade answer to the assets, not to the last click.
+   */
+  const view: StageView = stageViews.includes(preferredView)
+    ? preferredView
+    : firstView;
+  // A new exercise starts on its own first view, so the switch never opens on a
+  // tab that no longer exists.
+  useEffect(() => setPreferredView("gif"), [exerciseId]);
+
+  const showGif = hasGif && (!isStage || view === "gif");
+  // The modal keeps its pair of stills side by side; the stage shows one at a
+  // time, chosen by the switch.
+  const showStillPair = !isStage && !showGif && stillUrl !== null;
+  const stageStill =
+    isStage && !showGif
+      ? view === "end"
+        ? altStillUrl
+        : view === "start"
+          ? stillUrl
+          : null
+      : null;
+  const showDrawn = !showGif && !showStillPair && stageStill === null && !!demo;
+
+  if (!showGif && !showStillPair && stageStill === null && !showDrawn)
+    return null;
+
+  if (isStage) {
+    return (
+      <div className="frame">
+        {showGif && (
+          <img src={gifUrlFor(exerciseId)} alt={name} loading="lazy" />
+        )}
+        {stageStill !== null && (
+          <img
+            src={stageStill}
+            alt={`${name} — ${t(view === "end" ? "tech.endPos" : "tech.startPos")}`}
+            loading="lazy"
+          />
+        )}
+        {showDrawn && <DemoFigure demo={demo} />}
+
+        {/*
+         * The mockup's switch, and only with something to switch between: a
+         * single-view frame is not a choice the owner can make.
+         */}
+        {stageViews.length > 1 && (
+          <div className="media-toggle" role="tablist">
+            {stageViews.map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={view === v}
+                onClick={() => setPreferredView(v)}
+                className={`tl-focusable ${view === v ? "is-active" : ""}`}
+              >
+                {t(
+                  v === "gif"
+                    ? "tech.viewGif"
+                    : v === "start"
+                      ? "tech.viewStart"
+                      : "tech.viewEnd",
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {showGif && (
+        <img
+          src={gifUrlFor(exerciseId)}
+          alt={name}
+          loading="lazy"
+          className="mx-auto block w-full max-w-[28rem] h-auto rounded-xl"
+        />
+      )}
+      {showStillPair && (
+        <div
+          className={
+            altStillUrl ? "grid grid-cols-2 gap-2" : "flex justify-center"
+          }
+        >
+          <img
+            src={stillUrl!}
+            alt={`${name} — ${t("tech.startPos")}`}
+            loading="lazy"
+            className="w-full h-auto rounded-xl"
+          />
+          {altStillUrl && (
+            <img
+              src={altStillUrl}
+              alt={`${name} — ${t("tech.endPos")}`}
+              loading="lazy"
+              className="w-full h-auto rounded-xl"
+            />
+          )}
+        </div>
+      )}
+      {showDrawn && <DemoFigure demo={demo} />}
+    </div>
+  );
+}
+
+/**
  * The tap-to-open demo + coaching card for one exercise slot.
  * Media cascade first (GIF → still → drawn), technique text always.
  */
@@ -428,10 +567,12 @@ export function ExerciseDemoModal({
   const demo = PATTERN_DEMOS[pattern];
   const tech = getExerciseTechnique(exerciseId);
   const media = useExerciseMedia(exerciseId);
-  const stillUrl = media?.image ? stillUrlFor(media) : null;
-  const altStillUrl =
-    media?.imageAlt && media.imageAlt !== media.image
-      ? `${import.meta.env.BASE_URL}exercises/${media.imageAlt}`
+  // Only what the caption needs: which case of the cascade the frame draws.
+  const stillMode =
+    !media?.gif && media?.image
+      ? media.imageAlt && media.imageAlt !== media.image
+        ? "pair"
+        : "photo"
       : null;
 
   useEffect(() => {
@@ -445,11 +586,10 @@ export function ExerciseDemoModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  if (!demo) return null;
-
+  // No early return when the pattern has no drawn demo: a reference GIF for an
+  // exercise without one is still worth opening, and the technique text below is
+  // useful on its own.
   const showGif = !!media?.gif;
-  const showStill = !showGif && stillUrl !== null;
-  const showDrawn = !showGif && !showStill;
 
   return (
     <div
@@ -459,8 +599,18 @@ export function ExerciseDemoModal({
       aria-modal="true"
       aria-label={name}
     >
+      /* * Wider when there is a reference GIF to look at (2026-10-11). The
+      owner * studies these frame by frame to correct his technique, and at the
+      old * `sm:max-w-md` the 180×180 animation rendered at 256 px — 16 % of the
+      * width of the session card it belongs to, on the laptop this app is used
+      * on. The animation's own resolution is the ceiling (a 180 px source is *
+      already being upscaled at 448), so the frame is capped rather than made *
+      as wide as the dialog: past ~2.5× the source it stops being readable * and
+      starts being a blur. */
       <div
-        className="w-full sm:max-w-md max-h-[92vh] overflow-y-auto bg-[var(--tl-surface)] border border-[var(--tl-border)] rounded-t-3xl sm:rounded-3xl p-5"
+        className={`w-full ${
+          showGif ? "sm:max-w-3xl" : "sm:max-w-md"
+        } max-h-[92vh] overflow-y-auto bg-[var(--tl-surface)] border border-[var(--tl-border)] rounded-t-3xl sm:rounded-3xl p-5`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -478,54 +628,28 @@ export function ExerciseDemoModal({
           >
             <X className="w-4 h-4" />
           </button>
-        </div>        <div className="mt-3 rounded-2xl bg-[var(--tl-surface-2)] border border-[var(--tl-border)] p-3">
-          {showGif && (
-            <img
-              src={gifUrlFor(exerciseId)}
-              alt={name}
-              loading="lazy"
-              className="w-full h-auto rounded-xl"
-            />
-          )}
-          {showStill && (
-            <div
-              className={
-                altStillUrl
-                  ? "grid grid-cols-2 gap-2"
-                  : "flex justify-center"
-              }
-            >
-              <img
-                src={stillUrl!}
-                alt={`${name} — ${t("tech.startPos")}`}
-                loading="lazy"
-                className="w-full h-auto rounded-xl"
-              />
-              {altStillUrl && (
-                <img
-                  src={altStillUrl}
-                  alt={`${name} — ${t("tech.endPos")}`}
-                  loading="lazy"
-                  className="w-full h-auto rounded-xl"
-                />
-              )}
-            </div>
-          )}
-          {showStill && (
+        </div>{" "}
+        <div className="mt-3 rounded-2xl bg-[var(--tl-surface-2)] border border-[var(--tl-border)] p-3">
+          <ExerciseMediaFrame
+            exerciseId={exerciseId}
+            pattern={pattern}
+            name={name}
+          />
+          {stillMode && (
             <p className="text-[11px] text-[var(--tl-text-muted)] text-center mt-1 flex items-center justify-center gap-1">
               <ImageIcon className="w-3 h-3" />
-              {altStillUrl
+              {stillMode === "pair"
                 ? t("tech.stillPair")
                 : t("tech.stillPhoto")}
             </p>
           )}
-          {showDrawn && <DemoFigure demo={demo} />}
-          <p className="text-[11px] text-[var(--tl-text-muted)] text-center mt-1">
-            {t("tech.watchOut")}: {" "}
-            {demo.watch.map((j) => t(`tech.joint.${j}`)).join(" · ")}
-          </p>
+          {demo && (
+            <p className="text-[11px] text-[var(--tl-text-muted)] text-center mt-1">
+              {t("tech.watchOut")}:{" "}
+              {demo.watch.map((j) => t(`tech.joint.${j}`)).join(" · ")}
+            </p>
+          )}
         </div>
-
         {tech && (
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex flex-wrap gap-1.5">

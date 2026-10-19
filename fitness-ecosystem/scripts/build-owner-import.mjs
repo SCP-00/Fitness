@@ -147,12 +147,6 @@ const MAPPING = [
     value: 32,
     notes: 'El propietario indica que bíceps y tríceps miden 32 cm. Tipo nuevo `triceps`.',
   },
-  {
-    label: 'Shoes size → longitud del pie',
-    type: 'foot_length',
-    value: 26,
-    notes: 'Reportado como «shoes size 26 cm»; 26 no es una talla europea (39/40/41), así que es la longitud del pie. Verificar al medirlo.',
-  },
   { label: 'Muslo izquierdo', type: 'thigh_left', value: 55 },
   { label: 'Muslo derecho', type: 'thigh_right', value: 55 },
   {
@@ -163,37 +157,71 @@ const MAPPING = [
     notes: 'Media de ambos lados (izq 55 / der 55). El Resumen y el modelo 3D leen el tipo genérico; la simetría usa los lados.',
   },
   {
-    label: 'Calves',
+    label: 'Calves (genéticamente desarrolladas)',
     type: 'calf',
     value: 39,
-    notes: 'Dato único sin lado; para el panel de simetría harían falta pantorrilla izquierda y derecha.',
+    notes: 'Pantorrilla magra con buena inserción genética.',
   },
+  { label: 'Pantorrilla izquierda', type: 'calf_left', value: 39 },
+  { label: 'Pantorrilla derecha', type: 'calf_right', value: 39 },
+  {
+    label: 'Antebrazo (parte más gruesa)',
+    type: 'forearm',
+    value: 28,
+    notes: '28 cm en la parte más gruesa; 16.5 cm a la altura del reloj.',
+  },
+  { label: 'Antebrazo izquierdo', type: 'forearm_left', value: 28 },
+  { label: 'Antebrazo derecho', type: 'forearm_right', value: 28 },
+  {
+    label: '% Grasa Corporal (estimada)',
+    type: 'body_fat_percentage',
+    value: 17.0,
+    notes: 'Estimación del dueño: 17% (con descenso reciente de ~1%).',
+  },
+  {
+    label: '% Grasa Corporal (medida/declarada)',
+    type: 'body_fat_measured',
+    value: 17.0,
+    notes: 'Declarada por el dueño: 17%.',
+  },
+  // Longitudes segmentarias (protocolo paramétrico sin escáner)
+  { label: 'Estatura sentado', type: 'stature_sitting', value: 89 },
+  { label: 'Envergadura', type: 'arm_span', value: 185 },
+  { label: 'Longitud de pierna', type: 'subischial_leg_length', value: 90 },
+  { label: 'Longitud del brazo', type: 'upper_arm_length', value: 33 },
+  { label: 'Longitud del antebrazo', type: 'forearm_length', value: 28 },
+  { label: 'Longitud de la mano', type: 'hand_length', value: 21.5 },
+  { label: 'Longitud del muslo', type: 'thigh_length', value: 40 },
+  { label: 'Longitud de pierna baja', type: 'lower_leg_length', value: 55 },
+  { label: 'Longitud del pie', type: 'foot_length', value: 26.5 },
+  // Anchuras óseas
+  { label: 'Anchura de hombros (biacromial)', type: 'biacromial', value: 50 },
+  { label: 'Anchura de muñeca', type: 'wrist_breadth', value: 6 },
+  { label: 'Anchura de tobillo', type: 'malleolar_breadth', value: 14 },
+  { label: 'Anchura de la mano', type: 'hand_width', value: 10 },
 ];
 
-/** Owner values BodyLab's schema cannot store — reported, never faked. */const UNMAPPED = [
+/** Owner values BodyLab's schema cannot store — reported, never faked. */
+const UNMAPPED = [
   { label: 'Altura', value: 176, unit: 'cm', reason: 'Es campo del perfil (height, en metros), no una medición: 1.76 m.' },
   { label: 'Abdomen templado', value: 78, unit: 'cm', reason: 'Solo hay un tipo de cintura; se guardó el abdomen libre (83 cm), que es el protocolo de la app.' },
-  { label: 'Antebrazo', value: null, unit: 'cm', reason: 'El tipo existe (forearm / forearm_left / forearm_right) pero el dueño aún no lo ha medido.' },
   { label: 'Fecha de nacimiento', value: '2005-09-28', unit: '', reason: 'No es una medición: va al perfil como birthDate y BodyLab deriva la edad (21 años).' },
+  {
+    label: 'Anchura de rodilla reportada (23 cm)',
+    value: 23,
+    unit: 'cm',
+    reason: 'Medida como curva sobre la rodilla extendida (semicircunferencia). La anchura ósea bi-epicondilar real con libros o calibre mide entre 8 y 12 cm (máx 20 cm en el esquema). Explicado en guía educativa.',
+  },
 ];
 
 /** Medidas nuevas que YA existen en el esquema pero que él todavía no tomó. */
 const AVAILABLE_UNMEASURED = [
-  'stature_sitting', 'arm_span', 'subischial_leg_length', 'upper_arm_length',
-  'forearm_length', 'hand_length', 'thigh_length', 'lower_leg_length',
-  'biacromial', 'bi_iliac', 'wrist_breadth', 'elbow_breadth', 'knee_breadth',
-  'malleolar_breadth', 'hand_width', 'mid_axillary', 'biceps_flexed',
-  'forearm_flexed', 'ankle', 'forearm', 'forearm_left', 'forearm_right',
-  'calf_left', 'calf_right', 'body_fat_percentage', 'resting_heart_rate',
+  'bi_iliac', 'elbow_breadth', 'knee_breadth',
+  'mid_axillary', 'biceps_flexed', 'forearm_flexed', 'ankle', 'resting_heart_rate',
 ];
 
 /** Types the owner never gave but that the app uses for full scoring. */
 const MISSING_TYPES = [
-  { type: 'forearm_left', label: 'Antebrazo izquierdo' },
-  { type: 'forearm_right', label: 'Antebrazo derecho' },
-  { type: 'calf_left', label: 'Pantorrilla izquierda' },
-  { type: 'calf_right', label: 'Pantorrilla derecha' },
-  { type: 'body_fat_percentage', label: '% grasa corporal' },
   { type: 'resting_heart_rate', label: 'Frecuencia cardiaca en reposo' },
 ];
 

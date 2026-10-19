@@ -69,7 +69,7 @@ export default function GoalPanel() {
   // Nothing to score yet — say what is missing instead of showing an empty box.
   if (average === null || !tone) {
     return (
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">
@@ -98,7 +98,7 @@ export default function GoalPanel() {
   }
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent space-y-4">
+    <div className="bl-card p-6 space-y-4">
       {/* Header: title + aggregate closeness score */}
       <div className="flex items-start justify-between gap-4">
         <div>

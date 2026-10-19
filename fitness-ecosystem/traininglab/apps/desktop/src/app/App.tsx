@@ -1,34 +1,70 @@
 /**
- * The shell — where the app decides what the user is looking at.
+ * The shell — the mockup's rail, in React.
  *
- * One definition of the six destinations drives both navigations: a fixed rail
- * from 1024 px up, a bottom tab bar below it. They come from the same list
- * (`app/nav.ts`), so a destination can never exist in one and be missing from the
- * other, and neither contains a screen. Both read their `href` from
- * `SEGMENT` in `app/router` — the URL is written in exactly one place.
+ * **2026-10-14 (migration).** The owner promoted the approved mockup to the
+ * production front and asked for a *linear replacement*: this app keeps its
+ * backend (store, engine, database, MCP, tests) and the screens are rebuilt —
+ * one by one — from the mockup's pages, deleting the old one as its replacement
+ * lands. This file is the first replacement: the shell.
  *
- * The two containers carry their own responsive visibility in CSS
- * (`.tl-rail` / `.tl-tabbar`) rather than through utility classes: the design
- * system is unlayered CSS, so it would otherwise win against Tailwind's layered
- * `hidden` and both would render at once.
+ * What changed and why:
+ *
+ *   * **One rail, not two navigations.** The old shell drew a collapsible rail
+ *     *and* a phone tab bar from the same list. The mockup draws a single
+ *     `.rail`: a 245 px column from 900 px up, and below that the stylesheet
+ *     turns it into a horizontal, scrollable bar across the top. So there is no
+ *     toggle to persist and no second navigation that could disagree with the
+ *     first — the mockup's own responsive pattern is the contract.
+ *   * **The markup is the mockup's** (`.app`, `.rail`, `.rail-brand`,
+ *     `.rail-logo`, `.rail-name`, `.rail-nav`, `.rail-item`, `.rail-quote`),
+ *     so `src/mockup.css` — the ported stylesheet — styles it as designed.
+ *   * **`session` is not a destination.** In the mockup, ZEN opens from Hoy and
+ *     is not in the rail; the route stays (`#/sesion`) for the screens that
+ *     open it.
+ *
+ * Screens are lazy, so a phone pays for the screen it opens and not for the
+ * other nine. The ported ones — Hoy (01), ZEN (03), Entrenamiento (02),
+ * Historial (08), Rutinas (06) — draw their own top bar and content, exactly
+ * like their pages; the ones still waiting for their port (Progreso, Ejercicios,
+ * Semana, Configuración) are wrapped in `Legacy` for the old shell's gutters.
  *
  * @module app/App
  */
 
-import { lazy, Suspense, useEffect, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { getExerciseById } from "@fitness/bodylab-exercises";
-import { DESTINATIONS } from "./nav";
+import {
+  DESTINATIONS,
+  MOBILE_PRIMARY,
+  MOBILE_SECONDARY,
+  destinationFor,
+  type Destination,
+} from "./nav";
 import { SEGMENT, useRoute, type Route, type RouteId } from "./router";
 import { TrainingLabProvider } from "./store";
-import { t } from "../lib/i18n";
+import { MIcons } from "../ui/mockup-icons";
+import { t, tInterp } from "../lib/i18n";
 
 const TodayScreen = lazy(() => import("../screens/TodayScreen"));
 const WeekScreen = lazy(() => import("../screens/WeekScreen"));
 const ExercisesScreen = lazy(() => import("../screens/ExercisesScreen"));
-const ExerciseDetailScreen = lazy(() => import("../screens/ExerciseDetailScreen"));
+const ExerciseDetailScreen = lazy(
+  () => import("../screens/ExerciseDetailScreen"),
+);
 const SessionScreen = lazy(() => import("../screens/SessionScreen"));
+const TrainingScreen = lazy(() => import("../screens/TrainingScreen"));
 const ProgressScreen = lazy(() => import("../screens/ProgressScreen"));
 const SettingsScreen = lazy(() => import("../screens/SettingsScreen"));
+const HistoryScreen = lazy(() => import("../screens/HistoryScreen"));
+const RoutinesScreen = lazy(() => import("../screens/RoutinesScreen"));
 
 function ScreenFallback() {
   return (
@@ -44,41 +80,17 @@ function ScreenFallback() {
 
 export default function App() {
   const route = useRoute();
-  const [railOpen, setRailOpen] = useState(() => {
-    try {
-      return window.localStorage.getItem("traininglab.rail") !== "compact";
-    } catch {
-      return true;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        "traininglab.rail",
-        railOpen ? "open" : "compact",
-      );
-    } catch {
-      // The shell remains usable if storage is unavailable in a restricted WebView.
-    }
-  }, [railOpen]);
 
   return (
     <TrainingLabProvider>
-      <div
-        className={`tl-shell ${railOpen ? "is-rail-open" : "is-rail-compact"}`}
-      >
-        <SideRail
-          active={route.id}
-          open={railOpen}
-          onToggle={() => setRailOpen((value) => !value)}
-        />
-        <main className="tl-main">
+      <div className="app">
+        <Rail active={route.id} />
+        <main className="main">
           <Suspense fallback={<ScreenFallback />}>
             <Screen route={route} />
           </Suspense>
         </main>
-        <TabBar active={route.id} />
+        <MobileTabBar active={route.id} />
       </div>
     </TrainingLabProvider>
   );
@@ -88,6 +100,19 @@ export default function App() {
    Routing
    ══════════════════════════════════════════════════════════════════════════ */
 
+/**
+ * Migration bridge: a not-yet-replaced screen inside the mockup shell.
+ *
+ * The old shell's `.tl-main` carried the page gutters; the mockup gives them to
+ * `.content` instead, because its pages draw their own topbar and content. Until
+ * a destination's port lands, its old screen renders inside `.content` so it
+ * keeps the same margins (and never sits edge-to-edge on a phone). One wrapper,
+ * deleted with the last old screen.
+ */
+function Legacy({ children }: { children: ReactNode }) {
+  return <div className="content">{children}</div>;
+}
+
 function Screen({ route }: { route: Route }) {
   switch (route.id) {
     case "exercises": {
@@ -96,65 +121,81 @@ function Screen({ route }: { route: Route }) {
       // which keeps the router free of screen knowledge.
       const [first, second] = route.params;
       if (first && getExerciseById(first)) {
-        return <ExerciseDetailScreen exerciseId={first} tab={second} />;
+        return (
+          <Legacy>
+            <ExerciseDetailScreen exerciseId={first} tab={second} />
+          </Legacy>
+        );
       }
-      return <ExercisesScreen initialFamily={first} />;
+      return (
+        <Legacy>
+          <ExercisesScreen initialFamily={first} />
+        </Legacy>
+      );
     }
     case "today":
+      // Hoy and the session draw their own top bar and `.content` (their pages
+      // do), so they are NOT wrapped: `Legacy` exists for the screens still
+      // wearing the old shell's gutters.
       return <TodayScreen />;
+    case "training":
+      // Mockup 02 ported (2026-10-18): the day's queue — order, swap, out,
+      // add-many and the plan's own why. It draws its own topbar and `.content`
+      // like Hoy, so it is deliberately not wrapped in `Legacy`.
+      return <TrainingScreen />;
+    case "history":
+      // Port of mockup 08: the record the log has been building. Wrapped in
+      // `Legacy` while the port keeps the old shell's gutters (like Semana,
+      // Progreso and Configuración).
+      return (
+        <Legacy>
+          <HistoryScreen />
+        </Legacy>
+      );
     case "week":
-      return <WeekScreen />;
+      return (
+        <Legacy>
+          <WeekScreen />
+        </Legacy>
+      );
     case "session":
       return <SessionScreen />;
     case "progress":
-      return <ProgressScreen />;
+      return (
+        <Legacy>
+          <ProgressScreen />
+        </Legacy>
+      );
+    case "routines":
+      // Port of mockup 06 (2026-10-18): the user's own templates. It draws its
+      // own topbar and `.content`, so it is not wrapped in `Legacy`.
+      return <RoutinesScreen />;
     case "settings":
-      return <SettingsScreen />;
+      return (
+        <Legacy>
+          <SettingsScreen />
+        </Legacy>
+      );
   }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Desktop rail
+   The rail (mockup markup, one responsive surface)
    ══════════════════════════════════════════════════════════════════════════ */
 
-function SideRail({
-  active,
-  open,
-  onToggle,
-}: {
-  active: RouteId;
-  open: boolean;
-  onToggle: () => void;
-}) {
+function Rail({ active }: { active: RouteId }) {
   return (
-    <aside className="tl-rail">
-      <div className="tl-rail-head">
-        <a href="#/hoy" className="tl-rail-brand tl-focusable">
-          <img
-            src={`${import.meta.env.BASE_URL}favicon.svg`}
-            alt=""
-            width={28}
-            height={28}
-            className="w-7 h-7 rounded-lg"
-          />
-          <span className="text-[var(--tl-text)]">
-            Training<span>Lab</span>
-          </span>
-        </a>
-        <button
-          type="button"
-          className="tl-rail-toggle tl-focusable"
-          onClick={onToggle}
-          aria-label={
-            open ? "Contraer panel lateral" : "Expandir panel lateral"
-          }
-          title={open ? "Contraer panel lateral" : "Expandir panel lateral"}
-        >
-          <span aria-hidden>{open ? "‹" : "›"}</span>
-        </button>
+    <aside className="rail">
+      <div className="rail-brand">
+        <div className="rail-logo">
+          <MIcons.dumbbell />
+        </div>
+        <div className="rail-name">
+          Training<span>Lab</span>
+        </div>
       </div>
 
-      <nav className="tl-nav" aria-label={t("nav.label")}>
+      <nav className="rail-nav" aria-label={t("nav.label")}>
         {DESTINATIONS.map((dest) => {
           const Icon = dest.icon;
           const on = dest.id === active;
@@ -163,69 +204,190 @@ function SideRail({
               key={dest.id}
               href={`#/${SEGMENT[dest.id]}`}
               aria-current={on ? "page" : undefined}
-              className={`tl-nav-item tl-focusable ${on ? "is-active" : ""}`}
+              className={`rail-item ${on ? "is-active" : ""}`}
               title={t(dest.labelKey)}
             >
-              <Icon size={19} />
-              <span className="tl-nav-label">{t(dest.labelKey)}</span>
+              <Icon />
+              <span>{t(dest.labelKey)}</span>
             </a>
           );
         })}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-4">
-        <div className="tl-offline-card">
-          <div className="tl-offline-status">
-            <span className="tl-offline-dot" />
-            <span className="text-sm">{t("nav.offline")}</span>
-          </div>
-          <p className="text-[11px] text-[var(--tl-text-muted)] leading-relaxed">
-            {t("nav.offlineHint")}
-          </p>
-        </div>
-        <p className="tl-quote">{t("nav.motto")}</p>
+      <div className="rail-quote">
+        <b>{t("nav.motto")}</b>
       </div>
     </aside>
   );
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Phone tab bar
+   The phone bar (2026-10-19)
    ══════════════════════════════════════════════════════════════════════════ */
 
-function TabBar({ active }: { active: RouteId }) {
+/**
+ * Four fixed destinations plus "More".
+ *
+ * The active destination is the only one that prints its name; every tab keeps
+ * the same width, so navigating never moves the targets under the thumb. The
+ * fifth control shows the active planning destination when there is one
+ * (`Semana`, `Rutinas`, …), so the rule "the active tab reads its name" also
+ * holds for the four destinations that live behind the sheet.
+ */
+function MobileTabBar({ active }: { active: RouteId }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const secondary = MOBILE_SECONDARY.includes(active)
+    ? destinationFor(active)
+    : null;
+
+  useEffect(() => setMoreOpen(false), [active]);
+
+  const close = useCallback(() => setMoreOpen(false), []);
+
   return (
-    <nav className="tl-tabbar" aria-label={t("nav.label")}>
-      {DESTINATIONS.map((dest) => {
-        const Icon = dest.icon;
-        const on = dest.id === active;
-        if (dest.centre) {
-          return (
-            <a
-              key={dest.id}
-              href={`#/${SEGMENT[dest.id]}`}
-              aria-current={on ? "page" : undefined}
-              className="tl-tab tl-focusable"
-            >
-              <span className={`tl-tab-centre ${on ? "is-active" : ""}`}>
-                <Icon size={22} />
-              </span>
-              <span className="sr-only">{t(dest.labelKey)}</span>
-            </a>
-          );
-        }
-        return (
-          <a
-            key={dest.id}
-            href={`#/${SEGMENT[dest.id]}`}
-            aria-current={on ? "page" : undefined}
-            className={`tl-tab tl-focusable ${on ? "is-active" : ""}`}
+    <>
+      <nav className="mobile-tabs" aria-label={t("nav.label")}>
+        {MOBILE_PRIMARY.map((id) => (
+          <MobileTab          key={id}
+          dest={destinationFor(id)} active={id === active} />
+        ))}
+        <button
+          type="button"
+          data-testid="tab-more"
+          className={`mobile-tab ${secondary || moreOpen ? "is-active" : ""}`}
+          aria-label={
+            secondary
+              ? tInterp("nav.moreCurrent", { name: t(secondary.labelKey) })
+              : t("nav.more")
+          }
+          aria-haspopup="dialog"
+          aria-expanded={moreOpen}
+          onClick={() => setMoreOpen(true)}
+        >
+          {secondary ? <secondary.icon /> : <MIcons.menu />}
+          <span className="mobile-tab-label" aria-hidden="true">
+            {secondary ? t(secondary.labelKey) : t("nav.more")}
+          </span>
+        </button>
+      </nav>
+      {moreOpen && <MoreSheet active={active} onClose={close} />}
+    </>
+  );
+}
+
+function MobileTab({ dest, active }: { dest: Destination; active: boolean }) {
+  const Icon = dest.icon;
+  return (
+    <a
+      href={`#/${SEGMENT[dest.id]}`}
+      data-testid={`tab-${dest.id}`}
+      aria-current={active ? "page" : undefined}
+      aria-label={t(dest.labelKey)}
+      className={`mobile-tab ${active ? "is-active" : ""}`}
+    >
+      <Icon />
+      <span className="mobile-tab-label" aria-hidden="true">
+        {t(dest.labelKey)}
+      </span>
+    </a>
+  );
+}
+
+/**
+ * The "More" sheet. A real modal: Escape closes it, focus starts on the close
+ * button and Tab cycles inside, and the page behind cannot scroll while it is
+ * open. It lists every secondary destination with the full name, because the
+ * whole point of the change is that a name is read *before* the tap.
+ */
+function MoreSheet({ active, onClose }: { active: RouteId; onClose: () => void }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeButton.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !panel.current) return;
+      const focusable = Array.from(
+        panel.current.querySelectorAll<HTMLElement>("a[href], button"),
+      ).filter((element) => !element.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="mobile-sheet-backdrop"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={panel}
+        className="mobile-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("nav.more")}
+      >
+        <div className="mobile-sheet-head">
+          <span className="mobile-sheet-brand">
+            <MIcons.dumbbell />
+            Training<span>Lab</span>
+          </span>
+          <button
+            ref={closeButton}
+            type="button"
+            className="icon-btn tl-focusable"
+            aria-label={t("common.close")}
+            onClick={onClose}
           >
-            <Icon size={21} />
-            <span>{t(dest.labelKey)}</span>
-          </a>
-        );
-      })}
-    </nav>
+            <MIcons.x />
+          </button>
+        </div>
+        <div className="mobile-sheet-list">
+          {MOBILE_SECONDARY.map((id) => {
+            const dest = destinationFor(id);
+            const Icon = dest.icon;
+            const on = id === active;
+            return (
+              <a
+                key={id}
+                href={`#/${SEGMENT[id]}`}
+                data-testid={`sheet-${id}`}
+                className={`mobile-sheet-item ${on ? "is-active" : ""}`}
+                aria-current={on ? "page" : undefined}
+                onClick={onClose}
+              >
+                <span className="mobile-sheet-icon">
+                  <Icon />
+                </span>
+                <span>{t(dest.labelKey)}</span>
+                {on ? <MIcons.check /> : <MIcons.chevronRight />}
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }

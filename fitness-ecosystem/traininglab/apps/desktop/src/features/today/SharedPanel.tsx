@@ -28,6 +28,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
+import { localDayKey } from "../../lib/day";
 import { t, tInterp, getLanguage } from "../../lib/i18n";
 import { parseNumberInput } from "../../lib/parse-num";
 import {
@@ -350,7 +351,7 @@ export function SharedPanel({
                     {record.value} {record.unit ?? ""}
                   </span>
                   <span className="text-[11px] text-[var(--tl-text-muted)] tabular-nums">
-                    {record.timestamp.slice(0, 10)}
+                    {localDayKey(record.timestamp)}
                   </span>
                   <button
                     onClick={() => onRemoveHealth(record.id)}

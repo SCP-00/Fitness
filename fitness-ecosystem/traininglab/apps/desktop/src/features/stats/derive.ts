@@ -19,6 +19,7 @@
  */
 
 import { muscleFamilyOf, type MuscleFamily } from "@fitness/bodylab-training";
+import { localDayKey } from "../../lib/day";
 import { epleyOneRm } from "../../lib/records";
 import { exerciseFamilies } from "../exercises/lookup";
 import type { ImportPayload } from "../../lib/adapter";
@@ -35,10 +36,7 @@ const STIMULUS_CREDIT: Record<1 | 2 | 3, number> = {
 
 /** Local calendar day of a timestamp, as `YYYY-MM-DD` (never UTC-shifted). */
 export function isoDay(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return localDayKey(date);
 }
 
 /** Working sets only: the warm-up ramp is logged but is not training volume. */
@@ -82,7 +80,7 @@ export function dayBuckets(
   }
 
   for (const set of workingSets(sets)) {
-    const bucket = index.get(set.timestamp.slice(0, 10));
+    const bucket = index.get(localDayKey(set.timestamp));
     if (!bucket) continue;
     bucket.sets += 1;
     bucket.volume += (set.weight ?? 0) * (set.reps ?? 0);
@@ -117,7 +115,7 @@ export function consistency(
   const trained = new Set<string>();
   let weekSets = 0;
   for (const set of workingSets(sets)) {
-    const day = set.timestamp.slice(0, 10);
+    const day = localDayKey(set.timestamp);
     if (day >= weekStart) {
       trained.add(day);
       weekSets += 1;
@@ -169,7 +167,7 @@ export function familyTotals(
   const totals = new Map<MuscleFamily, FamilyVolume>();
 
   for (const set of workingSets(sets)) {
-    const day = set.timestamp.slice(0, 10);
+    const day = localDayKey(set.timestamp);
     if (from && day < from) continue;
     if (to && day > to) continue;
     const entry = catalogue.get(set.exerciseId);
@@ -314,10 +312,7 @@ export function familyBalance(
       previous: previous.get(row.family)?.total ?? 0,
       previousStimulus: previous.get(row.family)?.stimulus ?? 0,
       index: Math.round((row.stimulus / peak) * 100),
-      trend: trendOf(
-        row.stimulus,
-        previous.get(row.family)?.stimulus ?? 0,
-      ),
+      trend: trendOf(row.stimulus, previous.get(row.family)?.stimulus ?? 0),
     }))
     .sort((a, b) => b.index - a.index || b.total - a.total);
 }
@@ -365,7 +360,7 @@ export function topMarks(
       bestWeightKg: weight,
       reps,
       est1Rm: estimate === null ? weight : Math.round(estimate * 2) / 2,
-      date: set.timestamp.slice(0, 10),
+      date: localDayKey(set.timestamp),
     });
   }
 
@@ -407,7 +402,7 @@ export function previousBestFor(
   const history = workingSets(sets).filter(
     (s) =>
       s.exerciseId === exerciseId &&
-      (!excludeToday || !s.timestamp.startsWith(todayPrefix)),
+      (!excludeToday || localDayKey(s.timestamp) !== todayPrefix),
   );
   if (history.length === 0) return null;
   let best = history[history.length - 1]!;
@@ -419,7 +414,7 @@ export function previousBestFor(
 
 /** Distinct training days in the whole log — the honest "días entrenados". */
 export function trainingDays(sets: TLSet[]): number {
-  return new Set(workingSets(sets).map((s) => s.timestamp.slice(0, 10))).size;
+  return new Set(workingSets(sets).map((s) => localDayKey(s.timestamp))).size;
 }
 
 /**
@@ -515,7 +510,7 @@ export function weeklyVolume(
   let alignedSets = 0;
 
   for (const set of workingSets(sets)) {
-    const day = set.timestamp.slice(0, 10);
+    const day = localDayKey(set.timestamp);
     const kg = (set.weight ?? 0) * (set.reps ?? 0);
 
     const bucket = dayIndex.get(day);
@@ -547,7 +542,10 @@ export function weeklyVolume(
   }
 
   const families: FamilyWeekTonnage[] = [];
-  const familyKeys = new Set([...currentFamily.keys(), ...previousFamily.keys()]);
+  const familyKeys = new Set([
+    ...currentFamily.keys(),
+    ...previousFamily.keys(),
+  ]);
   for (const family of familyKeys) {
     const kg = currentFamily.get(family) ?? 0;
     const previousKg = previousFamily.get(family) ?? 0;
@@ -555,8 +553,11 @@ export function weeklyVolume(
   }
   families.sort((a, b) => b.kg - a.kg || b.previousKg - a.previousKg);
 
-  const current =
-    series[series.length - 1] ?? { weekStart: isoDay(monday), kg: 0, sets: 0 };
+  const current = series[series.length - 1] ?? {
+    weekStart: isoDay(monday),
+    kg: 0,
+    sets: 0,
+  };
   const previousAligned: WeekVolume = {
     weekStart: isoDay(prevMonday),
     kg: alignedKg,
@@ -577,10 +578,7 @@ export function weeklyVolume(
  * for a month, months for a quarter. One bar per day would be 90 slivers in a
  * rail, which is noise, not a trend. Oldest bar first; today is the last one.
  */
-export function periodSeries(
-  sets: TLSet[],
-  days: 7 | 30 | 90,
-): number[] {
+export function periodSeries(sets: TLSet[], days: 7 | 30 | 90): number[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const buckets = days === 7 ? 7 : days === 30 ? 5 : 6;
@@ -590,7 +588,7 @@ export function periodSeries(
   for (const set of workingSets(sets)) {
     const diff = Math.floor(
       (today.getTime() -
-        new Date(`${set.timestamp.slice(0, 10)}T00:00:00`).getTime()) /
+        new Date(`${localDayKey(set.timestamp)}T00:00:00`).getTime()) /
         DAY_MS,
     );
     if (diff < 0 || diff >= buckets * span) continue;
@@ -611,7 +609,7 @@ export function trainedWeeksIn(
   daysPerWeek: number,
 ): number {
   const trained = new Set(
-    sets.filter((s) => !s.warmup).map((s) => s.timestamp.slice(0, 10)),
+    sets.filter((s) => !s.warmup).map((s) => localDayKey(s.timestamp)),
   );
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -646,6 +644,12 @@ export interface HistorySetRow {
   durationSec: number | null;
   /** Warm-up ramp set: listed, but never counted as volume or a record. */
   warmup: boolean;
+  /**
+   * The `D`/`F` badge the set was logged with, when it had one — the history
+   * renders it with its label in the user's language. Absent when the set was
+   * plain work (`W` lives in `warmup`).
+   */
+  effort?: "D" | "F";
   notes?: string;
 }
 
@@ -687,15 +691,27 @@ export function exerciseHistory(
   sets: TLSet[],
   exerciseId: string,
   limitDays = 8,
-): { days: HistoryDay[]; totalDays: number; totalWorkingSets: number; totalVolumeKg: number } {
+): {
+  days: HistoryDay[];
+  totalDays: number;
+  totalWorkingSets: number;
+  totalVolumeKg: number;
+} {
   const mine = sets.filter((s) => s.exerciseId === exerciseId);
   const byDay = new Map<string, HistoryDay>();
 
   for (const set of mine) {
-    const date = set.timestamp.slice(0, 10);
+    const date = localDayKey(set.timestamp);
     let day = byDay.get(date);
     if (!day) {
-      day = { date, sets: [], workingSets: 0, volumeKg: 0, bestWeightKg: null, bestReps: null };
+      day = {
+        date,
+        sets: [],
+        workingSets: 0,
+        volumeKg: 0,
+        bestWeightKg: null,
+        bestReps: null,
+      };
       byDay.set(date, day);
     }
     day.sets.push({
@@ -704,6 +720,7 @@ export function exerciseHistory(
       reps: set.reps ?? null,
       durationSec: set.durationSec ?? null,
       warmup: set.warmup === true,
+      ...(set.effort ? { effort: set.effort } : {}),
       ...(set.notes ? { notes: set.notes } : {}),
     });
     if (set.warmup === true) continue;
@@ -715,9 +732,12 @@ export function exerciseHistory(
     if ((set.weight ?? 0) > 0) {
       // Heaviest load wins; at an equal load the set that actually carries reps
       // wins, so a 0-rep artefact row never becomes the day's "best set".
-      const heavier = day.bestWeightKg === null || set.weight! > day.bestWeightKg;
+      const heavier =
+        day.bestWeightKg === null || set.weight! > day.bestWeightKg;
       const sameLoadWithReps =
-        day.bestWeightKg === set.weight! && reps > 0 && reps > (day.bestReps ?? 0);
+        day.bestWeightKg === set.weight! &&
+        reps > 0 &&
+        reps > (day.bestReps ?? 0);
       if (heavier || sameLoadWithReps) {
         day.bestWeightKg = set.weight ?? null;
         day.bestReps = reps > 0 ? reps : null;
@@ -727,7 +747,10 @@ export function exerciseHistory(
 
   const all = [...byDay.values()].sort((a, b) => b.date.localeCompare(a.date));
   for (const day of all) {
-    day.sets.sort((a, b) => (b.weight ?? -1) - (a.weight ?? -1) || (b.reps ?? -1) - (a.reps ?? -1));
+    day.sets.sort(
+      (a, b) =>
+        (b.weight ?? -1) - (a.weight ?? -1) || (b.reps ?? -1) - (a.reps ?? -1),
+    );
     day.volumeKg = Math.round(day.volumeKg * 10) / 10;
   }
 
@@ -735,6 +758,143 @@ export function exerciseHistory(
     days: all.slice(0, Math.max(0, limitDays)),
     totalDays: all.length,
     totalWorkingSets: all.reduce((acc, d) => acc + d.workingSets, 0),
-    totalVolumeKg: Math.round(all.reduce((acc, d) => acc + d.volumeKg, 0) * 10) / 10,
+    totalVolumeKg:
+      Math.round(all.reduce((acc, d) => acc + d.volumeKg, 0) * 10) / 10,
   };
+}
+
+// ============================================================================
+// Session history — the Historial screen
+// ============================================================================
+
+/** One closed session, as the history renders it. */
+export interface SessionHistoryEntry {
+  id: string;
+  /** `YYYY-MM-DD` of the session's start, local. */
+  date: string;
+  startedAt: string;
+  /** The name the source gave the workout, when it had one (Symmetry does). */
+  title: string | null;
+  location: "gym" | "home" | null;
+  /** Where the session came from (`symmetry`, `owner-log`, …), or null. */
+  source: string | null;
+  /** Working sets (warm-ups excluded everywhere). */
+  workingSets: number;
+  warmupSets: number;
+  volumeKg: number;
+  /** Effort marks of the whole session: `W` warm-up, `D` near failure, `F` failure. */
+  markers: { W: number; D: number; F: number };
+  /** Distinct exercises, most sets first. */
+  exercises: { exerciseId: string; sets: number }[];
+  /**
+   * Minutes, and only when a source actually supports it: the stored
+   * `completedAt`, or the span between the day's first and last set. `null`
+   * means "unknown" — an imported date-only sheet collapses that span to
+   * nothing and printing a duration from it would be inventing one.
+   */
+  durationMin: number | null;
+}
+
+/** Below this many minutes any span is an artefact of the import, not a session. */
+const MINUTES_TRUSTWORTHY = 5;
+
+/**
+ * The closed sessions, newest first — the Historial screen's only input.
+ *
+ * The rule for "closed", and why it is this one:
+ *
+ *   * a session whose day is **already over** is history, whatever its
+ *     `completedAt` says (the CSV importer leaves it null on purpose: the sheet
+ *     has no closing time);
+ *   * a session **closed today** counts too — the owner pressed *Terminar
+ *     sesión* and expects to find it in the record the same day;
+ *   * today's **open** session does not: it belongs to Hoy and ZEN, and having
+ *     it in both places would double-report the day.
+ *
+ * Nothing is invented: a session with no resolvable sets is dropped (it would
+ * be an empty card), a duration below `MINUTES_TRUSTWORTHY` is reported as
+ * `null`, and volume is `weight × reps` over working sets only.
+ */
+export function closedSessionHistory(
+  sessions: TLSession[],
+  sets: TLSet[],
+  today: string = isoDay(new Date()),
+  limit = 60,
+): { entries: SessionHistoryEntry[]; total: number } {
+  const byId = new Map(sets.map((s) => [s.id, s]));
+  const all: SessionHistoryEntry[] = [];
+
+  for (const session of sessions) {
+    const date = localDayKey(session.startedAt);
+    const closedToday =
+      session.completedAt !== null &&
+      localDayKey(session.completedAt) === today;
+    if (date >= today && !closedToday) continue;
+
+    const own = (session.setIds ?? [])
+      .map((id) => byId.get(id))
+      .filter((set): set is TLSet => set !== undefined);
+    if (own.length === 0) continue;
+
+    let workingSets = 0;
+    let warmupSets = 0;
+    let volumeKg = 0;
+    const byExercise = new Map<string, number>();
+    const markers = { W: 0, D: 0, F: 0 };
+    let first = own[0]!.timestamp;
+    let last = own[0]!.timestamp;
+    for (const set of own) {
+      if (set.timestamp < first) first = set.timestamp;
+      if (set.timestamp > last) last = set.timestamp;
+      byExercise.set(set.exerciseId, (byExercise.get(set.exerciseId) ?? 0) + 1);
+      if (set.warmup === true) {
+        warmupSets += 1;
+        markers.W += 1;
+        continue;
+      }
+      workingSets += 1;
+      if (set.effort === "D") markers.D += 1;
+      if (set.effort === "F") markers.F += 1;
+      const reps = set.reps ?? 0;
+      if ((set.weight ?? 0) > 0 && reps > 0) volumeKg += set.weight! * reps;
+    }
+
+    all.push({
+      id: session.id,
+      date,
+      startedAt: session.startedAt,
+      title: session.title ?? null,
+      location: session.location ?? null,
+      source: session.source ?? null,
+      workingSets,
+      warmupSets,
+      volumeKg: Math.round(volumeKg),
+      markers,
+      exercises: [...byExercise.entries()]
+        .map(([exerciseId, sets]) => ({ exerciseId, sets }))
+        .sort(
+          (a, b) => b.sets - a.sets || a.exerciseId.localeCompare(b.exerciseId),
+        ),
+      durationMin: sessionDuration(session, first, last),
+    });
+  }
+
+  all.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  return { entries: all.slice(0, Math.max(0, limit)), total: all.length };
+}
+
+/** The one number a session's length gets, or `null` when nothing supports it. */
+function sessionDuration(
+  session: TLSession,
+  firstSet: string,
+  lastSet: string,
+): number | null {
+  if (session.completedAt !== null) {
+    const stored = Math.round(
+      (Date.parse(session.completedAt) - Date.parse(session.startedAt)) / 60000,
+    );
+    if (stored >= MINUTES_TRUSTWORTHY) return stored;
+  }
+  const span = Math.round((Date.parse(lastSet) - Date.parse(firstSet)) / 60000);
+  return span >= MINUTES_TRUSTWORTHY ? span : null;
 }

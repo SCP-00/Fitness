@@ -216,6 +216,67 @@ describe('ADVERSARIAL: progress prediction (time axis + poisoned values)', () =>
 });
 
 // ============================================================================
+// Realistic projection (owner's "tortoise" model — 2026-10-08)
+// ============================================================================
+
+describe('ADVERSARIAL: realistic projection caps', () => {
+  /** Same-day, hours-apart series — the case that produced a 681 cm chest. */
+  function sameDay(type: string, values: number[]) {
+    const base = Date.parse('2026-01-10T08:00:00.000Z');
+    return values.map((value, i) => ({
+      ...mk(type, value, 10),
+      id: `${type}-h${i}`,
+      timestamp: new Date(base + i * 3_600_000).toISOString(),
+    }));
+  }
+
+  it('a compressed same-day import cannot explode the projection', () => {
+    const r = predictProgress(sameDay('chest', [96, 98, 101]), 'chest', 30);
+    expect(r).not.toBeNull();
+    // The owner saw 681 cm here; a 30-day projection must stay within ±15 %.
+    expect(r!.predicted).toBeLessThan(96 * 1.15);
+    expect(r!.predicted).toBeGreaterThan(96 * 0.85);
+    expect(Number.isFinite(r!.ratePerWeek)).toBe(true);
+  });
+
+  it('projects a plausible trend without inventing a linear future', () => {
+    // ≈+0.45 cm/month of real chest growth, observed weekly over 3 weeks.
+    const r = predictProgress([mk('chest', 96, 1), mk('chest', 96.105, 8), mk('chest', 96.21, 15), mk('chest', 96.315, 22)], 'chest', 30);
+    const delta30 = r!.predicted - r!.current;
+    expect(delta30).toBeGreaterThan(0.2);
+    expect(delta30).toBeLessThan(0.6); // ≈0.72× of the monthly slope, decelerated
+  });
+
+  it('each extra month of projection adds LESS than the previous one (halving)', () => {
+    const series = [mk('chest', 96, 1), mk('chest', 96.47, 8), mk('chest', 96.93, 15), mk('chest', 97.4, 22), mk('chest', 97.86, 28)];
+    const d30 = predictProgress(series, 'chest', 30)!.predicted - 97.86;
+    const d60 = predictProgress(series, 'chest', 60)!.predicted - 97.86;
+    const d90 = predictProgress(series, 'chest', 90)!.predicted - 97.86;
+    const m1 = d30;
+    const m2 = d60 - d30;
+    const m3 = d90 - d60;
+    expect(m2).toBeLessThan(m1);
+    expect(m3).toBeLessThan(m2);
+    // Zeno: each stretch of progress roughly halves the next one (0.5 ideal;
+    // 0.75 leaves room for the 0.1-unit display rounding).
+    expect(m2 / m1).toBeLessThan(0.75);
+    expect(m3 / m2).toBeLessThan(0.75);
+    // And the whole projection stays physically bounded.
+    expect(d90).toBeLessThan(97.86 * 0.15);
+  });
+
+  it('never reports a rate faster than the plausibility cap', () => {
+    // 20 cm of "growth" in 10 days — garbage in, sane out.
+    const r = predictProgress([mk('waist', 80, 1), mk('waist', 90, 5), mk('waist', 100, 10)], 'waist', 30);
+    expect(r).not.toBeNull();
+    // ratePerWeek is cm/week; the cap is 6 % of ~100 cm per 30 days.
+    const monthlyCm = Math.abs(r!.ratePerWeek) * (30 / 7);
+    expect(monthlyCm).toBeLessThanOrEqual(100 * 0.06 + 1e-6);
+    expect(r!.predicted).toBeLessThanOrEqual(100 * 1.1);
+  });
+});
+
+// ============================================================================
 // Body age
 // ============================================================================
 

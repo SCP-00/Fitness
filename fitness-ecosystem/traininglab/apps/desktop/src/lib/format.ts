@@ -90,9 +90,13 @@ const COPY: Record<string, { en: string; es: string }> = {
     en: "Conditioning is due but no bike/rope/stairs are declared.",
     es: "El acondicionamiento toca pero no has declarado bici/cuerda/escaleras.",
   },
+  "advisory.pattern_dedup": {
+    en: "{n} exercise(s) dropped for repeating a movement pattern already in today's session ({ids}{more}).",
+    es: "{n} ejercicio(s) descartado(s) por repetir un patrón ya presente hoy ({ids}{more}).",
+  },
   "advisory.fatigued_all": {
-    en: "Every available exercise overlaps a sore area — rest or change focus.",
-    es: "Todos los ejercicios disponibles tocan zonas con agujetas — descansa o cambia de enfoque.",
+    en: "Every available exercise loads a family that is sore or still recovering — rest, or pick a focus of the day.",
+    es: "Todos los ejercicios disponibles cargan una familia con agujetas o aún recuperándose — descansa, o elige un enfoque de hoy.",
   },
 };
 

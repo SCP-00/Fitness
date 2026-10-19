@@ -20,6 +20,7 @@ import {
   Download,
   Dumbbell,
   FileJson,
+  FlaskConical,
   Info,
   RotateCcw,
   Ruler,
@@ -30,8 +31,10 @@ import {
   UserRound,
 } from "lucide-react";
 import { navigate } from "../app/router";
-import { useStore } from "../app/store";
+import { useStore, type ImportPreview } from "../app/store";
 import { buildSetsCsv } from "../lib/export-csv";
+import { isDesktopHost } from "../lib/autobackup";
+import { canUndo, sortAudit } from "../lib/mcp-actions";
 import { plannerCatalog } from "../lib/plan";
 import { t, tInterp } from "../lib/i18n";
 import { resolveBodyMapFigure } from "../lib/settings";
@@ -44,29 +47,32 @@ import { SharedPanel } from "../features/today/SharedPanel";
 import { MobileCard } from "../features/today/MobileCard";
 
 /**
- * Shown in "Acerca de". Injected at build time by `define` in `vite.config.ts`
- * from `traininglab/apps/desktop/package.json` — the very file Tauri requires to
- * match `src-tauri/tauri.conf.json`, so there is nothing left to sync by hand.
- * Declared in `src/vite-env.d.ts`.
- *
- * It used to be a hand-written constant here, and it drifted from the build.
+ * Shown in "Acerca de". Kept in sync by hand with `src-tauri/tauri.conf.json`:
+ * it is a display string, and reading it from the shell would mean a build-time
+ * dependency for one line of text.
  */
-const APP_VERSION = __TRAININGLAB_VERSION__;
-
-/**
- * When this bundle was produced, injected the same way as the version.
- *
- * Two different TrainingLab builds called themselves `0.2.0`, so nothing on
- * screen could tell which one was installed — the owner ran a binary missing a
- * whole feature and the About box said the same thing as the new installer.
- * The stamp is the answer to "is the app I just opened actually the build I
- * just made?".
- */
-const BUILD_STAMP = __BUILD_STAMP__;
+const APP_VERSION = "0.2.0";
 
 export default function SettingsScreen() {
   /** Result of the last restore attempt (or null). Hooks run before the guard. */
   const [backupNote, setBackupNote] = useState<string | null>(null);
+  /** Result of the last sample-data action (or null). */
+  const [demoNote, setDemoNote] = useState<string | null>(null);
+  /**
+   * The import awaiting confirmation: which file it came from, and what the
+   * store says it would leave in the log. `null` is "nothing selected".
+   *
+   * The preview is a state variable rather than a re-parse on every render
+   * because the store has to see the *same* log the numbers were computed
+   * against — the counts would go stale the moment a set was logged.
+   */
+  const [importPreview, setImportPreview] = useState<
+    (ImportPreview & { kind: "csv" | "symmetry"; file: File }) | null
+  >(null);
+  /** Result of the last import attempt (or null). */
+  const [importNote, setImportNote] = useState<string | null>(null);
+  /** True while a preview or an import is running. */
+  const [importBusy, setImportBusy] = useState(false);
   const {
     settings,
     payload,
@@ -87,10 +93,15 @@ export default function SettingsScreen() {
     runSharedSync,
     exportBackup,
     importBackup,
+    previewOwnerLog,
+    previewSymmetry,
+    importOwnerLog,
     importSymmetry,
-    recoverable,
-    restoreAutobackup,
+    loadDemoData,
+    clearDemoData,
     plan,
+    mcpLedger,
+    undoMcpAction,
   } = useStore();
 
   if (!settings) {
@@ -168,10 +179,47 @@ export default function SettingsScreen() {
     setBackupNote(result.message);
   };
 
-  /** Symmetry history (OCR JSON from `scripts/import-symmetry.mjs`). */
-  const restoreSymmetry = async (file: File) => {
-    const result = await importSymmetry(file);
-    setBackupNote(result.message);
+  /**
+   * Read an import file and ask the store what it *would* leave in the log.
+   *
+   * One entry point for both sources — the kind decides which plan runs
+   * (`previewOwnerLog` / `previewSymmetry`), and both share that plan with the
+   * import itself, so the numbers below cannot drift from the numbers after the
+   * import. Nothing is written here.
+   */
+  const previewImport = async (kind: "csv" | "symmetry", file: File) => {
+    setImportBusy(true);
+    setImportNote(null);
+    const result = await (kind === "csv"
+      ? previewOwnerLog(file)
+      : previewSymmetry(file));
+    setImportPreview({ ...result, kind, file });
+    setImportBusy(false);
+  };
+
+  /** Apply the import that is on screen, and report what it did. */
+  const confirmImport = async () => {
+    if (!importPreview) return;
+    setImportBusy(true);
+    const result = await (importPreview.kind === "csv"
+      ? importOwnerLog(importPreview.file)
+      : importSymmetry(importPreview.file));
+    setImportNote(result.message);
+    setImportPreview(null);
+    setImportBusy(false);
+  };
+
+  /**
+   * Load (or remove) the six weeks of sample history.
+   *
+   * Both halves report through one line, because the interesting part of either
+   * answer is how many series moved — and because "I pressed it and nothing
+   * seemed to happen" is the failure a demo loader is most likely to have.
+   */
+  const onDemo = async (action: "load" | "remove") => {
+    const result =
+      action === "load" ? await loadDemoData() : await clearDemoData();
+    setDemoNote(result.message);
   };
 
   return (
@@ -261,15 +309,6 @@ export default function SettingsScreen() {
               ? t("settings.figure.fallback")
               : t("settings.figure.manual")}
         </p>
-        <div className="mt-2">
-          <button
-            type="button"
-            onClick={() => navigate("progress")}
-            className="text-xs text-[var(--tl-accent)] hover:underline font-medium inline-flex items-center gap-1"
-          >
-            {t("nav.progress")} →
-          </button>
-        </div>
       </SectionCard>
 
       {/* ── Objetivo y preferencias ──────────────────────────────────────── */}
@@ -278,34 +317,34 @@ export default function SettingsScreen() {
         hint={t("settings.section.goalHint")}
         icon={<Target className="w-4 h-4" />}
       >
-      <SettingsPanel
-        goal={settings.goal}
-        level={settings.level}
-        budgetMin={settings.timeBudgetMin}
-        daysPerWeek={settings.daysPerWeek}
-        unit={settings.unit}
-        useModel={settings.useDecisionModel}
-        model={model}
-        sound={settings.sound}
-        notifications={settings.notifications}
-        onGoal={(goal) => patch({ goal })}
-        onLevel={(level) => patch({ level })}
-        onBudget={(timeBudgetMin) =>
-          patch({
-            timeBudgetMin: Math.max(10, Math.min(240, timeBudgetMin || 30)),
-          })
-        }
-        onDaysPerWeek={(daysPerWeek) =>
-          patch({ daysPerWeek: Math.max(2, Math.min(6, daysPerWeek)) })
-        }
-        onUnit={(unit) => patch({ unit })}
-        onToggleModel={(useDecisionModel) => patch({ useDecisionModel })}
-        onResetModel={resetModel}
-        onSound={(p) => patch({ sound: { ...settings.sound, ...p } })}
-        onNotifications={(p) =>
-          patch({ notifications: { ...settings.notifications, ...p } })
-        }
-      />
+        <SettingsPanel
+          goal={settings.goal}
+          level={settings.level}
+          budgetMin={settings.timeBudgetMin}
+          daysPerWeek={settings.daysPerWeek}
+          unit={settings.unit}
+          useModel={settings.useDecisionModel}
+          model={model}
+          sound={settings.sound}
+          notifications={settings.notifications}
+          onGoal={(goal) => patch({ goal })}
+          onLevel={(level) => patch({ level })}
+          onBudget={(timeBudgetMin) =>
+            patch({
+              timeBudgetMin: Math.max(10, Math.min(240, timeBudgetMin || 30)),
+            })
+          }
+          onDaysPerWeek={(daysPerWeek) =>
+            patch({ daysPerWeek: Math.max(2, Math.min(6, daysPerWeek)) })
+          }
+          onUnit={(unit) => patch({ unit })}
+          onToggleModel={(useDecisionModel) => patch({ useDecisionModel })}
+          onResetModel={resetModel}
+          onSound={(p) => patch({ sound: { ...settings.sound, ...p } })}
+          onNotifications={(p) =>
+            patch({ notifications: { ...settings.notifications, ...p } })
+          }
+        />
       </SectionCard>
 
       {/* ── Equipo disponible ────────────────────────────────────────────── */}
@@ -432,14 +471,6 @@ export default function SettingsScreen() {
           </Badge>
         }
       >
-        {/* The badge counts every stored row; Progreso counts working sets.
-            Spelling the split out here is what makes 412 and 391 add up. */}
-        <p className="text-xs text-[var(--tl-text-muted)] mb-3 tabular-nums">
-          {tInterp("data.setsBreakdown", {
-            work: sets.filter((s) => s.warmup !== true).length,
-            warm: sets.filter((s) => s.warmup === true).length,
-          })}
-        </p>
         <div className="flex flex-wrap items-center gap-3">
           <span data-testid="export-csv">
             <Button size="sm" onClick={exportCsv}>
@@ -478,53 +509,6 @@ export default function SettingsScreen() {
             {t("backup.hint")}
           </span>
         </div>
-        {/* Recovery: the log is empty but an automatic snapshot has data. The
-            profile that holds IndexedDB was reset behind our back; this is the
-            copy that was being written outside it all along. */}
-        {recoverable && (
-          <div
-            data-testid="autobackup-recover"
-            className="mt-4 p-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40"
-          >
-            <p className="text-sm font-semibold">{t("autobackup.restore.title")}</p>
-            <p className="text-xs text-[var(--tl-text-muted)] mt-1 max-w-lg">
-              {tInterp("autobackup.restore.body", {
-                date: new Date(recoverable.exportedAt).toLocaleString(),
-                sets: recoverable.sets,
-                sessions: recoverable.sessions,
-              })}
-            </p>
-            <Button size="sm" variant="primary" className="mt-3" onClick={() => void restoreAutobackup()}>
-              <Download className="w-3.5 h-3.5" />
-              {t("autobackup.restore.action")}
-            </Button>
-          </div>
-        )}
-        <p className="text-xs text-[var(--tl-text-muted)] mt-3 max-w-lg">
-          {t("autobackup.where")}
-        </p>
-        <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-[var(--tl-border)]">
-          <label
-            data-testid="import-symmetry"
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tl-btn-ghost text-xs font-semibold cursor-pointer tl-focusable"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            {t("symmetry.import")}
-            <input
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void restoreSymmetry(f);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <span className="text-xs text-[var(--tl-text-muted)] max-w-md">
-            {t("symmetry.hint")}
-          </span>
-        </div>
         {backupNote && (
           <p
             role="status"
@@ -532,6 +516,186 @@ export default function SettingsScreen() {
           >
             <RotateCcw className="w-3.5 h-3.5 text-[var(--tl-accent)]" />
             {backupNote}
+          </p>
+        )}
+      </SectionCard>
+
+      {/*
+       * ── Importar historial ──────────────────────────────────────────
+       *
+       * The two importers (`lib/owner-log.ts` for his corrected CSV and
+       * `lib/symmetry.ts` for the OCR backup) have always existed in the store
+       * and had **no screen**: importing meant writing IndexedDB by hand or
+       * asking an agent over MCP. This section is that missing surface, and its
+       * whole shape is "look before you leap": the file is parsed, deduped
+       * against the log and *reported* — new sets, new sessions, rows already
+       * present, rows the converters refuse to invent an id for — and only the
+       * confirmation writes anything.
+       *
+       * The numbers come from the same plan the import runs (see
+       * `planOwnerLog`/`planSymmetry` in the store), so a preview that says
+       * "442 series nuevas" cannot turn into a different import.
+       */}
+      <SectionCard
+        title={t("import.title")}
+        hint={t("import.hint")}
+        icon={<Upload className="w-4 h-4" />}
+        defaultOpen={false}
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <label
+            data-testid="import-csv"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tl-btn-ghost text-xs font-semibold cursor-pointer tl-focusable"
+          >
+            {t("import.csvLabel")}
+            <input
+              type="file"
+              accept=".csv,.txt,.xlsx,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void previewImport("csv", f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <label
+            data-testid="import-symmetry"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tl-btn-ghost text-xs font-semibold cursor-pointer tl-focusable"
+          >
+            {t("import.symmetryLabel")}
+            <input
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void previewImport("symmetry", f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <span className="text-xs text-[var(--tl-text-muted)] max-w-md">
+            {t("import.filesHint")}
+          </span>
+        </div>
+
+        {importBusy && (
+          <p className="mt-3 text-xs text-[var(--tl-text-muted)]">
+            {t("common.loading")}
+          </p>
+        )}
+
+        {importPreview && !importPreview.ok && (
+          <p role="alert" className="mt-3 text-xs text-[var(--tl-danger)]">
+            {t(importPreview.errorKey ?? "ownerlog.error.file")}
+          </p>
+        )}
+
+        {importPreview?.ok && (
+          <div
+            role="status"
+            className="mt-4 pt-4 border-t border-[var(--tl-border)]"
+          >
+            <p className="text-sm">
+              {tInterp("import.preview", {
+                sets: importPreview.sets,
+                sessions: importPreview.sessions,
+              })}
+            </p>
+            {importPreview.duplicates > 0 && (
+              <p className="text-xs text-[var(--tl-text-muted)] mt-1">
+                {tInterp("import.previewDuplicates", {
+                  n: importPreview.duplicates,
+                })}
+              </p>
+            )}
+            {importPreview.skipped > 0 && (
+              <p className="text-xs text-[var(--tl-text-muted)] mt-1">
+                {tInterp("import.previewSkipped", { n: importPreview.skipped })}
+              </p>
+            )}
+            {importPreview.sets === 0 && (
+              <p className="text-xs text-[var(--tl-text-secondary)] mt-1">
+                {t("import.previewNothing")}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <span data-testid="import-confirm">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  disabled={importBusy || importPreview.sets === 0}
+                  onClick={() => void confirmImport()}
+                >
+                  {t("import.confirm")}
+                </Button>
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setImportPreview(null)}
+              >
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {importNote && (
+          <p
+            role="status"
+            className="mt-3 text-xs flex items-center gap-1.5 text-[var(--tl-text-secondary)]"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-[var(--tl-accent)]" />
+            {importNote}
+          </p>
+        )}
+      </SectionCard>
+
+      {/*
+       * ── Datos de ejemplo ───────────────────────────────────────────
+       *
+       * Placed right after the data section, because that is what it is: a way
+       * to put data in, and its exact inverse. It is not a hidden developer
+       * switch — the app is a beta used by one person, and being able to see the
+       * redesigned screens with six weeks in them is worth a visible button, as
+       * long as it says what it does and can be undone in one tap.
+       */}
+      <SectionCard
+        title={t("demo.title")}
+        hint={t("demo.hint")}
+        icon={<FlaskConical className="w-4 h-4" />}
+        defaultOpen={false}
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <span data-testid="load-demo">
+            <Button size="sm" onClick={() => void onDemo("load")}>
+              <FlaskConical className="w-3.5 h-3.5" />
+              {t("demo.load")}
+            </Button>
+          </span>
+          <span data-testid="clear-demo">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void onDemo("remove")}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              {t("demo.remove")}
+            </Button>
+          </span>
+          <span className="text-xs text-[var(--tl-text-muted)] max-w-md">
+            {t("demo.hint")}
+          </span>
+        </div>
+        {demoNote && (
+          <p
+            role="status"
+            className="mt-3 text-xs flex items-center gap-1.5 text-[var(--tl-text-secondary)]"
+          >
+            <FlaskConical className="w-3.5 h-3.5 text-[var(--tl-accent)]" />
+            {demoNote}
           </p>
         )}
       </SectionCard>
@@ -566,6 +730,76 @@ export default function SettingsScreen() {
         />
       </SectionCard>
 
+      {/* ── Acciones de agentes (canal MCP) ─────────────────────────────── */}
+      <SectionCard
+        title={t("settings.mcp.title")}
+        hint={t("settings.mcp.hint")}
+        icon={<Bot className="w-4 h-4" />}
+        defaultOpen={false}
+        actions={<Badge tone="neutral">{mcpLedger.length}</Badge>}
+      >
+        {mcpLedger.length === 0 ? (
+          <p className="text-xs text-[var(--tl-text-muted)]">
+            {isDesktopHost()
+              ? t("settings.mcp.empty")
+              : t("settings.mcp.desktopOnly")}
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2" data-testid="mcp-audit-list">
+            {sortAudit(mcpLedger).map((entry) => (
+              <li
+                key={entry.id}
+                className="flex items-start justify-between gap-3 bg-[var(--tl-surface-2)] rounded-xl px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge
+                      tone={
+                        entry.undoneAt
+                          ? "neutral"
+                          : entry.status === "applied"
+                            ? "success"
+                            : "danger"
+                      }
+                    >
+                      {entry.undoneAt
+                        ? t("settings.mcp.undone")
+                        : entry.status === "applied"
+                          ? t("settings.mcp.applied")
+                          : t("settings.mcp.rejected")}
+                    </Badge>
+                    <span className="text-sm text-[var(--tl-text-secondary)]">
+                      {entry.detail[settings.language]}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[var(--tl-text-muted)] mt-1">
+                    {tInterp("settings.mcp.requestedBy", { o: entry.origin })}
+                    {entry.appliedAt
+                      ? ` · ${new Date(entry.appliedAt).toLocaleString()}`
+                      : ""}
+                    {entry.rule
+                      ? ` · ${tInterp("settings.mcp.rule", { r: entry.rule })}`
+                      : ""}
+                  </p>
+                </div>
+                {canUndo(entry) && (
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      onClick={() => void undoMcpAction(entry.id)}
+                      title={t("settings.mcp.undo")}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      {t("settings.mcp.undo")}
+                    </Button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+
       {/* ── Móvil ────────────────────────────────────────────────────────── */}
       <SectionCard
         title={t("mobile.title")}
@@ -585,9 +819,6 @@ export default function SettingsScreen() {
           <div className="text-sm">
             <p className="font-semibold">
               TrainingLab <span className="tabular-nums">v{APP_VERSION}</span>
-            </p>
-            <p className="text-xs text-[var(--tl-text-muted)] mt-0.5 tabular-nums">
-              {tInterp("settings.about.build", { stamp: BUILD_STAMP })}
             </p>
             <p className="text-xs text-[var(--tl-text-muted)] mt-1">
               {t("settings.about.privacy")}

@@ -42,6 +42,12 @@ import {
   type WeekDaySpec,
 } from "@fitness/bodylab-training";
 import { fuseWeakness, type ImportPayload } from "./adapter";
+import { deriveFatigue, type FatigueReport } from "./recovery";
+import {
+  progressionFor,
+  summariseExerciseDays,
+  type ProgressionAdvice,
+} from "./progression";
 import { t, tInterp } from "./i18n";
 import type { TLSet } from "./types";
 
@@ -96,6 +102,8 @@ export interface FamilyLogStats {
   daysSince: Partial<Record<MuscleFamily, number>>;
   /** How many times each exercise was performed (all time). */
   timesPerformed: Record<string, number>;
+  /** Days since each exercise was performed (its most recent set). */
+  lastDays: Record<string, number>;
 }
 
 export function familyLogStats(
@@ -107,6 +115,7 @@ export function familyLogStats(
     weeklyVolume: {},
     daysSince: {},
     timesPerformed: {},
+    lastDays: {},
   };
   const catalog = plannerCatalog();
   const byId = new Map(catalog.map((c) => [c.exercise.id, c]));
@@ -119,6 +128,9 @@ export function familyLogStats(
     const t = new Date(set.timestamp).getTime();
     if (Number.isNaN(t)) continue;
     const days = Math.max(0, (now.getTime() - t) / (24 * 60 * 60 * 1000));
+    const prevLast = stats.lastDays[set.exerciseId];
+    if (prevLast === undefined || days < prevLast)
+      stats.lastDays[set.exerciseId] = days;
     if (t >= weekAgo) {
       const fam = entry.primary;
       stats.weeklyVolume[fam] = (stats.weeklyVolume[fam] ?? 0) + 1;
@@ -154,19 +166,44 @@ export function featuresFor(
 ): DecisionFeatures {
   const strength = ctx.weakness[entry.primary] ?? 50;
   const done = ctx.logStats.weeklyVolume[entry.primary] ?? 0;
+  // Weekly target vs the published dose–response band (12–20 direct sets;
+  // Baz-Valle 2022 — see `lib/volume-target.ts`): beginners aim just above
+  // Schoenfeld's >9 floor, intermediate sits on the band minimum, advanced
+  // works the middle of the band. (Was 8/12/15 — the beginner value sat
+  // below every published floor.)
   const target =
-    ctx.level === "beginner" ? 8 : ctx.level === "advanced" ? 15 : 12;
+    ctx.level === "beginner" ? 10 : ctx.level === "advanced" ? 15 : 12;
   const days = ctx.logStats.daysSince[entry.primary];
   const performed = ctx.logStats.timesPerformed[entry.exercise.id] ?? 0;
   const total = Object.values(ctx.logStats.timesPerformed).reduce(
     (a, b) => a + b,
     0,
   );
+  const last = ctx.logStats.lastDays[entry.exercise.id];
+  /* Consistency — "did you do THIS exercise in last week's slot?" (owner,
+     2026-10-08): repeating the week is how progressive overload becomes
+     measurable; a plan that invents fresh exercises weekly can never be
+     judged. Performed ~5–9 days ago = same slot last week → full credit;
+     adjacent windows get half; done in the last 2 days gets little (the
+     muscle may still be recovering — `freshness` handles that side). */
+  const consistency =
+    last === undefined
+      ? 0
+      : last < 3
+        ? 0.2
+        : last <= 9
+          ? last >= 5
+            ? 1
+            : 0.5
+          : last <= 14
+            ? 0.5
+            : 0;
 
   return {
     weaknessGap: clamp01((100 - strength) / 100),
     weeklyGap: done >= target ? 0 : clamp01((target - done) / target),
     freshness: days === undefined ? 1 : clamp01(Math.min(days, 21) / 21),
+    consistency,
     // Already-sore areas and joint-heavy movements score lower on a bad day.
     readinessFit:
       ctx.readiness.soreness <= 2
@@ -214,6 +251,15 @@ export interface TodayPlanInput {
   /** Families still sore from a previous session (today's self-report). */
   fatiguedFamilies?: MuscleFamily[];
   /**
+   * The raw log (today's own sets already excluded by the caller). Feeds the
+   * declared recovery window in `lib/recovery.ts`: a family trained yesterday
+   * is not programmable today even when the user did not tick a sore box.
+   * Optional — callers that omit it simply get no derived window.
+   */
+  sets?: TLSet[];
+  /** Clock for the recovery window. Injectable so tests stay deterministic. */
+  now?: Date;
+  /**
    * The user asking for a focused day ("hoy, core"). When set, today looks
    * only at movements whose primary family is in this list. Undefined or empty
    * keeps the automatic behaviour untouched — the session is still subject to
@@ -233,6 +279,12 @@ export interface TodayPlan {
   /** Honest summary of what was excluded by gear. */
   gearNote: { excluded: number; usable: number };
   weakness: FamilyWeakness;
+  /**
+   * The recovery window derived from the log (null when no sets were given).
+   * It is what the app and the local coach read to say "these families are
+   * still recovering", instead of trusting a small model to remember.
+   */
+  fatigue: FatigueReport | null;
 }
 
 /** Why a slot is in the plan: a core reason, or an app-side one. */
@@ -298,6 +350,24 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
 
   const modelScores = modelScoresFor(input.model, usable, ctx);
 
+  /*
+   * The recovery window is derived, never assumed: the log decides which
+   * families were trained too recently (see `lib/recovery.ts`). It is ADDED to
+   * the user's own sore list — and it governs the automatic plan only: when he
+   * explicitly picks a focus ("hoy toca abdomen") his stated intent beats our
+   * window, because his content is never silently rewritten.
+   */
+  const fatigue = input.sets
+    ? deriveFatigue(input.sets, input.readiness, input.now)
+    : null;
+  const explicitFocus = (input.focusFamilies?.length ?? 0) > 0;
+  const fatiguedFamilies = [...(input.fatiguedFamilies ?? [])];
+  if (fatigue && !explicitFocus) {
+    for (const fam of fatigue.fatigued) {
+      if (!fatiguedFamilies.includes(fam)) fatiguedFamilies.push(fam);
+    }
+  }
+
   const catalog: SessionCatalogEntry[] = usable.map((entry) => ({
     id: entry.exercise.id,
     muscles: entry.directMuscles,
@@ -320,7 +390,7 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
     readiness: input.readiness,
     level: input.level,
     goal: input.goal,
-    fatiguedFamilies: input.fatiguedFamilies ?? [],
+    fatiguedFamilies,
     focusFamilies: input.focusFamilies,
     conditioningScore,
     modelScores,
@@ -373,6 +443,7 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
     usable,
     gearNote: { excluded: all.length - usable.length, usable: usable.length },
     weakness,
+    fatigue,
   };
 }
 
@@ -502,6 +573,63 @@ export function suggestLoadFor(input: LoadSuggestionInput): LoadSuggestion {
   };
 }
 
+// ── Cross-session progression: the verdict about the NEXT session ──────────
+
+/**
+ * Everything the cross-session verdict needs, in app vocabulary.
+ *
+ * The verdict itself is pure and lives in `lib/progression.ts`; this is the
+ * adapter that reads the catalog-backed pieces (the gear's increment and
+ * ceiling) and the log, so the session screen, the Inicio card and the local
+ * coach all ask the same question and get the same answer.
+ */
+export interface ProgressionAdviceInput {
+  exerciseId: string;
+  /** How the movement is loaded (`row.loadType`). */
+  loadType: string;
+  /** Levers the movement has (`row.progression`, from the shared traits). */
+  progressionAxes: ProgressionAxis[];
+  /** The range the prescription asks for (with the user's override applied). */
+  targetReps: { min: number; max: number } | null;
+  /** The whole log; this function picks the exercise's own sets out of it. */
+  sets: readonly TLSet[];
+  inventory: OwnedEquipment[];
+  /**
+   * A local day key (`YYYY-MM-DD`) to leave out of the verdict.
+   *
+   * The session screen passes **today**, on purpose. Inside one day the load is
+   * decided by the D/F mark the owner just typed (`lib/set-proposal.ts`, tested
+   * there); this verdict answers a different question — what to do the next
+   * time he **starts** the exercise — and it must not be rewritten set by set
+   * while he is mid-movement, or the same screen would carry two different
+   * answers about the same bar.
+   */
+  excludeDay?: string | null;
+}
+
+/**
+ * The multi-day verdict for one exercise, grounded in the user's own gear.
+ *
+ * `null`-safe and never throws: an exercise with no history comes back as
+ * `first_time`, which is a real answer ("start light"), not an absence.
+ */
+export function progressionAdviceFor(
+  input: ProgressionAdviceInput,
+): ProgressionAdvice {
+  const own = input.sets.filter((s) => s.exerciseId === input.exerciseId);
+  const days = summariseExerciseDays(own).filter(
+    (d) => !input.excludeDay || d.day !== input.excludeDay,
+  );
+  return progressionFor({
+    days,
+    targetReps: input.targetReps,
+    loadType: input.loadType,
+    progressionAxes: input.progressionAxes,
+    incrementKg: incrementFor(input.loadType, input.inventory),
+    maxLoadKg: maxLoadFor(input.loadType, input.inventory),
+  });
+}
+
 // ── The week: horizontalisation of today's engine ──────────────────────────
 
 /** Weekday labels in the app language; Monday-first (index 0 = Monday). */
@@ -538,6 +666,8 @@ export interface WeekPlan {
     minutes: number;
     /** First exercise names per assigned family (preview, display only). */
     preview: string[];
+    /** True when the user authored this day (`settings.weekOverrides`). */
+    isCustom?: boolean;
   }[];
   totalSets: number;
   totalMinutes: number;

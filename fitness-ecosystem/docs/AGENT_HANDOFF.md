@@ -1574,3 +1574,686 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   (beta.8 sigue sin publicarse y el updater apunta a un `latest.json` que no existe).
 - **Siguiente paso seguro:** abrir TrainingLab instalada, `Enfoque de hoy → Core`, y registrar la
   primera sesión del plan. No hace falta reconstruir nada.
+
+## 2026-10-14 — Preview vivo, MCP operativo como canal de agente, LAN multiusuario y auditoría de interfaz
+
+- **Resultado:** (1) Ambas apps abiertas en servidores de desarrollo (BodyLab :5173, TrainingLab :5174) con preview registrado y mockups servidos en :8123; (2) el **MCP arreglado**: los 3 tests rojos de `test_mcp_server` (resolución de `vite`) y el **día local** en `mirroredReadiness`/`mirroredPlan`/`read_current_state` (usaba UTC: en UTC-5 partía el día a las 19:00, la readiness del espejo dejaba de ser «hoy»); (3) el MCP **probado como un LLM** contra un espejo sandbox construido desde `owner-training-log.csv` (432 series, 18 sesiones): `read_training_stats` 147.099 kg, `read_history` con markers D/F, `read_exercise_history` (lateral-raise: 22 series, mejor 19 kg, e1RM 22,8), `read_progression` («repeat»), `read_recovery`, `read_weekly_volume`, `read_current_state`, `propose_training_session`, `read_body_stats` (sin `.cache` → no_data, honesto) y `explain_biomechanics` (rodilla → `not_covered`, correcto); (4) **LAN multiusuario 9/9 PASS** con `serve-lan --shared` (aislamiento de series/sesiones por miembro, borrado acotado, export `bodylab-traininglab` round-trip; servidor accesible en 192.168.1.3:8090); (5) **datos del dueño sembrados en el preview** vía IndexedDB (seed temporal desde el CSV, borrado después): Progreso real — 244 series de trabajo/30 d, 79.801 kg, 10 días, mapa por familias (hombros 62 %, tríceps 55 %, … pantorrillas 6 %).
+- **Cambios:** `fitness-ecosystem/scripts/fitness-mcp-server.mjs` (`importVite()` + `localDay()`); `fitness-ecosystem/tests/training/test_mcp_server.test.ts` (+1 test de regresión, 22 en total); `knowledge.md` (estado verificado). Scripts de sesión solo en `.tmp-verify/` (gitignored): `make-owner-mirror.mjs`, `mcp-call.mjs`, `lan-multiuser.mjs`, `make-preview-seed.mjs`. Ningún archivo del dueño ni dato personal añadido a git; el seed de `public/` se eliminó tras la demo.
+- **Verificación:** `npx vitest run` raíz **1282/1282 (83 archivos)** · `test_mcp_server` 22/22 · `tsc -b` de ambas apps exit 0 (TS 6.0.3 propio) · `npx oxlint` 1 warning/0 errores (React Compiler `getRange`) · preview TrainingLab 1440×900 y 390×844 **sin overflow** (`scrollWidth−clientWidth = 0`) y sin errores de consola (solo logs de Vite, imágenes 200) · mockups `01-hoy`, `07-progreso` comparados contra la app.
+- **Hallazgos de interfaz (para el dueño):** la app está en «base funcional + paleta y rail actuales», **no en paridad con los mockups aprobados**: los mockups piden selector de fecha y de **ubicación (Casa/Gym/Parque)**, «Reanudar sesión», reordenar ejercicios, semana con arrastrar/duplicar/copiar, pantalla **Rutinas**, **Historial** como destino propio y creación de ejercicio propio; nada de eso existe todavía como tal. Incoherencia real visible: **Hoy (Inicio) y Semana muestran días distintos para el mismo Mié** (Inicio: cuádriceps+pecho+core con 5 ejercicios; Semana: pantorrillas+glúteos+romboides con Bomberos/Puente de Glúteo) — son dos planificadores (sesión del día vs plan semanal) sin reconciliar en pantalla. El aviso «No hay ningún ejercicio de tracción posible con tu equipamiento» sigue tratándose como nota menor (decisión pendiente del dueño: ¿bloquear o gritar?).
+- **Límites:** esta máquina **no tiene instalados** los `.exe` ni `%APPDATA%\com.traininglab.desktop` ni `.cache/bodylab-owner.json`; el sandbox MCP y el preview usan reconstrucciones desde el CSV/JSON del dueño, etiquetadas como tales. El preview web vive en el IndexedDB del Chromium de Buffy, no en el del escritorio. El servidor LAN `--shared` se paró tras la prueba (no queda nada escuchando en :8090).
+- **Pendiente / decisión del dueño:** (1) ¿se implementan los mockups (empezando por ubicación + reanudar sesión + Rutinas/Historial) o se recorta el alcance?; (2) reconciliar Hoy vs Semana (fuente única de plan) o declarar la diferencia en pantalla; (3) importar el histórico real en la app instalada cuando se reinstale (el MCP ya puede leerlo por el espejo); (4) vetar las 13 propuestas de mapeo Symmetry y nombrar `pa® (Maquina)`.
+- **Siguiente paso seguro:** con los dev servers en marcha (`npx vite` en cada app; mockups en :8123), decidir el orden de los mockups faltantes y empezar por el que no toque backend (ubicación Casa/Gym/Parque + «Reanudar sesión» son solo estado y UI).
+
+## 2026-10-15 — Migración al mockup como front de producción: cascarón (8 destinos) + pantalla Hoy
+
+- **Resultado:** por decisión del dueño (14/10) el front **deja de parchearse**: `fitness-ecosystem/mockup/` pasa a ser la producción y las pantallas viejas se **borran una a una** conforme se porta su página, conservando sólo el backend. Entregado en esta sesión:
+  1. **Cascarón nuevo** — el rail del mockup (Hoy · Entrenamiento · Historial · Progreso · Ejercicios · Semana · Rutinas · Configuración), su marca, su lema y **su propio patrón responsive** (columna ≥900 px, barra horizontal debajo). Se fue el rail colapsable y la tabbar de móvil: el mockup no los tiene, y con dos navegaciones había dos formas de contradecirse. `session` (ZEN) sigue existiendo como ruta pero **no** es destino del rail, igual que en la página.
+  2. **Pantalla Hoy (01) portada 1:1** sobre el backend real: topbar (fecha + Empezar), fila de reanudar, tarjeta "Hoy toca" con chips de equipo y las filas de ejercicios (miniatura real del catálogo, series, reps+RIR, descanso), foco del día, "Añadir ejercicio"/"Desde mi rutina", notas del plan; rail con resumen rápido, tres anillos, semana (7 celdas + aviso), coach y **Estado de hoy** usando el **stepper del propio mockup** (`03-sesion.html`). Se conservan **todas** las derivaciones que ya existían (título por familias primarias, equipo desde `requires` del catálogo, volumen estimado que devuelve `null` —nunca 0— cuando no hay datos, anillos, semana derivada del log, coach que muestra respuesta o el motivo por el que no la hay, nota de recuperación).
+  3. **Tres destinos con marcador honesto** (`screens/PlaceholderScreen.tsx`): Entrenamiento, Historial y Rutinas nunca existieron en el front viejo; en vez de una pantalla falsa dicen qué son y, en Entrenamiento, enlazan a la sesión que sí funciona.
+  4. **Limpieza exigida por el auditor**: al morir la Inicio vieja quedaron 26+ reglas `tl-*` huérfanas y `features/today/SlotCard.tsx` sin ningún usuario. Se borraron (no se silenciaron): CSS de 236 → **208 clases definidas, 0 huérfanas**.
+- **Cambios:** `traininglab/apps/desktop/src/mockup.css` (nuevo: `mockup/css/tl.css` **verbatim** + secciones marcadas para `.day-mini` y la adaptación ≤640 px de `.exrow`), `src/ui/mockup-icons.tsx` (nuevo, **generado** desde `mockup/js/tl.js`), `src/app/router.ts` (9 rutas), `src/app/nav.ts` (8 destinos), `src/app/App.tsx` (cascarón + puente `Legacy` para las pantallas viejas + mapeo de destinos), `src/screens/TodayScreen.tsx` (**reescrita** con el layout del mockup), `src/screens/PlaceholderScreen.tsx` (nuevo), `src/lib/i18n.ts` (claves `nav.training/history/routines`, `nav.today`=Hoy, `nav.settings`=Configuración, `hoy.start` y los textos de los marcadores), `src/main.tsx` (importa `mockup.css` después de `index.css`), `src/index.css` (fuera el cascarón viejo: `tl-shell/tl-rail/tl-nav/tl-tabbar/tl-tab/tl-offline*/tl-quote` + 3 tokens), `features/today/SlotCard.tsx` (**borrado**), `tests/training/test_css_class_audit.test.ts` (el suelo de `usedTl` baja de 150 a 80 con la razón escrita: el espacio `tl-*` se encoge a propósito). Generadores de sesión en `.tmp-verify/` (gitignored): `gen-mockup-icons.mjs`, `strip-unused-css.mjs`, `tauri-override.json`.
+- **Verificación (todo ejecutado hoy):**
+  - `./node_modules/.bin/tsc.exe -b` (app TrainingLab) **exit 0**; `./node_modules/.bin/vite.exe build` **exit 0**.
+  - `./node_modules/.bin/vitest.exe run` (raíz): **1282/1282, 83 archivos, exit 0**.
+  - `node scripts/css-class-audit.mjs`: **exit 0** — "Ninguna clase usada sin definir", "Ninguna clase definida sin usar", sin selectores muertos, lista blanca al día (50 aparcadas).
+  - **Preview real** (http://localhost:5174, dev server vivo en PID 8588): 1440×950 y 390×844; los 9 destinos responden (`#/hoy`, `#/entrenamiento`, `#/historial`, `#/progreso`, `#/ejercicios`, `#/semana`, `#/rutinas`, `#/ajustes`, `#/sesion`); consola **sin errores** (sólo HMR de Vite); `scrollWidth−clientWidth = 0` en Hoy, Entrenamiento, Progreso, Ajustes, Sesión (queda **2 px** en Ejercicios, el carril horizontal de chips de familias: es scroll intencionado).
+  - **Interacciones probadas de verdad**: clic en **Empezar** → `#/sesion` con la ZEN cargada ("Press Arnold"); el **stepper de Estado de hoy** escribe en el store (insignia 3/3/3 → 4/3/3 → devuelta a 3/3/3 al terminar la prueba).
+  - **Móvil arreglado en el sitio**: a 390 px la fila del mockup (tabla de escritorio) aplastaba el nombre del ejercicio; la adaptación ≤640 px (fuera la columna de descanso, miniatura 40 px, nombre a dos líneas) lo deja legible. Es una **adición deliberada**, marcada en `mockup.css` como no presente en la página aprobada.
+- **Límites / no hecho:**
+  - **Instaladores NO reconstruidos, y no por olvido**: el toolchain de Rust está **roto en esta máquina** (`rustc -vV` → "missing manifest in toolchain", instalación interrumpida), lo que hace panicar a `tauri build` en `crates/tauri-cli/src/interface/rust.rs:1145`. Reparación exacta: `rustup toolchain install stable-x86_64-pc-windows-msvc` y después `RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-msvc ./node_modules/.bin/tauri.exe build --config <json con build.beforeBuildCommand="">` (el override es necesario: `beforeBuildCommand` es `pnpm build` y **pnpm no está en PATH**). Consecuencia: **la regla de cierre sigue abierta** — lo verificado es el bundle web, no el `.exe`.
+  - `npx` no sirve para `tsc` en la app (bun instala `tsc.exe`/`tsc.bunx`, sin script sin extensión, y npx baja un stub); usar `./node_modules/.bin/<tool>.exe`.
+  - Los 40 px de la captura de pantalla del preview fallan a veces ("produced no frames"): es compositing del webview, no la app (el DOM y la consola están sanos).
+  - **Pérdida temporal declarada**: al borrar `SlotCard` desaparece la UI de **cambiar ejercicio**, **editar el rango de reps** y la **rampa de calentamiento** en Inicio; las acciones siguen en el store y en el MCP, y vuelven con los ports 02 (Entrenamiento: reordenar/cambiar) y 03 (Sesión). Hoy las filas llevan a `#/sesion`, que sí registra.
+  - El mockup **no se audita**: `css-class-audit` sólo juzga el espacio `tl-*`, así que las clases sin prefijo del mockup (las que usan las pantallas nuevas) no tienen red de seguridad todavía. Cerrar cuando muera `index.css`.
+  - La píldora de fecha es una **etiqueta sin selector de día**, y **no hay selector Casa/Gym/Parque**: nada en el modelo de datos dice qué equipo pertenece a qué sitio, e inventarlo cambiaría todos los planes en silencio.
+- **Pendiente / decisión del dueño:**
+  1. **Ubicación (Casa/Gym/Parque)**: ¿filtra el equipamiento disponible? ¿Cómo se marca en el inventario qué equipo es de cada sitio? (es la pieza que el mockup pide y que hoy no existe).
+  2. ¿Selector de día en Hoy (la píldora con flecha del mockup) o Hoy es siempre hoy?
+  3. **Orden de los ports**: la propuesta es 02 Entrenamiento (cola: reordenar/cambiar/fijar) → 03 Sesión (registro, que devuelve swap y calentamiento) → 04 Semana → 05 Ejercicios → 06 Rutinas → 07 Progreso → 08 Historial → 09 Configuración.
+  4. ¿Se repara el toolchain de Rust y se cortan instaladores **de lo ya hecho**, o se espera a terminar más pantallas?
+- **Siguiente paso seguro:** abrir `http://localhost:5174/#/hoy` (dev server vivo) y opinar sobre la maqueta real; el port siguiente no toca backend nuevo y es **02 · Entrenamiento** (la cola del día con reordenar/cambiar), que además devuelve a la UI dos acciones que hoy sólo viven en el store.
+- **Estado de git:** rama `main`, HEAD `1289602`, **144 rutas sucias** (obra previa + esta sesión). **Nada commiteado** por esta sesión; los archivos de `.tmp-verify/` están gitignored a propósito.
+
+## 2026-10-15 (b) — Port de la página 03 · Sesión (ZEN), con la rampa de calentamiento y el editor de rango de reps devueltos a la UI
+
+- **Resultado:** la pantalla de sesión se reescribió sobre el marcado y las clases de `mockup/03-sesion.html` (la página aprobada por el dueño el 14/10), y con ella **vuelven a la interfaz las dos cosas que se habían quedado sólo en el store** al borrar `SlotCard`:
+  1. **Rampa de calentamiento** (`lib/warmup.ts`, `buildWarmup`): se dibuja paso a paso dentro de la tarjeta de entrada, con su contador `Calentamiento · 2/4` y sus números reales (barra vacía → 50 % → 70 % → 85 %, con kg y reps calculados del peso sugerido). Sus series siguen marcadas `warmup: true`, así que **no entran en ningún agregado**, y la página no reserva bloque para ella.
+  2. **Editor del rango de reps** (`settings.repOverrides` vía `setRepRange`): en la página, la línea *objetivo 10–12* bajo Reps es texto; aquí es el control que reescribe la prescripción de ese ejercicio y añade **· tuyo** cuando el rango es del dueño y no del plan. Verificado que propaga: cambia la pastilla del resumen del ejercicio y la fila del listado *Después de esta serie*.
+  Además, la sesión quedó con la forma de la página: barra superior *Ahora / Siguiente* + `Cambiar` + `Salir de ZEN`; tarjeta de medios con el conmutador **GIF · Inicio · Fin** del mockup y la pastilla *GIF de referencia*; tarjeta de serie en vivo (Peso / Reps / Esfuerzo + **Registrar serie**); *Registro de hoy* como tabla real con columnas **Marca** (insignia verde *Completada*) y **Anterior**; tira *Después de esta serie* (saltar a un ejercicio y reordenar); y columna derecha con *Progresión recomendada* (número + motivo + veredicto entre sesiones), *Cues de técnica*, *Descanso* y *Resumen del ejercicio*.
+- **Cambios:**
+  - `traininglab/apps/desktop/src/lib/rest.ts` (**nuevo**): el descanso como **fecha de fin** (`endsAt`, `total`, `pausedRemaining`, `nonce`) con `startRest` / `restRemaining` / `restPercent` / `extendRest` / `toggleRestPause` / `restIsDone` y `now` pasado por parámetro (puro y testeable).
+  - `traininglab/apps/desktop/src/app/store.tsx`: `rest` pasa a `RestState | null` con los tres verbos (`extendRest`, `toggleRestPause`, `skipRest`); el overlay flotante se oculta **en la ruta `session`** porque ahí el mismo descanso se dibuja en su tarjeta.
+  - `traininglab/apps/desktop/src/features/today/RestTimer.tsx`: dos vistas del mismo `endsAt` (`floating` / `inline` con el anillo del mockup), tick local de 1 Hz, aviso de fin una sola vez por `nonce` (sonido + notificación en segundo plano).
+  - `traininglab/apps/desktop/src/features/today/ZenSession.tsx` (**reescrito**, 1469 líneas): marcado de la página con rampa, editor de rango, marcas D/F, propuesta de peso, reorden con drag, cajón de cambio de ejercicio y resumen.
+  - `traininglab/apps/desktop/src/screens/SessionScreen.tsx` (**reescrito**): construye las props desde el store (rangos, sugerencias, descanso) y ofrece un estado vacío honesto cuando no hay plan.
+  - `traininglab/apps/desktop/src/features/today/ExerciseDemo.tsx`: variante `stage` de `ExerciseMediaFrame` (marco `.frame` + conmutador `.media-toggle` del mockup, una vista a la vez); **dos defectos reparados** — `poseAt` recibía un `elapsedMs` negativo en el primer callback de rAF (el timestamp es el del *frame*, anterior al `performance.now()` del efecto), el índice caía a `-1` y `normalize(undefined)` **mataba el bucle de animación** de la figura dibujada con excepción en consola; y la vista recordada ya no se lee cuando el marco todavía no puede ofrecerla (se pintaba un fotograma de figura dibujada con las imágenes ya disponibles).
+  - `traininglab/apps/desktop/src/lib/i18n.ts`: claves `zen.weightUnit` (`Peso ({u})`), `zen.mediaPill` (`GIF de referencia`), `zen.guide` pasa a **`Técnica`** (era `Cómo hacerlo`, la etiqueta de la página) + las claves de la rampa y del editor.
+  - `traininglab/apps/desktop/src/index.css`: se borraron los bloques `tl-*` que quedaron sin usuario (`tl-entry*` y compañía): **208 → 152 clases definidas, 0 huérfanas en las cuatro direcciones**.
+  - **Borrados**: `features/today/SetEntryBar.tsx` y `features/today/ProgressionNote.tsx` (sin ningún usuario; sustituidos por la entrada en vivo de la página y por `lib/progression-copy.ts`).
+  - `tests/training/test_rest_timer.test.ts` (**nuevo**, 7 tests), `tests/training/test_css_class_audit.test.ts` (el suelo de `defined` baja de 200 a 120 **con la razón escrita**: es una canaria contra un escaneo a medias, no un objetivo).
+- **Verificación (todo ejecutado hoy, en el orden en que se hizo):**
+  - `./node_modules/.bin/tsc -b` en `traininglab/apps/desktop` (TS 6.0.3 propio) → **exit 0**.
+  - `./node_modules/.bin/vite build` en `traininglab/apps/desktop` → **exit 0**; comprobado que las cadenas nuevas están **en el bundle** (`Peso ({u})`, `Weight ({u})`, `GIF de referencia`, `Salir de ZEN` dentro de `dist/assets/*.js`), no sólo que el build salga.
+  - `./node_modules/.bin/vitest run` en la raíz → **1289/1289 tests, 84 archivos, exit 0**.
+  - `node scripts/css-class-audit.mjs` → **exit 0**: 152 definidas · 84 `tl-*` usadas · "Ninguna clase usada sin definir" · "Ninguna clase definida sin usar" · lista blanca al día (50 aparcadas).
+  - `prettier --check` sobre **todos** los archivos tocados → limpio (el resto del repo sigue con formato pendiente: 29 archivos de `tests/`, preexistente).
+  - **QA en navegador real** (dev server `vite` en :5174, preview registrado; mockup servido en :4180 sólo para comparar y **ya parado**): 1440×900 y 390×844, **sin overflow horizontal** (`scrollWidth 384 ≤ 390`) y **consola sin errores**.
+  - **Interacciones probadas de verdad, no inferidas:** rampa vista avanzando (`Barra vacía → 50 % · 5 reps · 12.0 kg`, contador `Calentamiento · 2/4`); editor de rango abierto desde la línea *objetivo*, cambiado a **10–15** y confirmado con `Guardar` → la línea pasa a `objetivo 10–15 · tuyo`, la pastilla del resumen a `10–15 reps` y la fila del listado a `4 × 10–15`, **y sobrevive a un recargado** (`#/sesion`, `objetivo 10–15 · tuyo`); serie registrada (12 kg × 8) → fila `Completada`, propuesta del siguiente peso `11 kg` con su motivo y su frase de corrección, contador `1 / 23 series`; descanso en la tarjeta con anillo `117 s / 120 s` + pausa + `+15 s`, y **el mismo descanso sobrevive a cambiar de ejercicio** (81 s al pasar de un ejercicio a otro), que era el motivo del modelo por fecha de fin; conmutador del marco con dos fotos reales (`V-Up` → `Inicio` = `images/v-up/0.jpg`, `Fin` = `images/v-up/1.jpg`, `aria-selected` correcto); cajón *Cambiar* aplicando el cambio en la tira (`Curl Martillo` → `Curl con Mancuernas`, `V-Up` → `Crunch en Declínio`).
+- **Desviaciones declaradas de la página (deliberadas):**
+  - **`Saltar` y `Posponer`** se dibujan en la página pero **no existen en el store**: no hay verbo de saltar ni de posponer y inventarlos cambiaría el plan de hoy en silencio. No se portan.
+  - La **reloj/avatar** de la barra superior del mockup y la sección **"En el móvil, con una mano"** son **ilustración de la maqueta**, no UI (la barra lleva una hora fija `Sáb, 7 jun 2025 · 10:24` y la sección es un dibujo con un teclado numérico). No se portan.
+  - El campo de esfuerzo se llama **Esfuerzo** (no `RIR`) porque además del RIR 1–5 lleva las **marcas D/F** del dueño, que son las que alimentan la propuesta de peso; la página sólo conoce el RIR.
+  - La pastilla de la tarjeta de medios es **`GIF de referencia` cuando el marco muestra el bucle** y desaparece cuando muestra fotos o figura dibujada (la página la pinta siempre porque su ejemplo sí tiene GIF).
+- **Límites / no hecho:**
+  - **La regla de cierre sigue abierta: NO se reconstruyeron los instaladores.** En esta máquina `rustc` del toolchain `stable-x86_64-pc-windows-msvc` está **roto** (`missing manifest in toolchain`, instalación interrumpida; `cargo 1.99.0` sí funciona, `rustup default` no está configurado), `src-tauri/target/release/bundle/` **no existe**, y el escritorio real (`/c/Users/andyh/Desktop`, aquí sin redirección a OneDrive) **no tiene ningún `.exe`. Lo verificado es el bundle web, no el binario.
+  - Cambios de intercambio (`overrides`) son **estado de sesión**: se pierden al recargar (por diseño: no se persisten) y se observó una vez un cambio desaparecer tras un re-plan. No es de este port, pero conviene mirarlo si el dueño cambia ejercicios con frecuencia.
+  - El mockup sigue **sin auditoría de clases** (el `css-class-audit` sólo juzga `tl-*`), así que las clases sin prefijo del port no tienen red de seguridad.
+- **Pendiente / decisión del dueño:**
+  1. ¿Se repara el toolchain de Rust (`rustup toolchain install stable-x86_64-pc-windows-msvc`, ~200 MB, modifica su instalación) y se cortan los `.exe` de TrainingLab y BodyLab, o se deja para una sesión dedicada?
+  2. ¿Se implementan en algún momento `Saltar` / `Posponer` (los dos gestos de la página que no tienen verbo en el store)?
+- **Siguiente paso seguro:** abrir `http://localhost:5174/#/sesion` (dev server vivo) y usar la pantalla como el dueño la usaría: completar la rampa, editar el rango de reps y registrar una serie.
+- **Estado de git:** rama `main`, HEAD `1289602`, **145 rutas sucias** (obra previa + esta sesión). **Nada commiteado** por esta sesión. Los scripts de un solo uso viven en `.tmp-verify/` (gitignored).
+
+## 2026-10-16 — Saltar y Posponer: los dos gestos de la página 03 que no tenían verbo
+
+- **Resultado:** la sesión ya tiene las dos salidas que la página dibuja y que la entrega anterior
+  había dejado sin interfaz **ni store**, con la restricción del dueño respetada: *sin cambiar el
+  plan de hoy en silencio*.
+  1. **Saltar** es una **marca por fecha** (`settings.sessionAside`): aparta el ejercicio de la
+     sesión — el puntero *Siguiente*, el avance automático y `goNext` lo **saltan** — pero **la
+     fila sigue en el plan**, con su prescripción, su posición y sus series; nada se borra.
+  2. **Posponer** es una **derivación sobre la secuencia** (`applyPostponements`, aplicada en el
+     store después de `applyRowOrder`): manda la fila al final de la sesión de hoy, en el orden en
+     que se pospuso, **sin reescribir** `rowOrder` ni el plan semanal; deshacerla devuelve la fila
+     **exactamente** a la posición que el dueño había elegido.
+  3. Los dos botones son **toggles**: el mismo gesto revierte la marca (`Reanudar` / `Traer de
+     vuelta`), y bajo la tira *Después de esta serie* aparece una banda **«Apartados hoy:»** con
+     cada nombre y su deshacer; desaparece en cuanto no queda ninguna marca.
+  4. Las filas de la tira llevan su etiqueta (`Saltado` en ámbar, `Al final` en azul) y el topbar
+     marca también lo que tiene en el escenario, para que ninguna decisión sea invisible.
+- **Cambios:**
+  - `traininglab/apps/desktop/src/lib/types.ts` — `SessionAside { date, skipped[], postponed[] }` y
+    `settings.sessionAside` (por fecha, como `rowOrder`).
+  - `traininglab/apps/desktop/src/lib/settings.ts` — `sessionAsideFor` (sanea y **caduca con el
+    día**), `withRowSkip` / `withRowPostpone` (excluyentes entre sí; vacío ⇒ `null`, nunca un
+    registro fantasma), `clearSessionAside`, `applyPostponements` (permutación, nunca filtro).
+  - `traininglab/apps/desktop/src/app/store.tsx` — `skipRow` / `unskipRow` / `postponeRow` /
+    `unpostponeRow` y `skippedToday` / `postponedToday`; `applyPostponements` entra en la cadena de
+    `rows` después de la secuencia.
+  - `traininglab/apps/desktop/src/features/today/ZenSession.tsx` — botones *Saltar* / *Posponer*
+    del topbar (`aria-pressed`, conmutan), puntero `nextLive` que salta lo apartado, avance
+    `goNext` con el mismo criterio, etiquetas en la tira y banda de deshacer. Renombrado
+    `usePrevious` → `copyPrevious` (era un `onClick` llamando a algo con forma de Hook:
+    `react-hooks/rules-of-hooks`, único error de oxlint del archivo).
+  - `traininglab/apps/desktop/src/screens/SessionScreen.tsx` — puente de los seis props nuevos.
+  - `traininglab/apps/desktop/src/lib/i18n.ts` — `zen.skip/unskip/postpone/unpostpone/skipped/
+    postponed/skipHint/postponeHint/asideNote/asideUndoSkip/asideUndoPostpone` (EN/ES).
+  - `tests/training/test_session_aside.test.ts` — **nuevo**, 11 tests de las reglas puras.
+- **Verificación:**
+  - `./node_modules/.bin/vitest` raíz (`tests/training/test_session_aside.test.ts`) → **11/11**;
+    suite completa → **1300/1300 en 85 archivos, exit 0**.
+  - `./node_modules/.bin/tsc -b` en `traininglab/apps/desktop` → **exit 0**.
+  - `node scripts/css-class-audit.mjs` → **exit 0** (0 sin definir, 0 sin usar, lista blanca al día).
+  - `vite build` (y `--base=./` para el servidor LAN) → **exit 0**, con las cadenas nuevas
+    comprobadas **dentro del bundle** (`Apartados hoy`, `Saltado`, `Traer de vuelta` en
+    `dist/assets/index-*.js`; `zen.skipHint` / `zen.asideNote` / `asideUndoSkip` en
+    `dist/assets/SessionScreen-*.js`).
+  - oxlint (binario de la web app, config de la web app) sobre los archivos tocados → **0 errores**
+    (3 avisos **preexistentes** en `store.tsx`: 2 × `only-export-components` y 1 × `exhaustive-deps`
+    sobre `soreFamilies`, sin relación con esta ronda). **`pnpm lint` no cubre `traininglab/`**: el
+    lint documentado corre sólo dentro de `bodylab/apps/web`, así que este error vivía oculto.
+  - **QA en navegador real** (servidor LAN `node scripts/serve-lan.mjs --no-build --port 8090`,
+    bundle recién construido, preview registrado): *Saltar* movió el escenario al siguiente vivo
+    (`Sentadilla Pistol`), la fila 1 conservó `4 × 8–12` y quedó marcada `Saltado`, apareció
+    «Apartados hoy: Flexión Declinada»; *Reanudar* borró la marca **y la banda** y la fila siguió
+    en la posición 1; *Posponer* sobre la fila 3 la dejó **última** con `Al final` y el escenario
+    pasó a la 4; **recarga real** (`?v=4#/sesion`) → la marca y el orden **sobreviven**;
+    deshacer desde la banda devolvió la fila **a su posición 3**; *Posponer* sobre la **última**
+    fila (nada a lo que saltar) dejó el escenario en ella con el botón `Traer de vuelta` — **no
+    termina la sesión solo**; con la fila 2 apartada, registrar 4/4 series de la fila 1 ofreció
+    «Siguiente: V-Up (Navaja)» y el avance cayó en la 3, **saltándose la apartada**; en el
+    IndexedDB real de la app quedó escrito exactamente
+    `{"date":"2026-10-16","skipped":["pistol-squat"],"postponed":[]}` con `rowOrder: null` y
+    `weekOverrides: {}` — **el plan no se tocó**.
+  - Móvil 390×844: **sin overflow** (`scrollWidth == clientWidth == 380`), botones del topbar a
+    44 px, la banda cabe (318 px) y su botón de deshacer mide 44 px.
+  - **Límite de esta sesión:** el *compositor* del preview dejó de emitir frames a mitad del QA
+    (`preview_screenshot` falla: «no frames»), y con él la inyección de ratón: los últimos gestos
+    se hicieron con `element.click()` en la página (el mismo manejador de React). **No hay captura
+    de pantalla de esta ronda**; la evidencia visual es DOM + medidas.
+- **Pendiente / decisión del dueño:**
+  1. **La regla de cierre sigue abierta:** los instaladores **no** se reconstruyeron (toolchain
+     `stable-x86_64-pc-windows-msvc` roto en esta máquina: `missing manifest in toolchain`). Lo
+     verificado es el bundle web. La cadena de QA dejó `dist/` en la variante LAN (`--base=./`),
+     que `pnpm tauri build` regenera con la suya.
+  2. ¿Se muestran también las marcas en **Hoy** (la lista de ejercicios del día) o se quedan como
+     decisión exclusiva de la sesión?
+  3. Las marcas **caducan con el día** y no se limpian al *Terminar sesión* a propósito; si prefiere
+     que terminar la sesión las borre, es una línea.
+- **Siguiente paso seguro:** abrir `http://localhost:8090/traininglab/#/sesion` (servidor LAN vivo
+  con el bundle nuevo) y usar *Saltar* → *Reanudar* → *Posponer* → deshacer desde la banda.
+- **Estado de git:** rama `main`, HEAD `1289602`, **146 rutas sucias** (obra previa + esta sesión).
+  **Nada commiteado.** Los archivos de esta ronda: `lib/types.ts`, `lib/settings.ts`,
+  `lib/i18n.ts`, `app/store.tsx`, `screens/SessionScreen.tsx`,
+  `features/today/ZenSession.tsx`, `tests/training/test_session_aside.test.ts` y este handoff.
+## 2026-10-16 (b) — Hoy = solo Hoy (orden del dueño), datos reales del dueño sembrados y capturas de las 9 interfaces
+
+- **Resultado:** tres cosas, en el orden en que las pidió el dueño.
+  1. **Hoy se queda solo con Hoy.** Se borraron de la columna derecha el **resumen rápido**, los
+     **anillos de progreso**, la **tira de semana** y el **coach**, con sus helpers
+     (`QuickSummary`, `ProgressRings`, `WeekStrip`, `CoachCard`, `ringStyle`, `estimateVolume`,
+     `weeksTrained`, `rollingVolume`, `averageRir`, `dayShort`, `startOfWeek`, `formatAdvisoryReason`).
+     La pantalla pasó de `.cols` (dos columnas) a **una sola columna** y se quedaron las dos
+     piezas que son de *hoy*: la **nota de recuperación** y **Estado de hoy** (readiness). El
+     recorte quedó escrito en `REDESIGN_STORM.md` §4 · PÁGINA 1.
+  2. **Datos basura fuera y sus métricas dentro.** El preview tenía 5 series de mi QA y ajustes
+     de fábrica (sin equipamiento: por eso proponía flexiones). Ahora lleva **su log real** —
+     `owner-training-log.csv` parseado por el **parser de la app** (`lib/owner-log.ts`): **442
+     series (422 de trabajo), 19 sesiones, 149.107 kg, 2026-09-02 → 2026-10-07**; sembrado por las
+     vías de la app (Ajustes → *Restaurar copia* y *Importar de BodyLab*), no escribiendo a mano.
+     Su **perfil real**: Buendia · 176 cm · 76 kg · 21 a · 28/09/2005 · varón (en el sobre v2; las
+     mediciones van **vacías a propósito** — no hay antropometría y el plan debe decir «sin datos»).
+     Su **equipamiento derivado del log** con el **máximo real por tipo de carga**:
+     barra 104,3 (peso muerto) · mancuernas 32,5 · polea 81,6 · máquinas 204,1 (prensa) ·
+     banco, rack, barra de dominadas, paralelas, colchoneta. Presupuesto **60 min** (mediana real
+     de sus sesiones: 63) · 4 días/semana · objetivo hipertrofia · nivel intermedio (decisión suya).
+  3. **Capturas de las 9 interfaces + móvil** en `docs/screenshots/2026-10-16/` (12 PNG a
+     1440×900 y 2 a 390×844), tomadas **con sus datos** por `.tmp-verify/shots-real.mjs` (Playwright
+     sobre el **Edge instalado**: esta máquina no tiene navegador propio de Playwright y no hacía
+     falta descargar 150 MB). Cada toma **afirma una cadena visible** (`Sentadilla con Barra`,
+     `Últimos 30 días`, …) antes de guardar, así que ninguna es una pantalla en blanco.
+- **Cambios:** `traininglab/apps/desktop/src/screens/TodayScreen.tsx` (recorte + cabecera del
+  módulo reescrita), `docs/REDESIGN_STORM.md` (§4 · PÁGINA 1), este archivo.
+  Herramientas de sesión (gitignored): `.tmp-verify/gen-owner-seed.mjs` (genera las dos siembras
+  desde el CSV y el perfil), `.tmp-verify/shots-real.mjs` (capturas), `.tmp-verify/shot-sheet.mjs`
+  (hoja de contacto servida en :8091 para verlas en Preview).
+- **Verificación:**
+  - `vitest` raíz → **1300/1300 en 85 archivos, exit 0** · `tsc -b` → **0** · `css-class-audit` →
+    **0** (sin clases huérfanas tras borrar las tarjetas) · oxlint sobre el archivo tocado →
+    **0 warnings / 0 errores** · `prettier --check` limpio.
+  - `vite build` (variante LAN `--base=./`) → **exit 0**.
+  - **En el navegador, con sus datos:** Hoy muestra una sola columna (`.cols` = 0, anillos = 0,
+    coach ausente), «Tu última sesión fue hace 9 días» (su último día real, 07/10) y un plan con
+    **equipo real** («Barra + discos · Banco · Mancuernas fijas» → Press Inclinado, Peso Muerto,
+    Dominadas) en vez de flexiones. En IndexedDB: **442 sets · 19 sesiones · 149.107 kg · perfil
+    Buendia · 9 equipos · 60 min**.
+  - **Hoja de contacto viva en el panel Preview** (`http://localhost:8091/`): 12 imágenes, todas
+    cargadas (`naturalWidth > 0`).
+- **Hallazgos del QA (para el dueño, no arreglados):**
+  1. **«Tu última sesión … 1 min»**: los sets importados comparten el **mediodía local del día**
+     (el CSV/OCR no trae hora por serie), así que cualquier duración derivada de ellos es falsa
+     (1 min para 22 series). O se oculta la duración en sesiones importadas, o el CSV gana una
+     columna de hora.
+  2. **La importación de su log y de Symmetry no tiene pantalla**: `importOwnerLog` e
+     `importSymmetry` existen en el store y **ningún componente los llama** (los paneles que los
+     usaban murieron en la migración al mockup). Hoy solo se pueden usar escribiendo a mano en
+     IndexedDB o por MCP. Es un hueco P1 real, no cosmético.
+  3. **Hoy y Semana siguen siendo dos planificadores** que se contradicen el mismo día
+     (Vie: Hoy «Core + Pecho + Hombros»; Semana «pecho · isquios · hombros · bíceps · core»).
+  4. Los máximos de equipamiento son **su mejor serie registrada**, no el techo real de su gym
+     (y varios números vienen de libras redondas: 104,3 = 230 lb). Se corrigen en Ajustes.
+- **Pendiente / decisión del dueño:** 1) ¿nivel **intermedio** o avanzado? 2) ¿se oculta la
+  duración en sesiones importadas? 3) ¿se le da pantalla a la **importación de historial**
+  (CSV/Symmetry) y a **Historial (08)** antes de portar **Entrenamiento (02)**? 4) la **regla de
+  cierre** sigue sin cerrar: el compilador de Rust del toolchain MSVC sigue roto y no hay
+  instaladores nuevos.
+- **Siguiente paso seguro:** abrir `http://localhost:8091/` (hoja de contacto) y
+  `http://localhost:8090/traininglab/#/hoy` (app viva con sus datos) y decidir el punto 3.
+- **Estado de git:** rama `main`, HEAD `1289602`, **147 rutas sucias** (obra previa + esta sesión).
+  **Nada commiteado.** Los `seed-*.json` que se sirvieron desde `dist/` **se borraron** al terminar
+  (se regeneran con `node .tmp-verify/gen-owner-seed.mjs`).
+
+## 2026-10-16 (c) — La ficha pinta su referencia, no se inventan duraciones, informe de interfaces y limpieza
+
+- **Resultado:** tres arreglos pequeños y verificados sobre el bundle real, más el **informe
+  detallado de interfaces** que el dueño pidió en chat.
+  1. **La ficha de ejercicio pintaba una caja vacía.** `ExerciseThumbLarge` sólo renderizaba
+     `src` y nadie se lo pasaba: la ficha mostraba 16:10 de lavado con una inicial («C») mientras
+     `exercises/gifs/barbell-squat.gif` viajaba en el bundle sin usarse. Ahora acepta `exerciseId`
+     y resuelve la cascada GIF → imagen → monograma, con `object-contain` (recortar el movimiento
+     de una referencia de técnica es peor que dejar margen).
+  2. **Se dejó de inventar duración.** La fila de reanudar de Hoy imprimía «22 series · **1 min**»
+     cuando el log viene de una hoja sólo-fecha (el lapso entre primera y última serie colapsa a
+     ~0). Por debajo de `MINUTES_TRUSTWORTHY` (5 min) no se imprime duración: queda
+     «{nombres} · {n} series» (`hoy.stripLastShort`).
+  3. **Datos basura fuera:** `dist/seed-*.json` borrados del bundle, `bodylab/apps/web/.tmp-node-names.json`
+     borrado, logs de `.tmp-verify/*.log` borrados, IndexedDB del preview **vaciada y resembrada**
+     con su log real (localStorage vacío; única base `traininglab` con 442 series reales).
+- **Cambios:**
+  - `traininglab/apps/desktop/src/features/exercises/ExerciseThumb.tsx` — `ExerciseThumbLarge`
+    acepta `exerciseId` y resuelve la media; `object-contain`.
+  - `traininglab/apps/desktop/src/screens/ExerciseDetailScreen.tsx` — pasa `exerciseId={exercise.id}`.
+  - `traininglab/apps/desktop/src/screens/TodayScreen.tsx` — `MINUTES_TRUSTWORTHY` y `minutes: number | null`.
+  - `traininglab/apps/desktop/src/lib/i18n.ts` — clave nueva `hoy.stripLastShort` (es/en).
+  - **Nuevos:** `docs/INTERFACE_REPORT_2026-10-16.md` (informe por pantalla, nivel, huecos,
+    decisiones abiertas y apéndice móvil), `docs/screenshots/2026-10-16/index.html` (hoja de
+    contacto permanente, sustituye a la servida en :8091 desde `.tmp-verify/`).
+  - **Herramienta:** `.tmp-verify/check-fixes.mjs` (gitignored) afirma sobre el bundle servido que
+    la ficha carga su referencia y que no aparece «· 1 min».
+- **Verificación (todo ejecutado, exit codes reales):**
+  - `cd fitness-ecosystem && node_modules/.bin/vitest run` → **1300/1300 en 85 archivos, exit 0**.
+  - `cd traininglab/apps/desktop && ./node_modules/.bin/tsc -b` → **exit 0**
+    (ojo: el `tsc` del monorepo es 5.9.3 y falla con `TS5103`; usar el de la app, 6.0.3).
+  - `node scripts/css-class-audit.mjs` → **exit 0** · `prettier --check` limpio.
+  - `./node_modules/.bin/vite build --base=./` → **exit 0**.
+  - `node .tmp-verify/shots-real.mjs` → **12/12 capturas con aserción de texto**
+    (`05b-ejercicio-detalle.png` pasó de 535 KB a 672 KB: ahora lleva la imagen).
+  - `node .tmp-verify/check-fixes.mjs` → **✓ `./exercises/gifs/barbell-squat.gif` (naturalWidth > 0)**
+    y **✓ Hoy no imprime «· 1 min»**.
+  - Capturas mostradas en el panel **Preview** por dos vías: la app viva
+    (`http://localhost:8090/traininglab/`, 1440×900) y la hoja de contacto
+    (`docs/screenshots/2026-10-16/index.html`).
+- **Pendiente / decisión del dueño:**
+  1. ¿La interfaz debe quedarse **sólo con Hoy** también en el raíl (quitar los otros 7 destinos)
+     o el recorte de hoy era sólo «en la pantalla Hoy»? Se implementó lo segundo (orden literal:
+     «en Hoy no hace falta el resumen, progreso, coach»).
+  2. **`Casa · Gym · Parque`** en Hoy necesita el modelo que diga qué equipo vive en cada sitio.
+  3. **Origen de la importación de historial**: `importOwnerLog` / `importSymmetry` siguen sin
+     pantalla (hueco P1 ya anotado el 2026-10-16 (b)).
+  4. **Ruta móvil** (pregunta del dueño): xtool **no** sirve para este proyecto (sólo SwiftPM; no
+     `.xcodeproj`, ni Tauri/CocoaPods — issues xtool #28/#144, Tauri #13457) y Tauri iOS exige
+     **macOS + Xcode**. Sí funciona: **PWA por LAN en el iPhone** hoy mismo, y **Tauri Android** en
+     Windows con Android Studio. iOS nativo requeriría un Mac o CI macOS; con Apple ID gratuito el
+     perfil de aprovisionamiento caduca a los 7 días.
+- **Siguiente paso seguro:** abrir `docs/INTERFACE_REPORT_2026-10-16.md` en el panel y decidir el
+  punto 1 (alcance del recorte) — es el único cambio de esta ronda que podría revertirse solo.
+- **Estado de git:** rama `main`, HEAD `1289602`, **~150 rutas sucias** (obra previa + esta
+  sesión). **Nada commiteado.** El servidor LAN del preview sigue arriba en el puerto 8090
+  (pid en `.tmp-verify/preview-serve.pid`); los `seed-*.json` **no** están en `dist/` (se regeneran
+  con `node .tmp-verify/gen-owner-seed.mjs`).
+
+## 2026-10-16 (d) — Historial (08) ya no es marcador: la pantalla de sesiones cerradas
+
+- **Resultado:** el destino **Historial** dejó de ser un «Próximamente». Sirve las **19 sesiones
+  cerradas** del log real del dueño, la más reciente primero, con fecha local, nombre y procedencia
+  cuando la fuente los trae, series de trabajo y de calentamiento, ejercicios con su número de
+  series, volumen (`peso × reps` sobre series de trabajo: **422 series · 149.107 kg**) y las marcas
+  `D`/`F`. La **duración sólo se pinta cuando una fuente la sostiene** (`completedAt`, o el lapso
+  real entre la primera y la última serie ≥ 5 min); un log de sólo-fecha deja la casilla vacía en
+  vez de inventar «1 min».
+- **Decisión aclarada por el dueño:** «solo Hoy» era **la pantalla Hoy**, no el menú — los ocho
+  destinos del raíl se quedan. También fijó el orden: **Historial primero** (hecho aquí), y deja
+  iOS **documentado pero aparcado** («concéntrate primero en perfeccionar PC»), Android en pausa.
+- **Cambios:**
+  - **Nuevo:** `traininglab/apps/desktop/src/screens/HistoryScreen.tsx` — la pantalla, en el
+    lenguaje de las demás (raíl heredado, tarjetas, `SectionCard`, estados vacíos honestos).
+  - `traininglab/apps/desktop/src/features/stats/derive.ts` — `closedSessionHistory()` +
+    `SessionHistoryEntry` (puro, sin React: lo puede leer cualquier capa, y el MCP ya usa la misma
+    definición en su `read_history`).
+  - `traininglab/apps/desktop/src/app/App.tsx` — `case "history"` sirve la pantalla nueva.
+  - `traininglab/apps/desktop/src/lib/i18n.ts` — **21 claves** `hist.*` (es/en); `soon.history` se
+    queda sin uso por si un futuro destino necesita explicarse.
+  - **Nuevo:** `tests/training/test_session_history.test.ts` — 5 casos que fijan las reglas
+    (hoy abierto fuera / hoy cerrado dentro, calentamiento que no infla, volumen, duración que
+    necesita fuente, orden, tope y total real), con instantes **locales** para no depender del huso.
+  - `docs/INTERFACE_REPORT_2026-10-16.md` y `docs/screenshots/2026-10-16/index.html` actualizados;
+    captura nueva `08-historial.png` (con aserción: ≥ 5 tarjetas y volumen en pantalla).
+- **Verificación:**
+  - `node_modules/.bin/vitest run` → **86 archivos / 1305 tests, exit 0**.
+  - `cd traininglab/apps/desktop && ./node_modules/.bin/tsc -b` → **exit 0**.
+  - `node scripts/css-class-audit.mjs` → **exit 0** (la pantalla no introduce ninguna clase nueva).
+  - `./node_modules/.bin/vite build --base=./` → **exit 0**; `node .tmp-verify/shots-real.mjs` →
+    **12/12 capturas** con aserción.
+  - **Nuevo:** `node .tmp-verify/verify-real.mjs` → **8/8 ✓** sobre el bundle servido con su log:
+    ficha con `barbell-squat.gif` (180 px), «Tu última sesión fue hace 9 días», sin «· 1 min», sin
+    resumen/coach/anillos en Hoy, y **Historial con 19 tarjetas, «19 sesiones cerradas», «422 series
+    de trabajo», «149.107 kg movidos» y último día 07 oct 2026**.
+  - **Trampa documentada:** el primer intento de `check-fixes.mjs` sembraba IndexedDB dentro de un
+    `fetch().then(...)`; la transacción se cerraba sola y la comprobación pasó por bueno un estado
+    **vacío**. `verify-real.mjs` recibe la siembra como argumento y la escribe en el mismo turno del
+    event loop; el aviso está en su cabecera.
+- **Pendiente / decisión del dueño:** siguiente pantalla marcador (**Entrenamiento** o **Rutinas**)
+  o **la importación de historial con pantalla** (`importOwnerLog` / `importSymmetry` siguen sin
+  ningún componente que los llame). Y los puntos ya abiertos: `Casa · Gym · Parque`, pestaña Rango,
+  mapa de fuerza con referencia externa.
+- **Siguiente paso seguro:** abrir `#/historial` en la app viva (`http://localhost:8090/traininglab/`,
+  servidor arriba) con su log real y decidir el siguiente destino.
+- **Estado de git:** rama `main`, HEAD `1289602`, ~150 rutas sucias, **nada commiteado**. Los
+  `seed-*.json` **no** están en `dist/` (se regeneran con `node .tmp-verify/gen-owner-seed.mjs`).
+
+## 2026-10-16 (e) — Regla de cierre restaurada (los dos instaladores) + la importación con pantalla
+
+- **Resultado:** la ronda empezó con el toolchain roto y terminó con **los dos `.exe` nuevos en el
+  escritorio real** y **la importación de historial con su propia pantalla** (el hueco P1 que el
+  (b) había anotado: los importadores existían en el store y ningún componente los llamaba).
+  1. **Toolchain reparado.** `rustup` tenía `stable-x86_64-pc-windows-msvc` **interrumpido**
+     («missing manifest in toolchain»): reinstalado con `--profile minimal` → **rustc 1.99.1**.
+     Build Tools 2022 estaba **sin `VC/Tools` ni Windows SDK** (`vswhere` confirmaba la ausencia y
+     `link.exe` resolvía al de Git): con elevación **aprobada por el dueño** se ejecutó
+     `setup.exe modify --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet
+     --norestart` → **MSVC 14.44.35207** (`cl.exe`+`link.exe`) y **Windows SDK 10.0.26100.0**.
+     Además `pnpm` no arrancaba (`Cannot find module …npm\bin\pnpm.mjs`: los shims globales
+     apuntaban a un módulo ya ausente); borrados y reinstalados con `npm i -g pnpm@10` → **10.34.7**.
+  2. **Instaladores nuevos, verificados y copiados:**
+     - `TrainingLab_0.2.0_x64-setup.exe` — **16,65 MiB**, compilado 23:14, **exit 0**.
+     - `BodyLab_1.0.0-beta.8_x64-setup.exe` — **24,27 MiB**, compilado 23:20, **exit 1**
+       (documentado: `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; el log confirma
+       «Finished 1 bundle at … (24.27 MiB)» antes del error).
+     - Ambos en **`%USERPROFILE%\Desktop`** a las 23:21 (en esta máquina OneDrive **no** redirige
+       el escritorio; comprobarlo con `ls -d ~/OneDrive/Desktop` antes de copiar la próxima vez).
+     - **Contenido del bundle comprobado** en `traininglab/apps/desktop/dist/assets`: dentro están
+       «Sesión a sesión», «Importar historial», «series nuevas de» y «Nada nuevo».
+  3. **Importar historial, con pantalla** (`SettingsScreen.tsx`, nuevo `SectionCard` entre «Mis
+     datos» y «Datos de ejemplo»): eliges **tu CSV corregido** o el **respaldo de Symmetry**, la app
+     lo analiza, lo deduplica contra tu registro y **te dice cuánto entraría** antes de escribir
+     nada. El store ganó `planOwnerLog`/`planSymmetry` (**el mismo plan que ejecuta la importación**,
+     así que los números de la vista previa no pueden divergir), `previewOwnerLog`/`previewSymmetry`
+     y el tipo exportado `ImportPreview`. Si todo está ya en el registro, el botón Importar se
+     deshabilita y la línea dice «Nada nuevo».
+- **Cambios:** `app/store.tsx` (plan + previews + refactor de los dos importadores),\n  `screens/SettingsScreen.tsx` (la sección), `lib/i18n.ts` (10 claves `import.*`, es/en),\n  `docs/INTERFACE_REPORT_2026-10-16.md` (tabla de destinos, cambios, verificación y §4.1 «Cierre»),\n  `docs/screenshots/2026-10-16/index.html` (hoja de contacto al día), este archivo.\n  Herramientas gitignored nuevas: `.tmp-verify/verify-import.mjs` (8 aserciones con tus ficheros\n  reales) y `.tmp-verify/verify-real.mjs` (8 aserciones de las pantallas con tu log).
+- **Verificación:**
+  - `node_modules/.bin/vitest run` → **86 archivos / 1305 tests, exit 0** · `tsc -b` → **0** ·\n    `css-class-audit` → **0** · `vite build` → **0**.
+  - `node .tmp-verify/verify-import.mjs` → **8/8 ✓** con tus ficheros reales: «442 series nuevas de\n    19 sesiones», «18 filas no tienen equivalente», confirmar → «19 sesiones y 442 series\n    fusionadas (0 duplicadas descartadas)», contador a 442, reimportar el mismo CSV → «Nada\n    nuevo» con 442 duplicadas y botón deshabilitado, y el respaldo de Symmetry → «0 series nuevas\n    de 20 sesiones» (el CSV ya las contiene, que es la garantía que documenta `owner-log.ts`).
+  - `cd bodylab/apps/web && npx vitest run` → **11 archivos / 167 tests, exit 0**.
+  - `pnpm tauri build` en ambas apps → los dos instaladores anteriores.
+- **Lo que NO se hizo (y por qué):** el instalador **no se ejecutó** en este equipo (cambiaría la\n  app que usas a diario; eso lo decides tú). Y `createUpdaterArtifacts` sigue exigiendo el secreto\n  de firma: sólo está en el workflow de release.
+- **Pendiente / decisión del dueño:** siguiente destino marcador (**Entrenamiento** o **Rutinas**),\n  y los puntos ya abiertos (`Casa · Gym · Parque`, pestaña Rango, mapa de fuerza con referencia\n  externa).
+- **Estado de git:** rama `main`, HEAD `1289602`, ~152 rutas sucias, **nada commiteado**. Servidor\n  LAN en `:8090` (pid en `.tmp-verify/preview-serve.pid`); `dist/` no lleva `seed-*.json`.
+
+## 2026-10-18 — La matriz de destinos y Entrenamiento (02) portado: la cola del día
+
+- **Fase/tarea:** brief §4 (Fases 1–2) · migración lineal al mockup, **pantalla 02**, la cuarta de la
+  serie tras 01, 03 y 08. La petición del dueño fue *«continúa según la nueva matriz para el
+  workflow autónomo»*: primero la matriz, después la pantalla que la matriz deja desbloqueada.
+- **Resultado:** dos entregas.
+  1. **La matriz de destinos** — `docs/INTERFACE_REPORT_2026-10-16.md` **§8**: cada página del
+     mockup con su destino en el raíl, su estado **verificado en el bundle** y lo que la bloquea.
+     Lectura honesta de hoy: **siete de ocho destinos sirven pantalla real**; el único marcador
+     que queda es **Rutinas (06)**. Es la tabla que decide la siguiente pantalla, no una lista de
+     deseos: cada fila nombra el gate (decisión del dueño, gate del mapa de fuerza, o nada).
+  2. **Entrenamiento (02) ya no es marcador.** Es la pantalla de la *cola del día*, distinta de
+     Hoy: orden propio (subir/bajar con botón y «Volver al orden del plan» cuando el orden es
+     suyo), **cambiar** por alternativa legal (mismo patrón y mismo tipo de carga, del catálogo y
+     con su equipo), **quitar** (una fila añadida a mano se borra; una del plan se **salta** y
+     vuelve con un toque, porque el plan y la semana conservan la prescripción), las dos vistas
+     **por equipamiento** y **por músculo**, el aviso derivado *«si el X está ocupado, empieza por
+     Y»*, y **«Añadir varios»** con una prescripción común (series · reps · descanso) que el store
+     aplica a cada uno. **`¿Por qué estos?` imprime las razones del propio plan** (las mismas
+     cadenas que ZEN), la ventana de recuperación que deriva el log y los totales reales — cero
+     copy inventado.
+- **Cambios:**
+  - **Nuevos:** `traininglab/apps/desktop/src/screens/TrainingScreen.tsx` (la pantalla),
+    `traininglab/apps/desktop/src/lib/day-view.ts` (proyecciones puras: `primaryGear`,
+    `groupByGear`, `groupByFamily`, `startElsewhere`, `dayTotals`, `budgetFill`),
+    `tests/training/test_day_view.test.ts` (8 casos con **ids reales del catálogo**),
+    `docs/screenshots/2026-10-18/` (13 capturas + hoja de contacto propia).
+  - `traininglab/apps/desktop/src/app/store.tsx` — `addExerciseToToday` acepta la prescripción
+    (con topes: reps 1–30, descanso 15–600 s, RIR 0–5) y se exponen `addedToday`,
+    `removeAddedRow` y `addExerciseToToday` (el MCP usa la misma función, así que el botón y un
+    agente no pueden prescribir distinto).
+  - `traininglab/apps/desktop/src/app/App.tsx` — `case "training"` sirve la pantalla (sin `Legacy`:
+    dibuja su propio topbar y `.content` como Hoy); el destino ya no usa el marcador.
+  - `traininglab/apps/desktop/src/lib/i18n.ts` — **49 claves `ent.*`** (es/en), ninguna a medias
+    (lo verifica `test_traininglab_i18n_coverage`).
+  - `traininglab/apps/desktop/src/mockup.css` — clases `ent-*` (fila, acciones, grupos, panel de
+    añadir, why/números) con su regla de 640 px; la auditoría CSS queda en 0.
+  - `docs/INTERFACE_REPORT_2026-10-16.md` (§2 fila 3, §3 tabla de cambios, §4.2 verificación, §6.3
+    decisiones, §8 matriz), `mockup/README.md` (02 marcado como portado y lo que no se portó) y
+    este archivo.
+- **Verificación (todo ejecutado; exit codes reales):**
+  - `cd traininglab/apps/desktop && ./node_modules/.bin/tsc -b` → **exit 0**.
+  - `node_modules/.bin/vitest run` (raíz) → **87 archivos / 1313 tests, exit 0** (+8 del helper
+    nuevo; el guard de i18n y el de CSS pasan con el port dentro).
+  - `node scripts/css-class-audit.mjs` → **exit 0** (152 clases definidas; 0 usadas-sin-definir,
+    0 definidas-sin-usar, 0 entradas muertas en la allowlist).
+  - `./bodylab/apps/web/node_modules/.bin/oxlint --quiet <4 archivos>` → **0 errores / 0
+    warnings**; el único warning que aparece al lintar `store.tsx` es **previo y ajeno**
+    (`settings.weekOverrides`).
+  - `./node_modules/.bin/vite build --base=./` → **exit 0**.
+  - **`node .tmp-verify/verify-entrenamiento.mjs` → 26/26 ✓** sobre el bundle servido y con su log
+    real: 5 filas del día («pecho · hombros · tríceps · 60 min · 5 ejercicios · 19 series»), el
+    porqué con su objetivo y su recuperación, **subir intercambia y el orden sobrevive al
+    recargar**, el camino de vuelta al orden del plan, quitar → «Fuera de hoy» → volver, las dos
+    vistas agrupando (6 y 7 grupos), «Añadir varios» 5 → 7 filas con **«4 × 10–12 · RIR 2 · 120 s»**
+    aplicado de verdad, quitar un añadido a mano 7 → 6, cambiar («Aperturas Inversas» → «Remo con
+    Mancuerna a Un Brazo») y **0 px de desbordamiento a 390 px**.
+  - `node .tmp-verify/shots-real.mjs` → **13/13 capturas con aserción** en
+    `docs/screenshots/2026-10-18/` (incluye `02-entrenamiento.png` y `12-entrenamiento-phone.png`).
+  - **Regla de cierre, cumplida en la misma sesión:**
+    - `pnpm tauri build` en `traininglab/apps/desktop` → **exit 0** →
+      `TrainingLab_0.2.0_x64-setup.exe` **16,65 MiB**, 14:30.
+    - `pnpm tauri build` en `bodylab/apps/desktop` → **exit 1 documentado**
+      (`createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`) con «Finished 1 bundle» en el log →
+      `BodyLab_1.0.0-beta.8_x64-setup.exe` **24,27 MiB**, 14:33.
+    - **Contenido del bundle comprobado** (no solo que el `.exe` exista): dentro de
+      `traininglab/apps/desktop/dist/assets` están «Entrenamiento del día», «Añadir varios»,
+      «¿Por qué estos?» y «Por equipamiento».
+    - Los dos `.exe` copiados al **escritorio real** (`%USERPROFILE%\Desktop`; en esta máquina
+      OneDrive no lo redirige): 14:31 y 14:33.
+- **Lo que NO se hizo, y por qué:** no ejecuté los instaladores (reemplazarían la app que el dueño
+  usa a diario: decisión suya); no porté el **arrastre** del mockup (se mueve con botones: la ruta
+  accesible ya existe y el arrastre es una entrega propia); no puse el selector
+  **`Casa · Gym · Parque`** (sin modelo de datos que diga qué equipo vive en cada sitio) ni
+  **«Desde mi rutina»** (Rutinas sigue en marcador). Nada de eso se ha simulado con un botón muerto.
+- **Pendiente / decisión del dueño:** 1) **Rutinas (06)** es el único destino en marcador y la
+  siguiente pantalla que la matriz deja desbloqueada — pero necesita una decisión de modelo
+  (¿plantillas guardadas por el usuario, de catálogo, o ambas?); 2) `Casa · Gym · Parque`; 3)
+  pestaña Rango; 4) mapa de fuerza con referencia externa (gate cerrado, sin tocar).
+- **Siguiente paso seguro:** abrir el panel Preview (servidor LAN en `:8090`, ya registrado en
+  `#/entrenamiento`) o `docs/screenshots/2026-10-18/index.html` y decidir si Rutinas entra como
+  pantalla o si antes se cierran los huecos de arriba.
+- **Estado de git:** rama `main`, HEAD `1289602`, **~153 rutas sucias** (obra previa + esta ronda),
+  **nada commiteado**. Servidor LAN en `:8090` (PID 30588, log en `.tmp-verify/serve-8090.log`).
+  Los `seed-*.json` **no** están en `dist/` (el `vite build` de los instaladores limpió `dist`;
+  se regeneran con `node .tmp-verify/gen-owner-seed.mjs` antes de cualquier verificación).
+
+## 2026-10-18 (b) — Pulido gráfico medido: diez defectos reales, cero hallazgos, y la auditoría que casi pasa en blanco
+
+- **Fase/tarea:** brief §4 · Fase 4 (accesibilidad, respuesta y confianza) — orden del dueño:
+  *«perfeccionar pequeños errores gráficos»*. En la misma conversación fijó el modelo de la
+  **siguiente** pantalla: **Rutinas = plantillas del usuario, editables** (queda anotado aquí
+  como decisión, no implementado).
+- **Resultado:** tres cosas.
+  1. **Una auditoría medible, no una mirada:** `node .tmp-verify/audit-visual.mjs` recorre las
+     **9 pantallas × 3 anchos** (1440 · 1024 · 390) sobre el bundle servido con su log real y
+     falla ante desbordamiento de página, elementos que desbordan su caja, texto recortado,
+     objetivos táctiles < 44 px, inputs < 16 px, imágenes rotas, 404, peticiones fallidas o
+     pantallas que no montan. **Resultado final: SIN HALLAZGOS (exit 0)** con dos exenciones
+     declaradas (tira de filtros *full-bleed* simétrica; valor recortado dentro de un input de
+     texto, que el cursor desplaza por diseño).
+  2. **Diez defectos reales, cada uno con su causa medida y su arreglo** (tabla completa en el
+     informe §4.3). Los cuatro que más se notaban: «Empezar» de cada fila de Entrenamiento medía
+     **70 × 30** porque la regla táctil de ≤ 640 px no cubría `a.btn`; la topbar de ZEN
+     desbordaba su caja y ensanchaba la página **9 px** a 390; el título de Progreso quedaba
+     aplastado a **2 px** de ancho; y el switch «Red de casa» tenía **24 px** de alto porque
+     `label:has(> input[type=checkbox])` no casa cuando el checkbox está un nivel más adentro.
+  3. **La trampa del pase vacío, cazada y documentada.** La primera versión de la auditoría dio
+     «sin hallazgos» sobre **nueve pantallas en blanco**: el `vite build` de Tauri deja `dist`
+     con **base absoluta** (correcto para la app, roto para el servidor LAN — todos los assets
+     daban 404) y el script no comprobaba que la pantalla hubiera montado. Ahora exige la cadena
+     propia de cada pantalla y caza 404; la lección está escrita en la cabecera del script y en
+     el informe. **Regla práctica: antes de servir o auditar, `vite build --base=./`.**
+- **Cambios:**
+  - `traininglab/apps/desktop/src/index.css` — `a.btn` en la regla táctil de ≤ 640 px; `label:has(input[type="checkbox"|"radio"])`
+    (descendiente, para el `Switch`); `.icon-btn` a 44 px de ancho; `.tl-body-picker` a 44 px y
+    16 px; `.tl-card-head` envuelve con el título a 11 rem mínimo (≤ 850 px); `summary` de tarjeta
+    envuelve su acción (≤ 640 px).
+  - `traininglab/apps/desktop/src/mockup.css` — `.nownext` recorta **solo los nombres** con elipsis.
+  - `traininglab/apps/desktop/src/screens/TrainingScreen.tsx` — buscador a 16 px (zoom iOS).
+  - `traininglab/apps/desktop/src/screens/ExercisesScreen.tsx` — tira de filtros `-mx-3.5 px-3.5`
+    (el margen real del contenido en móvil; `-mx-4` desbordaba 2 px).
+  - `traininglab/apps/desktop/src/features/today/SettingsPanel.tsx` — fila de presupuesto con
+    `flex-wrap`. `features/today/GearPanel.tsx` — campos de máximo/incremento `w-16` → `w-20`.
+  - **Herramientas nuevas (gitignored):** `.tmp-verify/audit-visual.mjs` (la auditoría),
+    `.tmp-verify/probe-findings.mjs` (geometría y estilos de lo señalado, para arreglar midiendo).
+  - `docs/INTERFACE_REPORT_2026-10-16.md` §4.3 (auditoría, tabla de defectos y lección del pase
+    vacío); capturas de `docs/screenshots/2026-10-18/` **regeneradas** contra el bundle arreglado.
+- **Verificación (todo ejecutado; exit codes reales):**
+  - `node .tmp-verify/audit-visual.mjs --json` → **SIN HALLAZGOS en 9 pantallas × 3 anchos, exit 0**
+    (44 hallazgos en la primera pasada real, 6 tras los primeros arreglos, 1 tras afinar la regla
+    del *full-bleed*, 0 al fijar la exención en descendientes).
+  - `node_modules/.bin/vitest run` (raíz) → **87 archivos / 1313 tests, exit 0**.
+  - `cd traininglab/apps/desktop && ./node_modules/.bin/tsc -b` → **exit 0**.
+  - `node scripts/css-class-audit.mjs` → **exit 0**. `oxlint` sobre los archivos tocados →
+    **0 errores / 0 warnings**. `vite build --base=./` → **exit 0**.
+  - `node .tmp-verify/shots-real.mjs` → **13/13 capturas con aserción** (bundle arreglado).
+  - **Regla de cierre:** `pnpm tauri build` de TrainingLab → **exit 0**, `TrainingLab_0.2.0_x64-setup.exe`
+    **16,65 MiB** (15:21) copiado al escritorio real; `pnpm tauri build` de BodyLab → **exit 1 documentado**
+    (`createUpdaterArtifacts` sin clave de firma; el log confirma «Finished 1 bundle») →
+    `BodyLab_1.0.0-beta.8_x64-setup.exe` **24,27 MiB** (15:25). Los dos copiados al escritorio real
+    (15:22 y 15:25) y las cadenas nuevas comprobadas dentro de `dist/assets` (`index-CCa4O49t.js`).
+- **Pendiente / decisión del dueño:** **Rutinas (06)** con el modelo ya decidido (*plantillas del
+  usuario, editables*); siguen abiertos `Casa · Gym · Parque`, la pestaña Rango y el mapa de
+  fuerza con referencia externa (gate cerrado).
+- **Siguiente paso seguro:** re-servir con `node scripts/serve-lan.mjs --no-build --port 8090`
+  (el bundle en `dist` es el de la app, con base absoluta: si se va a auditar o capturar hay que
+  reconstruir con `--base=./` primero) y abrir `#/entrenamiento` en el panel Preview.
+- **Estado de git:** rama `main`, HEAD `1289602`, **~153 rutas sucias**, **nada commiteado**.
+
+## 2026-10-18 (c) — Cierre del pulido: el último objetivo táctil, el lint a 0/0 y los dos instaladores
+
+- **Fase/tarea:** brief §4 · Fase 4 — cierre de la ronda de «pequeños errores gráficos». Sin cambios
+  de modelo, contrato ni datos.
+- **Resultado:** dos defectos que la pasada anterior no había cerrado.
+  1. **`.icon-btn` seguía a 32 px de ancho en móvil.** La regla que se había escrito en
+     `index.css` no hacía nada: `mockup.css` se importa después y la misma clase ganaba por orden.
+     El arreglo vive ahora en `mockup.css`, junto a la regla base (≤ 640 px → 44 px), y `index.css`
+     conserva una nota que explica la precedencia para que nadie la reintroduzca en el sitio
+     equivocado.
+  2. **`oxlint` había vuelto a 1 warning** (`getRange` leído durante su propia inicialización en
+     `Measurements.tsx`): el helper era una constante local consumida por un `useCallback`
+     declarado antes que ella. Se elevó a ámbito de módulo —es pura sobre `MEASUREMENT_TYPES`— sin
+     cambiar comportamiento.
+- **Cambios:**
+  - `traininglab/apps/desktop/src/mockup.css` — `.icon-btn { width: 44px }` dentro del bloque ≤ 640 px.
+  - `traininglab/apps/desktop/src/index.css` — comentario de precedencia (sin regla duplicada).
+  - `bodylab/apps/web/src/pages/Measurements.tsx` — `getRange` a ámbito de módulo.
+  - `docs/INTERFACE_REPORT_2026-10-16.md` — §9 con estos dos arreglos y los números finales.
+- **Verificación (todo ejecutado; exit codes reales):**
+  - `node .tmp-verify/audit-visual.mjs` → **SIN HALLAZGOS en 9 pantallas × 3 anchos, exit 0**
+    (bundle reconstruido antes con `npx vite build --base=./`).
+  - `./node_modules/.bin/vitest run` (raíz) → **87 archivos / 1313 tests, exit 0**.
+  - `traininglab/apps/desktop && ./node_modules/.bin/tsc -b` → **exit 0**;
+    `bodylab/apps/web && ./node_modules/.bin/tsc -b` → **exit 0**.
+  - `oxlint` (bodylab/apps/web) → **0 warnings / 0 errors**; `node scripts/css-class-audit.mjs` →
+    **exit 0**.
+  - **Regla de cierre:** `tauri build` de TrainingLab → **exit 0**, `TrainingLab_0.2.0_x64-setup.exe`
+    **16,65 MiB** (15:46); `tauri build` de BodyLab → **exit 1 documentado** (falta
+    `TAURI_SIGNING_PRIVATE_KEY`; el log dice «Finished 1 bundle»),
+    `BodyLab_1.0.0-beta.8_x64-setup.exe` **24,27 MiB** (15:47). Los dos copiados a
+    `C:\Users\andyh\Desktop` (esta máquina no tiene OneDrive redirigiendo el escritorio). La regla
+    nueva se comprobó **dentro del bundle**: `icon-btn{width:44px}` en
+    `dist/assets/index-uR_YRVaU.css`.
+- **Pendiente / decisión del dueño:** **Rutinas (06)** con el modelo ya decidido (*plantillas del
+  usuario, editables*); siguen abiertos `Casa · Gym · Parque`, la pestaña Rango y el mapa de fuerza
+  con referencia externa (gate cerrado).
+- **Siguiente paso seguro:** empezar Rutinas sobre ese modelo; antes de auditar o servir,
+  `npx vite build --base=./` en `traininglab/apps/desktop` (el `dist` que deja Tauri tiene base
+  absoluta y rompe el servidor LAN).
+- **Estado de git:** rama `main`, HEAD `1289602`, **155 rutas sucias**, nada commiteado.
+
+## 2026-10-19 (a) — Rutinas (06): de marcador honesto a pantalla operativa
+
+- **Fase/tarea:** `docs/BUFFY_IMPLEMENTATION_BRIEF.md` §4 · Fase 4, y la deuda que la matriz del
+  `INTERFACE_REPORT` dejaba abierta: **Rutinas era el único destino en marcador**. Modelo ya
+  decidido por el dueño y respetado al pie de la letra: *plantillas del usuario, editables*.
+- **Resultado:** destino `#/rutinas` operativo.
+  - **Modelo puro** en `lib/routines.ts`: `Routine` = nombre + notas + lista ordenada de
+    `{exerciseId, sets, repsMin, repsMax, restSec, rir}`. Sanea en la frontera: descarta ejercicios
+    fuera del catálogo, deduplica, recorta series/reps/descanso/RIR a los mismos límites del
+    planificador y limita a 24 ejercicios. Minutos = `setup + series × (0,5 + descanso)`, siempre
+    impresos con `~`.
+  - **Persistencia en `settings.routines`** (no un object store nuevo): copias, restauración y
+    autobackup ya lo llevan sin subir `DB_VERSION`; `normalizeSettings` aplica el mismo saneador.
+  - **Store:** `routines`, `saveRoutine`, `deleteRoutine`, `applyRoutineToday`. «Usar hoy» llama a
+    `addExerciseToToday` (el mismo verbo de Entrenamiento y MCP): suma filas con la prescripción de
+    la plantilla, no reescribe plan ni semana, y reporta cuántas entraron (singular incluido).
+  - **Pantalla** `screens/RoutinesScreen.tsx`, port del mockup 06: buscador, rejilla de tarjetas,
+    hoja de detalle (vista general + ejercicios + Usar hoy / Editar / Duplicar / Eliminar con
+    confirmación), editor modal (nombre, notas, alta por catálogo, series/reps/descanso/RIR,
+    subir/bajar/quitar, guardado por id sin duplicar) y estado vacío con **Guardar el entrenamiento
+    de hoy** (instantánea de las filas visibles, no un re-plan) y **Crear desde cero**.
+  - **Entrenamiento:** «Desde mi rutina» ya no es un botón muerto; enlaza a `#/rutinas`.
+  - **i18n:** bloque `ru.*` completo ES/EN; `ru.metaOne` y `ru.detail.addedOne` para no imprimir
+    «1 ejercicios» ni «1 añadidos».
+- **Dos defectos gráficos cazados en el build servido (no en el código):** `.field-label` era un
+  `<label>` inline y fluía al lado de su input en el editor → `display: block` en `mockup.css`; y
+  Guardar/Cancelar quedaban al final de un modal de 88 vh (con 24 ejercicios, fuera de pantalla al
+  añadir uno) → barra `.ru-actions` con `position: sticky`.
+- **Cambios (repo-relativos):**
+  - `traininglab/apps/desktop/src/lib/routines.ts` (nuevo)
+  - `traininglab/apps/desktop/src/screens/RoutinesScreen.tsx` (nuevo)
+  - `traininglab/apps/desktop/src/app/store.tsx`, `app/App.tsx`, `screens/TrainingScreen.tsx`
+  - `traininglab/apps/desktop/src/lib/types.ts`, `lib/db.ts`, `lib/i18n.ts`
+  - `traininglab/apps/desktop/src/mockup.css`
+  - `tests/training/test_routines.test.ts` (nuevo, 20 tests)
+  - `docs/INTERFACE_REPORT_2026-10-16.md` (§10 y matriz: 06 ya operativa)
+  - capturas: `docs/screenshots/rutinas-{list,sheet,editor,empty,mobile-list,mobile-sheet,mobile-editor}.png`
+- **Verificación (todo ejecutado; exit codes reales):**
+  - `./node_modules/.bin/vitest run` (raíz) → **88 archivos / 1333 tests, exit 0**.
+  - `traininglab/apps/desktop && ./node_modules/.bin/tsc -b` → **exit 0**;
+    `bodylab/apps/web && ./node_modules/.bin/tsc -b` → **exit 0**.
+  - `node scripts/css-class-audit.mjs` → **exit 0**; `oxlint` (bodylab web) → **0/0**.
+  - `node .tmp-verify/audit-visual.mjs` → **SIN HALLAZGOS en 10 pantallas × 3 anchos** (Rutinas
+    incluida), exit 0.
+  - Flujo real en el bundle servido: guardar desde hoy → recargar (persiste) → «Usar hoy»
+    (1 añadido, visible en Entrenamiento con ★ y «Añadido por ti») → editar en sitio (siguen 2
+    rutinas) → confirmación de borrado. Capturas con un contexto sembrado por IndexedDB
+    (`.tmp-verify/shots-rutinas.mjs`, `--` el seed se regenera con `gen-owner-seed.mjs`).
+  - **Regla de cierre:** `pnpm tauri build` (TrainingLab) → **exit 0**,
+    `TrainingLab_0.2.0_x64-setup.exe` **17.467.885 bytes / 16,66 MiB (16:57)**; en el `dist/assets`
+    de ese mismo build se comprobó «Plantillas tuyas» presente y «Routines is screen 06» ausente
+    (el hash cambia al reconstruir después con `--base=./` para el servidor LAN); copiado a
+    `C:\Users\andyh\Desktop` (16:57).
+    BodyLab **no se tocó** en esta ronda: su instalador del 18/10 15:47 sigue siendo el de su árbol
+    actual. Después del build de Tauri se reconstruyó `dist` con `--base=./` y se repuso el seed,
+    para que el servidor LAN y el panel Preview sigan sirviendo.
+- **Limitación de entorno:** `pnpm lint` y `pnpm typecheck` de la raíz invocan `bun`, que no está
+  instalado en esta máquina (`'bun' is not recognized`). Se ejecutaron los binarios reales por
+  paquete (`oxlint`, `tsc -b`), que es lo que esos scripts acaban corriendo.
+- **Pendiente / decisión del dueño:** nada nuevo bloqueado. Siguen abiertos `Casa · Gym · Parque`,
+  la pestaña Rango y el mapa de fuerza con referencia externa (gate cerrado); del mockup 02 quedan
+  arrastre real y alta de ejercicio propio. Gap observado en esta ronda: las filas añadidas a hoy
+  (`addedRows`, incluidas las de «Usar hoy») son **efímeras** y se pierden al recargar; persistirlas
+  por fecha sería el siguiente arreglo pequeño y verificable.
+- **Siguiente paso seguro:** `node scripts/serve-lan.mjs --no-build --port 8090` y abrir
+  `#/rutinas`; o persistir `addedRows` por fecha en `settings` siguiendo el patrón de `rowOrder`.
+- **Estado de git:** rama `main`, HEAD `1289602`, **164 rutas sucias**, nada commiteado (incluye el borrado del `PlaceholderScreen` que ya nadie usa).
+
+## 2026-10-19 — Navegación móvil, arrastre real y paridad MCP
+
+- **Resultado:** La app deja de depender de una barra superior con scroll horizontal en el
+  teléfono: por debajo de 900 px hay una barra inferior fija de cuatro destinos (Hoy ·
+  Entrenamiento · Historial · Progreso) y una hoja «Más» con Ejercicios · Semana · Rutinas ·
+  Configuración. La pestaña activa es la única que imprime su nombre; las demás muestran el
+  icono, y el control «Más» adopta el nombre de la sección secundaria activa. Los ocho
+  destinos siguen en `app/nav.ts`, sin duplicados.
+  Entrenamiento y Semana ya se arrastran de verdad: asa explícita, Pointer Events (funciona
+  con ratón, dedo y lápiz; HTML5 DnD no dispara en iOS), vista previa local en la cola y una
+  sola escritura al soltar. Semana intercambia el plan efectivo de dos días y lo guarda en
+  `weekOverrides`; si el destino es descanso, la sesión se mueve y el origen descansa.
+  Teclado: ↑/↓ en la cola, ←/→ en Semana, con anuncio `aria-live`.
+  El canal MCP pasó de 22 a **26 herramientas** con `reorder_today`, `set_exercise_state`,
+  `reset_today_order` y `swap_week_days`, todas validadas contra el contexto de la app y con
+  deshacer en Ajustes. Se añadieron selectores `data-testid` estables a pestañas, asas, campos
+  de peso/reps y nombre de rutina para que las pruebas de navegador no dependan del copy.
+- **Cambios:** `traininglab/apps/desktop/src/app/App.tsx` y `app/nav.ts` (barra + hoja);
+  `src/ui/pointer-drag.ts`, `src/lib/reorder.ts`, `src/lib/week-swap.ts` (gesto y lógica
+  pura); `screens/TrainingScreen.tsx` y `screens/WeekScreen.tsx` (asas, teclado, anuncios);
+  `src/app/store.tsx` (`swapWeekDays`, contexto MCP); `src/lib/mcp-actions.ts` y
+  `scripts/fitness-mcp-server.mjs` (cuatro acciones); `src/mockup.css` (barra, hoja, asas,
+  corrección del `seg` a 320 px); `src/lib/i18n.ts` (copy ES/EN); tests
+  `tests/training/test_mobile_nav.test.ts`, `test_drag_reorder.test.ts`,
+  `test_mcp_actions.test.ts` y `test_mcp_server.test.ts`; documentación
+  `docs/DECISIONS_2026-10-19.md` (nuevo), `docs/MCP_TOOL_SURFACE.md`,
+  `docs/REDESIGN_STORM.md`, `AGENTS.md` y `package.json` (vuelta a los scripts pnpm que CI
+  ejecuta; el cambio local a bun rompía `pnpm check`).
+- **Verificación:** root `./node_modules/.bin/vitest run` → **90 archivos / 1350 tests, exit 0**;
+  web `vitest run` → **11 archivos / 167 tests, exit 0**; `oxlint` → **0 warnings / 0 errors**;
+  `tsc -b` web y TrainingLab → **exit 0**; `vite build` web y TrainingLab → **exit 0**;
+  Playwright BodyLab → **21/21, exit 0**; `node scripts/css-class-audit.mjs` → **sin hallazgos**.
+  Navegador real (Vite, 390×844): capturas `docs/screenshots/mobile-nav-2026-10-19.png`,
+  `mobile-more-2026-10-19.png`, `mobile-week-swapped-2026-10-19.png` y
+  `mobile-training-after-2026-10-19.png`; el arrastre se ejecutó con Pointer Events
+  sintéticos y persistió tras recargar; a 320 px no hay overflow horizontal.
+  `tauri build` TrainingLab → **exit 0**, `TrainingLab_0.2.0_x64-setup.exe` (16.66 MiB);
+  BodyLab → **exit 1 por la firma del updater** (sin `TAURI_SIGNING_PRIVATE_KEY`), con
+  `BodyLab_1.0.0-beta.8_x64-setup.exe` (24.27 MiB) generado. Ambos copiados al escritorio
+  real (`%USERPROFILE%\Desktop`, aquí sin redirección a OneDrive), hora 17:58.
+- **Pendiente / decisión del dueño:** `undo_action` en MCP (el acuse ya trae `undoToken`),
+  rutinas por MCP (`save/apply/delete`), export/import e idioma; el mapa de fuerza sigue bajo
+  su gate de evidencia. **STT** queda solo como sugerencia registrada: no se añadió ninguna
+  dependencia ni modelo.
+- **Siguiente paso seguro:** commit de esta ronda y push a `main`; después, `undo_action` con
+  la misma validación y recibo que el resto, sin abrir una segunda implementación.

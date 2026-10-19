@@ -12,6 +12,7 @@ in charge (the LLM proposes, the maths disposes).
 | `knowledge.json` | Machine-readable facts: all 143 exercises with pattern, load, joint/spine stress, RIR, tempo, media flag + the hard rules | **Generated** from `@fitness/bodylab-exercises` by `scripts/build-llm-pack.mjs`; drift test in `tests/training/test_llm_knowledge_pack.test.ts` |
 | `EXERCISES.md` | The same facts as a compact table (paste into the model's context or read it yourself) | Same generator, same test |
 | `Modelfile` | Ollama/llama.cpp recipe with the system prompt baked in | Test asserts it matches `buildSystemPrompt()` at runtime |
+| `MCP_TOOLS.md` | How to *use* the 17 MCP tools (`fitness`) as a coach: read-then-act, receipts, rule codes, the good end-to-end flow | Written against the real server (`scripts/fitness-mcp-server.mjs`); the rule codes are the ones the app returns |
 
 ## Your model is already downloaded
 
@@ -67,7 +68,11 @@ red. Never edit `knowledge.json` by hand.
 
 1. `buildSystemPrompt()` (lib/llm.ts) — the same text baked into the Modelfile.
 2. Tools: `get_context`, `get_deterministic_plan`, `list_available_exercises`,
-   `get_exercise_history`, and the terminal `propose_session`.
+   `get_exercise_history`, `get_progression_verdict` (the multi-day verdict per
+   exercise — raise / escalate / repeat / rebuild / easier variant, with the
+   exact kilos and the lever; today's own sets are excluded, because inside a
+   day the D/F mark decides the load), `report_fatigue_and_query_safe`,
+   `swap_exercise_safe`, and the terminal `propose_session`.
 3. `validateProposal()` checks every proposed slot against the gear inventory,
    the real catalog ids and the time budget before anything reaches the screen.
 4. If the model is off, slow or wrong, the deterministic plan is silently kept —

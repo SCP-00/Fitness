@@ -110,6 +110,116 @@ fn autobackup_dir(app: tauri::AppHandle) -> Result<String, String> {
     Ok(backup_dir(&app)?.to_string_lossy().into_owned())
 }
 
+// ── MCP action channel (in / out) ───────────────────────────────────────────
+//
+// The write side of the tool surface (docs/MCP_TOOL_SURFACE.md, decision D1):
+// a local model (Buffy, Codex, llama.cpp…) cannot touch IndexedDB, so it drops
+// its requests in `mcp/mcp-actions.json` and the WebView applies them through
+// its own store — validated by the same rules as the UI — then answers in
+// `mcp/mcp-results.json`. Two commands, JSON in / JSON out, no path argument:
+// the directory is computed here, so the WebView still cannot write anywhere it
+// likes and no filesystem plugin is registered.
+
+fn mcp_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("no app data dir: {e}"))?
+        .join("mcp");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    Ok(dir)
+}
+
+/// Read and remove the pending action file in ONE step, so a crash between the
+/// two cannot hand the same actions to the app twice. Replaying an action the
+/// app already handled is still impossible — the idempotency ledger in the
+/// WebView remembers every id it has ever seen — which is what makes this
+/// consume-then-apply order safe.
+#[tauri::command]
+fn take_mcp_inbox(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let path = mcp_dir(&app)?.join("mcp-actions.json");
+    if !path.exists() {
+        return Ok(None);
+    }
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    // A failed unlink is not fatal: the ledger dedupes, so the next poll would
+    // simply see the same actions and answer with the same receipts.
+    let _ = std::fs::remove_file(&path);
+    Ok(Some(text))
+}
+
+/// Merge freshly written receipts into `mcp-results.json`.
+///
+/// Newest wins per id (an undo rewrites its own receipt), order is kept and the
+/// file is capped so it cannot grow without bound. The JSON must be an array of
+/// receipts carrying `id` + `status`: an unverifiable receipt is worse than
+/// none, the same rule the snapshots follow.
+#[tauri::command]
+fn write_mcp_results(app: tauri::AppHandle, contents: String) -> Result<String, String> {
+    let incoming = serde_json::from_str::<serde_json::Value>(&contents)
+        .map_err(|e| format!("mcp results payload is not JSON: {e}"))?;
+    let incoming = incoming
+        .as_array()
+        .ok_or_else(|| "mcp results payload must be a JSON array".to_string())?;
+    for receipt in incoming {
+        let id = receipt
+            .get("id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| "receipt without id".to_string())?;
+        if id.is_empty() {
+            return Err("receipt with an empty id".into());
+        }
+        if !matches!(
+            receipt.get("status").and_then(|v| v.as_str()),
+            Some("applied") | Some("rejected")
+        ) {
+            return Err(format!("receipt {id} has no valid status"));
+        }
+    }
+
+    let path = mcp_dir(&app)?.join("mcp-results.json");
+    let existing: serde_json::Value = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_else(|| serde_json::Value::Array(vec![]));
+    let merged = merge_receipts(existing, incoming.as_slice());
+    let json = serde_json::to_string_pretty(&merged)
+        .map_err(|e| format!("cannot serialise receipts: {e}"))?;
+
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, &json).map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
+    std::fs::rename(&tmp, &path).map_err(|e| format!("cannot move {}: {e}", tmp.display()))?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+/// Receipts live in an array but behave like a map keyed by `id`.
+fn merge_receipts(existing: serde_json::Value, incoming: &[serde_json::Value]) -> serde_json::Value {
+    const KEEP: usize = 500;
+    let mut rows: Vec<serde_json::Value> = match existing {
+        serde_json::Value::Array(rows) => rows,
+        other => vec![other],
+    }
+    .into_iter()
+    .filter(|r| r.get("id").and_then(|v| v.as_str()).is_some())
+    .collect();
+
+    for receipt in incoming {
+        let id = receipt.get("id").and_then(|v| v.as_str());
+        if let Some(id) = id {
+            if let Some(slot) = rows.iter_mut().find(|r| r.get("id").and_then(|v| v.as_str()) == Some(id)) {
+                *slot = receipt.clone();
+                continue;
+            }
+        }
+        rows.push(receipt.clone());
+    }
+    if rows.len() > KEEP {
+        let excess = rows.len() - KEEP;
+        rows.drain(..excess);
+    }
+    serde_json::Value::Array(rows)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -118,7 +228,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             write_autobackup,
             read_autobackup,
-            autobackup_dir
+            autobackup_dir,
+            take_mcp_inbox,
+            write_mcp_results
         ])
         .run(tauri::generate_context!())
         .expect("error while running TrainingLab");
@@ -135,5 +247,41 @@ mod tests {
         let a = "traininglab-00000000000000000100.json";
         let b = "traininglab-00000000000000009999.json";
         assert!(a < b);
+    }
+
+    #[test]
+    fn receipts_merge_by_id_and_keep_order() {
+        let first = serde_json::json!([
+            { "id": "a", "status": "applied" },
+            { "id": "b", "status": "rejected" }
+        ]);
+        let incoming = vec![
+            serde_json::json!({ "id": "b", "status": "applied" }),
+            serde_json::json!({ "id": "c", "status": "applied" }),
+        ];
+        let merged = merge_receipts(first, &incoming);
+        let ids: Vec<&str> = merged
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["id"].as_str().unwrap())
+            .collect();
+        assert_eq!(ids, vec!["a", "b", "c"]);
+        // The retried receipt overwrites the rejected one instead of duplicating it.
+        assert_eq!(merged[1]["status"], "applied");
+    }
+
+    #[test]
+    fn receipts_file_is_capped() {
+        let existing = serde_json::Value::Array(
+            (0..600)
+                .map(|i| serde_json::json!({ "id": format!("r{i}"), "status": "applied" }))
+                .collect(),
+        );
+        let merged = merge_receipts(existing, &[serde_json::json!({ "id": "new", "status": "applied" })]);
+        let rows = merged.as_array().unwrap();
+        assert_eq!(rows.len(), 500);
+        // The oldest fall off the front; the newest receipt is the one kept.
+        assert_eq!(rows.last().unwrap()["id"], "new");
     }
 }

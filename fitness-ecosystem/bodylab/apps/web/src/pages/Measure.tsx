@@ -205,7 +205,7 @@ export default function Measure() {
   // ==================== SETUP VIEW ====================
   if (sessionState === 'setup') {
     return (
-      <div className="p-6 max-w-lg mx-auto">
+      <div className="bl-page bl-page--narrow">
         <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-6">
           <ArrowLeft className="w-4 h-4" />
           {lang === 'es' ? 'Volver al inicio' : 'Back to overview'}
@@ -312,7 +312,7 @@ export default function Measure() {
           )}
           <button
             onClick={handleStartMeasuring}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bl-btn bl-btn-primary font-medium "
           >
             {lang === 'es' ? 'Comenzar a medir' : 'Start measuring'}
             <ArrowRight className="w-5 h-5" />
@@ -327,7 +327,7 @@ export default function Measure() {
     const recordedCount = Object.keys(session.values).filter(k => session.values[k as AllMeasurementType] !== undefined).length;
 
     return (
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="bl-page">
         {/* Progress bar (kept above the panes as a compact session header) */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -351,7 +351,7 @@ export default function Measure() {
             right pane = one guided field. Below lg the rail is hidden. */}
         <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-8 lg:items-start">
           {/* Left rail — checklist with status */}
-          <aside className="hidden lg:block bg-[var(--color-surface)] rounded-2xl border border-slate-100 dark:border-transparent p-4 sticky top-6" aria-label={lang === 'es' ? 'Lista de la sesión' : 'Session checklist'}>
+          <aside className="hidden lg:block  bl-card p-4 sticky top-6" aria-label={lang === 'es' ? 'Lista de la sesión' : 'Session checklist'}>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-[var(--color-text-muted)] mb-3 px-1">
               {lang === 'es' ? 'Sesión' : 'Session'}
             </p>
@@ -399,7 +399,7 @@ export default function Measure() {
           {/* Right pane — one guided field */}
           <div>
         {/* Measurement Card */}
-        <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border-card)] p-6 mb-6">
+        <div className=" bl-card p-6 mb-6">
           {/* Header */}
           <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-2">
             {currentMeasurement.label[lang]}
@@ -493,7 +493,7 @@ export default function Measure() {
           <button
             onClick={handleNext}
             disabled={currentValue === undefined || currentValue === null}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bl-btn bl-btn-primary font-medium  disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {currentStep === GUIDED_MEASUREMENTS.length - 1
               ? (lang === 'es' ? 'Revisar' : 'Review')
@@ -517,7 +517,7 @@ export default function Measure() {
       .filter(([, v]) => v !== undefined && v !== null) as [AllMeasurementType, number][];
 
     return (
-      <div className="p-6 max-w-lg mx-auto">
+      <div className="bl-page bl-page--narrow">
         <button onClick={() => setSessionState('measuring')} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-6">
           <ArrowLeft className="w-4 h-4" />
           {lang === 'es' ? 'Volver a medir' : 'Back to measuring'}
@@ -544,7 +544,7 @@ export default function Measure() {
               {session.date} · {session.time} · {session.condition}
             </p>
 
-            <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border-card)] divide-y divide-[var(--color-border-subtle)] mb-6">
+            <div className=" bl-card divide-y divide-[var(--color-border-subtle)] mb-6">
               {recordedEntries.map(([type, value]) => {
                 const typeInfo = MEASUREMENT_TYPES.find(t => t.id === type);
                 const prev = getLatestValue(state.measurements, type);

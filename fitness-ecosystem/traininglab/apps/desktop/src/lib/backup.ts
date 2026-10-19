@@ -19,12 +19,47 @@
  * @module lib/backup
  */
 
-import type { DecisionModel } from "@fitness/bodylab-training";
+import type { DecisionModel, Readiness } from "@fitness/bodylab-training";
 import type { HealthRecord } from "./shared";
 import type { TLSet, TLSession, TLSettingsData } from "./types";
 
 export const BACKUP_APP = "traininglab";
 export const BACKUP_VERSION = 1;
+
+/**
+ * One row of the plan the app is *showing* today, published for the agent
+ * tools: the log and the settings alone cannot tell a model what the app would
+ * do, because the plan also depends on the self-report (which lives in
+ * IndexedDB) and on the catalogue's own selection rules.
+ *
+ * The `exerciseId` is the row **after** the user's swaps and the coach's plan,
+ * so a tool that names a slot names the slot the user can see.
+ */
+export interface MirrorPlanRow {
+  exerciseId: string;
+  sets: number;
+  repsMin: number;
+  repsMax: number;
+  rir: number;
+  restSec: number;
+  pattern: string;
+  families: string[];
+}
+
+/**
+ * The live half of the mirror (2026-10-09): what the app is thinking *today*, so
+ * a local model is not left guessing from the log alone.
+ *
+ * Restore ignores it on purpose (`parseBackup` drops it): the self-report is a
+ * per-day, per-device fact, and importing an old one from another machine would
+ * silently drive today's plan with yesterday's energy.
+ */
+export interface TrainingLabMirror {
+  /** The day the self-report belongs to (ISO `YYYY-MM-DD`, UTC, like the app). */
+  date: string;
+  readiness: Readiness | null;
+  plan: MirrorPlanRow[];
+}
 
 export interface TrainingLabBackup {
   app: string;
@@ -35,6 +70,9 @@ export interface TrainingLabBackup {
   health: HealthRecord[];
   settings: TLSettingsData | null;
   decisionModel: DecisionModel | null;
+  /** Today's live state. Absent on files written before 2026-10-09 and on the
+   *  user's own exports — every consumer must treat it as optional. */
+  mirror?: TrainingLabMirror | null;
 }
 
 export interface BackupSource {
@@ -43,6 +81,7 @@ export interface BackupSource {
   health: readonly HealthRecord[];
   settings: TLSettingsData | null;
   decisionModel: DecisionModel | null;
+  mirror?: TrainingLabMirror | null;
 }
 
 export function buildBackup(
@@ -58,6 +97,7 @@ export function buildBackup(
     health: [...source.health],
     settings: source.settings ?? null,
     decisionModel: source.decisionModel ?? null,
+    ...(source.mirror ? { mirror: source.mirror } : {}),
   };
 }
 

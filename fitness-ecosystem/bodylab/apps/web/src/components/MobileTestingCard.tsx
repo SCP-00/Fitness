@@ -96,7 +96,7 @@ export default function MobileTestingCard() {
     : null;
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent space-y-4">
+    <div className="bl-card p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Smartphone className="w-5 h-5 text-[var(--color-primary)]" />
         <h2 className="text-lg font-semibold text-slate-900 dark:text-[var(--color-text)]">

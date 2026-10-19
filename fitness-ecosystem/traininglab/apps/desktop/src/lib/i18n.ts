@@ -100,8 +100,55 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Calentamiento hecho",
   },
   "zen.logSet": { en: "Log set", es: "Registrar serie" },
-  "zen.guide": { en: "How to do it", es: "Cómo hacerlo" },
+  // The page's own label for the button that opens the guide
+  // (`mockup/03-sesion.html` line 51), not the old "How to do it" wording.
+  "zen.guide": { en: "Technique", es: "Técnica" },
   "zen.log": { en: "Set log", es: "Registro de series" },
+  // Session stage, ported from the owner's mockup `03-sesion.html` (2026-10-11):
+  // the log lives below the stage, and what comes next is a list you can jump to.
+  "zen.logToday": { en: "Today's log", es: "Registro de hoy" },
+  "zen.after": { en: "After this set", es: "Después de esta serie" },
+  // The sequence is the user's to change (2026-10-11): drag the grip or use the
+  // arrows, and the order survives the re-plan and the restart.
+  "zen.orderHint": {
+    en: "Tap to jump · drag to reorder",
+    es: "Toca para ir · arrastra para ordenar",
+  },
+  "zen.dragHint": { en: "Drag to reorder", es: "Arrastra para ordenar" },
+  "zen.moveUp": { en: "Move up", es: "Subir" },
+  "zen.moveDown": { en: "Move down", es: "Bajar" },
+  "zen.orderRestore": {
+    en: "Restore plan order",
+    es: "Restaurar orden del plan",
+  },
+  "zen.orderRestoreHint": {
+    en: "Go back to the order the plan proposed",
+    es: "Volver al orden que propuso el plan",
+  },
+  "zen.jumpHint": { en: "Go to this exercise", es: "Ir a este ejercicio" },
+  "zen.entryHint": {
+    en: "Type the number or use − / +",
+    es: "Escribe el número o usa − / +",
+  },
+  "zen.nextSet": { en: "Next set:", es: "Siguiente serie:" },
+  "zen.stepSign": { en: "±{step} per tap", es: "±{step} por toque" },
+  "zen.repTarget": { en: "target {min}–{max}", es: "objetivo {min}–{max}" },
+  "zen.moreReps": { en: "One more rep", es: "Una repetición más" },
+  "zen.lessReps": { en: "One fewer rep", es: "Una repetición menos" },
+  "zen.summary": { en: "Exercise summary", es: "Resumen del ejercicio" },
+  "zen.summary.sets": { en: "sets", es: "series" },
+  "zen.summary.reps": { en: "reps", es: "reps" },
+  "zen.summary.rest": { en: "rest", es: "descanso" },
+  "zen.summary.muscles": { en: "muscles", es: "músculos" },
+  "zen.progression": {
+    en: "Recommended progression",
+    es: "Progresión recomendada",
+  },
+  "zen.suggestedNext": {
+    en: "Suggested load (next set)",
+    es: "Peso sugerido (próxima serie)",
+  },
+  "zen.seeFull": { en: "Full technique", es: "Técnica completa" },
   "zen.sessionRunning": {
     en: "Session in progress",
     es: "Sesión en curso",
@@ -136,6 +183,13 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "1 easy · 5 at the limit — one tap, no numbers to type",
     es: "1 fácil · 5 al límite — un toque, sin escribir números",
   },
+  // D/F badges (owner's own vocabulary, see `lib/effort.ts`). The letter and its
+  // name stay together so a badge never reads as an unexplained initial.
+  "effort.mark": { en: "Set mark", es: "Marca de la serie" },
+  "effort.markHint": {
+    en: "One tap: the set is logged with that mark",
+    es: "Un toque: la serie queda registrada con esa marca",
+  },
   "zen.less": { en: "Less weight", es: "Menos peso" },
   "zen.more": { en: "More weight", es: "Más peso" },
   "zen.next": {
@@ -147,6 +201,76 @@ const DICT: Record<string, { en: string; es: string }> = {
   "zen.start": {
     en: "Start ZEN",
     es: "Empezar ZEN",
+  },
+  // ── Session page (`mockup/03-sesion.html`, ported 2026-10-14) ─────────
+  "zen.now": { en: "Now:", es: "Ahora:" },
+  "zen.nextUp": { en: "Next:", es: "Siguiente:" },
+  "zen.cues": { en: "Technique cues", es: "Cues de técnica" },
+  "zen.muscles": { en: "Muscles", es: "Músculos" },
+  "zen.mediaNote": {
+    en: "Technique reference · compare it with your own positions",
+    es: "Referencia de técnica · compárala con tus posiciones",
+  },
+  /**
+   * The unit of the load fields, interpolated: the log is always kg, the screen
+   * shows the owner's choice, so a hard-coded `(kg)` label would lie to an lb
+   * reader — and it already did, twice on one screen, before 2026-10-14.
+   */
+  "zen.weightUnit": { en: "Weight ({u})", es: "Peso ({u})" },
+  // The hero's pill (mockup 03): it names the media the frame is showing.
+  "zen.mediaPill": { en: "Reference GIF", es: "GIF de referencia" },
+  "zen.completed": { en: "Completed", es: "Completada" },
+  "zen.col.mark": { en: "Mark", es: "Marca" },
+  "zen.repeatPrev": {
+    en: "Use the previous set's numbers",
+    es: "Usar los números de la serie anterior",
+  },
+  "zen.current": { en: "in progress", es: "en curso" },
+  "zen.fatigueField": { en: "Effort", es: "Esfuerzo" },
+  "zen.fatigueScale": {
+    en: "1 easy · 5 at the limit",
+    es: "1 fácil · 5 al límite",
+  },
+  "zen.warmupHint": {
+    en: "Warm-up ramp: it does not count as a working set",
+    es: "Rampa de calentamiento: no cuenta como serie de trabajo",
+  },
+  "zen.restNone": {
+    en: "No rest running — it starts when you log a set",
+    es: "Sin descanso en curso — empieza al registrar una serie",
+  },
+  "zen.swapHint": {
+    en: "Same movement pattern and loading style, with the gear you own.",
+    es: "Misma mecánica y mismo tipo de carga, con tu equipamiento.",
+  },
+  "zen.rowWeight": { en: "Weight of set {n}", es: "Peso de la serie {n}" },
+  "zen.rowReps": { en: "Reps of set {n}", es: "Reps de la serie {n}" },
+  /*
+   * The session's two escape hatches (mockup 03's top bar, wired 2026-10-15).
+   * Each is a toggle, so each needs both faces: doing it, and taking it back.
+   */
+  "zen.skip": { en: "Skip", es: "Saltar" },
+  "zen.unskip": { en: "Resume", es: "Reanudar" },
+  "zen.postpone": { en: "Postpone", es: "Posponer" },
+  "zen.unpostpone": { en: "Bring back", es: "Traer de vuelta" },
+  "zen.skipped": { en: "Set aside", es: "Saltado" },
+  "zen.postponed": { en: "Moved to the end", es: "Al final" },
+  "zen.skipHint": {
+    en: "Out of the way for the rest of today — it stays in the plan",
+    es: "Fuera de tu camino por hoy — sigue en el plan",
+  },
+  "zen.postponeHint": {
+    en: "Send it to the end of today's session",
+    es: "Lo manda al final de la sesión de hoy",
+  },
+  "zen.asideNote": { en: "Set aside today:", es: "Apartados hoy:" },
+  "zen.asideUndoSkip": {
+    en: "Bring {name} back into the session",
+    es: "Devolver {name} a la sesión",
+  },
+  "zen.asideUndoPostpone": {
+    en: "Undo the postponement of {name}",
+    es: "Deshacer el aplazamiento de {name}",
   },
 
   // ── Units ────────────────────────────────────────────────────────────
@@ -190,15 +314,7 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Your logged sets as CSV — opens in Excel and any local assistant can read it. Nothing leaves the device.",
     es: "Tus series registradas en CSV: se abre en Excel y cualquier asistente local puede leerlo. Nada sale del dispositivo.",
   },
-  // "sets saved" and not "sets logged": this badge counts every stored row,
-  // warm-ups included, while Progreso's "working sets" excludes them. Same
-  // number, two labels, two meanings — the owner read 412 here and 391 there
-  // and thought the data was wrong.
-  "data.setsCount": { en: "{n} sets saved", es: "{n} series guardadas" },
-  "data.setsBreakdown": {
-    en: "{work} working, {warm} warm-up",
-    es: "{work} de trabajo, {warm} de calentamiento",
-  },
+  "data.setsCount": { en: "{n} sets logged", es: "{n} series registradas" },
   "backup.export": {
     en: "Download full backup (JSON)",
     es: "Descargar copia completa (JSON)",
@@ -212,26 +328,6 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Backup read: {n} sets merged.",
     es: "Copia leída: {n} series fusionadas.",
   },
-  "autobackup.restore.title": {
-    en: "We found your log in a safety copy",
-    es: "Encontramos tu historial en una copia de seguridad",
-  },
-  "autobackup.restore.body": {
-    en: "The app opened with an empty log, but a copy from {date} has {sets} sets and {sessions} sessions. Restoring merges them back in; nothing you log from now on is lost.",
-    es: "La app abrió con el historial vacío, pero una copia del {date} tiene {sets} series y {sessions} sesiones. Al restaurar se fusionan; nada de lo que registres desde ahora se pierde.",
-  },
-  "autobackup.restore.action": {
-    en: "Restore my log",
-    es: "Restaurar mi historial",
-  },
-  "autobackup.restore.missing": {
-    en: "There is no safety copy to restore.",
-    es: "No hay ninguna copia de seguridad que restaurar.",
-  },
-  "autobackup.where": {
-    en: "Automatic copies are written outside the app's own storage, so an update cannot take them away.",
-    es: "Las copias automáticas se escriben fuera del almacenamiento de la app, así que una actualización no puede quitarlas.",
-  },
   "backup.error.app": {
     en: "That file is not a TrainingLab backup.",
     es: "Ese archivo no es una copia de TrainingLab.",
@@ -243,30 +339,6 @@ const DICT: Record<string, { en: string; es: string }> = {
   "backup.error.invalid": {
     en: "The backup file is not readable.",
     es: "La copia no se puede leer.",
-  },
-  "symmetry.import": {
-    en: "Import Symmetry history",
-    es: "Importar historial de Symmetry",
-  },
-  "symmetry.hint": {
-    en: "Turns the Symmetry OCR JSON (sessions, warm-ups, timed holds) into your log. Importing the same file twice changes nothing.",
-    es: "Convierte el JSON OCR de Symmetry (sesiones, calentamientos, series con tiempo) en tu registro. Importar el mismo archivo dos veces no cambia nada.",
-  },
-  "symmetry.imported": {
-    en: "Symmetry: {sessions} sessions and {sets} sets merged ({skipped} rows skipped — no catalog match).",
-    es: "Symmetry: {sessions} sesiones y {sets} series fusionadas ({skipped} filas descartadas, sin equivalente en el catálogo).",
-  },
-  "symmetry.error.file": {
-    en: "That file is not readable JSON.",
-    es: "Ese archivo no es JSON legible.",
-  },
-  "symmetry.error.shape": {
-    en: "That file is not a Symmetry export.",
-    es: "Ese archivo no es una exportación de Symmetry.",
-  },
-  "symmetry.error.empty": {
-    en: "That Symmetry file has no sessions.",
-    es: "Ese archivo de Symmetry no tiene sesiones.",
   },
   "setup.budget": {
     en: "Minutes available today",
@@ -315,6 +387,17 @@ const DICT: Record<string, { en: string; es: string }> = {
   "readiness.volumeCut": {
     en: "Volume today: {n}%",
     es: "Volumen de hoy: {n}%",
+  },
+
+  // ── Recovery window (derived from the log, not from a checkbox) ──────────
+  "recovery.title": { en: "Still recovering", es: "Aún recuperando" },
+  "recovery.line": {
+    en: "{families} — trained {hours} h ago, inside the {window} h recovery window.",
+    es: "{families} — entrenado hace {hours} h, dentro de la ventana de recuperación de {window} h.",
+  },
+  "recovery.hint": {
+    en: "The window comes from your own log (48 h after a real session) and shortens when you report feeling fresh. An explicit focus of the day overrides it.",
+    es: "La ventana sale de tu propio registro (48 h tras una sesión real) y se acorta si reportas estar fresco. Un enfoque de hoy elegido por ti la anula.",
   },
 
   // ── Gear inventory ────────────────────────────────────────────────────────
@@ -420,6 +503,11 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "tech.startPos": { en: "start position", es: "posición inicial" },
   "tech.endPos": { en: "end position", es: "posición final" },
+  // The stage frame's two views (mockup 03): the loop, and its two ends.
+  "tech.viewGif": { en: "GIF", es: "GIF" },
+  "tech.viewStills": { en: "Start · end", es: "Inicio · fin" },
+  "tech.viewStart": { en: "Start", es: "Inicio" },
+  "tech.viewEnd": { en: "End", es: "Fin" },
   "tech.joint.ankle": { en: "ankle", es: "tobillo" },
   "tech.joint.knee": { en: "knee", es: "rodilla" },
   "tech.joint.hip": { en: "hip", es: "cadera" },
@@ -431,28 +519,6 @@ const DICT: Record<string, { en: string; es: string }> = {
   // ── Logging ───────────────────────────────────────────────────────────────
   "log.weight": { en: "Weight (kg)", es: "Peso (kg)" },
   "log.reps": { en: "Reps", es: "Reps" },
-  "log.nextSet": {
-    en: "Next set",
-    es: "Siguiente serie",
-  },
-  "log.weightRepeat": {
-    en: "repeats the last set",
-    es: "repite la anterior",
-  },
-  "log.weightSuggested": {
-    en: "suggested for today",
-    es: "sugerido para hoy",
-  },
-  "log.bodyweight": {
-    en: "Bodyweight",
-    es: "Peso corporal",
-  },
-  "log.cardioHint": {
-    en: "Aim for {n} or more",
-    es: "Apunta a {n} o más",
-  },
-  "log.kg": { en: "kg", es: "kg" },
-  "log.lb": { en: "lb", es: "lb" },
   "log.add": { en: "Add set", es: "Añadir serie" },
   "log.last": {
     en: "Last: {d} · {n} sessions",
@@ -500,10 +566,141 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "limitado por tu equipo de {cap} kg",
   },
 
+  // ── Next-set proposal (in-session load, decided by the D/F mark) ──────────
+  "nextSet.first": {
+    en: "First set: the progression's suggestion.",
+    es: "Primera serie: la sugerencia de la progresión.",
+  },
+  "nextSet.firstBodyweight": {
+    en: "First set: bodyweight — mark the effort when it gets hard.",
+    es: "Primera serie: peso corporal — marca el esfuerzo cuando se ponga duro.",
+  },
+  "nextSet.bodyweight": {
+    en: "Bodyweight work: the load cannot move, so keep the reps in the range.",
+    es: "Trabajo con peso corporal: no hay carga que mover, así que mantén las reps en el rango.",
+  },
+  "nextSet.belowRange": {
+    en: "{reps} reps is below the {min} minimum → {w} kg to earn the range back.",
+    es: "{reps} reps se quedan bajo el mínimo de {min} → {w} kg para volver a entrar en el rango.",
+  },
+  "nextSet.backoffF": {
+    en: "The last set went to failure: −10 % → {w} kg (was {prev} kg).",
+    es: "La serie anterior fue al fallo: −10 % → {w} kg (antes {prev} kg).",
+  },
+  "nextSet.holdF": {
+    en: "Failure at this load is the goal: repeat it and let the reps fall.",
+    es: "Fallo con esta carga es el objetivo: repítela y deja que bajen las reps.",
+  },
+  "nextSet.holdD": {
+    en: "Near failure at this load: repeat — it is the load that is working.",
+    es: "Cerca del fallo con esta carga: repítela — es la carga que está funcionando.",
+  },
+  "nextSet.raiseTop": {
+    en: "{reps} reps above the {max} top without a mark: it was light → {w} kg.",
+    es: "{reps} reps por encima del techo de {max} sin marca: estuvo ligera → {w} kg.",
+  },
+  "nextSet.capped": {
+    en: "Top of the range, but your gear stops at {cap} kg: repeat it.",
+    es: "Techo del rango, pero tu equipo llega hasta {cap} kg: repítela.",
+  },
+  "nextSet.unmarked": {
+    en: "In the range: repeat the load and mark D or F so the next proposal can adjust.",
+    es: "Dentro del rango: repite la carga y marca D o F para que la propuesta ajuste.",
+  },
+
+  /*
+   * ── Cross-session progression (2026-10-13) ────────────────────────────────
+   *
+   * The verdict of `lib/progression.ts` (raise / escalate / repeat / reduce /
+   * regress) is computed over the days BEFORE today, so the sentences here
+   * answer "what do I do next time I start this exercise". Deliberately NOT
+   * `advice.reason`: that string is written for the agent channel and names the
+   * progression axis by its id ("vía leverage"), which is not the owner's
+   * language. The screen builds its own sentence from the same numbers.
+   */
+  "progress.betweenSessions": {
+    en: "Across sessions",
+    es: "Entre sesiones",
+  },
+  "progress.basis": {
+    en: "From your last session ({day})",
+    es: "De tu última sesión ({day})",
+  },
+  "progress.noBasis": {
+    en: "No previous session with this exercise.",
+    es: "Sin sesión anterior de este ejercicio.",
+  },
+  "progress.verdict.increase_load": {
+    en: "Raise the load",
+    es: "Sube la carga",
+  },
+  "progress.verdict.escalate_variant": {
+    en: "Harder variant",
+    es: "Variante más difícil",
+  },
+  "progress.verdict.repeat": { en: "Keep the load", es: "Mantén la carga" },
+  "progress.verdict.reduce": { en: "Rebuild it", es: "Reconstruye" },
+  "progress.verdict.regress_variant": {
+    en: "Easier variant",
+    es: "Variante más fácil",
+  },
+  "progress.verdict.first_time": { en: "First time", es: "Primera vez" },
+  // `formatWeight` already carries the unit (kg or lb), so the placeholders
+  // below never append one — "104.3 kg kg" reached the screen on 2026-10-13.
+  "progress.increase": {
+    en: "Every set reached {max} reps: {w} next time (was {prev}).",
+    es: "Todas las series llegaron a {max} reps: {w} la próxima vez (antes {prev}).",
+  },
+  "progress.escalate": {
+    en: "Every set reached {max} reps and the load cannot grow{cap}.",
+    es: "Todas las series llegaron a {max} reps y la carga no puede subir{cap}.",
+  },
+  "progress.escalateLever": {
+    en: "Next lever: {axis}.",
+    es: "Siguiente palanca: {axis}.",
+  },
+  "progress.regressLever": {
+    en: "Go to an easier version ({axis}) until the reps are there.",
+    es: "Pasa a una versión más fácil ({axis}) hasta llegar.",
+  },
+  "progress.escalateCap": {
+    en: " (your gear stops at {cap})",
+    es: " (tu material llega a {cap})",
+  },
+  /*
+   * `repeat` and `reduce` name no weight on purpose (2026-10-13). The load that
+   * goes on the bar is the one pre-filled on the field, and on the owner's own
+   * log the day's TOP set (what this verdict reads) and the last logged set (what
+   * the field inherits) are different numbers: printing both put 104.3 kg and
+   * 81 kg on the same card. The verdict says what to DO; the field carries the
+   * number. Only the two verdicts that CHANGE the load print kilos.
+   */
+  "progress.repeat": {
+    en: "{min}–{max} reps of the {targetMin}–{targetMax} range: repeat the weight and add reps.",
+    es: "{min}–{max} reps de un rango {targetMin}–{targetMax}: repite el peso y suma repeticiones.",
+  },
+  "progress.reduce": {
+    en: "{reps} reps, below the {targetMin}–{targetMax} range: keep or lighten the load and rebuild before adding anything.",
+    es: "{reps} reps, por debajo del rango {targetMin}–{targetMax}: mantén o baja la carga y reconstruye antes de añadir nada.",
+  },
+  "progress.regress": {
+    en: "{reps} reps, below the {targetMin}–{targetMax} range, and there is no load to take off.",
+    es: "{reps} reps, por debajo del rango {targetMin}–{targetMax}, y no hay carga que quitar.",
+  },
+  "progress.axis.load": { en: "load", es: "carga" },
+  "progress.axis.reps": { en: "reps", es: "repeticiones" },
+  "progress.axis.leverage": { en: "leverage", es: "palanca" },
+  "progress.axis.tempo": { en: "tempo", es: "tempo" },
+  "progress.axis.time": { en: "time under tension", es: "tiempo bajo tensión" },
+  "progress.axis.range": { en: "range of motion", es: "recorrido" },
+  "progress.axis.volume": { en: "extra volume", es: "volumen extra" },
+
   // ── Rest timer ────────────────────────────────────────────────────────────
   "timer.rest": { en: "Rest", es: "Descanso" },
   "timer.skip": { en: "Skip", es: "Saltar" },
   "timer.plus15": { en: "+15s", es: "+15s" },
+  "timer.pause": { en: "Pause", es: "Pausar" },
+  "timer.resume": { en: "Resume", es: "Reanudar" },
 
   // ── Coach (local LLM) ─────────────────────────────────────────────────────
   "coach.title": { en: "Local coach (optional)", es: "Coach local (opcional)" },
@@ -694,6 +891,34 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "{sets} series · {vol} kg de volumen",
   },
 
+  /*
+   * ── Unloaded marks (2026-10-13) ───────────────────────────────────────────
+   *
+   * A bodyweight set is judged on reps and a timed set on seconds, so the
+   * celebration has to say which currency it is talking about: "12 repeticiones"
+   * and "90 s", never a bare number a reader would take for kilos.
+   */
+  "cue.valueReps": { en: "{n} reps", es: "{n} repeticiones" },
+  "cue.valueHold": { en: "{sec} s", es: "{sec} s" },
+  "cue.beatReps": {
+    en: "{v} — beat {prev}",
+    es: "{v} — superaste {prev}",
+  },
+  "cue.beatHold": {
+    en: "{v} — beat {prev}",
+    es: "{v} — superaste {prev}",
+  },
+  "mark.reps": { en: "Mark: {n} reps", es: "Marca: {n} reps" },
+  "mark.repsWhy": {
+    en: "the set with the most reps without a load",
+    es: "la serie con más repeticiones sin carga",
+  },
+  "mark.hold": { en: "Longest hold: {sec} s", es: "Mejor tiempo: {sec} s" },
+  "mark.holdWhy": {
+    en: "the longest set without a load",
+    es: "la serie más larga sin carga",
+  },
+
   // ── Phone navigation (two panes so the session is never a screen away) ───
   "nav.train": { en: "Train", es: "Entrenar" },
   "nav.setup": { en: "Setup", es: "Ajustes" },
@@ -735,15 +960,97 @@ const DICT: Record<string, { en: string; es: string }> = {
   "common.cancel": { en: "Cancel", es: "Cancelar" },
   "common.close": { en: "Close", es: "Cerrar" },
   "common.save": { en: "Save", es: "Guardar" },
+  "common.dragHandle": {
+    en: "Drag to reorder",
+    es: "Arrastrar para ordenar",
+  },
+  "common.dragHint": {
+    en: "Drag the grip, or focus it and use ↑ / ↓.",
+    es: "Arrastra el asa, o enfócala y usa ↑ / ↓.",
+  },
 
   // ── Shell / navigation ────────────────────────────────────────────────
   "nav.label": { en: "Main navigation", es: "Navegación principal" },
-  "nav.today": { en: "Home", es: "Inicio" },
+  "nav.today": { en: "Today", es: "Hoy" },
+  "nav.training": { en: "Training", es: "Entrenamiento" },
+  "nav.history": { en: "History", es: "Historial" },
+  "nav.progress": { en: "Progress", es: "Progreso" },
   "nav.exercises": { en: "Exercises", es: "Ejercicios" },
   "nav.week": { en: "Week", es: "Semana" },
+  "nav.routines": { en: "Routines", es: "Rutinas" },
+  "nav.settings": { en: "Settings", es: "Configuración" },
+  "nav.more": { en: "More", es: "Más" },
+  "nav.moreCurrent": {
+    en: "More — {name}",
+    es: "Más — {name}",
+  },
   "nav.session": { en: "Train", es: "Entrenar" },
-  "nav.progress": { en: "Progress", es: "Progreso" },
-  "nav.settings": { en: "Settings", es: "Ajustes" },
+
+  // ── Placeholders of the linear replacement (2026-10-14) ────────────────
+  "soon.badge": { en: "Coming soon", es: "Próximamente" },
+  "soon.training": {
+    en: "The day's queue — reorder, swap and pin today's exercises before starting — is screen 02 of the approved mockup and lands in the next port. Today you can start and log the session as always.",
+    es: "La cola del día —reordenar, cambiar y fijar los ejercicios de hoy antes de empezar— es la pantalla 02 del mockup aprobado y llega en el próximo port. Por ahora puedes empezar y registrar la sesión como siempre.",
+  },
+  "soon.startToday": {
+    en: "Start today's session",
+    es: "Empezar la sesión de hoy",
+  },
+  // ── Historial (08) ────────────────────────────────────────────────────────
+  // Real screen since 2026-10-16; `soon.history` stays for the day a future
+  // destination needs to explain itself, but nothing renders it any more.
+  "hist.pageHint": {
+    en: "{n} closed sessions, newest first.",
+    es: "{n} sesiones cerradas, la más reciente primero.",
+  },
+  "hist.pageHintEmpty": {
+    en: "Closed sessions will appear here.",
+    es: "Aquí aparecerán tus sesiones cerradas.",
+  },
+  "hist.pillSets": { en: "{n} working sets", es: "{n} series de trabajo" },
+  "hist.pillSetsHint": {
+    en: "Working sets in the sessions shown here (warm-up ramps excluded).",
+    es: "Series de trabajo de las sesiones mostradas (la rampa de calentamiento no cuenta).",
+  },
+  "hist.pillVolume": { en: "{kg} moved", es: "{kg} movidos" },
+  "hist.pillVolumeHint": {
+    en: "Weight × reps over the working sets shown here.",
+    es: "Peso × repeticiones sobre las series de trabajo mostradas.",
+  },
+  "hist.listTitle": { en: "Session by session", es: "Sesión a sesión" },
+  "hist.listHint": {
+    en: "Closed sessions are immutable: their sets are never rewritten.",
+    es: "Las sesiones cerradas son inmutables: sus series no se reescriben.",
+  },
+  "hist.listHintCapped": {
+    en: "Showing the {shown} most recent of {total}.",
+    es: "Se muestran las {shown} más recientes de {total}.",
+  },
+  "hist.sets": { en: "{n} sets", es: "{n} series" },
+  "hist.warmup": { en: "{n} warm-up", es: "{n} de calentamiento" },
+  "hist.exercises": { en: "{n} exercises", es: "{n} ejercicios" },
+  "hist.volume": { en: "{kg} moved", es: "{kg} movidos" },
+  "hist.duration": { en: "{n} min", es: "{n} min" },
+  "hist.moreExercises": { en: "+{n} more", es: "+{n} más" },
+  "hist.showLess": { en: "show less", es: "mostrar menos" },
+  "hist.sourceHint": {
+    en: "Imported from another app, not logged here.",
+    es: "Importado de otra app, no registrado aquí.",
+  },
+  "hist.place.gym": { en: "Gym", es: "Gimnasio" },
+  "hist.place.home": { en: "Home", es: "Casa" },
+  "hist.empty": {
+    en: "No closed sessions yet",
+    es: "Todavía no hay sesiones cerradas",
+  },
+  "hist.emptyHint": {
+    en: "A session lands here when you finish it, and when a history import brings one in.",
+    es: "Una sesión aparece aquí cuando la terminas, y también cuando entra por una importación de historial.",
+  },
+  "soon.history": {
+    en: "History is screen 08 of the mockup: every session you logged, newest first, with its sets. The data is already recorded — this port only needs the screen.",
+    es: "Historial es la pantalla 08 del mockup: cada sesión registrada, la más reciente primero, con sus series. Los datos ya están grabados — a este port solo le falta la pantalla.",
+  },
   "nav.offline": { en: "Local mode", es: "Modo local" },
   "nav.offlineHint": {
     en: "Everything works without a connection.",
@@ -818,11 +1125,15 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Comparing you with other people needs normative data with a source we can name and check. We will not invent a percentile. Until the standards pass validation, the only honest comparison is with yourself — and that lives in History.",
     es: "Compararte con otras personas exige datos normativos con una fuente que podamos nombrar y comprobar. No vamos a inventar un percentil. Hasta que los estándares pasen la validación, la única comparación honesta es contigo mismo — y esa está en Historial.",
   },
-  "ex.history.empty": {
-    en: "No sets logged for this exercise",
-    es: "Sin series registradas de este ejercicio",
+  // Restored verbatim from HEAD (2026-10-09): the working tree had dropped
+  // these while `ExerciseDetailScreen` still renders them, so the Historial tab
+  // showed raw keys (`ex.history.days`) next to real data. The rest of the
+  // dictionary's missing entries are a separate, larger repair (see the
+  // session handoff) — nothing here was invented.
+  "ex.history.days": {
+    en: "{n} training days",
+    es: "{n} días de entrenamiento",
   },
-  "ex.history.days": { en: "{n} training days", es: "{n} días de entrenamiento" },
   "ex.history.sets": { en: "{n} working sets", es: "{n} series de trabajo" },
   "ex.history.volume": { en: "{kg} of tonnage", es: "{kg} de tonelaje" },
   "ex.history.best": { en: "Best load:", es: "Mejor carga:" },
@@ -852,6 +1163,10 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "peso corporal",
   },
   "ex.history.warmup": { en: "warm-up", es: "calentamiento" },
+  "ex.history.empty": {
+    en: "No sets logged for this exercise",
+    es: "Sin series registradas de este ejercicio",
+  },
   "ex.history.emptyHint": {
     en: "Log it once and this tab becomes the most useful one: your best set, your estimated 1RM over time and what you did the last time.",
     es: "Regístralo una vez y esta pestaña pasa a ser la más útil: tu mejor serie, tu 1RM estimado en el tiempo y lo que hiciste la última vez.",
@@ -938,17 +1253,6 @@ const DICT: Record<string, { en: string; es: string }> = {
   "home.restDay": {
     en: "A recovery day — the plan already took it into account.",
     es: "Hoy toca recuperar. El plan ya lo tiene en cuenta.",
-  },
-  // ── Enfoque de hoy ────────────────────────────────────────────────────
-  "home.focus.label": { en: "Focus", es: "Enfoque de hoy" },
-  "home.focus.auto": { en: "Automatic", es: "Automático" },
-  "home.focus.push": { en: "Push", es: "Empuje" },
-  "home.focus.pull": { en: "Pull", es: "Tracción" },
-  "home.focus.legs": { en: "Legs", es: "Pierna" },
-  "home.focus.core": { en: "Core", es: "Core" },
-  "home.focus.hint": {
-    en: "Automatic balances the week. Picking a family builds today around it.",
-    es: "Automático equilibra la semana. Si eliges una familia, el día se construye alrededor de ella.",
   },
   "home.badge.zen": { en: "ZEN", es: "ZEN" },
   "home.today": { en: "Today", es: "HOY" },
@@ -1065,82 +1369,9 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "{done} de {target} series completadas",
   },
   "progress.constancy.daySets": { en: "{n} sets", es: "{n} series" },
-  "progress.weekly.title": { en: "Weekly volume", es: "Volumen semanal" },
-  "progress.weekly.hint": {
-    en: "Tonnage (weight × reps) of working sets, warm-ups out — 8 weeks, Monday to Sunday.",
-    es: "Tonelaje (peso × repeticiones) de las series de trabajo, sin calentamientos — 8 semanas, de lunes a domingo.",
-  },
-  "progress.weekly.now": {
-    en: "This week: {kg} kg · {sets} sets",
-    es: "Esta semana: {kg} kg · {sets} series",
-  },
-  "progress.weekly.vsPrevious": {
-    en: "vs the same days of last week",
-    es: "frente a los mismos días de la semana pasada",
-  },
-  "progress.weekly.arrowTrend": { en: "{prev} → {curr}", es: "{prev} → {curr}" },
-  "progress.weekly.bar": {
-    en: "{week}: {kg} kg · {sets} sets",
-    es: "{week}: {kg} kg · {sets} series",
-  },
-  "progress.weekly.peak": { en: "Peak {kg} kg", es: "Máx {kg} kg" },
-  "progress.weekly.families": {
-    en: "By family (target groups)",
-    es: "Por familia (grupos objetivo)",
-  },
-  "progress.weekly.empty": {
-    en: "Nothing logged in these 8 weeks yet — the chart starts with your first working set.",
-    es: "Sin registro en estas 8 semanas — el gráfico empieza con tu primera serie de trabajo.",
-  },
-  "progress.weekly.disclaimer": {
-    en: "Tonnage records what you lifted; on its own it proves neither hypertrophy nor strength. A set can feed more than one family (every target group it trains).",
-    es: "El tonelaje registra lo que levantaste; por sí solo no demuestra hipertrofia ni fuerza. Una serie puede alimentar más de una familia (todos los grupos objetivo que entrena).",
-  },
-  "progress.volumeTarget.title": { en: "Volume target", es: "Objetivo de volumen" },
-  "progress.volumeTarget.hint": {
-    en: "Direct sets per muscle group, last 7 days.",
-    es: "Series directas por grupo muscular, últimos 7 días.",
-  },
-  "progress.volumeTarget.band": {
-    en: "{min}–{max} sets/week",
-    es: "{min}–{max} series/semana",
-  },
-  "progress.volumeTarget.headline": {
-    en: "{inRange} of {total} groups in range",
-    es: "{inRange} de {total} grupos en rango",
-  },
-  "progress.volumeTarget.belowCount": {
-    en: "{n} below",
-    es: "{n} por debajo",
-  },
-  "progress.volumeTarget.missing": {
-    en: "{n} sets short of the minimum",
-    es: "faltan {n} series para el mínimo",
-  },
-  "progress.volumeTarget.over": {
-    en: "{n} sets — above the band (diminishing returns)",
-    es: "{n} series — por encima de la franja (rendimientos decrecientes)",
-  },
-  "progress.volumeTarget.ok": { en: "{n} sets", es: "{n} series" },
-  "progress.volumeTarget.empty": {
-    en: "No direct sets logged in the last 7 days.",
-    es: "Sin series directas en los últimos 7 días.",
-  },
-  "progress.volumeTarget.source": {
-    en: "Band from Baz-Valle 2022 (systematic review + meta-analysis, trained men 18–35); diminishing returns from Pelland 2025 (67 studies); floor from Schoenfeld 2017.",
-    es: "Franja de Baz-Valle 2022 (revisión sistemática + metaanálisis, hombres entrenados 18–35); rendimientos decrecientes de Pelland 2025 (67 estudios); suelo de Schoenfeld 2017.",
-  },
-  "progress.volumeTarget.widerBand": {
-    en: "Triceps has the wider 12–24 band: that review found high volume significantly better there (p = 0.01).",
-    es: "El tríceps tiene la franja ampliada 12–24: esa revisión encontró el volumen alto claramente mejor ahí (p = 0,01).",
-  },
-  "progress.volumeTarget.caveat": {
-    en: "A training-volume reference for trained adults, not medical advice. Counts direct sets only (secondary and accessory work is not credited), and says nothing about proximity to failure.",
-    es: "Referencia de volumen para adultos entrenados, no consejo médico. Cuenta solo series directas (no suma el trabajo secundario ni accesorio) y no dice nada sobre la proximidad al fallo.",
-  },
   "progress.numbers.title": { en: "Your numbers", es: "Tus cifras" },
   "progress.numbers.sessions": { en: "Sessions", es: "Sesiones" },
-  "progress.numbers.sets": { en: "Working sets", es: "Series de trabajo" },
+  "progress.numbers.sets": { en: "Sets logged", es: "Series registradas" },
   "progress.numbers.exercises": {
     en: "Distinct exercises",
     es: "Ejercicios distintos",
@@ -1261,10 +1492,6 @@ const DICT: Record<string, { en: string; es: string }> = {
   "progress.body.sub": {
     en: "2D map · Volume · Balance",
     es: "Mapa 2D · Volumen · Equilibrio",
-  },
-  "progress.body.subGoal": {
-    en: "2D map · Anthropometric goal proximity",
-    es: "Mapa 2D · Proximidad a objetivos antropométricos",
   },
   "progress.body.mapLabel": { en: "2D MAP", es: "MAPA 2D" },
   "progress.body.front": { en: "Front view", es: "Vista frontal" },
@@ -1445,14 +1672,6 @@ const DICT: Record<string, { en: string; es: string }> = {
   "settings.goals.waistPlaceholder": { en: "e.g. 84", es: "p. ej. 84" },
   // ── Reps per set, decided by the user (2026-09-29 e) ─────────────────
   "slot.repsLabel": { en: "Reps per set", es: "Reps por serie" },
-  "slot.repsRepeat": {
-    en: "blank repeats the last set ({n})",
-    es: "en blanco repite la anterior ({n})",
-  },
-  "slot.repsRange": {
-    en: "untouched, it logs {min} — the bottom of the prescribed range",
-    es: "sin tocar, registra {min}: el mínimo del rango recomendado",
-  },
   "slot.repsMin": { en: "Min reps", es: "Reps mín" },
   "slot.repsMax": { en: "Max reps", es: "Reps máx" },
   "slot.repsCustom": { en: "yours", es: "tuyo" },
@@ -1557,13 +1776,6 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "100 % local: no accounts, no telemetry, no background downloads.",
     es: "100 % local: sin cuentas, sin telemetría y sin descargas en segundo plano.",
   },
-  // The build stamp is what makes two builds of the same version
-  // distinguishable — TrainingLab shipped two different 0.2.0 binaries and
-  // nothing on screen could tell them apart.
-  "settings.about.build": {
-    en: "Build {stamp}",
-    es: "Compilación {stamp}",
-  },
   "settings.about.offline": {
     en: "Everything works without a connection.",
     es: "Todo funciona sin conexión.",
@@ -1573,7 +1785,750 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Recovery is part of the plan: the next session is already scheduled.",
     es: "Recuperar es parte del plan: la próxima sesión ya está programada.",
   },
+
+  // ── Restored from HEAD (2026-10-09) ─────────────────────────────────────
+  // The working tree had dropped these entries while the screens still
+  // render them, so the UI showed raw keys (`log.nextSet` on the logging
+  // button of Inicio, `home.focus.*` on the day-focus chips, `week.stress.*`
+  // aside). Text is copied byte-for-byte from HEAD — nothing is invented —
+  // and `tests/training/test_traininglab_i18n.test.ts` now guards the
+  // dictionary against a missing key reaching the screen again.
+  "autobackup.restore.missing": {
+    en: "There is no safety copy to restore.",
+    es: "No hay ninguna copia de seguridad que restaurar.",
+  },
+
+  // ── Sample data (2026-10-11) ────────────────────────────────────────────
+  // Six weeks of believable history, generated by `lib/demo.ts`. It exists so
+  // the redesigned screens can be read with data in them instead of empty, and
+  // it is removable in one tap — the copy says so, because a button that adds
+  // fake training history has to be honest about what it is.
+  "demo.title": { en: "Sample data", es: "Datos de ejemplo" },
+  "demo.hint": {
+    en: "Six weeks of invented history, so the screens can be judged with data. Your own records are untouched and you can remove it again.",
+    es: "Seis semanas de historial inventado, para poder juzgar las pantallas con datos. Tus registros no se tocan y puedes quitarlo después.",
+  },
+  "demo.load": {
+    en: "Load sample data",
+    es: "Cargar datos de ejemplo",
+  },
+  "demo.loaded": {
+    en: "Sample history added: {n} sets.",
+    es: "Historial de ejemplo añadido: {n} series.",
+  },
+  "demo.remove": {
+    en: "Remove sample data",
+    es: "Quitar datos de ejemplo",
+  },
+  "demo.removed": {
+    en: "Sample history removed: {n} sets.",
+    es: "Historial de ejemplo eliminado: {n} series.",
+  },
+
+  // ── Inicio, the reference port (2026-10-11) ────────────────────────────
+  // Copy of the approved Inicio image. It is Spanish-first and says what the
+  // thing *is* ("Equipo necesario", "Ejercicios de la sesión") rather than
+  // naming the widget, because the screen's job is to be read once, standing up.
+  "hoy.start": { en: "Start", es: "Empezar" },
+  "hoy.today": { en: "Today's session", es: "Hoy toca" },
+  "hoy.complete": { en: "Session complete", es: "Sesión completa" },
+  "hoy.inProgress": { en: "In progress", es: "En curso" },
+  "hoy.gear": { en: "Equipment needed", es: "Equipo necesario" },
+  "hoy.gearOptional": { en: "(optional)", es: "(opcional)" },
+  "hoy.sessionExercises": {
+    en: "Session exercises",
+    es: "Ejercicios de la sesión",
+  },
+  "hoy.logNew": { en: "Log sets", es: "Registrar series" },
+  "hoy.addExercise": { en: "Add exercise", es: "Añadir ejercicio" },
+  "hoy.fromRoutine": { en: "From my routine", es: "Desde mi rutina" },
+  "hoy.sets": { en: "{n} sets", es: "{n} series" },
+  "hoy.reps": { en: "reps", es: "reps" },
+  "hoy.rest": { en: "Rest", es: "Descanso" },
+  "hoy.quickSummary": { en: "Quick summary", es: "Resumen rápido" },
+  "hoy.estDuration": { en: "Estimated duration", es: "Duración estimada" },
+  "hoy.plannedVolume": { en: "Planned volume", es: "Volumen previsto" },
+  "hoy.kg": { en: "kg", es: "kg" },
+  "hoy.muscleGroups": { en: "Muscle groups", es: "Grupos musculares" },
+  "hoy.level": { en: "Level", es: "Nivel" },
+  "hoy.setsProgress": {
+    en: "{done} of {total} sets logged today.",
+    es: "{done} de {total} series registradas hoy.",
+  },
+  "hoy.volumeLogged": {
+    en: "{kg} kg logged today",
+    es: "{kg} kg registrados hoy",
+  },
+  "hoy.volumeUnknownHint": {
+    en: "No recent record of these movements yet, so there is nothing to estimate from. It will fill in as you log them.",
+    es: "Aún no hay registro reciente de estos movimientos, así que no hay de dónde estimar. Se rellenará según los registres.",
+  },
+  "hoy.yourProgress": { en: "Your progress", es: "Tu progreso" },
+  "hoy.seeHistory": { en: "See history", es: "Ver historial" },
+  "hoy.workoutsThisWeek": {
+    en: "Workouts this week",
+    es: "Entrenos esta semana",
+  },
+  "hoy.weekVolume": { en: "Volume (week)", es: "Volumen (semana)" },
+  "hoy.avgRir": { en: "Average RIR", es: "RIR medio" },
+  "hoy.coach": { en: "Your coach (AI)", es: "Tu coach (IA)" },
+  "hoy.coachApplied": { en: "Applied", es: "Aplicado" },
+  "hoy.coachBody": {
+    en: "I can rebuild today's session from your history, the gear you own and the time you have.",
+    es: "Puedo reajustar la sesión de hoy con tu historial, tu equipamiento y el tiempo disponible.",
+  },
+  "hoy.coachOff": {
+    en: "The local coach is off. Turn it on in Settings and it can propose the session.",
+    es: "El coach local está desactivado. Actívalo en Ajustes y podrá proponer la sesión.",
+  },
+  "hoy.ruleUsed": { en: "Rule used", es: "Regla usada" },
+  "hoy.hideNotes": { en: "Hide notes", es: "Ocultar notas" },
+  "hoy.moreNotes": { en: "+{n} plan notes", es: "+{n} notas del plan" },
+  "hoy.reasonWeak": {
+    en: "it works on {family}, your weak point",
+    es: "refuerza {family}, tu punto débil",
+  },
+  "hoy.reasonGap": {
+    en: "it is short of sets this week",
+    es: "le faltan series esta semana",
+  },
+  "hoy.reasonNoAnthro": {
+    en: "no BodyLab composition data yet, so the day is spread evenly",
+    es: "aún sin datos de composición de BodyLab, así que el día se reparte parejo",
+  },
+  "hoy.reasonCoverage": {
+    en: "basic coverage of the day's groups",
+    es: "cobertura básica de los grupos del día",
+  },
+  "hoy.stripResume": {
+    en: "Today's session is in progress",
+    es: "Sesión de hoy en curso",
+  },
+  "hoy.stripDone": {
+    en: "Today's session is finished",
+    es: "Sesión de hoy terminada",
+  },
+  "hoy.stripPrevious": {
+    en: "Your last session was {n} days ago",
+    es: "Tu última sesión fue hace {n} días",
+  },
+  "hoy.stripToday": {
+    en: "{done}/{total} sets · {exercises} exercises · {min} min planned",
+    es: "{done}/{total} series · {exercises} ejercicios · {min} min previstos",
+  },
+  "hoy.stripLast": {
+    en: "{names} · {sets} sets · {min} min",
+    es: "{names} · {sets} series · {min} min",
+  },
+  // Same line without a duration: printed when the log's own timestamps cannot
+  // support one (date-only rows, `MINUTES_TRUSTWORTHY` in `screens/TodayScreen`).
+  "hoy.stripLastShort": {
+    en: "{names} · {sets} sets",
+    es: "{names} · {sets} series",
+  },
+  "home.focus.auto": { en: "Automatic", es: "Automático" },
+  "home.focus.core": { en: "Core", es: "Core" },
+  "home.focus.label": { en: "Focus", es: "Enfoque de hoy" },
+  "home.focus.legs": { en: "Legs", es: "Pierna" },
+  "home.focus.pull": { en: "Pull", es: "Tracción" },
+  "home.focus.push": { en: "Push", es: "Empuje" },
+  "log.bodyweight": {
+    en: "Bodyweight",
+    es: "Peso corporal",
+  },
+  "log.cardioHint": {
+    en: "Aim for {n} or more",
+    es: "Apunta a {n} o más",
+  },
+  "log.kg": { en: "kg", es: "kg" },
+  "log.lb": { en: "lb", es: "lb" },
+  "log.nextSet": {
+    en: "Next set",
+    es: "Siguiente serie",
+  },
+  "log.weightRepeat": {
+    en: "repeats the last set",
+    es: "repite la anterior",
+  },
+  "log.weightSuggested": {
+    en: "suggested for today",
+    es: "sugerido para hoy",
+  },
+  /* The chip's one-line label when the load moved, so a number that goes down
+     never reads as "repeats the last set". The why is the line below it. */
+  "log.weightDown": {
+    en: "adjusted down",
+    es: "ajustada a la baja",
+  },
+  "log.weightUp": {
+    en: "one step up",
+    es: "un paso más",
+  },
+  "progress.volumeTarget.band": {
+    en: "{min}–{max} sets/week",
+    es: "{min}–{max} series/semana",
+  },
+  "progress.volumeTarget.belowCount": {
+    en: "{n} below",
+    es: "{n} por debajo",
+  },
+  "progress.volumeTarget.caveat": {
+    en: "A training-volume reference for trained adults, not medical advice. Counts direct sets only (secondary and accessory work is not credited), and says nothing about proximity to failure.",
+    es: "Referencia de volumen para adultos entrenados, no consejo médico. Cuenta solo series directas (no suma el trabajo secundario ni accesorio) y no dice nada sobre la proximidad al fallo.",
+  },
+  "progress.volumeTarget.empty": {
+    en: "No direct sets logged in the last 7 days.",
+    es: "Sin series directas en los últimos 7 días.",
+  },
+  "progress.volumeTarget.headline": {
+    en: "{inRange} of {total} groups in range",
+    es: "{inRange} de {total} grupos en rango",
+  },
+  "progress.volumeTarget.hint": {
+    en: "Direct sets per muscle group, last 7 days.",
+    es: "Series directas por grupo muscular, últimos 7 días.",
+  },
+  "progress.volumeTarget.missing": {
+    en: "{n} sets short of the minimum",
+    es: "faltan {n} series para el mínimo",
+  },
+  "progress.volumeTarget.ok": { en: "{n} sets", es: "{n} series" },
+  "progress.volumeTarget.over": {
+    en: "{n} sets — above the band (diminishing returns)",
+    es: "{n} series — por encima de la franja (rendimientos decrecientes)",
+  },
+  "progress.volumeTarget.source": {
+    en: "Band from Baz-Valle 2022 (systematic review + meta-analysis, trained men 18–35); diminishing returns from Pelland 2025 (67 studies); floor from Schoenfeld 2017.",
+    es: "Franja de Baz-Valle 2022 (revisión sistemática + metaanálisis, hombres entrenados 18–35); rendimientos decrecientes de Pelland 2025 (67 estudios); suelo de Schoenfeld 2017.",
+  },
+  "progress.volumeTarget.title": {
+    en: "Volume target",
+    es: "Objetivo de volumen",
+  },
+  "progress.volumeTarget.widerBand": {
+    en: "Triceps has the wider 12–24 band: that review found high volume significantly better there (p = 0.01).",
+    es: "El tríceps tiene la franja ampliada 12–24: esa revisión encontró el volumen alto claramente mejor ahí (p = 0,01).",
+  },
+  "progress.weekly.arrowTrend": {
+    en: "{prev} → {curr}",
+    es: "{prev} → {curr}",
+  },
+  "progress.weekly.bar": {
+    en: "{week}: {kg} kg · {sets} sets",
+    es: "{week}: {kg} kg · {sets} series",
+  },
+  "progress.weekly.disclaimer": {
+    en: "Tonnage records what you lifted; on its own it proves neither hypertrophy nor strength. A set can feed more than one family (every target group it trains).",
+    es: "El tonelaje registra lo que levantaste; por sí solo no demuestra hipertrofia ni fuerza. Una serie puede alimentar más de una familia (todos los grupos objetivo que entrena).",
+  },
+  "progress.weekly.empty": {
+    en: "Nothing logged in these 8 weeks yet — the chart starts with your first working set.",
+    es: "Sin registro en estas 8 semanas — el gráfico empieza con tu primera serie de trabajo.",
+  },
+  "progress.weekly.families": {
+    en: "By family (target groups)",
+    es: "Por familia (grupos objetivo)",
+  },
+  "progress.weekly.hint": {
+    en: "Tonnage (weight × reps) of working sets, warm-ups out — 8 weeks, Monday to Sunday.",
+    es: "Tonelaje (peso × repeticiones) de las series de trabajo, sin calentamientos — 8 semanas, de lunes a domingo.",
+  },
+  "progress.weekly.now": {
+    en: "This week: {kg} kg · {sets} sets",
+    es: "Esta semana: {kg} kg · {sets} series",
+  },
+  "progress.weekly.peak": { en: "Peak {kg} kg", es: "Máx {kg} kg" },
+  "progress.weekly.title": { en: "Weekly volume", es: "Volumen semanal" },
+  "progress.weekly.vsPrevious": {
+    en: "vs the same days of last week",
+    es: "frente a los mismos días de la semana pasada",
+  },
+  "slot.repsRange": {
+    en: "untouched, it logs {min} — the bottom of the prescribed range",
+    es: "sin tocar, registra {min}: el mínimo del rango recomendado",
+  },
+  "slot.repsRepeat": {
+    en: "blank repeats the last set ({n})",
+    es: "en blanco repite la anterior ({n})",
+  },
+  "symmetry.error.empty": {
+    en: "That Symmetry file has no sessions.",
+    es: "Ese archivo de Symmetry no tiene sesiones.",
+  },
+  "symmetry.error.file": {
+    en: "That file is not readable JSON.",
+    es: "Ese archivo no es JSON legible.",
+  },
+  "symmetry.error.shape": {
+    en: "That file is not a Symmetry export.",
+    es: "Ese archivo no es una exportación de Symmetry.",
+  },
+  // ── Importar historial (Ajustes) ───────────────────────────────────────────
+  // The screen over the two importers that always existed in the store. Every
+  // number it shows is what `planOwnerLog` / `planSymmetry` computed, so the
+  // preview and the import cannot disagree.
+  "import.title": {
+    en: "Import history",
+    es: "Importar historial",
+  },
+  "import.hint": {
+    en: "Your corrected CSV, or the OCR'd Symmetry backup. Parsed and deduped against your log first; nothing is written until you confirm.",
+    es: "Tu CSV corregido o el respaldo de Symmetry (OCR). Se analiza y se deduplica contra tu registro antes; nada se escribe hasta que confirmes.",
+  },
+  "import.csvLabel": {
+    en: "My CSV (owner-training-log.csv)",
+    es: "Mi CSV (owner-training-log.csv)",
+  },
+  "import.symmetryLabel": {
+    en: "Symmetry backup (.json)",
+    es: "Respaldo de Symmetry (.json)",
+  },
+  "import.filesHint": {
+    en: "Choose a file to see what it would add.",
+    es: "Elige un archivo para ver cuánto añadiría.",
+  },
+  "import.preview": {
+    en: "{sets} new sets from {sessions} sessions",
+    es: "{sets} series nuevas de {sessions} sesiones",
+  },
+  "import.previewDuplicates": {
+    en: "{n} rows are already in your log (ignored)",
+    es: "{n} filas ya están en tu registro (se ignoran)",
+  },
+  "import.previewSkipped": {
+    en: "{n} rows have no catalog equivalent — ids are never invented",
+    es: "{n} filas no tienen equivalente en el catálogo: nunca se inventan ids",
+  },
+  "import.previewNothing": {
+    en: "Nothing new: your log already holds these rows.",
+    es: "Nada nuevo: tu registro ya contiene estas filas.",
+  },
+  "import.confirm": { en: "Import", es: "Importar" },
+  "symmetry.imported": {
+    en: "Symmetry: {sessions} sessions and {sets} sets merged ({skipped} rows skipped — no catalog match).",
+    es: "Symmetry: {sessions} sesiones y {sets} series fusionadas ({skipped} filas descartadas, sin equivalente en el catálogo).",
+  },
+
+  // ── Copy that only lived in code (2026-10-09) ──────────────────────────
+  // Written for the first time here: the screens below shipped calling these
+  // keys while the dictionary never had them, so they rendered raw
+  // (`week.stress.title`). Where the text states a rule, the rule is the one
+  // the code applies — the semi-colon in `ownerlog.error.xlsx` is the reason
+  // the CSV exists (`lib/owner-log.ts` needs the warm-up and duration columns).
+  "ex.exercises": { en: "exercises", es: "ejercicios" },
+  "ex.difficultyHint": {
+    en: "technical demand, 1 to 5: 1 is a machine you sit on, 5 is a movement that punishes the smallest mistake",
+    es: "exigencia técnica, de 1 a 5: 1 es una máquina donde te sientas, 5 un movimiento que castiga el error más pequeño",
+  },
+  "ownerlog.imported": {
+    en: "Log: {sessions} sessions and {sets} sets merged ({duplicates} duplicates skipped).",
+    es: "Registro: {sessions} sesiones y {sets} series fusionadas ({duplicates} duplicadas descartadas).",
+  },
+  "ownerlog.error.xlsx": {
+    en: "That file is the XLSX spreadsheet. Export the CSV instead — its columns carry the warm-up flag and the set duration, and nothing else is read.",
+    es: "Ese archivo es la hoja XLSX. Exporta el CSV: sus columnas traen la marca de calentamiento y la duración de la serie, y no se lee nada más.",
+  },
+  "ownerlog.error.columns": {
+    en: "The file is missing the set columns I need. Use the CSV export without renaming anything.",
+    es: "Al archivo le faltan las columnas de series que necesito. Usa la exportación CSV sin renombrar nada.",
+  },
+  "ownerlog.error.shape": {
+    en: "That is not a set log: no row could be read as a set.",
+    es: "Eso no es un registro de series: ninguna fila se pudo leer como una serie.",
+  },
+  "ownerlog.error.empty": {
+    en: "The file has no rows.",
+    es: "El archivo no tiene filas.",
+  },
+  "ownerlog.error.file": {
+    en: "The file could not be read as text.",
+    es: "No se pudo leer el archivo como texto.",
+  },
+  "settings.goals.ratioOf": {
+    en: "× {r} of the waist",
+    es: "× {r} de la cintura",
+  },
+  "settings.goals.applyGolden": {
+    en: "Fill the empty targets from the golden ratio",
+    es: "Rellenar los objetivos vacíos con la proporción áurea",
+  },
+  "settings.goals.applyGoldenHint": {
+    en: "Uses your waist and the published golden-ratio proportions. It only fills the families you left empty — a number you typed is never overwritten.",
+    es: "Usa tu cintura y las proporciones publicadas de la proporción áurea. Solo rellena las familias que dejes vacías: un número que hayas escrito no se sobrescribe nunca.",
+  },
+  "settings.goals.applyGoldenDone": {
+    en: "{n} targets filled.",
+    es: "{n} objetivos rellenados.",
+  },
+  "settings.goals.applyGoldenNeedWaist": {
+    en: "Write your waist first: the preset is a proportion over the waist.",
+    es: "Escribe antes tu cintura: el ajuste es una proporción sobre la cintura.",
+  },
+  "settings.goals.groupTaper": {
+    en: "Taper (waist · chest · back)",
+    es: "Taper (cintura · pecho · espalda)",
+  },
+  "settings.goals.groupArms": { en: "Arms", es: "Brazos" },
+  "settings.goals.groupLegs": { en: "Legs", es: "Piernas" },
+  "week.customBadge": { en: "yours", es: "tuya" },
+  "week.dragHandle": {
+    en: "Drag to move this day",
+    es: "Arrastra para mover este día",
+  },
+  "week.dragHint": {
+    en: "Drag one day onto another to swap them, or focus the grip and use ← / →.",
+    es: "Arrastra un día sobre otro para intercambiarlos, o enfoca el asa y usa ← / →.",
+  },
+  "week.swapDone": {
+    en: "Swapped {a} and {b}.",
+    es: "Intercambiados {a} y {b}.",
+  },
+  "week.swapBack": {
+    en: "Undo the swap",
+    es: "Deshacer el intercambio",
+  },
+  "week.edit": { en: "Edit", es: "Editar" },
+  "week.editing": { en: "Editing {day}", es: "Editando {day}" },
+  "week.editHint": {
+    en: "Your day, laid over the plan: regenerating the week never rewrites it. Pick train or rest, and the families you want.",
+    es: "Tu día, por encima del plan: regenerar la semana nunca lo reescribe. Elige entrenar o descansar, y las familias que quieras.",
+  },
+  "week.kindTrain": { en: "Train", es: "Entrenar" },
+  "week.kindRest": { en: "Rest", es: "Descansar" },
+  "week.pickFamilies": { en: "Pick the families", es: "Elige familias" },
+  "week.estimated": {
+    en: "≈ {sets} working sets, inside your {min} min budget",
+    es: "≈ {sets} series de trabajo, dentro de tus {min} min",
+  },
+  "week.restoreAuto": {
+    en: "Back to the planner's day",
+    es: "Volver al día del planificador",
+  },
+  "week.stress.title": {
+    en: "Estimated stress of the week",
+    es: "Estrés estimado de la semana",
+  },
+  "week.stress.hint": {
+    en: "Estimated from volume, joint load, how packed the days are and how long they run — your own design included.",
+    es: "Estimado desde el volumen, la carga articular, lo juntos que estén los días y su duración — tu diseño incluido.",
+  },
+  "week.stress.band.low": { en: "low", es: "bajo" },
+  "week.stress.band.moderate": { en: "moderate", es: "moderado" },
+  "week.stress.band.high": { en: "high", es: "alto" },
+  "week.stress.band.excessive": { en: "excessive", es: "excesivo" },
+  "week.stress.day": { en: "Day stress", es: "Estrés del día" },
+  "week.stress.score": { en: "{s}/10", es: "{s}/10" },
+  "week.stress.weekScore": {
+    en: "Week stress {score}/10 · {band}",
+    es: "Estrés semanal {score}/10 · {band}",
+  },
+  "week.stress.noDays": {
+    en: "No training days yet: mark at least one and this card estimates the week's load.",
+    es: "Sin días de entrenamiento todavía: marca al menos uno y esta tarjeta estimará la carga de la semana.",
+  },
+  "week.stress.ok": {
+    en: "No warnings: volume, density and rest are consistent.",
+    es: "Sin avisos: volumen, densidad y descanso son coherentes.",
+  },
+  "week.stress.noRest": {
+    en: "Seven training days in a row, with no rest day at all.",
+    es: "Siete días entrenando seguidos, sin ningún día de descanso.",
+  },
+  "week.stress.denseDay": {
+    en: "Day {i} trains {n} families at once — consider splitting it.",
+    es: "El día {i} entrena {n} familias de golpe: considera dividirlo.",
+  },
+  "week.stress.backToBack": {
+    en: "Days {i} and the next one touch: no rest between them.",
+    es: "Los días {i} y el siguiente van pegados: sin descanso entre ellos.",
+  },
+  "week.stress.familyOver": {
+    en: "{fam} reaches {sets} sets this week, above its band.",
+    es: "{fam} acumula {sets} series esta semana, por encima de su franja.",
+  },
+  "week.stress.familyZero": {
+    en: "Not scheduled this week: {fams}",
+    es: "Sin programar esta semana: {fams}",
+  },
+
+  // ── MCP action channel: the local agents' audit trail (Ajustes) ─────────
+  "settings.mcp.title": { en: "Agent actions", es: "Acciones de agentes" },
+  "settings.mcp.hint": {
+    en: "What the local models (Buffy, Codex, llama.cpp…) asked this app to do. Each request is validated with the same rules as the interface, applied by the app itself, and can be undone here.",
+    es: "Lo que los modelos locales (Buffy, Codex, llama.cpp…) han pedido hacer en esta app. Cada petición se valida con las mismas reglas que la interfaz, la aplica la propia app y aquí puedes deshacerla.",
+  },
+  "settings.mcp.empty": {
+    en: "No agent has asked for anything yet.",
+    es: "Ningún agente ha pedido nada todavía.",
+  },
+  "settings.mcp.desktopOnly": {
+    en: "The action channel only exists in the desktop app.",
+    es: "El canal de acciones solo existe en la app de escritorio.",
+  },
+  "settings.mcp.applied": { en: "Applied", es: "Aplicada" },
+  "settings.mcp.rejected": { en: "Rejected", es: "Rechazada" },
+  "settings.mcp.undone": { en: "Undone", es: "Deshecha" },
+  "settings.mcp.undo": { en: "Undo", es: "Deshacer" },
+  "settings.mcp.requestedBy": {
+    en: "requested by {o}",
+    es: "pedida por {o}",
+  },
+  "settings.mcp.rule": { en: "rule: {r}", es: "regla: {r}" },
+
+  /* ── Entrenamiento (mockup 02): the day's queue ───────────────────────── */
+  "ent.title": { en: "Today\u2019s training", es: "Entrenamiento del día" },
+  "ent.sub": {
+    en: "{minutes} min · {exercises} exercises · {sets} sets",
+    es: "{minutes} min · {exercises} ejercicios · {sets} series",
+  },
+  "ent.rest": { en: "Rest day", es: "Día de descanso" },
+  "ent.restHint": {
+    en: "The planner scheduled no work for today. If you want a session anyway, pick a focus in Today or author the day in Week.",
+    es: "El planificador no puso trabajo para hoy. Si quieres entrenar igual, elige un enfoque en Hoy o diseña el día en Semana.",
+  },
+  "ent.goWeek": { en: "Open the week", es: "Abrir la semana" },
+  "ent.view.mine": { en: "My order", es: "Mi orden" },
+  "ent.view.gear": { en: "By equipment", es: "Por equipamiento" },
+  "ent.view.muscle": { en: "By muscle", es: "Por músculo" },
+  "ent.row.start": { en: "Start", es: "Empezar" },
+  "ent.row.up": { en: "Move up", es: "Subir" },
+  "ent.row.down": { en: "Move down", es: "Bajar" },
+  "ent.row.swap": { en: "Change", es: "Cambiar" },
+  "ent.row.remove": { en: "Take out of today", es: "Quitar de hoy" },
+  "ent.row.restore": { en: "Put back", es: "Volver a poner" },
+  "ent.row.out": { en: "Out of today", es: "Fuera de hoy" },
+  "ent.row.added": { en: "Added by you", es: "Añadido por ti" },
+  "ent.row.noSwap": {
+    en: "No alternative with your equipment shares the pattern and the load style.",
+    es: "Ninguna alternativa con tu equipo comparte el patrón y el tipo de carga.",
+  },
+  "ent.row.cancel": { en: "Cancel", es: "Cancelar" },
+  "ent.order.moved": {
+    en: "Moved to position {n} of {total}.",
+    es: "Movido a la posición {n} de {total}.",
+  },
+  "ent.order.reset": {
+    en: "Back to the plan\u2019s order",
+    es: "Volver al orden del plan",
+  },
+  "ent.restSec": { en: "{s} s rest", es: "{s} s de descanso" },
+  "ent.bodyweight": { en: "Bodyweight", es: "Peso corporal" },
+  "ent.groupCount": { en: "{n} exercises", es: "{n} ejercicios" },
+  "ent.bar": {
+    en: "{minutes} min planned of {budget}",
+    es: "{minutes} min planificados de {budget}",
+  },
+  "ent.gear.title": {
+    en: "Grouped by equipment",
+    es: "Agrupado por equipamiento",
+  },
+  "ent.gear.hint": {
+    en: "To know where to start when a machine is taken.",
+    es: "Para saber dónde empezar cuando algo está ocupado.",
+  },
+  "ent.gear.busy": {
+    en: "If the {gear} is taken, start with the {exercise}: it does not need it.",
+    es: "Si el {gear} está ocupado, empieza por {exercise}: no lo necesita.",
+  },
+  "ent.fromRoutine": {
+    en: "From my routine",
+    es: "Desde mi rutina",
+  },
+  "ent.add.title": { en: "Add several", es: "Añadir varios" },
+  "ent.add.available": { en: "{n} available", es: "{n} disponibles" },
+  "ent.add.hint": {
+    en: "Pick several exercises and add them at once with one common prescription.",
+    es: "Selecciona varios ejercicios y agrégalos de una vez con una prescripción común.",
+  },
+  "ent.add.search": { en: "Search exercise", es: "Buscar ejercicio" },
+  "ent.add.empty": {
+    en: "Nothing to add with your equipment — or everything is already in today\u2019s session.",
+    es: "Nada que añadir con tu equipo — o todo está ya en la sesión de hoy.",
+  },
+  "ent.add.selectAll": { en: "Select all ({n})", es: "Seleccionar todo ({n})" },
+  "ent.add.showing": {
+    en: "Showing {shown} of {total} — search to narrow down.",
+    es: "Mostrando {shown} de {total} — busca para acotar.",
+  },
+  "ent.add.applyTo": {
+    en: "Apply to the {n} selected",
+    es: "Aplicar a los {n} seleccionados",
+  },
+  "ent.add.apply": { en: "Add to today", es: "Añadir a hoy" },
+  "ent.add.applied": { en: "{n} added to today", es: "{n} añadidos a hoy" },
+  "ent.add.none": {
+    en: "Nothing was added — those exercises are already in today.",
+    es: "No se añadió nada — esos ejercicios ya están en hoy.",
+  },
+  "ent.fields.sets": { en: "Sets", es: "Series" },
+  "ent.fields.reps": { en: "Reps", es: "Reps" },
+  "ent.fields.rest": { en: "Rest", es: "Descanso" },
+  "ent.why.title": { en: "Why these?", es: "¿Por qué estos?" },
+  "ent.why.hint": {
+    en: "The system builds this selection from:",
+    es: "Esta selección la hace el sistema con base en:",
+  },
+  "ent.why.goal": { en: "Your goals", es: "Tus objetivos" },
+  "ent.why.level": { en: "Your level", es: "Tu nivel" },
+  "ent.why.gear": { en: "Your availability", es: "Tu disponibilidad" },
+  "ent.why.noGear": {
+    en: "no equipment declared",
+    es: "sin equipamiento declarado",
+  },
+  "ent.why.budget": { en: "Time window", es: "Ventana de tiempo" },
+  "ent.why.budgetLine": {
+    en: "{n} min budget · {planned} min planned",
+    es: "{n} min de presupuesto · {planned} min planificados",
+  },
+  "ent.why.recovery": { en: "Recovery window", es: "Ventana de recuperación" },
+  "ent.why.recoveryNone": {
+    en: "No family is still recovering.",
+    es: "Ninguna familia sigue en recuperación.",
+  },
+  "ent.why.plan": {
+    en: "What the plan itself says",
+    es: "Lo que dice el plan",
+  },
+  "ent.why.numbers": { en: "In numbers", es: "En números" },
+  "ent.why.exercises": { en: "Exercises", es: "Ejercicios" },
+  "ent.why.sets": { en: "Total sets", es: "Series totales" },
+  "ent.why.minutes": { en: "Estimated duration", es: "Duración estimada" },
+
+  /* ── Rutinas (mockup 06): the user's own templates ────────────────────── */
+  "ru.title": { en: "Routines", es: "Rutinas" },
+  "ru.sub": {
+    en: "Your own templates, editable: save today's session or build one from scratch.",
+    es: "Plantillas tuyas, editables: guarda el entrenamiento de hoy o crea una desde cero.",
+  },
+  "ru.search": {
+    en: "Search by name, exercise or muscle…",
+    es: "Buscar por nombre, ejercicio o músculo…",
+  },
+  "ru.create": { en: "Create routine", es: "Crear rutina" },
+  "ru.count": { en: "{n} routines", es: "{n} rutinas" },
+  "ru.countOne": { en: "1 routine", es: "1 rutina" },
+  "ru.search.empty": {
+    en: "No routine matches “{q}”.",
+    es: "Ninguna rutina coincide con «{q}».",
+  },
+  "ru.empty.title": { en: "No routines yet", es: "Todavía no tienes rutinas" },
+  "ru.empty.body": {
+    en: "A routine is your own template: the exercises, their sets and their rest, ready to pour into any day.",
+    es: "Una rutina es una plantilla tuya: los ejercicios, sus series y su descanso, listos para volcar en cualquier día.",
+  },
+  "ru.empty.fromToday": {
+    en: "Save today's training",
+    es: "Guardar el entrenamiento de hoy",
+  },
+  "ru.empty.fromTodayNone": {
+    en: "Today has no exercises to save yet.",
+    es: "Hoy no hay ejercicios que guardar todavía.",
+  },
+  "ru.empty.blank": { en: "Start from scratch", es: "Crear desde cero" },
+  "ru.fromTodayName": {
+    en: "Training of {date}",
+    es: "Entrenamiento del {date}",
+  },
+  "ru.copySuffix": { en: "copy", es: "copia" },
+  "ru.cell.exercises": { en: "exercises", es: "ejercicios" },
+  "ru.cell.sets": { en: "sets", es: "series" },
+  "ru.cell.minutes": { en: "min", es: "min" },
+  "ru.cell.families": { en: "muscle groups", es: "grupos" },
+  "ru.meta": {
+    en: "{exercises} exercises · {sets} sets · ~{minutes} min",
+    es: "{exercises} ejercicios · {sets} series · ~{minutes} min",
+  },
+  "ru.metaOne": {
+    en: "1 exercise · {sets} sets · ~{minutes} min",
+    es: "1 ejercicio · {sets} series · ~{minutes} min",
+  },
+  "ru.updated": { en: "Updated {date}", es: "Actualizada el {date}" },
+  "ru.card.use": { en: "Use today", es: "Usar hoy" },
+  "ru.card.view": { en: "View routine", es: "Ver rutina" },
+  "ru.detail.overview": { en: "Overview", es: "Vista general" },
+  "ru.detail.exercises": {
+    en: "Routine exercises ({n})",
+    es: "Ejercicios de la rutina ({n})",
+  },
+  "ru.detail.edit": { en: "Edit routine", es: "Editar rutina" },
+  "ru.detail.duplicate": { en: "Duplicate", es: "Duplicar" },
+  "ru.detail.delete": { en: "Delete", es: "Eliminar" },
+  "ru.detail.deleteConfirm": {
+    en: "Delete “{name}”? This cannot be undone.",
+    es: "¿Eliminar «{name}»? Esta acción no se puede deshacer.",
+  },
+  "ru.detail.deleteYes": { en: "Yes, delete", es: "Sí, eliminar" },
+  "ru.detail.added": {
+    en: "{n} added to today's training",
+    es: "{n} añadidos al entrenamiento de hoy",
+  },
+  "ru.detail.addedOne": {
+    en: "1 added to today's training",
+    es: "1 añadido al entrenamiento de hoy",
+  },
+  "ru.detail.none": {
+    en: "They were all already in today's training.",
+    es: "Ya estaban todos en el entrenamiento de hoy.",
+  },
+  "ru.detail.duplicated": {
+    en: "Duplicated as “{name}”.",
+    es: "Duplicada como «{name}».",
+  },
+  "ru.edit.new": { en: "New routine", es: "Nueva rutina" },
+  "ru.edit.name": { en: "Name", es: "Nombre" },
+  "ru.edit.namePlaceholder": {
+    en: "Leg day, push day…",
+    es: "Día de pierna, empuje…",
+  },
+  "ru.edit.notes": { en: "Notes (optional)", es: "Notas (opcional)" },
+  "ru.edit.notesPlaceholder": {
+    en: "How you use it, with what weight, what to skip…",
+    es: "Cómo la usas, con qué peso, qué evitar…",
+  },
+  "ru.edit.items": { en: "Exercises ({n})", es: "Ejercicios ({n})" },
+  "ru.edit.empty": {
+    en: "Add the first exercise with the search box.",
+    es: "Añade el primer ejercicio con el buscador.",
+  },
+  "ru.edit.search": {
+    en: "Search the catalogue…",
+    es: "Buscar en el catálogo…",
+  },
+  "ru.edit.noResults": {
+    en: "No exercise matches.",
+    es: "Ningún ejercicio coincide.",
+  },
+  "ru.edit.already": {
+    en: "Already in the routine",
+    es: "Ya está en la rutina",
+  },
+  "ru.edit.sets": { en: "Sets", es: "Series" },
+  "ru.edit.reps": { en: "Reps", es: "Reps" },
+  "ru.edit.rest": { en: "Rest", es: "Descanso" },
+  "ru.edit.rir": { en: "RIR", es: "RIR" },
+  "ru.edit.up": { en: "Move up", es: "Subir" },
+  "ru.edit.down": { en: "Move down", es: "Bajar" },
+  "ru.edit.remove": { en: "Remove", es: "Quitar" },
+  "ru.edit.save": { en: "Save routine", es: "Guardar rutina" },
+  "ru.edit.cancel": { en: "Cancel", es: "Cancelar" },
+  "ru.edit.invalid": {
+    en: "Give it a name and add at least one exercise.",
+    es: "Ponle un nombre y añade al menos un ejercicio.",
+  },
 };
+
+/**
+ * Every key the dictionary defines.
+ *
+ * Exists for the missing-copy guard in `tests/training/test_traininglab_i18n.ts`:
+ * `t()` silently falls back to the key itself, so an entry that is used but
+ * never written reaches the screen as `week.stress.title` and nothing (not
+ * TypeScript, not lint) fails. The test walks the app source and asserts every
+ * key it can see is in here.
+ */
+export function translationKeys(): string[] {
+  return Object.keys(DICT);
+}
 
 export function t(key: string): string {
   const entry = DICT[key];

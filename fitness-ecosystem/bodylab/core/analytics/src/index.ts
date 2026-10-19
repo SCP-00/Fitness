@@ -151,7 +151,33 @@ export interface PredictionResult {
 }
 
 /**
- * Predict future value using linear regression on measurement history
+ * Hard cap on how fast any body measurement may change in a projection:
+ * 6 % of the current value per 30 days. Generous vs. reality (real muscle
+ * girth runs ≈0.5–1 cm/month; waist moves a few cm/month at most), yet it
+ * makes absurd extrapolations — the 681 cm chest the owner saw — impossible
+ * by construction.
+ */
+const MAX_MONTHLY_RATE = 0.06;
+
+/**
+ * "Tortoise" (Zeno) half-life in days: the speed of progress halves every
+ * PROGRESS_HALF_LIFE_DAYS. Owner-requested model — the closer you get to the
+ * genetic/physical ceiling, the slower the next stretch of gain becomes.
+ */
+const PROGRESS_HALF_LIFE_DAYS = 30;
+
+/**
+ * Predict a future value from measurement history.
+ *
+ * Regression runs on the **real day axis** (never on the sample index: a
+ * same-day import would compress time and explode the rate), and the
+ * projection is decelerating and bounded:
+ *
+ *   1. clamp the observed monthly slope to ±MAX_MONTHLY_RATE × current;
+ *   2. project with speed halving every PROGRESS_HALF_LIFE_DAYS:
+ *        gain(t) = s30 / ln2 × (1 − 0.5^(t / 30))
+ *      which asymptotes at ≈1.44 × s30 — a finite ceiling, never a line to
+ *      infinity.
  */
 export function predictProgress(
   measurements: Measurement[],
@@ -159,15 +185,20 @@ export function predictProgress(
   daysAhead: number = 30
 ): PredictionResult | null {
   const typed = measurements
-    // Drop non-finite values: a single NaN poisons every downstream statistic.
-    .filter(m => m.type === type && Number.isFinite(m.value))
+    // Drop non-finite values and bad timestamps: either poisons every stat.
+    .filter(m => {
+      if (m.type !== type || !Number.isFinite(m.value)) return false;
+      const ts = new Date(m.timestamp).getTime();
+      return Number.isFinite(ts);
+    })
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   if (typed.length < 2) return null;
 
-  // Linear regression
+  // Linear regression on the real day axis (days since the first sample).
   const n = typed.length;
-  const x = typed.map((_, i) => i);
+  const t0 = new Date(typed[0].timestamp).getTime();
+  const x = typed.map(m => (new Date(m.timestamp).getTime() - t0) / (1000 * 60 * 60 * 24));
   const y = typed.map(m => m.value);
 
   const sumX = x.reduce((a, b) => a + b, 0);
@@ -175,7 +206,8 @@ export function predictProgress(
   const sumXY = x.reduce((a, xi, i) => a + xi * y[i], 0);
   const sumX2 = x.reduce((a, xi) => a + xi * xi, 0);
 
-  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const denom = n * sumX2 - sumX * sumX;
+  const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom; // units/day
   const intercept = (sumY - slope * sumX) / n;
 
   // R² calculation
@@ -184,17 +216,35 @@ export function predictProgress(
   const ssTot = y.reduce((a, yi) => a + (yi - meanY) ** 2, 0);
   const r2 = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
 
-  // Calculate rate per week. Zero/negative time span (e.g. every row sharing a
-  // timestamp) must not divide by zero and emit Infinity.
-  const timeSpanDays = (new Date(typed[n - 1].timestamp).getTime() - new Date(typed[0].timestamp).getTime()) / (1000 * 60 * 60 * 24);
-  const daysPerStep = timeSpanDays > 0 ? timeSpanDays / n : 0;
-  const ratePerWeek = daysPerStep > 0 ? Math.round(slope * (7 / daysPerStep) * 100) / 100 : 0;
+  const timeSpanDays = x[n - 1];
   const current = y[n - 1];
 
-  // Predict: with no usable time axis, the only defensible answer is "no change".
-  const predicted = daysPerStep > 0
-    ? Math.round((slope * (n - 1 + daysAhead / daysPerStep) + intercept) * 10) / 10
-    : current;
+  // No usable time axis (every row shares a timestamp): the only defensible
+  // answer is "no change", and it must never divide by zero → Infinity.
+  if (!(timeSpanDays > 0)) {
+    return {
+      current,
+      predicted: current,
+      daysToTarget: daysAhead,
+      ratePerWeek: 0,
+      confidence: Math.round(r2 * 100) / 100,
+      trend: 'stable',
+    };
+  }
+
+  // 1) Plausibility clamp on the observed rate (per 30 days).
+  const rawMonthly = slope * PROGRESS_HALF_LIFE_DAYS;
+  const monthlyCap = Math.abs(current) * MAX_MONTHLY_RATE;
+  const monthly = Math.max(-monthlyCap, Math.min(monthlyCap, rawMonthly));
+
+  // 2) Decelerating projection: speed halves every half-life → bounded gain.
+  const gain = (monthly / Math.LN2) * (1 - Math.pow(0.5, daysAhead / PROGRESS_HALF_LIFE_DAYS));
+  const predicted = Math.round((current + gain) * 10) / 10;
+
+  // Reported rate uses the clamped slope too — never advertise an impossible pace.
+  const clampedSlope = monthly / PROGRESS_HALF_LIFE_DAYS;
+  const ratePerWeek = Math.round(clampedSlope * 7 * 100) / 100;
+  const monthlyTrend = monthly;
 
   return {
     current,
@@ -202,9 +252,10 @@ export function predictProgress(
     daysToTarget: daysAhead,
     ratePerWeek,
     confidence: Math.round(r2 * 100) / 100,
-    trend: slope > 0.01 ? 'improving' : slope < -0.01 ? 'declining' : 'stable',
+    trend: monthlyTrend > 0.3 ? 'improving' : monthlyTrend < -0.3 ? 'declining' : 'stable',
   };
 }
+
 
 // ============================================================================
 // HEALTH RISK INDICATORS

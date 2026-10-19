@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Hoy</title>
+<link rel="stylesheet" href="css/tl.css" />
+</head>
+<body data-page="hoy">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <!-- ── Top bar: date · place · start ─────────────────────────────────── -->
+    <header class="topbar">
+      <button class="pill"><i data-icon="calendar"></i> Sábado, 7 de junio de 2025 <i data-icon="chevronDown"></i></button>
+      <div class="spacer"></div>
+      <div class="seg" data-switch="lugar">
+        <button class="seg-item" data-value="casa"><i data-icon="home"></i>Casa</button>
+        <button class="seg-item is-active" data-value="gym"><i data-icon="dumbbell"></i>Gym</button>
+        <button class="seg-item" data-value="parque"><i data-icon="wind"></i>Parque</button>
+      </div>
+      <div class="spacer"></div>
+      <a class="btn btn-primary btn-lg" href="03-sesion.html"><i data-icon="play"></i>Empezar</a>
+    </header>
+
+    <div class="content">
+      <div class="cols">
+        <!-- ══ LEFT ══════════════════════════════════════════════════════════ -->
+        <div class="stack">
+
+          <!-- Resume yesterday -->
+          <a class="card card-pad row" href="03-sesion.html" style="gap:14px">
+            <span class="rail-logo" style="width:36px;height:36px;border-radius:10px"><i data-icon="refresh"></i></span>
+            <span class="grow">
+              <span class="bold" style="display:block">Reanudar sesión de ayer</span>
+              <span class="small muted">Espalda + Bíceps · 48 min · 4/6 ejercicios completados</span>
+            </span>
+            <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+          </a>
+
+          <!-- Hoy toca -->
+          <section class="card">
+            <div class="card-head">
+              <span class="card-title" style="font-size:16px"><i data-icon="dumbbell"></i>Hoy toca</span>
+              <span class="badge badge-success"><i data-icon="circleCheck"></i>Sesión completa</span>
+              <div class="spacer"></div>
+              <button class="icon-btn"><i data-icon="chevronUp"></i></button>
+            </div>
+
+            <div class="card-body" style="padding-top:0">
+              <h1 style="margin:0;font-size:31px;letter-spacing:-0.9px">Piernas + Trapecios</h1>
+
+              <div class="row-wrap" style="margin:12px 0 10px;color:var(--tl-text-secondary);font-size:13px">
+                <span class="row" style="gap:6px"><i data-icon="clock" style="width:16px;height:16px"></i>57 min</span>
+                <span class="muted">·</span>
+                <span class="row" style="gap:6px"><i data-icon="bars" style="width:16px;height:16px"></i>6 ejercicios</span>
+                <span class="muted">·</span>
+                <span class="row" style="gap:6px"><i data-icon="target" style="width:16px;height:16px"></i>Piernas y trapecios</span>
+              </div>
+
+              <p class="secondary" style="margin:0;max-width:70ch">
+                Enfocado en fuerza y volumen. Mantén la técnica y controla el tiempo en las
+                repeticiones para maximizar el estímulo.
+              </p>
+
+              <!-- Equipment -->
+              <div style="margin-top:18px">
+                <div class="small bold secondary" style="margin-bottom:8px">Equipo necesario</div>
+                <div class="row-wrap">
+                  <span class="chip"><i data-icon="dumbbell"></i>Mancuernas <small>(24 kg)</small></span>
+                  <span class="chip"><i data-icon="dumbbell"></i>Barra</span>
+                  <span class="chip"><i data-icon="layers"></i>Banco ajustable</span>
+                  <span class="chip"><i data-icon="layers"></i>Rack / Máquina <small>(para sentadillas)</small></span>
+                  <span class="chip chip-optional"><i data-icon="wind"></i>Bandas elásticas <small>(opcional)</small></span>
+                </div>
+              </div>
+
+              <!-- Session exercises -->
+              <div style="margin-top:20px;display:flex;align-items:center;gap:10px">
+                <h2 style="margin:0;font-size:15px">Ejercicios de la sesión</h2>
+                <div class="spacer"></div>
+                <a class="card-link" href="02-entrenamiento.html">Reorganizar <i data-icon="arrowRight"></i></a>
+              </div>
+            </div>
+
+            <div class="exlist">
+              <div class="exrow">
+                <div class="exrow-idx">1</div>
+                <div class="exrow-thumb" data-media="barbell-squat"></div>
+                <div class="grow">
+                  <div class="exrow-name">Sentadilla con Barra</div>
+                  <div class="exrow-sub">Cuádriceps · Glúteos</div>
+                </div>
+                <div class="exrow-cell"><b>4 series</b><span>&nbsp;</span></div>
+                <div class="exrow-cell"><b>8–10 reps</b><span>RIR 1–2</span></div>
+                <div class="exrow-cell"><b>Descanso</b><span>120 s</span></div>
+                <div class="exrow-go"><i data-icon="chevronRight"></i></div>
+              </div>
+
+              <div class="exrow">
+                <div class="exrow-idx">2</div>
+                <div class="exrow-thumb" data-media="leg-press"></div>
+                <div class="grow">
+                  <div class="exrow-name">Prensa de Piernas</div>
+                  <div class="exrow-sub">Cuádriceps · Glúteos</div>
+                </div>
+                <div class="exrow-cell"><b>4 series</b><span>&nbsp;</span></div>
+                <div class="exrow-cell"><b>10–12 reps</b><span>RIR 1–2</span></div>
+                <div class="exrow-cell"><b>Descanso</b><span>90 s</span></div>
+                <div class="exrow-go"><i data-icon="chevronRight"></i></div>
+              </div>
+
+              <div class="exrow">
+                <div class="exrow-idx">3</div>
+                <div class="exrow-thumb" data-media="leg-curl"></div>
+                <div class="grow">
+                  <div class="exrow-name">Curl de Piernas Acostado</div>
+                  <div class="exrow-sub">Isquios</div>
+                </div>
+                <div class="exrow-cell"><b>3 series</b><span>&nbsp;</span></div>
+                <div class="exrow-cell"><b>10–12 reps</b><span>RIR 1–2</span></div>
+                <div class="exrow-cell"><b>Descanso</b><span>75 s</span></div>
+                <div class="exrow-go"><i data-icon="chevronRight"></i></div>
+              </div>
+
+              <div class="exrow">
+                <div class="exrow-idx">4</div>
+                <div class="exrow-thumb" data-media="calf-raises"></div>
+                <div class="grow">
+                  <div class="exrow-name">Elevación de Talones de Pie</div>
+                  <div class="exrow-sub">Pantorrillas</div>
+                </div>
+                <div class="exrow-cell"><b>4 series</b><span>&nbsp;</span></div>
+                <div class="exrow-cell"><b>12–15 reps</b><span>RIR 1–2</span></div>
+                <div class="exrow-cell"><b>Descanso</b><span>60 s</span></div>
+                <div class="exrow-go"><i data-icon="chevronRight"></i></div>
+              </div>
+
+              <div class="exrow">
+                <div class="exrow-idx">5</div>
+                <div class="exrow-thumb" data-media="dumbbell-shrugs"></div>
+                <div class="grow">
+                  <div class="exrow-name">Encogimientos con Mancuernas</div>
+                  <div class="exrow-sub">Trapecio superior</div>
+                </div>
+                <div class="exrow-cell"><b>3 series</b><span>&nbsp;</span></div>
+                <div class="exrow-cell"><b>10–12 reps</b><span>RIR 1–2</span></div>
+                <div class="exrow-cell"><b>Descanso</b><span>75 s</span></div>
+                <div class="exrow-go"><i data-icon="chevronRight"></i></div>
+              </div>
+
+              <div class="exrow">
+                <div class="exrow-idx">6</div>
+                <div class="exrow-thumb" data-media="dumbbell-upright-row"></div>
+                <div class="grow">
+                  <div class="exrow-name">Remo al Mentón con Mancuernas</div>
+                  <div class="exrow-sub">Hombro lateral · Trapecio superior</div>
+                </div>
+                <div class="exrow-cell"><b>3 series</b><span>&nbsp;</span></div>
+                <div class="exrow-cell"><b>12–15 reps</b><span>RIR 1–2</span></div>
+                <div class="exrow-cell"><b>Descanso</b><span>60 s</span></div>
+                <div class="exrow-go"><i data-icon="chevronRight"></i></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Quick add -->
+          <div class="row" style="gap:10px">
+            <button class="btn btn-lg" style="flex:1"><i data-icon="plus"></i>Añadir ejercicio</button>
+            <button class="btn btn-lg" style="flex:1"><i data-icon="list"></i>Desde mi rutina</button>
+          </div>
+        </div>
+
+        <!-- ══ RIGHT ═════════════════════════════════════════════════════════ -->
+        <div class="stack">
+
+          <!-- Resumen rápido -->
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:12px">Resumen rápido</h2>
+            <div class="stat-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+              <div class="stat">
+                <div class="stat-label"><i data-icon="clock"></i>Duración estimada</div>
+                <div class="stat-value">57 <small>min</small></div>
+              </div>
+              <div class="stat">
+                <div class="stat-label"><i data-icon="bars"></i>Volumen total</div>
+                <div class="stat-value">4.320 <small>kg</small></div>
+              </div>
+              <div class="stat">
+                <div class="stat-label"><i data-icon="target"></i>Grupos musculares</div>
+                <div class="stat-value" style="font-size:15px;line-height:1.3">Piernas + Trapecios</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label"><i data-icon="trendingUp"></i>Nivel</div>
+                <div class="stat-value" style="font-size:17px">Intermedio</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Tu progreso -->
+          <section class="card">
+            <div class="card-head">
+              <h2 class="card-title">Tu progreso</h2>
+              <div class="spacer"></div>
+              <a class="card-link" href="07-progreso.html">Ver historial <i data-icon="arrowRight"></i></a>
+            </div>
+            <div class="card-body" style="padding-top:0">
+              <div class="ring-grid">
+                <div class="ring-cell">
+                  <div class="stat-label"><i data-icon="dumbbell"></i>Entrenamientos<br />esta semana</div>
+                  <div class="ring" style="--pct:80;--ring-color:var(--tl-accent)">
+                    <div><div class="ring-value">4<small>/5</small></div></div>
+                  </div>
+                </div>
+                <div class="ring-cell">
+                  <div class="stat-label"><i data-icon="bars"></i>Volumen total<br />(semana)</div>
+                  <div class="ring" style="--pct:74;--ring-color:var(--tl-success)">
+                    <div><div class="ring-value" style="font-size:15px">18.400<small>kg</small></div></div>
+                  </div>
+                </div>
+                <div class="ring-cell">
+                  <div class="stat-label"><i data-icon="gauge"></i>RIR promedio</div>
+                  <div class="ring" style="--pct:62;--ring-color:var(--tl-warning)">
+                    <div><div class="ring-value">1.8</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Semana -->
+          <section class="card">
+            <div class="card-head">
+              <h2 class="card-title"><i data-icon="calendar"></i>Semana</h2>
+              <div class="spacer"></div>
+              <a class="card-link" href="04-semana.html">Expandir <i data-icon="chevronUp"></i></a>
+            </div>
+            <div class="card-body" style="padding-top:0">
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+                <div class="day-mini done"><b>Lun</b><span>2 jun</span><em>Hecho</em><small>56 min</small></div>
+                <div class="day-mini done"><b>Mar</b><span>3 jun</span><em>Hecho</em><small>46 min</small></div>
+                <div class="day-mini planned"><b>Mié</b><span>4 jun</span><em>Previsto</em><small>58 min</small></div>
+                <div class="day-mini done"><b>Jue</b><span>5 jun</span><em>Hecho</em><small>52 min</small></div>
+                <div class="day-mini planned"><b>Vie</b><span>6 jun</span><em>Previsto</em><small>57 min</small></div>
+                <div class="day-mini today"><b>Sáb</b><span>7 jun</span><em>Hoy</em><small>57 min</small></div>
+                <div class="day-mini rest"><b>Dom</b><span>8 jun</span><em>Descanso</em><small>—</small></div>
+              </div>
+            </div>
+            <div class="card-sep"></div>
+            <div class="card-pad">
+              <div class="warn-strip">
+                <i data-icon="alert"></i>
+                <span>Te faltan <b>2 series de pantorrilla</b> para cerrar la banda de volumen de esta semana.</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Coach -->
+          <section class="card">
+            <div class="card-head">
+              <span class="rail-logo" style="width:34px;height:34px;border-radius:10px"><i data-icon="bot"></i></span>
+              <h2 class="card-title">Tu coach (IA)</h2>
+              <span class="badge badge-accent">Enfoque: Piernas + Trapecios</span>
+              <div class="spacer"></div>
+              <i data-icon="chevronRight" style="color:var(--tl-text-muted)"></i>
+            </div>
+            <div class="card-body" style="padding-top:0">
+              <p class="secondary" style="margin:0 0 12px">
+                He ajustado la sesión para priorizar la fuerza en cuádriceps y el trabajo de
+                trapecios. Usé tu historial reciente y tu disponibilidad de equipo en el gym.
+              </p>
+              <div class="note-box" style="display:flex;gap:10px;align-items:flex-start">
+                <i data-icon="info" style="color:var(--tl-info);width:16px;height:16px;flex:none;margin-top:2px"></i>
+                <span class="tiny">
+                  <b style="color:var(--tl-text-secondary)">Regla usada:</b>
+                  Recuperación ≥ 48 h · Banda de volumen (6–10 reps) · Equipo disponible.
+                </span>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<style>
+  /* The 7-day mini strip in the right column (page-local, like the reference). */
+  .day-mini {
+    border: 1px solid var(--tl-border); border-radius: 10px;
+    padding: 8px 6px; text-align: center; display: flex; flex-direction: column; gap: 3px;
+    background: var(--tl-surface);
+  }
+  .day-mini b { font-size: 11.5px; }
+  .day-mini span { font-size: 10px; color: var(--tl-text-muted); }
+  .day-mini em { font-size: 10.5px; font-style: normal; font-weight: 700; }
+  .day-mini small { font-size: 10px; color: var(--tl-text-muted); }
+  .day-mini.done em { color: var(--tl-success); }
+  .day-mini.planned em { color: var(--tl-accent); }
+  .day-mini.rest { border-style: dashed; opacity: .7; }
+  .day-mini.today {
+    border-color: var(--tl-accent); background: var(--tl-accent-wash);
+    box-shadow: 0 0 0 1px var(--tl-accent-border);
+  }
+  .day-mini.today em { color: var(--tl-accent); }
+</style>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ export default function SnapshotComparison() {
 
   if (snapshots.length < 2) {
     return (
-      <div className="bg-[var(--color-surface)] rounded-2xl p-12 shadow-sm border border-slate-100 dark:border-transparent text-center">
+      <div className="bl-card p-12 text-center">
         <Camera className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-[var(--color-text-disabled)]" />
         <p className="font-medium text-slate-600 dark:text-[var(--color-text-secondary)]">
           {lang === 'es' ? 'Necesitas al menos 2 snapshots' : 'You need at least 2 snapshots'}
@@ -44,7 +44,7 @@ export default function SnapshotComparison() {
   return (
     <div className="space-y-6">
       {/* Snapshot selectors */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <h2 className="text-lg font-semibold mb-4">
           {lang === 'es' ? 'Seleccionar snapshots para comparar' : 'Select snapshots to compare'}
         </h2>
@@ -84,7 +84,7 @@ export default function SnapshotComparison() {
       {comparisonData.length > 0 && snapA && snapB && (
         <>
           {/* What Changed */}
-          <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+          <div className="bl-card p-6">
             <h2 className="text-lg font-semibold mb-4">
               {lang === 'es' ? '¿Qué cambió?' : 'What changed?'}
             </h2>
@@ -122,7 +122,7 @@ export default function SnapshotComparison() {
           </div>
 
           {/* Detailed Table */}
-          <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+          <div className="bl-card p-6">
             <h2 className="text-lg font-semibold mb-4">
               {lang === 'es' ? 'Comparación detallada' : 'Detailed comparison'}
             </h2>

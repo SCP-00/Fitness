@@ -129,7 +129,7 @@ export function GearPanel({
                       onChange={(e) =>
                         patch(item.id, { maxLoadKg: Number(e.target.value) })
                       }
-                      className="tl-input w-16 px-2 py-1 text-xs tabular-nums"
+                      className="tl-input w-20 px-2 py-1 text-xs tabular-nums"
                     />
                   </label>
                 )}
@@ -144,7 +144,7 @@ export function GearPanel({
                       onChange={(e) =>
                         patch(item.id, { incrementKg: Number(e.target.value) })
                       }
-                      className="tl-input w-16 px-2 py-1 text-xs tabular-nums"
+                      className="tl-input w-20 px-2 py-1 text-xs tabular-nums"
                     />
                   </label>
                 )}

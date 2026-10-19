@@ -239,7 +239,7 @@ export default function ExerciseLog({ muscleId }: ExerciseLogProps) {
 
               {/* Expanded: Exercise details + Log form */}
               {isActive && (
-                <div className="ml-4 mt-2 p-3 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border-card)] dark:border-transparent space-y-3">
+                <div className="ml-4 mt-2 p-3  bl-card space-y-3">
                   {/* Exercise GIF */}
                   <div className="flex justify-center">
                     <ExerciseGif exerciseId={ex.id} alt={ex.name[lang]} size="md" lang={lang} />

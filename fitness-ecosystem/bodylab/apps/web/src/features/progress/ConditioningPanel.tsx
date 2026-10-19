@@ -52,7 +52,7 @@ export default function ConditioningPanel() {
   // Nothing measurable → a quiet CTA pointing at the Conditioning tab.
   if (cond.classifiedCount === 0) {
     return (
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">
@@ -79,7 +79,7 @@ export default function ConditioningPanel() {
   const tone = scoreTone(cond.conditioningScore ?? 0);
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent space-y-4">
+    <div className="bl-card p-6 space-y-4">
       {/* Header: aggregate score + tone */}
       <div className="flex items-start justify-between gap-4">
         <div>

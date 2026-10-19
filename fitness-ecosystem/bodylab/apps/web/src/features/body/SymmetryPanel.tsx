@@ -34,7 +34,7 @@ export default function SymmetryPanel() {
   });
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+    <div className="bl-card p-6">
       <h2 className="text-lg font-semibold mb-4">
         {lang === 'es' ? 'Simetría Bilateral' : 'Bilateral Symmetry'}
       </h2>

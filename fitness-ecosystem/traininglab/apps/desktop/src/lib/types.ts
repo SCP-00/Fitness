@@ -10,7 +10,12 @@
  */
 
 import type { OwnedEquipment } from "@fitness/bodylab-exercises";
-import type { Readiness, SessionGoal } from "@fitness/bodylab-training";
+import type {
+  MuscleFamily,
+  Readiness,
+  SessionGoal,
+} from "@fitness/bodylab-training";
+import type { Routine } from "./routines";
 import { DEFAULT_SHARED, type SharedSettings } from "./shared";
 
 /** A plan slot resolved for display (name + prescription from core). */
@@ -50,6 +55,13 @@ export interface TLSet {
    */
   durationSec?: number;
   rpe?: number;
+  /**
+   * Source effort badge: `D` near failure, `F` to failure (owner-confirmed
+   * 2026-10-09). `W` (warm-up) stays in `warmup`. Additive and optional — old
+   * records carry the same information as free text in `notes`, and
+   * `lib/effort.ts` reads both.
+   */
+  effort?: "D" | "F";
   notes?: string;
   /**
    * Warm-up ramp set: lives in the log for history, but is excluded from
@@ -202,7 +214,72 @@ export interface TLSettingsData {
    * wrong. Absent in old records → `auto`.
    */
   bodyMapFigure?: "auto" | "male" | "female";
+  /**
+   * The user's own week (2026-10-08): one authored day per Monday-first index,
+   * laid *over* the generated plan and never rewritten by it. `rest` closes a
+   * day; `train` keeps the families he chose (estimated sets/minutes are
+   * derived in `lib/week-stress.ts`, never logged). Absent in old records →
+   * `{}` = the planner's week, untouched.
+   */
+  weekOverrides?: Record<number, WeekDayOverride>;
+  /**
+   * The user's own routine templates (mockup 06, 2026-10-18): named lists of
+   * exercises with the prescription he chose, editable and reusable. Stored in
+   * settings rather than a new object store so every backup and every restore
+   * carries them without a `DB_VERSION` bump. Absent in old records → none.
+   */
+  routines?: Routine[];
+  /**
+   * The sequence the user dragged his session into (2026-10-11), one entry and
+   * no history: `{ date, ids }` where `ids` are the exercise ids in the order he
+   * wants to do them.
+   *
+   * Keyed by date on purpose. A sequence is a decision about *one* session —
+   * what is free right now, what he feels like warming up — so it is applied to
+   * the day it was made and simply ignored by the next. It lives in settings (not
+   * in the plan) because the plan is regenerated: a readiness tick, a gear change
+   * or a dropped time budget rebuilds the rows, and his sequence has to outlive
+   * that rebuild. Reviewed 2026-10-11: a *habit* that orders every future session
+   * is a different, riskier feature (a partial match against a different day's
+   * plan can produce a sequence nobody chose) and is not inferred from this.
+   * Absent in old records → no order, the generator's own sequence stands.
+   */
+  rowOrder?: RowOrder | null;
+  /**
+   * The two escape hatches of the session's top bar (mockup 03: *Saltar* and
+   * *Posponer*), keyed by date like `rowOrder`.
+   *
+   * Both are decisions about **today's session only**, and neither is allowed to
+   * touch the plan: skipping does not delete the exercise from the day (it is
+   * still prescribed, and it still shows up as not done), and postponing does not
+   * rewrite the generator's week. They are marks, applied as a derivation when the
+   * session is built, so undoing either is deleting one id. Absent in old records
+   * → nothing set aside.
+   */
+  sessionAside?: SessionAside | null;
 }
+
+/** The user's sequence for one day's session. See `settings.rowOrder`. */
+export interface RowOrder {
+  /** ISO `YYYY-MM-DD`, the same UTC day prefix every other daily field uses. */
+  date: string;
+  /** Exercise ids, in the order they should be performed. */
+  ids: string[];
+}
+
+/** What the user set aside today. See `settings.sessionAside`. */
+export interface SessionAside {
+  /** ISO `YYYY-MM-DD`: yesterday's marks are not today's instructions. */
+  date: string;
+  /** Set aside for the rest of the day — still part of today's plan. */
+  skipped: string[];
+  /** Pushed to the end of today's session, in the order he postponed them. */
+  postponed: string[];
+}
+
+/** One user-authored day of the week. See `settings.weekOverrides`. */
+export type WeekDayOverride =
+  { kind: "rest" } | { kind: "train"; families: MuscleFamily[] };
 
 /** Sensible defaults: 90 minutes, a real home setup, no network of any kind. */
 export const DEFAULT_SETTINGS: TLSettingsData = {
@@ -220,4 +297,6 @@ export const DEFAULT_SETTINGS: TLSettingsData = {
   shared: { ...DEFAULT_SHARED },
   llm: { ...DEFAULT_LLM },
   bodyMapFigure: "auto",
+  weekOverrides: {},
+  routines: [],
 };

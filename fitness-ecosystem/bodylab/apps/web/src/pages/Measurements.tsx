@@ -19,6 +19,17 @@ const BODY_REGIONS = [
   { id: 'legs', label: { en: 'Legs', es: 'Piernas' }, icon: '🦵', types: ['thigh', 'calf'] },
 ];
 
+/**
+ * Allowed range for a measurement type, straight from the catalog the form
+ * validates against. Module scope on purpose: `submitQuickAdd` is defined
+ * before the point where this used to live, and React Compiler flagged the
+ * inner arrow as read before its own initialization (lint, 2026-10-18).
+ */
+const getRange = (type: string) => {
+  const info = MEASUREMENT_TYPES.find((entry) => entry.id === type);
+  return info ? { min: info.min, max: info.max } : null;
+};
+
 // Measurement guides
 const MEASUREMENT_GUIDES: Record<string, { en: string; es: string; tip: { en: string; es: string } }> = {
   chest: { en: 'Around the fullest part of the chest', es: 'Alrededor de la parte más amplia del pecho', tip: { en: 'Keep tape horizontal, under armpits', es: 'Mantén la cinta horizontal, bajo las axilas' } },
@@ -205,6 +216,8 @@ export default function Measurements() {
     });
   })();
 
+  const [quickAddError, setQuickAddError] = useState<string | null>(null);
+
   // Focus quick-add input when visible
   useEffect(() => {
     if (quickAddVisible && quickAddRef.current) {
@@ -215,25 +228,41 @@ export default function Measurements() {
   const handleQuickAdd = useCallback((type: AllMeasurementType) => {
     setQuickAddType(type);
     setQuickAddValue('');
+    setQuickAddError(null);
     setQuickAddVisible(true);
   }, []);
 
   const submitQuickAdd = useCallback(() => {
     if (!quickAddType || !quickAddValue) return;
     const val = parseNumberInput(quickAddValue);
-    if (val === null || val <= 0) return;
+    if (val === null || val <= 0) {
+      setQuickAddError(lang === 'es' ? 'Ingresa un valor numérico válido.' : 'Enter a valid numeric value.');
+      return;
+    }
+
+    const canonicalVal = toCanonical(quickAddType, val, unitSystem);
+    const range = getRange(quickAddType);
+    if (range && (canonicalVal < range.min || canonicalVal > range.max)) {
+      setQuickAddError(
+        lang === 'es'
+          ? `Valor fuera del rango permitido (${range.min} a ${range.max} ${MEASUREMENT_TYPES.find(t => t.id === quickAddType)?.unit}). Revisa si mediste en línea recta o si es un contorno.`
+          : `Value outside allowed range (${range.min} to ${range.max} ${MEASUREMENT_TYPES.find(t => t.id === quickAddType)?.unit}). Check if you measured in a straight line or circumference.`
+      );
+      return;
+    }
 
     addMeasurement({
       type: quickAddType,
-      value: toCanonical(quickAddType, val, unitSystem),
+      value: canonicalVal,
       unit: MEASUREMENT_TYPES.find(t => t.id === quickAddType)?.unit ?? 'cm',
     });
     setQuickAddValue('');
+    setQuickAddError(null);
     setQuickAddVisible(false);
     setQuickAddType(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
-  }, [quickAddType, quickAddValue, addMeasurement, unitSystem]);
+  }, [quickAddType, quickAddValue, addMeasurement, unitSystem, lang]);
 
   const handleSymmetryAdd = () => {
     const pair = SYMMETRY_PAIRS.find(p => p.group === symGroup);
@@ -303,10 +332,6 @@ export default function Measurements() {
   }, [navyNeck, navyWaist, navyHip, navyHeightCm, profileSex, lang, addMeasurement, unitSystem, tapeUnit]);
 
   const getMeasurement = (type: string) => getLatestMeasurement(state.measurements, type as AllMeasurementType);
-  const getRange = (type: string) => {
-    const info = MEASUREMENT_TYPES.find(t => t.id === type);
-    return info ? { min: info.min, max: info.max } : null;
-  };
 
   // Overview: all measurements organized by region
   const renderOverview = () => (
@@ -319,7 +344,7 @@ export default function Measurements() {
           { label: lang === 'es' ? 'Bilateral' : 'Bilateral', count: state.measurements.filter(m => m.type.includes('_left') || m.type.includes('_right')).length, icon: '⚖️', color: '#10b981' },
           { label: lang === 'es' ? 'Total' : 'Total', count: state.measurements.length, icon: '📊', color: '#f59e0b' },
         ].map((stat, i) => (
-          <div key={i} className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-transparent hover:shadow-md transition-shadow">
+          <div key={i} className="bl-card p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg">{stat.icon}</span>
               <span className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">{stat.label}</span>
@@ -331,7 +356,7 @@ export default function Measurements() {
 
       {/* Body Region Cards */}
       {BODY_REGIONS.map(region => (
-        <div key={region.id} className="bg-[var(--color-surface)] rounded-2xl shadow-sm border border-slate-100 dark:border-transparent overflow-hidden">
+        <div key={region.id} className=" bl-cardoverflow-hidden">
           <button
             onClick={() => setSelectedRegion(selectedRegion === region.id ? null : region.id)}
             className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-input-bg)] transition-colors"
@@ -390,6 +415,13 @@ export default function Measurements() {
                           <div className={`w-2 h-2 rounded-full ${inRange ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                         )}
                         <button
+                          onClick={() => handleQuickAdd(typeId as AllMeasurementType)}
+                          title={lang === 'es' ? 'Registrar una nueva lectura' : 'Log a new reading'}
+                          className="p-1.5 text-slate-400 dark:text-[var(--color-text-muted)] hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => removeMeasurement(meas.id)}
                           className="p-1.5 text-slate-400 dark:text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                         >
@@ -413,46 +445,6 @@ export default function Measurements() {
         </div>
       ))}
 
-      {/* Quick Add Floating */}
-      {quickAddVisible && quickAddType && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--color-surface)] rounded-2xl shadow-2xl border border-slate-200 p-4 flex items-center gap-3 animate-slide-up">
-          <span className="text-sm font-medium text-slate-700 dark:text-[var(--color-text-secondary)]">
-            {MEASUREMENT_TYPES.find(t => t.id === quickAddType)?.label[lang]}:
-          </span>
-          <input
-            ref={quickAddRef}
-            type="number"
-            value={quickAddValue}
-            onChange={(e) => setQuickAddValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') submitQuickAdd();
-              if (e.key === 'Escape') { setQuickAddVisible(false); setQuickAddType(null); }
-            }}
-            placeholder={(() => {
-              const r = getRange(quickAddType);
-              return r ? `${toDisplay(quickAddType, r.min, unitSystem)}-${toDisplay(quickAddType, r.max, unitSystem)}` : '0';
-            })()}
-            step="0.1"
-            className="w-24 px-3 py-2 border border-slate-200  rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-          <span className="text-sm text-slate-500 dark:text-[var(--color-text-muted)]">
-            {UNIT_LABELS[displayUnitFor(quickAddType, unitSystem)][lang]}
-          </span>
-          <button
-            onClick={submitQuickAdd}
-            disabled={!quickAddValue}
-            className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
-            <Check className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => { setQuickAddVisible(false); setQuickAddType(null); }}
-            className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
     </div>
   );
 
@@ -465,7 +457,7 @@ export default function Measurements() {
         const currentRange = config.ranges.find(r => meas && meas.value >= r.min && meas.value < r.max);
 
         return (
-          <div key={id} className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+          <div key={id} className="bl-card p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{config.icon}</span>
@@ -475,12 +467,21 @@ export default function Measurements() {
                 </div>
               </div>
               {meas ? (
-                <button
-                  onClick={() => removeMeasurement(meas.id)}
-                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleQuickAdd(id as AllMeasurementType)}
+                    title={lang === 'es' ? 'Registrar una nueva lectura' : 'Log a new reading'}
+                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => removeMeasurement(meas.id)}
+                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={() => handleQuickAdd(id as AllMeasurementType)}
@@ -547,7 +548,7 @@ export default function Measurements() {
   const renderSymmetry = () => (
     <div className="space-y-4">
       {/* Add form */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <h3 className="font-semibold text-slate-900 mb-3">
           {lang === 'es' ? 'Agregar Medida Bilateral' : 'Add Bilateral Measurement'}
         </h3>
@@ -596,7 +597,7 @@ export default function Measurements() {
           <button
             onClick={handleSymmetryAdd}
             disabled={!symLeft && !symRight}
-            className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="px-4 py-2.5 bl-btn bl-btn-primary font-medium text-sm  disabled:opacity-50 transition-colors"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -630,7 +631,7 @@ export default function Measurements() {
         };
 
         return (
-          <div key={pair.group} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent">
+          <div key={pair.group} className="bl-card p-5 ">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{groupName}</h3>
               <div className="flex items-center gap-2">
@@ -720,7 +721,7 @@ export default function Measurements() {
 
       {/* Empty state */}
       {SYMMETRY_PAIRS.every(pair => !getMeasurement(pair.leftType) && !getMeasurement(pair.rightType)) && (
-        <div className="bg-[var(--color-surface)] rounded-2xl p-12 shadow-sm border border-slate-100 dark:border-transparent text-center">
+        <div className="bl-card p-12 text-center">
           <Repeat className="w-12 h-12 mx-auto mb-3 text-slate-300" />
           <p className="font-medium text-slate-600 dark:text-[var(--color-text-secondary)]">
             {lang === 'es' ? 'No hay medidas bilaterales' : 'No bilateral measurements'}
@@ -741,7 +742,7 @@ export default function Measurements() {
         const meas = getMeasurement(typeInfo.id);
         const guide = MEASUREMENT_GUIDES[typeInfo.id];
         return (
-          <div key={typeInfo.id} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent">
+          <div key={typeInfo.id} className="bl-card p-5 ">
             <div className="flex items-center justify-between">                <div className="min-w-0">
                 <p className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{typeInfo.label[lang]}</p>
                 {guide && <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">{guide[lang]}</p>}
@@ -766,7 +767,7 @@ export default function Measurements() {
       })}
 
       {/* Navy tape form — estimates %BF from circumferences and stores it */}
-      <div className="bg-[var(--color-surface)] rounded-2xl shadow-sm border border-slate-100 dark:border-transparent">
+      <div className=" bl-card">
         <button
           onClick={() => setNavyOpen(!navyOpen)}
           className="w-full flex items-center justify-between p-5 text-left"
@@ -850,7 +851,7 @@ export default function Measurements() {
             <div className="flex items-center gap-2">
               <button
                 onClick={submitNavyEstimate}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
+                className="bl-btn bl-btn-primary text-sm"
               >
                 {lang === 'es' ? 'Guardar %BF estimado' : 'Save estimated %BF'}
               </button>
@@ -876,7 +877,7 @@ export default function Measurements() {
       </div>
 
       {METHOD_GUIDES.map(g => (
-        <div key={g.id} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent space-y-3">
+        <div key={g.id} className="bl-card p-5 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{g.title[lang]}</h3>
             <span
@@ -948,7 +949,7 @@ export default function Measurements() {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="bl-page space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -996,7 +997,7 @@ export default function Measurements() {
           {CIRCUMFERENCE_TYPES.map(typeInfo => {            const meas = getMeasurement(typeInfo.id);
             const guide = MEASUREMENT_GUIDES[typeInfo.id];
             return (
-              <div key={typeInfo.id} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent flex items-center justify-between">
+              <div key={typeInfo.id} className="bl-card p-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{typeInfo.label[lang]}</p>
@@ -1005,7 +1006,16 @@ export default function Measurements() {
                 </div>
                 <div className="flex items-center gap-3">
                   {meas ? (
-                    <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{toDisplay(typeInfo.id, meas.value, unitSystem)}<span className="text-sm text-slate-500 ml-1">{UNIT_LABELS[displayUnitFor(typeInfo.id, unitSystem)][lang]}</span></span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{toDisplay(typeInfo.id, meas.value, unitSystem)}<span className="text-sm text-slate-500 ml-1">{UNIT_LABELS[displayUnitFor(typeInfo.id, unitSystem)][lang]}</span></span>
+                      <button
+                        onClick={() => handleQuickAdd(typeInfo.id as AllMeasurementType)}
+                        title={lang === 'es' ? 'Registrar una nueva lectura' : 'Log a new reading'}
+                        className="p-1.5 text-slate-400 dark:text-[var(--color-text-muted)] hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => handleQuickAdd(typeInfo.id as AllMeasurementType)}
@@ -1022,7 +1032,49 @@ export default function Measurements() {
         </div>
       )}
       {activeTab === 'length' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Educational banner: Breadth vs Circumference */}
+          <div className="bl-card p-5 border border-indigo-500/20 bg-indigo-500/5 space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl p-2 bg-indigo-500/10 rounded-xl">📐</span>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-[var(--color-text)] text-base">
+                  {lang === 'es'
+                    ? '¿Cómo medir correctamente? Anchura ósea (Diámetro) vs. Circunferencia (Perímetro)'
+                    : 'How to measure correctly: Bone Breadth (Diameter) vs. Circumference (Girth)'}
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-[var(--color-text-secondary)] mt-1 leading-relaxed">
+                  {lang === 'es'
+                    ? 'Un error frecuente al tomar medidas es rodear la articulación con cinta métrica cuando se pide una anchura. Las anchuras óseas (rodilla, hombros, muñeca, codo, tobillo) se miden en LÍNEA RECTA entre dos puntos óseos salientes. Por ejemplo, en la rodilla, la anchura ósea real del fémur (bi-epicondilar) mide entre 8 y 12 cm; si rodeas la rodilla con cinta, obtendrás un perímetro de 35 a 40 cm o un arco de 20+ cm.'
+                    : 'A frequent mistake is wrapping tape around a joint when a breadth is requested. Bone breadths (knee, shoulders, wrist, elbow, ankle) are taken in a STRAIGHT LINE between two prominent bone points. For example, true knee bone breadth is between 8 and 12 cm; wrapping around yields 35 to 40 cm.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div className="p-3 bg-white dark:bg-[var(--color-surface)] rounded-xl border border-slate-200 dark:border-[var(--color-border)] text-xs space-y-1">
+                <p className="font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                  <span>📏</span> {lang === 'es' ? 'Circunferencia (Perímetro)' : 'Circumference (Girth)'}
+                </p>
+                <p className="text-slate-500 dark:text-[var(--color-text-muted)]">
+                  {lang === 'es'
+                    ? 'Usa cinta métrica flexible horizontal envolviendo el contorno completo del músculo (cuello, pecho, bíceps, cintura, cadera, muslo, pantorrilla).'
+                    : 'Use flexible horizontal tape wrapped around the full muscle contour (neck, chest, biceps, waist, hip, thigh, calf).'}
+                </p>
+              </div>
+              <div className="p-3 bg-white dark:bg-[var(--color-surface)] rounded-xl border border-slate-200 dark:border-[var(--color-border)] text-xs space-y-1">
+                <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <span>📐</span> {lang === 'es' ? 'Anchura ósea (Regla rígida + 2 libros)' : 'Bone Breadth (Ruler + 2 books)'}
+                </p>
+                <p className="text-slate-500 dark:text-[var(--color-text-muted)]">
+                  {lang === 'es'
+                    ? 'Coloca dos libros como escuadras a ambos lados de los huesos de la articulación (codo, rodilla, muñeca, tobillo). Mide la distancia entre los libros con una regla recta.'
+                    : 'Place two books as squares pressing lightly against both sides of the joint bones (elbow, knee, wrist, ankle). Measure the gap between books with a rigid ruler.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {[
             { key: 'length', heading: lang === 'es' ? 'Longitudes — cinta y pared' : 'Lengths — tape and a wall', list: LENGTH_TYPES },
             { key: 'breadth', heading: lang === 'es' ? 'Anchuras — regla y dos libros' : 'Breadths — a ruler and two books', list: BREADTH_TYPES },
@@ -1035,7 +1087,7 @@ export default function Measurements() {
                 const meas = getMeasurement(typeInfo.id);
                 const guide = MEASUREMENT_GUIDES[typeInfo.id];
                 return (
-                  <div key={typeInfo.id} className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent flex items-center justify-between">
+                  <div key={typeInfo.id} className="bl-card p-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div>
                         <p className="font-semibold text-slate-900 dark:text-[var(--color-text)]">{typeInfo.label[lang]}</p>
@@ -1044,7 +1096,16 @@ export default function Measurements() {
                     </div>
                     <div className="flex items-center gap-3">
                       {meas ? (
-                        <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{toDisplay(typeInfo.id, meas.value, unitSystem)}<span className="text-sm text-slate-500 ml-1">{UNIT_LABELS[displayUnitFor(typeInfo.id, unitSystem)][lang]}</span></span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-[var(--color-text)]">{toDisplay(typeInfo.id, meas.value, unitSystem)}<span className="text-sm text-slate-500 ml-1">{UNIT_LABELS[displayUnitFor(typeInfo.id, unitSystem)][lang]}</span></span>
+                          <button
+                            onClick={() => handleQuickAdd(typeInfo.id as AllMeasurementType)}
+                            title={lang === 'es' ? 'Registrar una nueva lectura' : 'Log a new reading'}
+                            className="p-1.5 text-slate-400 dark:text-[var(--color-text-muted)] hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleQuickAdd(typeInfo.id as AllMeasurementType)}
@@ -1065,6 +1126,129 @@ export default function Measurements() {
       {activeTab === 'composition' && renderComposition()}
       {activeTab === 'symmetry' && renderSymmetry()}
       {activeTab === 'conditioning' && renderConditioning()}
+
+      {/* Modal Dialog for Measurement Entry — accessible, clear, supports commas & decimals */}
+      {quickAddVisible && quickAddType && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => { setQuickAddVisible(false); setQuickAddType(null); }}
+        >
+          <div
+            className="bl-card bl-card-raise max-w-md w-full p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500">
+                    {(() => {
+                      const cat = MEASUREMENT_TYPES.find(t => t.id === quickAddType)?.category;
+                      if (cat === 'circumference') return lang === 'es' ? '📏 Circunferencia (Cinta)' : '📏 Circumference (Tape)';
+                      if (cat === 'breadth') return lang === 'es' ? '📐 Anchura ósea (Regla + 2 libros)' : '📐 Bone breadth (Ruler + 2 books)';
+                      if (cat === 'length') return lang === 'es' ? '🧍 Longitud segmentaria' : '🧍 Segment length';
+                      if (cat === 'composition') return lang === 'es' ? '🔬 Composición corporal' : '🔬 Body composition';
+                      return lang === 'es' ? 'Medición' : 'Measurement';
+                    })()}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-[var(--color-text)] mt-1.5">
+                  {MEASUREMENT_TYPES.find(t => t.id === quickAddType)?.label[lang]}
+                </h3>
+              </div>
+              <button
+                onClick={() => { setQuickAddVisible(false); setQuickAddType(null); }}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-[var(--color-text)] rounded-lg transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Educational note on breadth vs circumference */}
+            {MEASUREMENT_TYPES.find(t => t.id === quickAddType)?.category === 'breadth' && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-600 dark:text-amber-400 space-y-1">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <span>⚠️</span> {lang === 'es' ? 'Medición en línea recta (Anchura)' : 'Straight-line measurement (Breadth)'}
+                </p>
+                <p>
+                  {lang === 'es'
+                    ? 'No envuelvas la articulación con cinta métrica. Coloca dos libros planos a ambos lados de los huesos salientes y mide la separación entre ellos con una regla rígida.'
+                    : 'Do not wrap the joint with a tape measure. Place two flat books perpendicular on both sides of the prominent bones and measure the gap between them with a ruler.'}
+                </p>
+              </div>
+            )}
+
+            {/* Input and unit */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-[var(--color-text-muted)] mb-1.5">
+                {lang === 'es' ? 'Valor numérico' : 'Numeric value'}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={quickAddRef}
+                  type="text"
+                  inputMode="decimal"
+                  value={quickAddValue}
+                  onChange={(e) => {
+                    setQuickAddValue(e.target.value);
+                    if (quickAddError) setQuickAddError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') submitQuickAdd();
+                    if (e.key === 'Escape') { setQuickAddVisible(false); setQuickAddType(null); }
+                  }}
+                  placeholder={(() => {
+                    const r = getRange(quickAddType);
+                    return r ? `${toDisplay(quickAddType, r.min, unitSystem)} - ${toDisplay(quickAddType, r.max, unitSystem)}` : '0';
+                  })()}
+                  className="flex-1 px-4 py-2.5 bg-[var(--color-input-bg)] border border-slate-200 dark:border-[var(--color-border)] rounded-xl text-lg font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <span className="px-3 py-2.5 bg-slate-100 dark:bg-[var(--color-surface-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] font-semibold rounded-xl text-sm min-w-[3.5rem] text-center">
+                  {UNIT_LABELS[displayUnitFor(quickAddType, unitSystem)][lang]}
+                </span>
+              </div>
+              {quickAddError && (
+                <p className="mt-2 text-xs text-red-500 bg-red-500/10 p-2 rounded-lg">
+                  {quickAddError}
+                </p>
+              )}
+            </div>
+
+            {/* Guide tip if present */}
+            {MEASUREMENT_GUIDES[quickAddType] && (
+              <div className="p-3 bg-[var(--color-input-bg)] rounded-xl text-xs text-slate-600 dark:text-[var(--color-text-secondary)] space-y-1">
+                <p className="font-medium text-slate-800 dark:text-[var(--color-text)]">
+                  {MEASUREMENT_GUIDES[quickAddType][lang]}
+                </p>
+                <p className="text-slate-500 dark:text-[var(--color-text-muted)]">
+                  💡 {MEASUREMENT_GUIDES[quickAddType].tip[lang]}
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setQuickAddVisible(false); setQuickAddType(null); }}
+                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-100 dark:hover:bg-[var(--color-surface-elevated)] rounded-xl transition-colors"
+              >
+                {lang === 'es' ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={submitQuickAdd}
+                disabled={!quickAddValue.trim()}
+                className="bl-btn bl-btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-40"
+              >
+                {lang === 'es' ? 'Guardar medición' : 'Save measurement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

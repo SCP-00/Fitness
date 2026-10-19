@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Ejercicios</title>
+<link rel="stylesheet" href="css/tl.css" />
+<style>
+  .ex-page { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 18px; align-items: start; }
+  .filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filter-select {
+    display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px;
+    border: 1px solid var(--tl-border); border-radius: 10px; background: var(--tl-surface);
+    color: var(--tl-text-secondary); font-size: 13px; font-weight: 600;
+  }
+  .filter-select select {
+    background: transparent; border: none; outline: none; color: inherit;
+    font: inherit; cursor: pointer;
+  }
+  .filter-select option { background: var(--tl-surface-2); }
+  .filter-toggle.is-active { border-color: var(--tl-accent-border); background: var(--tl-accent-wash); color: var(--tl-accent-strong); }
+  .search-box {
+    display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 14px;
+    border: 1px solid var(--tl-border); border-radius: 10px; background: var(--tl-surface);
+    color: var(--tl-text-muted); min-width: 260px;
+  }
+  .search-box input {
+    background: transparent; border: none; outline: none; color: var(--tl-text);
+    font-size: 13px; width: 100%;
+  }
+  /* Compact media inside a gallery card: full-bleed, with the caption overlaid. */
+  .gcard-art > img { position: absolute; inset: 0; }
+  .gcard-art > .media-note,
+  .gcard-art > .media-missing { position: absolute; inset: auto 0 0 0; }
+  .gcard-art > .media-missing { inset: 0; }
+  .tabs-4 .tab { flex: 1; justify-content: center; text-align: center; }
+  .step-note { font-size: 12px; color: var(--tl-text-muted); }
+  .mini-body { display: flex; gap: 8px; align-items: center; justify-content: center; }
+  .mini-body img { height: 190px; width: auto; }
+  .perf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .perf-cell { border: 1px solid var(--tl-border); border-radius: 10px; padding: 10px; background: var(--tl-surface-2); }
+  .perf-cell span { font-size: 10.5px; color: var(--tl-text-muted); display: block; }
+  .perf-cell b { font-size: 15px; }
+  @media (max-width: 1400px) { .ex-page { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body data-page="ejercicios">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Ejercicios <span class="tiny muted" data-gallery-count></span></div>
+        <div class="topbar-sub">Explora, filtra y guarda tus ejercicios favoritos o crea los tuyos.</div>
+      </div>
+      <div class="spacer"></div>
+      <label class="search-box"><i data-icon="search"></i><input placeholder="Buscar ejercicio…" data-gallery-search /></label>
+      <button class="btn btn-lg" data-open-modal="crear">
+        <i data-icon="plus"></i>Crear ejercicio propio
+      </button>
+      <span class="rail-logo" style="width:32px;height:32px;border-radius:50%;background:var(--tl-surface-3);color:var(--tl-text-secondary)"><i data-icon="users"></i></span>
+    </header>
+
+    <div class="content">
+      <div class="ex-page">
+        <!-- ══ Gallery: rendered from data/catalog.json ══════════════════════ -->
+        <div class="stack">
+          <div class="filter-bar">
+            <label class="filter-select"><i data-icon="users"></i><select data-family-select></select></label>
+            <label class="filter-select"><i data-icon="move"></i><select data-pattern-select></select></label>
+            <label class="filter-select"><i data-icon="dumbbell"></i><select data-equipment-select></select></label>
+            <button class="pill filter-toggle" data-filter="own" data-value="own">
+              <i data-icon="sparkles"></i>Sólo lo que puedo hacer con mi equipo
+            </button>
+            <button class="pill"><i data-icon="eraser"></i>Limpiar filtros</button>
+            <div class="spacer"></div>
+            <span class="tiny muted" data-gallery-shown></span>
+          </div>
+
+          <div class="gallery" data-gallery>
+            <p class="muted">Cargando el catálogo…</p>
+          </div>
+        </div>
+
+        <!-- ══ Exercise sheet ════════════════════════════════════════════════ -->
+        <section class="card" data-detail>
+          <div class="card-head">
+            <button class="btn btn-sm"><i data-icon="image"></i>GIF</button>
+            <span class="grow">
+              <h2 class="card-title" style="font-size:18px" data-detail-name>Sentadilla Copa</h2>
+              <div class="tiny muted" data-detail-en>Goblet Squat</div>
+            </span>
+            <button class="icon-btn"><i data-icon="star"></i></button>
+            <button class="icon-btn"><i data-icon="x"></i></button>
+          </div>
+
+          <div style="padding:0 16px">
+            <div class="hero-media" style="padding:0;border:none;background:none">
+              <div class="frame" style="aspect-ratio:16/10;max-height:260px">
+                <div data-detail-media style="width:100%;height:100%"></div>
+              </div>
+            </div>
+            <div class="row-wrap" style="margin-top:12px" data-detail-meta></div>
+          </div>
+
+          <div style="padding:12px 16px 0">
+            <div class="tabs tabs-4" data-switch="ficha">
+              <button class="tab is-active" data-value="tecnica">Técnica</button>
+              <button class="tab" data-value="musculos">Músculos</button>
+              <button class="tab" data-value="progresion">Progresión</button>
+              <button class="tab" data-value="historial">Historial</button>
+            </div>
+          </div>
+
+          <div class="drawer-body" style="padding-top:14px">
+            <!-- Técnica: the four tabs are real panels, not decoration. -->
+            <div data-panel="ficha:tecnica">
+              <p class="secondary small" style="margin:0 0 12px" data-detail-why></p>
+              <div data-detail-steps></div>
+              <div class="row-wrap" data-detail-techmeta style="gap:6px;margin-top:12px"></div>
+
+              <div style="margin-top:16px">
+                <div class="small bold" style="color:var(--tl-danger);margin-bottom:6px">
+                  <i data-icon="alert" style="width:14px;height:14px;display:inline-block;vertical-align:-2px"></i>
+                  Errores comunes
+                </div>
+                <div class="secondary small" data-detail-mistakes></div>
+              </div>
+
+              <div style="margin-top:16px">
+                <div class="small bold secondary" style="margin-bottom:6px">Seguridad y respiración</div>
+                <div class="note-box tiny" data-detail-safety></div>
+              </div>
+            </div>
+
+            <div data-panel="ficha:musculos" class="hide">
+              <div class="small bold secondary" style="margin-bottom:8px">Músculos trabajados</div>
+              <div class="row-wrap" style="gap:6px" data-detail-muscles></div>
+              <div class="mini-body" style="margin-top:14px">
+                <img src="assets/bodymap/traininglab-body-map.png" alt="Mapa muscular" />
+                <img src="assets/bodymap/traininglab-body-map-woman.png" alt="Mapa muscular (figura femenina)" />
+              </div>
+              <p class="tiny muted" style="text-align:center;margin-top:10px">
+                El color por región llega con el mapa real por músculo; aquí la figura es la del
+                proyecto.
+              </p>
+            </div>
+
+            <div data-panel="ficha:progresion" class="hide">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+                <div class="note-box tiny" style="border-color:rgba(57,217,138,.28)">
+                  <b style="color:var(--tl-success)">↑ Para avanzar</b>
+                  <p style="margin:6px 0 0">Más peso (2–5 kg) · más repeticiones (12–15) · pausa abajo 2 s.</p>
+                </div>
+                <div class="note-box tiny" style="border-color:rgba(255,79,79,.28)">
+                  <b style="color:var(--tl-danger)">↓ Para retroceder</b>
+                  <p style="margin:6px 0 0">Sin peso · menos rango de movimiento · apoyo en banco.</p>
+                </div>
+              </div>
+              <div class="small bold secondary" style="margin:16px 0 8px">Tu rendimiento personal</div>
+              <div class="perf-grid">
+                <div class="perf-cell"><span>Mejor serie</span><b>26 kg × 12</b></div>
+                <div class="perf-cell"><span>e1RM (estimado)</span><b>32,5 kg</b></div>
+                <div class="perf-cell"><span>Última vez</span><b style="font-size:13px">7 jun 2025</b></div>
+              </div>
+            </div>
+
+            <div data-panel="ficha:historial" class="hide">
+              <table class="table">
+                <thead><tr><th>Fecha</th><th class="num">Mejor serie</th><th class="num">Volumen</th></tr></thead>
+                <tbody>
+                  <tr><td>7 jun 2025</td><td class="num">26 kg × 12</td><td class="num">1.180 kg</td></tr>
+                  <tr><td>31 may 2025</td><td class="num">24 kg × 12</td><td class="num">1.060 kg</td></tr>
+                  <tr><td>24 may 2025</td><td class="num">24 kg × 10</td><td class="num">980 kg</td></tr>
+                  <tr><td>17 may 2025</td><td class="num">22 kg × 10</td><td class="num">900 kg</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <button class="btn btn-primary btn-xl" style="margin-top:16px"><i data-icon="play"></i>Usar hoy</button>
+            <p class="tiny muted" style="text-align:center;margin:0">
+              El «¿por qué?», los pasos y los errores vienen del catálogo real; cifras y
+              rendimiento son de ejemplo.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Create your own exercise ───────────────────────────────────────────── -->
+<div class="overlay hide" data-modal="crear"></div>
+<div class="modal hide" data-modal="crear" data-modal-panel="crear">
+  <div class="card-head" style="position:sticky;top:0;background:var(--tl-surface);z-index:2">
+    <h2 class="card-title" style="font-size:18px">Crear ejercicio propio</h2>
+    <div class="spacer"></div>
+    <button class="icon-btn" data-close="crear"><i data-icon="x"></i></button>
+  </div>
+
+  <div class="card-body" style="display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px">
+    <div>
+      <div class="dropzone" style="padding:34px 16px">
+        <i data-icon="image" style="width:30px;height:30px;margin:0 auto 10px;color:var(--tl-text-muted)"></i>
+        <div class="small bold secondary">Sube una imagen o GIF</div>
+        <div class="tiny muted" style="margin-top:4px">JPG, PNG o GIF · Máx. 10 MB</div>
+      </div>
+      <p class="tiny muted" style="margin-top:10px">
+        Si no subes nada, el ejercicio se muestra con la figura de su patrón de movimiento.
+      </p>
+    </div>
+
+    <div class="stack" style="gap:12px">
+      <div class="field"><div class="field-label">Nombre del ejercicio *</div><input placeholder="Ej. Dominadas supinas" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field"><div class="field-label">Músculos trabajados *</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text)"><option>Selecciona músculos</option><option>Pecho</option><option>Espalda</option><option>Piernas</option><option>Core</option></select></div>
+        <div class="field"><div class="field-label">Equipamiento *</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text)"><option>Selecciona equipamiento</option><option>Mancuernas</option><option>Barra</option><option>Bandas</option><option>Peso corporal</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field"><div class="field-label">Patrón de movimiento *</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text)"><option>Selecciona patrón</option><option>Tirón vertical</option><option>Empuje horizontal</option><option>Sentadilla</option></select></div>
+        <div class="field"><div class="field-label">Unidad de medida *</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text)"><option>Selecciona unidad</option><option>kg</option><option>Peso corporal</option><option>Segundos</option></select></div>
+      </div>
+      <div class="field"><div class="field-label">Descripción (opcional)</div><textarea placeholder="Añade una breve descripción del ejercicio…" rows="3" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);resize:vertical;font-size:14px"></textarea></div>
+    </div>
+  </div>
+
+  <div class="card-head" style="justify-content:flex-end;border-top:1px solid var(--tl-border)">
+    <button class="btn btn-lg" data-close="crear">Cancelar</button>
+    <button class="btn btn-primary btn-lg"><i data-icon="check"></i>Guardar</button>
+  </div>
+</div>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

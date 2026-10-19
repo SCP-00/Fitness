@@ -44,7 +44,7 @@ export default function ProgressTimeline({ selectedMetrics, onToggleMetric }: Pr
   }, [snapshots, measurements, selectedMetrics, lang]);
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+    <div className="bl-card p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">{t('progress.timeline')}</h2>
         {timelineData.length > 0 && (

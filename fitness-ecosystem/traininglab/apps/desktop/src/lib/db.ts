@@ -8,6 +8,8 @@
  */
 
 import type { Readiness, DecisionModel } from "@fitness/bodylab-training";
+import { todayKey } from "./day";
+import type { McpLedgerEntry } from "./mcp-actions";
 import type { TLSet, TLSession, TLSettingsData } from "./types";
 import {
   DEFAULT_LLM,
@@ -15,6 +17,7 @@ import {
   DEFAULT_SETTINGS,
   DEFAULT_SOUND,
 } from "./types";
+import { normalizeRoutines } from "./routines";
 import { DEFAULT_SHARED, type HealthRecord } from "./shared";
 
 const DB_NAME = "traininglab";
@@ -133,6 +136,75 @@ export async function saveSessionsMany(rows: TLSession[]): Promise<void> {
   });
 }
 
+export async function deleteSession(id: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.sessions, "readwrite");
+    tx.objectStore(STORES.sessions).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function updateSession(
+  id: string,
+  patch: Partial<TLSession>,
+): Promise<TLSession | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.sessions, "readwrite");
+    const store = tx.objectStore(STORES.sessions);
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const existing = req.result as TLSession | undefined;
+      if (!existing) {
+        resolve(null);
+        return;
+      }
+      const updated: TLSession = { ...existing, ...patch, id };
+      store.put(updated);
+      tx.oncomplete = () => resolve(updated);
+    };
+    req.onerror = () => reject(req.error);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Bulk deletion of sessions.
+ *
+ * Needed because `saveSessionsMany` is a `put` loop: writing back a *filtered*
+ * array does not remove the rows that were left out, so any "remove these"
+ * operation has to delete explicitly or it silently keeps the data it claims to
+ * have dropped.
+ */
+export async function deleteSessionsMany(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.sessions, "readwrite");
+    const store = tx.objectStore(STORES.sessions);
+    for (const id of ids) store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Bulk deletion of sets (used when a session and its logged sets are deleted). */
+export async function deleteSetsMany(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.sets, "readwrite");
+    const store = tx.objectStore(STORES.sets);
+    for (const id of ids) store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+
+
 // ── Settings (single JSON doc in the meta store) ────────────────────────────
 
 /**
@@ -157,6 +229,11 @@ export function normalizeSettings(
     },
     shared: { ...DEFAULT_SHARED, ...(partial.shared ?? {}) },
     llm: { ...DEFAULT_LLM, ...(partial.llm ?? {}) },
+    weekOverrides: { ...(partial.weekOverrides ?? {}) },
+    // Templates go through the same sanitizer the editor uses: a restored or
+    // hand-edited backup can never put an unknown exercise or a 99-rep row on
+    // screen, and a malformed entry simply drops instead of blanking the list.
+    routines: normalizeRoutines(partial.routines),
   };
 }
 
@@ -237,6 +314,37 @@ export async function saveHealthRecords(rows: HealthRecord[]): Promise<void> {
   await put(STORES.meta, { id: "health-records", value: rows });
 }
 
+// ── MCP action ledger (receipts of everything an agent asked for) ───────────
+
+/**
+ * Idempotency and undo both live in this list: every id the app has ever seen
+ * from the action inbox, with the receipt it answered and — when it was applied
+ * — the operation that reverses it. Without it a replayed inbox file (the MCP
+ * retries after a timeout) would log the same set twice, and the "Deshacer"
+ * button in Ajustes would not survive a restart.
+ *
+ * Stored in the meta store like the health records: one array, read once per
+ * boot, and a new object store would mean a `DB_VERSION` bump on a database
+ * that has been at version 1 since the first install.
+ */
+export async function loadMcpLedger(): Promise<McpLedgerEntry[]> {
+  const db = await openDB();
+  return new Promise((resolve) => {
+    const tx = db.transaction(STORES.meta, "readonly");
+    const req = tx.objectStore(STORES.meta).get("mcp-ledger");
+    req.onsuccess = () => {
+      const rows = (req.result as { value?: McpLedgerEntry[] } | undefined)
+        ?.value;
+      resolve(Array.isArray(rows) ? rows : []);
+    };
+    req.onerror = () => resolve([]);
+  });
+}
+
+export async function saveMcpLedger(rows: McpLedgerEntry[]): Promise<void> {
+  await put(STORES.meta, { id: "mcp-ledger", value: rows });
+}
+
 // ── Today's readiness self-report (kept per calendar day) ───────────────────
 
 export interface StoredReadiness {
@@ -253,7 +361,7 @@ export async function loadReadiness(): Promise<StoredReadiness | null> {
       const stored =
         (req.result as { value?: StoredReadiness } | undefined)?.value ?? null;
       // A stale entry (yesterday's energy) must never drive today's session.
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayKey();
       resolve(stored && stored.date === today ? stored : null);
     };
     req.onerror = () => resolve(null);
@@ -263,7 +371,7 @@ export async function loadReadiness(): Promise<StoredReadiness | null> {
 export async function saveReadiness(readiness: Readiness): Promise<void> {
   await put(STORES.meta, {
     id: "readiness",
-    value: { date: new Date().toISOString().slice(0, 10), readiness },
+    value: { date: todayKey(), readiness },
   });
 }
 

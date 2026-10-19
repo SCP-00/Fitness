@@ -8,8 +8,14 @@ import { BodyToolbar, MuscleDetailPanel, MuscleList, SymmetryPanel } from '../fe
 // Lazy-load 3D viewer
 let Lazy3DComponent: ComponentType<{ width?: number; height?: number }> | null = null;
 function BodyViewer3D(props: { width?: number; height?: number }) {
-  const [Component, setComponent] = useState<ComponentType<{ width?: number; height?: number }> | null>(Lazy3DComponent);
+  // NOTE: Lazy3DComponent holds a *component function* once the chunk loads.
+  // Passing it bare to useState would make React treat it as a lazy initializer
+  // and call it with `undefined` props (→ "Cannot read properties of undefined
+  // (reading 'width')" crash under StrictMode double-mount). Always wrap it.
+  const [Component, setComponent] = useState<ComponentType<{ width?: number; height?: number }> | null>(() => Lazy3DComponent);
   useEffect(() => {
+    // If the chunk is already loaded, useState's initializer picked it up —
+    // only the async path needs a setState (inside the promise, not here).
     if (!Lazy3DComponent) {
       import('../components/BodyViewer3D').then(m => { Lazy3DComponent = m.default; setComponent(() => m.default); });
     }
@@ -71,7 +77,7 @@ export default function BodyView() {
   const scoreLegend = Object.entries(SCORE_COLORS);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="bl-page space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -90,7 +96,7 @@ export default function BodyView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Body Visualization */}
-        <div className="lg:col-span-2 bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent ">
+        <div className="lg:col-span-2 bl-card p-6 ">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-[var(--color-text)]">
               {viewMode === '2d'
@@ -126,7 +132,7 @@ export default function BodyView() {
           )}
 
           {/* Color Legend */}
-          <div className="bg-[var(--color-surface)] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-transparent ">
+          <div className="bl-card p-5 ">
             <h2 className="text-sm font-semibold mb-3 text-slate-900 dark:text-[var(--color-text)]">{t('body.colorLegend')}</h2>
             <div className="space-y-1.5">
               {scoreLegend.map(([key, value]) => (

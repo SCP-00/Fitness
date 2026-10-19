@@ -64,7 +64,7 @@ export default function Overview() {
   // Empty state
   if (measurements.length === 0) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="bl-page">
         <div className="py-20 text-center">
           <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <Plus className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
@@ -79,7 +79,7 @@ export default function Overview() {
           </p>
           <button
             onClick={() => navigate('/measure')}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bl-btn bl-btn-primary text-sm font-medium "
           >
             <Plus className="w-4 h-4" />
             {lang === 'es' ? 'Comenzar a medir' : 'Start measuring'}
@@ -90,23 +90,24 @@ export default function Overview() {
   }
 
   return (
-    // Mobile: tighter padding and a stacked header (a 28 px title next to a
-    // primary action does not fit a 390 px viewport without wrapping badly).
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6 sm:space-y-8">
+    <div className="bl-page space-y-7">
       {/* Header — page title left, dominant action top-right (§99.1) */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
-          <h1 className="text-2xl leading-8 sm:text-[28px] sm:leading-9 font-bold tracking-tight text-slate-900 dark:text-[var(--color-text)]">
+          <p className="bl-eyebrow mb-1.5">
+            {lang === 'es' ? 'Panel' : 'Dashboard'}
+          </p>
+          <h1 className="display-lg text-slate-900 dark:text-[var(--color-text)]">
             {greeting}{profile ? `, ${profile.name}` : ''}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-[var(--color-text-muted)] mt-1">
+          <p className="text-sm text-slate-500 dark:text-[var(--color-text-muted)] mt-1.5">
             {new Date().toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
         </div>
         <button
           onClick={() => navigate('/measure')}
           title={lang === 'es' ? 'Medir ahora (M)' : 'Measure now (M)'}
-          className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
+          className="bl-btn bl-btn-primary shrink-0"
         >
           <Plus className="w-4 h-4" />
           {lang === 'es' ? 'Medir ahora' : 'Measure now'}
@@ -114,9 +115,9 @@ export default function Overview() {
       </div>
 
       {/* KPI band — ≤ 4 cards, one fact each (§100.1) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Weight */}
-        <div className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+        <div className="bl-card p-5">
           <p className="text-[11px] font-medium text-slate-500 dark:text-[var(--color-text-muted)] uppercase tracking-wide">
             {lang === 'es' ? 'Peso' : 'Weight'}
           </p>
@@ -135,7 +136,7 @@ export default function Overview() {
         </div>
         {/* BMI — only shown with a profile, never the lead number */}
         {profile && (
-          <div className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+          <div className="bl-card p-5">
             <p className="text-[11px] font-medium text-slate-500 dark:text-[var(--color-text-muted)] uppercase tracking-wide">
               BMI*
             </p>
@@ -146,7 +147,7 @@ export default function Overview() {
           </div>
         )}
         {/* Coverage */}
-        <div className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+        <div className="bl-card p-5">
           <p className="text-[11px] font-medium text-slate-500 dark:text-[var(--color-text-muted)] uppercase tracking-wide">
             {lang === 'es' ? 'Cobertura' : 'Coverage'}
           </p>
@@ -158,7 +159,7 @@ export default function Overview() {
           </p>
         </div>
         {/* Last session */}
-        <div className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+        <div className="bl-card p-5">
           <p className="text-[11px] font-medium text-slate-500 dark:text-[var(--color-text-muted)] uppercase tracking-wide">
             {lang === 'es' ? 'Última sesión' : 'Last session'}
           </p>
@@ -201,18 +202,18 @@ export default function Overview() {
       {/* Body status */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-[var(--color-text-muted)]">
+          <p className="bl-eyebrow">
             {lang === 'es' ? 'Estado del cuerpo' : 'Body status'}
           </p>
           <button
             onClick={() => navigate('/body')}
-            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold"
           >
             {lang === 'es' ? 'Explorar →' : 'Explore →'}
           </button>
         </div>
 
-        <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border-card)] dark:border-transparent divide-y divide-[var(--color-border-subtle)] dark:divide-transparent">
+        <div className="bl-card overflow-hidden divide-y divide-[var(--color-border-subtle)] dark:divide-transparent">
           {KEY_TYPES.map(type => {
             const value = latestMap[type];
             const change = changes[type];

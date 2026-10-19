@@ -51,7 +51,7 @@ export default function References() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="bl-page bl-page--narrow space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -86,7 +86,7 @@ export default function References() {
       )}
 
       {/* Current Reference */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+      <div className="bl-card p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl">
             <Target className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
@@ -126,7 +126,7 @@ export default function References() {
         const cat = REFERENCE_CATEGORIES[catKey];
         const Icon = cat.icon;
         return (
-          <div key={catKey} className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+          <div key={catKey} className="bl-card p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-slate-100 dark:bg-[var(--color-chip-bg)] rounded-xl">
                 <Icon className="w-5 h-5 text-slate-600" />
@@ -177,7 +177,7 @@ export default function References() {
       })}
 
       {/* Custom Reference placeholder */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent border-dashed">
+      <div className="bl-card p-6 border-dashed">
         <div className="text-center">
           <Target className="w-10 h-10 mx-auto text-slate-300 mb-3" />
           <h3 className="font-medium text-slate-700 dark:text-[var(--color-text-secondary)]">Custom Reference</h3>

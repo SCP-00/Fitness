@@ -13,6 +13,7 @@
  * @module lib/set-entry
  */
 
+import { toKg, type WeightUnit } from "./units";
 import type { TLSet } from "./types";
 
 /**
@@ -77,25 +78,29 @@ export function inheritedWeight(
   return suggestionKg;
 }
 
-export interface WeightResolution {
-  /** Kilograms, or `null` for bodyweight / no external load. */
-  weightKg: number | null;
-  inherited: boolean;
-  source: "typed" | "previous-set" | "suggestion";
-}
-
-/** Same precedence for the weight side of the row. */
-export function resolveWeight(input: {
+/**
+ * The load the logging row will store for the set being entered.
+ *
+ * Typed wins, *and it is typed in the display unit* — 100 lb is 45.36 kg in the
+ * log, never 100 (storage is kg everywhere, `lib/units.ts`). With the field left
+ * alone the load is not inherited blindly either: `lib/set-proposal.ts` decided
+ * it from how the previous set ended (failure backs off, near-failure repeats,
+ * beating the range earns a step), and that verdict is what arrives here as
+ * `proposalKg`.
+ *
+ * Extracted from the component on 2026-10-11, when the row was found to be
+ * storing a typed lb figure as kilograms: a rule that lives inside a component
+ * is a rule nothing can test.
+ */
+export function resolveEntryWeight(input: {
+  /** The number in the field, in the display unit (`null` = left blank). */
   typed: number | null;
-  sets: readonly TLSet[];
-  suggestionKg: number | null;
-}): WeightResolution {
+  unit: WeightUnit;
+  /** What the proposal decided (kg), used when nothing was typed. */
+  proposalKg: number | null;
+}): number | null {
   if (input.typed !== null && input.typed > 0) {
-    return { weightKg: input.typed, inherited: false, source: "typed" };
+    return toKg(input.typed, input.unit);
   }
-  const previous = inheritedWeight(input.sets, input.suggestionKg);
-  if (inheritedWeight(input.sets) !== null) {
-    return { weightKg: previous, inherited: true, source: "previous-set" };
-  }
-  return { weightKg: previous, inherited: true, source: "suggestion" };
+  return input.proposalKg;
 }

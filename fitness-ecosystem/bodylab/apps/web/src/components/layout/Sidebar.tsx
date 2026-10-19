@@ -8,11 +8,13 @@ import { ROUTE_SHORTCUTS } from '../../lib/shortcuts';
 import ThemeToggle from '../ThemeToggle';
 
 /**
- * Sidebar — Primary navigation (spec §7)
+ * Sidebar — Primary navigation (spec §7, reworked 2026-10-07)
  *
- * Product v2: light-first neutral surface, hairline divider, one soft indigo
- * active pill per section (no near-black blocks), Measure as the single filled
- * CTA, and "Local • Offline" always visible.
+ * v3 shell: grouped rows with an icon chip, an accent indicator bar on the
+ * active row and a gradient pill for the single primary action. The route
+ * list, the keyboard shortcuts and the bilingual labels are unchanged — this
+ * is form only (see docs/UI_DESIGN.md "what we deliberately don't do": no
+ * hamburger, every destination always visible).
  */
 
 const primaryNav = [
@@ -56,10 +58,10 @@ function NavItem({
       <NavLink
         to={to}
         title={shortcut ? `${text} (${shortcut})` : undefined}
-        className="flex items-center gap-3 px-4 h-11 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors duration-150 shadow-sm"
+        className="bl-btn bl-btn-primary bl-nav-cta w-full"
       >
-        <Icon className="w-5 h-5" />
-        <span className="text-sm font-semibold">{text}</span>
+        <Icon className="w-[18px] h-[18px]" />
+        <span>{text}</span>
       </NavLink>
     );
   }
@@ -68,16 +70,14 @@ function NavItem({
     <NavLink
       to={to}
       end={to === '/'}
-      title={shortcut ? `${text} (${shortcut})` : undefined}
+      title={shortcut ? `${text} (${shortcut})` : text}
       className={({ isActive: active }) =>
-        `flex items-center gap-3 px-3 h-10 rounded-lg text-sm transition-colors duration-150 ${
-          active
-            ? 'bg-[var(--color-sidebar-active)] text-[var(--color-primary)] font-semibold'
-            : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)] hover:text-[var(--color-sidebar-text-active)]'
-        }`
+        `bl-nav-item ${active ? 'is-active' : ''}`
       }
     >
-      <Icon className="w-[18px] h-[18px]" />
+      <span className="bl-nav-icon">
+        <Icon className="w-[17px] h-[17px]" />
+      </span>
       <span>{text}</span>
     </NavLink>
   );
@@ -87,21 +87,23 @@ export default function Sidebar() {
   const { state, setLanguage } = useApp();
 
   return (
-    <aside className="w-60 shrink-0 bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] flex flex-col h-screen">
+    <aside className="w-[248px] shrink-0 bg-[var(--color-sidebar-bg)] backdrop-blur-xl border-r border-[var(--color-sidebar-border)] flex flex-col h-screen">
       {/* Logo */}
-      <div className="px-5 pt-6 pb-5">
+      <div className="px-5 pt-6 pb-3">
         <div className="flex items-center gap-3">
           {/* The real app mark (resources/brand/bodylab-icon.jpg), rasterised by
               scripts/render-brand-icons.mjs — same asset the tab icon uses. */}
           <img
             src={`${import.meta.env.BASE_URL}favicon.png`}
             alt=""
-            width={36}
-            height={36}
-            className="w-9 h-9 rounded-xl shrink-0"
+            width={38}
+            height={38}
+            className="w-[38px] h-[38px] rounded-[11px] shrink-0 shadow-[var(--elev-1)]"
           />
           <div className="min-w-0">
-            <span className="block font-bold text-[15px] text-[var(--color-text)] tracking-tight leading-tight">BodyLab</span>
+            <span className="block font-extrabold text-[15.5px] text-[var(--color-text)] tracking-[-0.02em] leading-tight">
+              BodyLab
+            </span>
             <span className="block text-[11px] text-[var(--color-text-muted)] leading-tight mt-0.5">
               {state.language === 'es' ? 'Análisis corporal' : 'Body Analysis'}
             </span>
@@ -110,22 +112,28 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 overflow-y-auto">
+        <p className="bl-nav-group">
+          {state.language === 'es' ? 'Hoy' : 'Today'}
+        </p>
         {primaryNav.map((item) => (
           <NavItem key={item.to} {...item} />
         ))}
 
-        <div className="pt-2 pb-3">
+        <div className="pt-2.5">
           {actionNav.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </div>
 
+        <p className="bl-nav-group">
+          {state.language === 'es' ? 'Análisis' : 'Analysis'}
+        </p>
         {secondaryNav.map((item) => (
           <NavItem key={item.to} {...item} />
         ))}
 
-        <div className="my-3 border-t border-[var(--color-sidebar-border)]" />
+        <div className="my-2.5 border-t border-[var(--color-sidebar-border)]" />
 
         {tertiaryNav.map((item) => (
           <NavItem key={item.to} {...item} />
@@ -133,16 +141,16 @@ export default function Sidebar() {
       </nav>
 
       {/* Theme + Language */}
-      <div className="px-3 pb-3 space-y-2">
+      <div className="px-3 pb-3 pt-2 space-y-2">
         <ThemeToggle />
-        <div className="flex items-center gap-1 bg-[var(--color-surface-sunken)] p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-[var(--color-surface-sunken)] p-1 rounded-[var(--radius-lg)]">
           <button
             onClick={() => setLanguage('en')}
             aria-pressed={state.language === 'en'}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold transition-all ${
               state.language === 'en'
-                ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm'
-                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+                ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-[var(--elev-1)]'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
             }`}
           >
             <Globe className="w-3 h-3" />
@@ -151,10 +159,10 @@ export default function Sidebar() {
           <button
             onClick={() => setLanguage('es')}
             aria-pressed={state.language === 'es'}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold transition-all ${
               state.language === 'es'
-                ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm'
-                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+                ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-[var(--elev-1)]'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
             }`}
           >
             <Globe className="w-3 h-3" />
@@ -164,13 +172,11 @@ export default function Sidebar() {
       </div>
 
       {/* Local • Offline */}
-      <div className="px-5 py-3.5 border-t border-[var(--color-sidebar-border)]">
-        <div className="flex items-center gap-2">
-          <WifiOff className="w-3.5 h-3.5 text-[var(--color-success)]" />
-          <span className="text-xs text-[var(--color-text-muted)]">
-            {state.language === 'es' ? 'Local · Sin conexión' : 'Local · Offline'}
-          </span>
-        </div>
+      <div className="px-4 py-3.5 border-t border-[var(--color-sidebar-border)]">
+        <span className="bl-status">
+          <WifiOff className="w-3.5 h-3.5" />
+          {state.language === 'es' ? 'Local · Sin conexión' : 'Local · Offline'}
+        </span>
       </div>
     </aside>
   );

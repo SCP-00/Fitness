@@ -166,7 +166,9 @@ export function SettingsPanel({
           <p className="text-xs font-medium text-[var(--tl-text-secondary)] mb-2">
             {t("setup.budget")}
           </p>
-          <div className="flex items-center gap-2">
+          {/* `flex-wrap`: four budgets plus the number field did not fit a
+              278 px card on a phone and widened it by 4 px (audited 2026-10-18). */}
+          <div className="flex flex-wrap items-center gap-2">
             {BUDGETS.map((b) => (
               <button
                 key={b}

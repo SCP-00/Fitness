@@ -42,16 +42,22 @@ import {
   type Readiness,
 } from "@fitness/bodylab-training";
 import { isV2Payload, type ImportPayload } from "../lib/adapter";
+import { localDayKey, todayKey } from "../lib/day";
 import {
   buildTodayPlan,
   buildWeekPlan,
+  exerciseName,
   familyLogStats,
   featuresFor,
+  plannerCatalog,
+  progressionAdviceFor,
   swapOptions,
   type PlannedRow,
   type TodayPlan,
   type WeekPlan,
 } from "../lib/plan";
+import type { ProgressionAdvice } from "../lib/progression";
+import { progressionVerdictTool } from "../lib/coach-tools";
 import {
   TOOL_SPECS,
   buildSystemPrompt,
@@ -62,9 +68,13 @@ import {
   type ChatMessage,
 } from "../lib/llm";
 import {
+  deleteSession,
+  deleteSessionsMany,
   deleteSet,
+  deleteSetsMany,
   loadDecisionModel,
   loadHealthRecords,
+  loadMcpLedger,
   loadPayload,
   loadReadiness,
   loadSessions,
@@ -73,6 +83,7 @@ import {
   normalizeSettings,
   saveDecisionModel,
   saveHealthRecords,
+  saveMcpLedger,
   savePayload,
   saveReadiness,
   saveSession,
@@ -80,10 +91,38 @@ import {
   saveSet,
   saveSetsMany,
   saveSettings,
+  updateSession as dbUpdateSession,
 } from "../lib/db";
 import { buildBackup, mergeById, parseBackup } from "../lib/backup";
-import { scheduleAutobackup, readAutobackup, isWorthRecovering, type RecoverableSnapshot } from "../lib/autobackup";
+import { buildDemoBackup, isDemoId } from "../lib/demo";
+import {
+  scheduleAutobackup,
+  readAutobackup,
+  isDesktopHost,
+  isWorthRecovering,
+  type RecoverableSnapshot,
+} from "../lib/autobackup";
+import { MCP_POLL_MS, takeMcpInbox, writeMcpResults } from "../lib/mcp-bridge";
+import {
+  canUndo,
+  parseMcpInbox,
+  receiptOf,
+  runMcpActions,
+  trimLedger,
+  type McpContext,
+  type McpLedgerEntry,
+} from "../lib/mcp-actions";
+import {
+  makeRoutine,
+  normalizeRoutine,
+  normalizeRoutines,
+  removeRoutine,
+  upsertRoutine,
+  type Routine,
+  type RoutineItem,
+} from "../lib/routines";
 import { parseSymmetry } from "../lib/symmetry";
+import { dropExisting, parseOwnerLog } from "../lib/owner-log";
 import { getLanguage, setLanguage, t, tInterp } from "../lib/i18n";
 import {
   configureSounds,
@@ -96,6 +135,7 @@ import {
   isExerciseComplete,
   marksOf,
   mergeMarks,
+  type BestMarks,
   type RecordEvent,
 } from "../lib/records";
 import { configureNotifications } from "../lib/notifications";
@@ -110,13 +150,57 @@ import {
   type HealthRecord,
 } from "../lib/shared";
 import RestTimer from "../features/today/RestTimer";
+import {
+  extendRest as extendRestState,
+  startRest,
+  toggleRestPause as toggleRestPauseState,
+  type RestState,
+} from "../lib/rest";
+import { useRoute } from "./router";
 import type { CoachResult } from "../features/today/CoachPanel";
-import type { TLSession, TLSet, TLSettingsData } from "../lib/types";
-import { applyRepOverrides, withRepOverride } from "../lib/settings";
-interface RestState {
-  key: string;
-  seconds: number;
-  nonce: number;
+import type { EffortMarker } from "../lib/effort";
+import type {
+  TLSession,
+  TLSet,
+  TLSettingsData,
+  WeekDayOverride,
+} from "../lib/types";
+import {
+  applyWeekOverrides,
+  computeWeekStress,
+  type WeekStress,
+} from "../lib/week-stress";
+import { swapPlanDays } from "../lib/week-swap";
+import {
+  applyPostponements,
+  applyRepOverrides,
+  applyRowOrder,
+  clearRowOrder,
+  rowOrderFor,
+  sessionAsideFor,
+  withRepOverride,
+  withRowOrder,
+  withRowOrderSwap,
+  withRowPostpone,
+  withRowSkip,
+} from "../lib/settings";
+/*
+ * `RestState` is the **deadline** of a rest, not a local countdown — see
+ * `lib/rest.ts` for why (the session draws it in its own card and the shell
+ * floats it everywhere else, and two views of one rest must not disagree).
+ */
+
+/**
+ * An exercise added to today's session on top of the engine's plan (MCP
+ * `add_exercise`, 2026-10-13): the row and where the caller wanted it.
+ *
+ * Kept apart from `plan.rows` on purpose — the plan is the engine's, rebuilt
+ * whenever anything it depends on moves, and hand-written rows must survive
+ * that rebuild (the same reason `settings.rowOrder` is applied last).
+ */
+interface AddedRow {
+  row: PlannedRow;
+  atStart: boolean;
 }
 
 /**
@@ -134,6 +218,11 @@ interface Celebration {
 }
 
 const NEUTRAL: Readiness = { energy: 3, motivation: 3, soreness: 3 };
+
+/** A finite number out of an untyped MCP payload, else `null`. */
+function numOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
 
 /** Big families a user can flag as still sore before a session. */
 export const SORE_FAMILIES: MuscleFamily[] = [
@@ -164,6 +253,8 @@ export interface TrainingLabStore {
   /* ── Derived ─────────────────────────────────────────────────────────── */
   plan: TodayPlan | null;
   weekPlan: WeekPlan | null;
+  /** Estimated stress of the (possibly user-designed) week, 0–10 + warnings. */
+  weekStress: WeekStress | null;
   /** Deterministic rows with the user's swaps and the coach's plan applied. */
   rows: PlannedRow[];
   /** Working sets logged today (warm-ups excluded by contract). */
@@ -189,14 +280,29 @@ export interface TrainingLabStore {
   addSet: (
     row: PlannedRow,
     weight: number | null,
-    reps: number,
-    opts?: { warmup?: boolean; rpe?: number },
-  ) => void;
+    /** `null` only for timed work (`durationSec`): a hold has no reps. */
+    reps: number | null,
+    opts?: {
+      warmup?: boolean;
+      rpe?: number;
+      effort?: EffortMarker;
+      durationSec?: number;
+      notes?: string;
+    },
+  ) => TLSet;
   removeSet: (id: string) => void;
-  /** Rewrite a logged set's weight (kg) and reps, in place. */
+  /**
+   * Rewrite a logged set in place. Only the keys actually passed are touched,
+   * so re-marking a set as `D`/`F` can never wipe its load and reps.
+   */
   editSet: (
     id: string,
-    patch: { weight: number | null; reps: number | null },
+    patch: {
+      weight?: number | null;
+      reps?: number | null;
+      /** `null` clears the mark and leaves the set as plain work. */
+      effort?: EffortMarker | null;
+    },
   ) => void;
   /** The last removed set while the undo window is open, else null. */
   removedSet: TLSet | null;
@@ -207,16 +313,129 @@ export interface TrainingLabStore {
   setReadinessAndPersist: (next: Readiness) => void;
   toggleSoreFamily: (family: MuscleFamily) => void;
   setDayFocus: (families: MuscleFamily[]) => void;
-  finishSession: () => void;
+  /** Closes today's session; `null` when there is nothing to close. `extra`
+   *  carries sets logged in the same tick (MCP batches). Returns the session so
+   *  a `finish_session` receipt can carry its undo token. */
+  finishSession: (extra?: readonly TLSet[]) => TLSession | null;
+  /** Delete a whole completed session and optionally delete all its associated sets. */
+  removeSession: (id: string, opts?: { deleteSets?: boolean }) => void;
+  /** Update a session's metadata (e.g. readiness, time budget, timestamps). */
+  editSession: (id: string, patch: Partial<TLSession>) => void;
   swapRow: (from: string, to: string) => void;
+  /** Reorder today's session: positions in the `rows` the user is looking at. */
+  moveRow: (from: number, to: number) => void;
+  /** Drop the user's sequence and go back to the generator's own order. */
+  resetRowOrder: () => void;
+  /** True when today's session is in a sequence the user set himself. */
+  orderIsCustom: boolean;
+  /**
+   * Set an exercise aside for the rest of today (*Saltar*) and take it back. It
+   * stays in today's plan and in the week: only the session steps over it.
+   */
+  skipRow: (exerciseId: string) => void;
+  unskipRow: (exerciseId: string) => void;
+  /** Push an exercise to the end of today's session (*Posponer*), and undo it. */
+  postponeRow: (exerciseId: string) => void;
+  unpostponeRow: (exerciseId: string) => void;
+  /** Exercises set aside today, in the order they were set aside. */
+  skippedToday: string[];
+  /** Exercises pushed to the end of today's session, in that order. */
+  postponedToday: string[];
+  /**
+   * Exercises the user added to today by hand. They are the only rows that can
+   * be *removed*: a planned row is skipped instead, so the plan and the week
+   * keep the prescription (mockup 02's Quitar, mockup 03's Saltar).
+   */
+  addedToday: string[];
+  /** Take a hand-added exercise back out of today's session. */
+  removeAddedRow: (exerciseId: string) => void;
+  /**
+   * Add one exercise to today's session (mockup 02's *Añadir varios*). The MCP
+   * action `add_exercise` calls the same function, so the screen and an agent
+   * cannot prescribe differently. Returns false when the catalog does not know
+   * the id or the exercise is already in today's rows.
+   */
+  addExerciseToToday: (
+    exerciseId: string,
+    opts?: {
+      sets?: number;
+      atStart?: boolean;
+      repsMin?: number;
+      repsMax?: number;
+      restSec?: number;
+      rir?: number;
+    },
+  ) => boolean;
+  /**
+   * The user's routine templates (mockup 06), sanitized on the way in. Newest
+   * edit first; an old backup without them simply yields an empty list.
+   */
+  routines: Routine[];
+  /**
+   * Create or rewrite one template. Returns the stored routine (`null` when the
+   * draft is not saveable: no name, or no known exercise). The editor and any
+   * future agent path go through this single verb.
+   */
+  saveRoutine: (input: {
+    id?: string;
+    name: string;
+    notes?: string;
+    items: RoutineItem[];
+  }) => Routine | null;
+  /** Delete one template by id. */
+  deleteRoutine: (id: string) => void;
+  /**
+   * Add a template's exercises to today's session with *its* prescription —
+   * the same `addExerciseToToday` the queue screen uses, so a routine can
+   * never prescribe something the app would not accept by hand. Returns how
+   * many rows were actually added (rows already in today are left untouched).
+   */
+  applyRoutineToday: (routine: Routine) => number;
+  /**
+   * The rest in progress, or `null`. Exposed because it has **two** views — the
+   * session's own card (`mockup/03-sesion.html`) and the floating overlay on the
+   * other screens — and both render the same deadline (`lib/rest.ts`).
+   */
+  rest: RestState | null;
+  /** `+seconds` on the running rest (the session's card offers +15 s). */
+  extendRest: (seconds: number) => void;
+  /** Freeze the rest where it is, or resume it. */
+  toggleRestPause: () => void;
+  /** Drop the rest: the skip button, and the path taken when it reaches zero. */
+  skipRest: () => void;
   clearCoach: () => void;
   resetModel: () => void;
   regenerateWeek: () => void;
+  /**
+   * Author one day of his own week (clear with `null` to restore the
+   * planner's day). Only his layer is written — never the generated plan.
+   */
+  setWeekOverride: (index: number, override: WeekDayOverride | null) => void;
+  /**
+   * Swap two days' effective plans (the drag gesture of Semana, 2026-10-19).
+   * Returns whether anything changed, so the screen can announce it.
+   */
+  swapWeekDays: (from: number, to: number) => boolean;
   askCoach: (request: string) => Promise<void>;
   runSharedSync: (opts?: { report?: boolean }) => Promise<void>;
   prFor: (
     exerciseId: string,
-  ) => NonNullable<ImportPayload["personalRecords"]>[number] | null;
+  ) => NonNullable<ImportPayload["personalRecords"]>[number] | null; /**
+   * All-time marks of one exercise (log + imported PRs): the load, the estimate,
+   * the bodyweight reps and the longest hold. See `marksFor` above.
+   */
+  marksFor: (exerciseId: string) => BestMarks;
+  /**
+   * The cross-session verdict for an exercise in today's plan: raise the load
+   * with the exact kilos, escalate to another lever when the load has hit the
+   * gear's ceiling, repeat, rebuild, or drop to an easier variant.
+   *
+   * Computed over the days BEFORE today (the screen, the Inicio card and the
+   * local coach all read this same call, so the three cannot disagree), and
+   * `null` when the exercise is not part of today's session — off-plan ids are
+   * not answered here rather than answered with a guessed rep range.
+   */
+  progressionFor: (exerciseId: string) => ProgressionAdvice | null;
   swapOptionsFor: (exerciseId: string) => ReturnType<typeof swapOptions>;
   /** Applies a logged warm-up ramp in one shot (see `lib/warmup.ts`). */
   logWarmup: (
@@ -231,6 +450,14 @@ export interface TrainingLabStore {
     exerciseId: string,
     range: { min: number; max: number } | null,
   ) => void;
+  /**
+   * Receipts of everything the local agents have asked this app to do (the
+   * ACTIONS channel). Newest first is applied in the screen; this is the raw
+   * ledger, persisted so a restart neither forgets nor re-applies anything.
+   */
+  mcpLedger: McpLedgerEntry[];
+  /** Reverse one applied MCP action (Ajustes → auditoría de agentes). */
+  undoMcpAction: (id: string) => Promise<void>;
   /** The complete JSON backup of this device's data, as text. */
   exportBackup: () => string;
   /**
@@ -243,6 +470,68 @@ export interface TrainingLabStore {
    * records, merge by id (importing twice is a no-op), persist and report.
    */
   importSymmetry: (file: File) => Promise<{ ok: boolean; message: string }>;
+  /**
+   * Import the owner's corrected training log (CSV): convert to records, drop
+   * rows the log already holds, merge what is new, persist and report.
+   */
+  importOwnerLog: (file: File) => Promise<{ ok: boolean; message: string }>;
+  /**
+   * What `importSymmetry` / `importOwnerLog` **would** do, without doing it.
+   *
+   * The preview the import screen asks for before the owner commits. It runs
+   * the same plan function the import itself runs — parse, dedupe against the
+   * current log, count — so the numbers on the preview and the numbers after
+   * the import are the same numbers by construction, not by discipline.
+   */
+  previewOwnerLog: (file: File) => Promise<ImportPreview>;
+  previewSymmetry: (file: File) => Promise<ImportPreview>;
+  /**
+   * Sample history (`lib/demo.ts`), for judging the screens with weeks of data
+   * instead of an empty log. It goes through the same merge path a file restore
+   * uses, and `clearDemoData` is its exact inverse.
+   */
+  loadDemoData: () => Promise<{ ok: boolean; message: string }>;
+  /** Remove every record whose id carries the demo prefix, and nothing else. */
+  clearDemoData: () => Promise<{ ok: boolean; message: string }>;
+}
+
+/** What an import would leave behind, once parsed and deduped — never a write. */
+interface ImportReport {
+  sessions: number;
+  sets: number;
+  duplicates: number;
+  skippedNoId: number;
+  skippedBadRow: number;
+}
+
+type ImportPlan =
+  | { ok: false; errorKey: string }
+  | {
+      ok: true;
+      errorKey: null;
+      sets: TLSet[];
+      sessions: TLSession[];
+      report: ImportReport;
+    };
+
+/**
+ * What an import would leave behind, once the file has been parsed and deduped
+ * against the current log — the preview behind the import screen.
+ *
+ * Nothing here is estimated: `sets`/`sessions` are the rows that would survive
+ * the merge, `duplicates` the rows the log already holds (importing them again
+ * changes nothing), and `skipped` the rows the converters refuse to invent an id
+ * for. A file that cannot be read comes back `ok: false` with the i18n key of
+ * the reason, never with zeroes that would read as "nothing to import".
+ */
+export interface ImportPreview {
+  ok: boolean;
+  /** i18n key of the reason when `ok` is false (e.g. `ownerlog.error.xlsx`). */
+  errorKey?: string;
+  sets: number;
+  sessions: number;
+  duplicates: number;
+  skipped: number;
 }
 
 const StoreContext = createContext<TrainingLabStore | null>(null);
@@ -257,6 +546,9 @@ export function useStore(): TrainingLabStore {
 }
 
 export function TrainingLabProvider({ children }: { children: ReactNode }) {
+  // Which destination is on screen. Read here for one decision only: whether the
+  // rest belongs in the session's own card or in the floating overlay.
+  const route = useRoute();
   const [settings, setSettings] = useState<TLSettingsData | null>(null);
   const [payload, setPayload] = useState<ImportPayload | null>(null);
   const [sets, setSets] = useState<TLSet[]>([]);
@@ -267,6 +559,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   // abdomen"), not a setting. Persisting it would silently turn every future
   // day into a core day, which is the opposite of what the plan wants.
   const [dayFocus, setDayFocus] = useState<MuscleFamily[]>([]);
+  const [addedRows, setAddedRows] = useState<AddedRow[]>([]);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [rest, setRest] = useState<RestState | null>(null);
   const [finished, setFinished] = useState<TLSession | null>(null);
@@ -282,7 +575,16 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [syncing, setSyncing] = useState(false);
   const [sharedError, setSharedError] = useState<string | null>(null);
   const [weekSeed, setWeekSeed] = useState(0);
-  const [recoverable, setRecoverable] = useState<RecoverableSnapshot | null>(null);
+  const [recoverable, setRecoverable] = useState<RecoverableSnapshot | null>(
+    null,
+  );
+  /** Receipts of the MCP action channel (idempotency + undo, see lib/mcp-actions). */
+  const [mcpLedger, setMcpLedger] = useState<McpLedgerEntry[]>([]);
+  /** Mirror of that ledger for code that runs outside a render (the inbox
+   *  poller): reading state in a 1 s interval would otherwise see it stale. */
+  const mcpLedgerRef = useRef<McpLedgerEntry[]>([]);
+  /** One inbox batch at a time — the interval must not race an in-flight one. */
+  const mcpBusy = useRef(false);
 
   // ── Boot ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -299,6 +601,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         storedModel,
         storedReadiness,
         storedHealth,
+        storedLedger,
       ] = await Promise.all([
         loadPayload(),
         loadSets(),
@@ -306,6 +609,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         loadDecisionModel(),
         loadReadiness(),
         loadHealthRecords(),
+        loadMcpLedger(),
       ]);
       if (cancelled) return;
       if (storedPayload && isV2Payload(storedPayload))
@@ -314,6 +618,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       setSessions(storedSessions);
       setModel(normalizeModel(storedModel));
       setHealth(storedHealth);
+      setMcpLedger(storedLedger);
+      mcpLedgerRef.current = storedLedger;
       if (storedReadiness) setReadiness(storedReadiness.readiness);
     })();
     return () => {
@@ -340,13 +646,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   // restoring a backup, importing Symmetry, settings, readiness all land here.
   // The debounce inside collapses a burst into one file, and `logSignature`
   // skips the write when nothing actually changed.
-  useEffect(() => {
-    // `settings` is the first thing hydration resolves, so a non-null value
-    // means the store is populated rather than mid-load; the debounce then
-    // swallows the rest of the hydration writes into a single snapshot.
-    if (!settings) return;
-    void scheduleAutobackup({ sets, sessions, health, settings, decisionModel: model });
-  }, [sets, sessions, health, settings, model]);
+  //
+  // Moved below `rows` (2026-10-09): the mirror carries the plan the app is
+  // showing, and the readiness, so the agent tools stop guessing both.
 
   // An empty log with a snapshot on disk is the profile having been reset
   // behind our back. Say so instead of showing an empty app and letting the
@@ -362,7 +664,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const backup = await readAutobackup();
       if (cancelled || !backup) return;
-      if (!isWorthRecovering({ backup, localSets: 0, localSessions: 0 })) return;
+      if (!isWorthRecovering({ backup, localSets: 0, localSessions: 0 }))
+        return;
       setRecoverable({
         sets: backup.sets.length,
         sessions: backup.sessions.length,
@@ -394,18 +697,44 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    * Best marks previously known for an exercise: everything logged so far plus
    * the personal records BodyLab exported. A PR is a PR regardless of which app
    * saw it first.
+   *
+   * BodyLab's `bestReps` needs a rule of its own: it is the most reps over
+   * **every** set of that exercise, loaded ones included, so a light 20-rep set
+   * on a barbell lift would look like a bodyweight mark. It is only accepted as
+   * one when BodyLab never saw a load for that exercise (`bestWeight` empty),
+   * which is exactly when its reps are bodyweight reps.
    */
   const importedMarksFor = useCallback(
     (exerciseId: string) => {
       const pr = payload?.personalRecords?.find(
         (p) => p.exerciseId === exerciseId,
       );
+      const unloaded = (pr?.bestWeight ?? null) === null;
       return {
         bestWeightKg: pr?.bestWeight ?? null,
         bestEst1RmKg: pr?.bestEst1RM ?? null,
+        bestReps: unloaded ? (pr?.bestReps ?? null) : null,
+        bestHoldSec: null,
       };
     },
     [payload],
+  );
+
+  /**
+   * The all-time marks of one exercise, local log and imported PRs fused — the
+   * number the screens show ("marca: 12 reps") and the number a logged set is
+   * compared against. One source, so the mark on screen and the mark that can be
+   * beaten cannot disagree.
+   *
+   * Warm-up sets stay out of it: a ramp rep is not a mark (the log's contract).
+   */
+  const marksFor = useCallback(
+    (exerciseId: string): BestMarks =>
+      mergeMarks(
+        marksOf(sets.filter((s) => s.exerciseId === exerciseId && !s.warmup)),
+        importedMarksFor(exerciseId),
+      ),
+    [sets, importedMarksFor],
   );
 
   const applySettings = useCallback((next: TLSettingsData) => {
@@ -565,16 +894,134 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    * restore the owner chose by hand. Silent rewriting of somebody's history
    * would be worse than asking, hence one explicit tap.
    */
-  const restoreAutobackup = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
+  const restoreAutobackup = useCallback(async (): Promise<{
+    ok: boolean;
+    message: string;
+  }> => {
     const backup = await readAutobackup();
     if (!backup) return { ok: false, message: t("autobackup.restore.missing") };
-    const file = new File([JSON.stringify(backup)], "traininglab-autobackup.json", {
-      type: "application/json",
-    });
+    const file = new File(
+      [JSON.stringify(backup)],
+      "traininglab-autobackup.json",
+      {
+        type: "application/json",
+      },
+    );
     const result = await importBackup(file);
     if (result.ok) setRecoverable(null);
     return result;
   }, [importBackup]);
+
+  /*
+   * ── The import plan, once per file ────────────────────────────────────
+   *
+   * Parsing and de-duplicating live in these two callbacks, and BOTH the
+   * preview and the import run them. That is the whole point: the numbers the
+   * owner sees before pressing *Importar* cannot drift from the numbers after
+   * pressing it, because they are the same computation.
+   *
+   * Neither writes anything. The only side effect is the id-matching against
+   * the log the store currently holds, which is exactly what the merge does.
+   */
+  const planSymmetry = useCallback(
+    async (file: File): Promise<ImportPlan> => {
+      const parsed = parseSymmetry(await file.text());
+      if (!parsed.ok) {
+        return {
+          ok: false,
+          errorKey:
+            parsed.error === "not-json"
+              ? "symmetry.error.file"
+              : parsed.error === "no-sessions"
+                ? "symmetry.error.empty"
+                : "symmetry.error.shape",
+        };
+      }
+      // Symmetry ids are content hashes, so a second import is a no-op: a row
+      // the log already holds is a duplicate by id, which is what `mergeById`
+      // will collapse it to.
+      const existingIds = new Set(sets.map((set) => set.id));
+      const duplicates = parsed.sets.filter((set) =>
+        existingIds.has(set.id),
+      ).length;
+      return {
+        ok: true,
+        errorKey: null,
+        sets: parsed.sets,
+        sessions: parsed.sessions,
+        report: {
+          ...parsed.report,
+          duplicates,
+        },
+      };
+    },
+    [sets],
+  );
+
+  const planOwnerLog = useCallback(
+    async (file: File): Promise<ImportPlan> => {
+      const parsed = parseOwnerLog(await file.text());
+      if (!parsed.ok) {
+        return {
+          ok: false,
+          errorKey:
+            parsed.error === "xlsx"
+              ? "ownerlog.error.xlsx"
+              : parsed.error === "missing-columns"
+                ? "ownerlog.error.columns"
+                : parsed.error === "wrong-shape"
+                  ? "ownerlog.error.shape"
+                  : parsed.error === "no-rows"
+                    ? "ownerlog.error.empty"
+                    : "ownerlog.error.file",
+        };
+      }
+      // `dropExisting` mutates the report in place (that is how the import has
+      // always counted duplicates), so the preview gets the same numbers by
+      // construction.
+      const incoming = dropExisting(parsed, sets);
+      return {
+        ok: true,
+        errorKey: null,
+        sets: incoming.sets,
+        sessions: incoming.sessions,
+        report: incoming.report,
+      };
+    },
+    [sets],
+  );
+
+  const previewOf = (plan: ImportPlan): ImportPreview => {
+    if (!plan.ok) {
+      return {
+        ok: false,
+        errorKey: plan.errorKey,
+        sets: 0,
+        sessions: 0,
+        duplicates: 0,
+        skipped: 0,
+      };
+    }
+    return {
+      ok: true,
+      sets: plan.report.sets,
+      sessions: plan.report.sessions,
+      duplicates: plan.report.duplicates,
+      skipped: plan.report.skippedNoId + plan.report.skippedBadRow,
+    };
+  };
+
+  const previewSymmetry = useCallback(
+    async (file: File): Promise<ImportPreview> =>
+      previewOf(await planSymmetry(file)),
+    [planSymmetry],
+  );
+
+  const previewOwnerLog = useCallback(
+    async (file: File): Promise<ImportPreview> =>
+      previewOf(await planOwnerLog(file)),
+    [planOwnerLog],
+  );
 
   /**
    * Symmetry history import. Same merge semantics as the backup restore —
@@ -585,37 +1032,122 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    */
   const importSymmetry = useCallback(
     async (file: File): Promise<{ ok: boolean; message: string }> => {
-      const parsed = parseSymmetry(await file.text());
-      if (!parsed.ok) {
-        return {
-          ok: false,
-          message: t(
-            parsed.error === "not-json"
-              ? "symmetry.error.file"
-              : parsed.error === "no-sessions"
-                ? "symmetry.error.empty"
-                : "symmetry.error.shape",
-          ),
-        };
+      const plan = await planSymmetry(file);
+      if (!plan.ok) {
+        return { ok: false, message: t(plan.errorKey) };
       }
-      const nextSets = mergeById(sets, parsed.sets);
-      const nextSessions = mergeById(sessions, parsed.sessions);
+      const nextSets = mergeById(sets, plan.sets);
+      const nextSessions = mergeById(sessions, plan.sessions);
       await saveSetsMany(nextSets);
       await saveSessionsMany(nextSessions);
       setSets(nextSets);
       setSessions(nextSessions);
-      const skipped = parsed.report.skippedNoId + parsed.report.skippedBadRow;
+      const skipped = plan.report.skippedNoId + plan.report.skippedBadRow;
       return {
         ok: true,
         message: tInterp("symmetry.imported", {
-          sessions: parsed.report.sessions,
-          sets: parsed.report.sets,
+          sessions: plan.report.sessions,
+          sets: plan.report.sets,
           skipped,
         }),
       };
     },
-    [sets, sessions],
+    [planSymmetry, sets, sessions, saveSetsMany, saveSessionsMany],
   );
+
+  /**
+   * The owner's corrected training log (`owner-training-log.csv`). Same merge
+   * semantics as the Symmetry import, but the ids are row identity rather than
+   * content, so editing a weight in the sheet and re-importing REPLACES the
+   * stale row instead of adding a second copy of the same set. Rows already in
+   * the log are dropped on content first, which is what makes importing the CSV
+   * after the older Symmetry JSON safe.
+   */
+  const importOwnerLog = useCallback(
+    async (file: File): Promise<{ ok: boolean; message: string }> => {
+      const plan = await planOwnerLog(file);
+      if (!plan.ok) {
+        return { ok: false, message: t(plan.errorKey) };
+      }
+      const nextSets = mergeById(sets, plan.sets);
+      const nextSessions = mergeById(sessions, plan.sessions);
+      await saveSetsMany(nextSets);
+      await saveSessionsMany(nextSessions);
+      setSets(nextSets);
+      setSessions(nextSessions);
+      return {
+        ok: true,
+        message: tInterp("ownerlog.imported", {
+          sessions: plan.report.sessions,
+          sets: plan.report.sets,
+          duplicates: plan.report.duplicates,
+          skipped: plan.report.skippedNoId + plan.report.skippedBadRow,
+        }),
+      };
+    },
+    [planOwnerLog, sets, sessions, saveSetsMany, saveSessionsMany],
+  );
+
+  /**
+   * Load the sample history.
+   *
+   * Built in memory and handed to `importBackup` as a `File`, so the demo takes
+   * the *same* code path as a restore the owner performs by hand. A demo that
+   * wrote to IndexedDB directly would eventually demonstrate a different app
+   * from the one that ships.
+   */
+  const loadDemoData = useCallback(async (): Promise<{
+    ok: boolean;
+    message: string;
+  }> => {
+    const backup = buildDemoBackup();
+    const file = new File([JSON.stringify(backup)], "traininglab-demo.json", {
+      type: "application/json",
+    });
+    const result = await importBackup(file);
+    if (!result.ok) return result;
+    return {
+      ok: true,
+      message: tInterp("demo.loaded", { n: backup.sets.length }),
+    };
+  }, [importBackup]);
+
+  /**
+   * Remove the sample history.
+   *
+   * Sets and sessions live in their own object stores and `save*Many` is a `put`
+   * loop, so writing the filtered arrays back would leave the excluded rows on
+   * disk — the deletion has to be explicit. (`health` is a single array in the
+   * meta store, where writing the filtered list *is* the removal.)
+   *
+   * The filter is by id prefix and nothing else: every id `lib/demo.ts` mints
+   * starts with `demo-`, so this can never touch a series the owner logged.
+   */
+  const clearDemoData = useCallback(async (): Promise<{
+    ok: boolean;
+    message: string;
+  }> => {
+    const demoSetIds = sets.filter((s) => isDemoId(s.id)).map((s) => s.id);
+    const demoSessionIds = sessions
+      .filter((s) => isDemoId(s.id))
+      .map((s) => s.id);
+    const nextSets = sets.filter((s) => !isDemoId(s.id));
+    const nextSessions = sessions.filter((s) => !isDemoId(s.id));
+    const nextHealth = health.filter((h) => !isDemoId(h.id));
+
+    await deleteSetsMany(demoSetIds);
+    await deleteSessionsMany(demoSessionIds);
+    await saveHealthRecords(nextHealth);
+
+    setSets(nextSets);
+    setSessions(nextSessions);
+    setHealth(nextHealth);
+
+    return {
+      ok: true,
+      message: tInterp("demo.removed", { n: demoSetIds.length }),
+    };
+  }, [sets, sessions, health]);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -638,7 +1170,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
 
   // ── Derived planning state ──────────────────────────────────────────────
   const logStats = useMemo(() => familyLogStats(sets), [sets]);
-  const todayPrefix = new Date().toISOString().slice(0, 10);
+  const todayPrefix = todayKey();
 
   /**
    * The log as the *planner* should see it: everything except today's sets.
@@ -650,11 +1182,23 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    * two rows alternating after each set). Today's work reaches the planner
    * tomorrow, which is also when it can inform anything.
    */
-  const planningStats = useMemo(
-    () =>
-      familyLogStats(sets.filter((s) => !s.timestamp.startsWith(todayPrefix))),
+  const planningSets = useMemo(
+    () => sets.filter((s) => localDayKey(s.timestamp) !== todayPrefix),
     [sets, todayPrefix],
   );
+  const planningStats = useMemo(
+    () => familyLogStats(planningSets),
+    [planningSets],
+  );
+
+  // A day he authored in Semana *is* the automatic focus of today: his design
+  // drives the planner unless he explicitly picks another focus in the bar
+  // (a non-empty `dayFocus` always wins — his live choice beats his weekly one).
+  const weekOverrides = settings?.weekOverrides;
+  const customFocus: MuscleFamily[] = useMemo(() => {
+    const o = weekOverrides?.[(new Date().getDay() + 6) % 7];
+    return o && o.kind === "train" ? o.families : [];
+  }, [weekOverrides]);
 
   const plan: TodayPlan | null = useMemo(() => {
     if (!settings) return null;
@@ -667,10 +1211,22 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       logStats: planningStats,
       model: settings.useDecisionModel ? model : emptyModel(),
       payload,
+      // The user's own sore list, plus the window the log derives (recovery.ts).
+      sets: planningSets,
       fatiguedFamilies: soreFamilies,
-      focusFamilies: dayFocus,
+      focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
     });
-  }, [settings, readiness, planningStats, model, payload, soreFamilies, dayFocus]);
+  }, [
+    settings,
+    readiness,
+    planningStats,
+    planningSets,
+    model,
+    payload,
+    soreFamilies,
+    dayFocus,
+    customFocus,
+  ]);
 
   /**
    * This week — horizontalised plan. Recomputed only when the inputs that
@@ -681,7 +1237,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     if (!settings) return null;
     const jsDay = new Date().getDay();
     const todayIndex = (jsDay + 6) % 7;
-    return buildWeekPlan({
+    const auto = buildWeekPlan({
       inventory: settings.inventory,
       readiness,
       timeBudgetMin: settings.timeBudgetMin,
@@ -693,16 +1249,64 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       todayIndex,
       lang: settings.language,
     });
+    // His authored days sit over the generated week and survive every
+    // regeneration; clearing one is only ever an explicit user action.
+    return applyWeekOverrides(
+      auto,
+      settings.weekOverrides,
+      settings.timeBudgetMin,
+    );
     // weekSeed only forces a recompute; it is not read inside on purpose.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings, readiness, logStats, payload, weekSeed]);
 
+  /** Estimated stress of the merged week (auto rows + his authored days). */
+  const weekStress: WeekStress | null = useMemo(
+    () => (weekPlan ? computeWeekStress(weekPlan.rows) : null),
+    [weekPlan],
+  );
+
   /**
-   * Deterministic rows with the user's swaps, the coach's plan and the rep
-   * overrides applied — in that order, each one speaking over the last.
+   * Deterministic rows with the user's swaps, the coach's plan, the rep
+   * overrides and **his own sequence** applied — in that order, each one
+   * speaking over the last.
+   *
+   * The sequence goes last, and last is the whole point (2026-10-11): the plan is
+   * rebuilt whenever anything it depends on moves — a readiness tick, a gear
+   * change, a shorter time budget, the decision model learning — and a rebuild
+   * used to shuffle the session back into the generator's order. Sorting here,
+   * after every source of rows, is what makes "the order I dragged" survive both
+   * a re-plan and a restart, whichever of those sources produced the row list.
    */
   const rows: PlannedRow[] = useMemo(() => {
-    if (coachRows) return applyRepOverrides(settings!, coachRows);
+    const ordered = (next: PlannedRow[]) =>
+      settings ? applyRowOrder(settings, next, todayPrefix) : next;
+    /**
+     * And last of all, the *Posponer* marks (mockup 03): what he pushed to the
+     * end of today's session goes there, in the order he pushed it. A derivation
+     * like the sequence, never a rewrite of either the plan or `rowOrder`, so
+     * taking the mark back restores the position he had chosen himself.
+     */
+    const aside = (next: PlannedRow[]) =>
+      settings ? applyPostponements(settings, next, todayPrefix) : next;
+    /**
+     * The exercises added by hand (the agent's `add_exercise`, and one day the
+     * button that adds from the library) go in last, before the sequence: they
+     * are not the engine's rows, so a re-plan must not drop them, and an
+     * exercise the plan already schedules is never duplicated by them.
+     */
+    const withAdded = (next: PlannedRow[]) => {
+      if (addedRows.length === 0) return next;
+      const present = new Set(next.map((row) => row.exerciseId));
+      const extra = addedRows.filter(({ row }) => !present.has(row.exerciseId));
+      if (extra.length === 0) return next;
+      const head = extra.filter((e) => e.atStart).map((e) => e.row);
+      const tail = extra.filter((e) => !e.atStart).map((e) => e.row);
+      return [...head, ...next, ...tail];
+    };
+    if (coachRows) {
+      return aside(ordered(withAdded(applyRepOverrides(settings!, coachRows))));
+    }
     if (!plan || !settings) return [];
     const swapped: PlannedRow[] = plan.rows.map((row) => {
       const to = overrides[row.exerciseId];
@@ -723,13 +1327,54 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         reasons: [{ code: "swapped" }],
       };
     });
-    return applyRepOverrides(settings, swapped);
-  }, [plan, overrides, coachRows, settings]);
+    return aside(ordered(withAdded(applyRepOverrides(settings, swapped))));
+  }, [plan, overrides, coachRows, settings, todayPrefix, addedRows]);
+
+  /**
+   * What the user set aside today (mockup 03's *Saltar* / *Posponer*): ids only,
+   * because both gestures are marks over the plan — the row keeps its
+   * prescription, its position and its place in the week (see `lib/settings`).
+   */
+  const sessionAside = useMemo(
+    () => sessionAsideFor(settings, todayPrefix),
+    [settings, todayPrefix],
+  );
+
+  useEffect(() => {
+    // `settings` is the first thing hydration resolves, so a non-null value
+    // means the store is populated rather than mid-load; the debounce then
+    // swallows the rest of the hydration writes into a single snapshot.
+    if (!settings) return;
+    void scheduleAutobackup({
+      sets,
+      sessions,
+      health,
+      settings,
+      decisionModel: model,
+      mirror: {
+        date: todayPrefix,
+        readiness,
+        plan: rows
+          .filter((r) => r.cardioMin === undefined)
+          .map((r) => ({
+            exerciseId: r.exerciseId,
+            sets: r.sets,
+            repsMin: r.repsMin,
+            repsMax: r.repsMax,
+            rir: r.rir,
+            restSec: r.restSec,
+            pattern: r.pattern,
+            families: r.families,
+          })),
+      },
+    });
+  }, [sets, sessions, health, settings, model, readiness, rows, todayPrefix]);
 
   // Working sets only: the warm-up ramp lives in the log but is invisible to
   // every aggregate (volume, counters, finish gate) by contract.
   const todaySets = useMemo(
-    () => sets.filter((s) => s.timestamp.startsWith(todayPrefix) && !s.warmup),
+    () =>
+      sets.filter((s) => localDayKey(s.timestamp) === todayPrefix && !s.warmup),
     [sets, todayPrefix],
   );
   const todayVolume = useMemo(
@@ -753,6 +1398,35 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   );
 
   /**
+   * The multi-day verdict, in app vocabulary (2026-10-13).
+   *
+   * It reads the row the owner is actually looking at — his swapped exercise,
+   * the coach's plan, his own rep override, his gear — and hands the log to
+   * `lib/progression.ts` through `progressionAdviceFor`. Today's sets are
+   * excluded on purpose: within a day the load belongs to the D/F mark
+   * (`lib/set-proposal.ts`), and a second opinion about the same bar would be
+   * two answers where the owner needs one.
+   */
+  const progressionFor = useCallback(
+    (exerciseId: string): ProgressionAdvice | null => {
+      if (!settings) return null;
+      const row = rows.find((r) => r.exerciseId === exerciseId);
+      if (!row || row.cardioMin !== undefined) return null;
+      return progressionAdviceFor({
+        exerciseId,
+        loadType: row.loadType,
+        progressionAxes: row.progression,
+        // `rows` already carries the user's rep override (applyRepOverrides).
+        targetReps: { min: row.repsMin, max: row.repsMax },
+        sets,
+        inventory: settings.inventory,
+        excludeDay: todayPrefix,
+      });
+    },
+    [settings, rows, sets, todayPrefix],
+  );
+
+  /**
    * Reps-per-set, decided by the user (2026-09-29 e): persists into settings
    * so the override survives reloads, and flows back into `rows` (Inicio and
    * ZEN read the same numbers) without ever touching the plan engine.
@@ -768,33 +1442,76 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   // ── Logging ─────────────────────────────────────────────────────────────
   /** How the celebration banner describes a beaten record. */
   const describeRecord = useCallback((event: RecordEvent): string => {
-    const value = `${event.value} kg`;
+    /*
+     * Four currencies, four sentences (2026-10-13): kilos for a load or an
+     * estimated 1RM, **reps** for bodyweight work and **seconds** for a hold.
+     * The number is what the mark is, so the format follows the kind rather than
+     * being assumed to be kilos.
+     */
+    const value =
+      event.kind === "reps"
+        ? tInterp("cue.valueReps", { n: event.value })
+        : event.kind === "hold"
+          ? tInterp("cue.valueHold", { sec: event.value })
+          : `${event.value} kg`;
     if (event.previous === null) return tInterp("cue.firstMark", { v: value });
-    return event.kind === "weight"
-      ? tInterp("cue.beatWeight", { v: value, prev: event.previous })
-      : tInterp("cue.beatE1rm", { v: value, prev: event.previous });
+    const previous =
+      event.kind === "reps"
+        ? tInterp("cue.valueReps", { n: event.previous })
+        : event.kind === "hold"
+          ? tInterp("cue.valueHold", { sec: event.previous })
+          : `${event.previous} kg`;
+    switch (event.kind) {
+      case "weight":
+        return tInterp("cue.beatWeight", { v: value, prev: previous });
+      case "e1rm":
+        return tInterp("cue.beatE1rm", { v: value, prev: previous });
+      case "reps":
+        return tInterp("cue.beatReps", { v: value, prev: previous });
+      case "hold":
+        return tInterp("cue.beatHold", { v: value, prev: previous });
+    }
   }, []);
 
   /**
    * Log one set. `weight` is always **kg** — the screens convert from the
    * display unit before calling, so the maths never sees a pound.
+   *
+   * `opts.effort` is the `D`/`F` badge the owner logs his sets with, structured
+   * here so the recovery, progression and weekly-volume models can read it
+   * instead of parsing a note.
    */
   const addSet = useCallback(
     (
       row: PlannedRow,
       weight: number | null,
-      reps: number,
-      opts?: { warmup?: boolean; rpe?: number },
-    ) => {
+      reps: number | null,
+      opts?: {
+        warmup?: boolean;
+        rpe?: number;
+        effort?: EffortMarker;
+        durationSec?: number;
+        notes?: string;
+        /** When the work happened, when an agent says so (`occurred_at`).
+         *  Validation already proved it falls on today, so the set stays in
+         *  today's session and the day key it carries is the right one. */
+        occurredAt?: string;
+      },
+    ): TLSet => {
       const set: TLSet = {
         id: crypto.randomUUID(),
         exerciseId: row.exerciseId,
         dayId: `day-${todayPrefix}`,
-        timestamp: new Date().toISOString(),
+        timestamp: opts?.occurredAt ?? new Date().toISOString(),
         weight,
         reps,
+        ...(opts?.durationSec !== undefined
+          ? { durationSec: opts.durationSec }
+          : {}),
         ...(opts?.warmup ? { warmup: true } : {}),
         ...(opts?.rpe !== undefined ? { rpe: opts.rpe } : {}),
+        ...(opts?.effort ? { effort: opts.effort } : {}),
+        ...(opts?.notes ? { notes: opts.notes } : {}),
       };
       // Snapshot the exercise's history *before* this set lands, so "previous
       // best" means what it says. Warm-up sets never enter that history: a
@@ -810,25 +1527,24 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       pushSetQuietly(set);
       setFinished(null);
       // Warm-up rests are their own (short) thing — see lib/warmup.ts.
-      setRest({
-        key: row.exerciseId,
-        seconds: opts?.warmup
-          ? Math.min(45, Math.max(30, Math.round((row.restSec || 60) / 3)))
-          : row.restSec || 60,
-        nonce: Date.now(),
-      });
+      const restSec = opts?.warmup
+        ? Math.min(45, Math.max(30, Math.round((row.restSec || 60) / 3)))
+        : row.restSec || 60;
+      setRest(startRest(row.exerciseId, restSec, Date.now(), Date.now()));
 
       // ── Cues ──────────────────────────────────────────────────────────
       // Duration work has no load to beat, so only real sets get a verdict.
-      if (row.cardioMin !== undefined) return;
+      if (row.cardioMin !== undefined) return set;
       // Warm-up sets have no verdicts either: no PR fanfare for a ramp set.
-      if (opts?.warmup) return;
+      if (opts?.warmup) return set;
 
       const previous = mergeMarks(
         marksOf(before),
         importedMarksFor(row.exerciseId),
       );
-      const record = detectRecord(previous, weight, reps);
+      const record = detectRecord(previous, weight, reps, {
+        durationSec: opts?.durationSec ?? null,
+      });
       if (record) {
         // A record outranks the achievement: both can land on the same set, and
         // one unmistakable fanfare beats two overlapping cues.
@@ -840,6 +1556,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
           tInterp("cue.exerciseDone", { name: row.name[getLanguage()] }),
         );
       }
+      return set;
     },
     [
       todayPrefix,
@@ -903,14 +1620,25 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   }, [removedSet, pushSetQuietly]);
 
   const editSet = useCallback(
-    (id: string, patch: { weight: number | null; reps: number | null }) => {
+    (
+      id: string,
+      patch: {
+        weight?: number | null;
+        reps?: number | null;
+        effort?: EffortMarker | null;
+      },
+    ) => {
       const target = sets.find((s) => s.id === id);
       if (!target) return;
-      const updated: TLSet = {
-        ...target,
-        weight: patch.weight,
-        reps: patch.reps,
-      };
+      const updated: TLSet = { ...target };
+      if ("weight" in patch) updated.weight = patch.weight ?? null;
+      if ("reps" in patch) updated.reps = patch.reps ?? null;
+      // `effort: null` removes the field entirely, which is what makes a set
+      // plain work again — an empty string would be a third state nobody wants.
+      if ("effort" in patch) {
+        if (patch.effort) updated.effort = patch.effort;
+        else delete updated.effort;
+      }
       setSets((prev) => prev.map((s) => (s.id === id ? updated : s)));
       void saveSet(updated);
       // The household push upserts by set id, so an edit travels like a log.
@@ -959,82 +1687,121 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const finishSession = useCallback(() => {
-    if (rows.length === 0 || totalSetsToday === 0) return;
-    const todaySetIds = todaySets.map((s) => s.id);
-    const session: TLSession = {
-      id: crypto.randomUUID(),
-      dayId: `day-${todayPrefix}`,
-      startedAt: todaySets[0]!.timestamp,
-      completedAt: new Date().toISOString(),
-      setIds: todaySetIds,
+  /**
+   * Close today's session.
+   *
+   * `extra` carries sets logged in the SAME tick (an MCP batch): React has not
+   * re-rendered yet, so without them `log_set` + `finish_session` in one inbox
+   * file would close a session that does not contain the set it was asked to
+   * close. UI callers pass nothing.
+   */
+  const finishSession = useCallback(
+    (extra: readonly TLSet[] = []): TLSession | null => {
+      const logged = extra.length > 0 ? [...todaySets, ...extra] : todaySets;
+      if (rows.length === 0 || logged.length === 0) return null;
+      const todaySetIds = logged.map((s) => s.id);
+      const session: TLSession = {
+        id: crypto.randomUUID(),
+        dayId: `day-${todayPrefix}`,
+        startedAt: logged[0]!.timestamp,
+        completedAt: new Date().toISOString(),
+        setIds: todaySetIds,
+        readiness,
+        budgetMin: settings?.timeBudgetMin,
+      };
+      void saveSession(session);
+      setSessions((prev) => [...prev, session]);
+      setFinished(session);
+
+      const volume =
+        todayVolume +
+        extra.reduce((acc, s) => acc + (s.weight ?? 0) * (s.reps ?? 0), 0);
+
+      // The bell closes the session — the one cue that also fires when the user
+      // muted nothing else, because "you are done" is the whole point.
+      celebrate(
+        "bell",
+        t("cue.sessionDone"),
+        tInterp("cue.sessionSummary", {
+          sets: logged.length,
+          vol: Math.round(volume),
+        }),
+      );
+
+      // ── Fold the outcome back into the local decision model ────────────
+      if (settings?.useDecisionModel && plan) {
+        const usedPatterns = new Set(rows.map((r) => r.pattern));
+        let next = model;
+        for (const row of rows) {
+          if (row.cardioMin !== undefined) continue;
+          const rowSets = logged.filter((s) => s.exerciseId === row.exerciseId);
+          if (rowSets.length === 0) continue;
+          const reps = rowSets.map((s) => s.reps ?? 0).filter((n) => n > 0);
+          if (reps.length === 0) continue;
+          const avgReps = reps.reduce((a, b) => a + b, 0) / reps.length;
+          const reward = rewardFromOutcome({
+            avgReps,
+            repsMin: row.repsMin,
+            repsMax: row.repsMax,
+            setsDone: rowSets.length,
+            setsPrescribed: row.sets,
+          });
+          const entry = plan.usable.find(
+            (u) => u.exercise.id === row.exerciseId,
+          );
+          if (!entry) continue;
+          const features = featuresFor(entry, {
+            weakness: plan.weakness,
+            logStats,
+            readiness,
+            level: settings.level,
+            usedPatterns,
+          });
+          next = updateModel(next, features, row.exerciseId, reward);
+        }
+        if (next.updates !== model.updates) {
+          setModel(next);
+          void saveDecisionModel(next);
+        }
+      }
+      return session;
+    },
+    [
+      rows,
+      todaySets,
+      todayVolume,
+      todayPrefix,
       readiness,
-      budgetMin: settings?.timeBudgetMin,
-    };
-    void saveSession(session);
-    setSessions((prev) => [...prev, session]);
-    setFinished(session);
+      settings,
+      plan,
+      model,
+      logStats,
+      celebrate,
+    ],
+  );
 
-    // The bell closes the session — the one cue that also fires when the user
-    // muted nothing else, because "you are done" is the whole point.
-    celebrate(
-      "bell",
-      t("cue.sessionDone"),
-      tInterp("cue.sessionSummary", {
-        sets: todaySets.length,
-        vol: Math.round(todayVolume),
-      }),
+  const removeSession = useCallback(
+    (id: string, opts?: { deleteSets?: boolean }) => {
+      const target = sessions.find((s) => s.id === id);
+      if (!target) return;
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      void deleteSession(id);
+
+      if (opts?.deleteSets && target.setIds.length > 0) {
+        const idSet = new Set(target.setIds);
+        setSets((prev) => prev.filter((s) => !idSet.has(s.id)));
+        void deleteSetsMany(target.setIds);
+      }
+    },
+    [sessions],
+  );
+
+  const editSession = useCallback((id: string, patch: Partial<TLSession>) => {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...patch } : s)),
     );
-
-    // ── Fold the outcome back into the local decision model ────────────────
-    if (settings?.useDecisionModel && plan) {
-      const usedPatterns = new Set(rows.map((r) => r.pattern));
-      let next = model;
-      for (const row of rows) {
-        if (row.cardioMin !== undefined) continue;
-        const rowSets = todaySets.filter(
-          (s) => s.exerciseId === row.exerciseId,
-        );
-        if (rowSets.length === 0) continue;
-        const reps = rowSets.map((s) => s.reps ?? 0).filter((n) => n > 0);
-        if (reps.length === 0) continue;
-        const avgReps = reps.reduce((a, b) => a + b, 0) / reps.length;
-        const reward = rewardFromOutcome({
-          avgReps,
-          repsMin: row.repsMin,
-          repsMax: row.repsMax,
-          setsDone: rowSets.length,
-          setsPrescribed: row.sets,
-        });
-        const entry = plan.usable.find((u) => u.exercise.id === row.exerciseId);
-        if (!entry) continue;
-        const features = featuresFor(entry, {
-          weakness: plan.weakness,
-          logStats,
-          readiness,
-          level: settings.level,
-          usedPatterns,
-        });
-        next = updateModel(next, features, row.exerciseId, reward);
-      }
-      if (next.updates !== model.updates) {
-        setModel(next);
-        void saveDecisionModel(next);
-      }
-    }
-  }, [
-    rows,
-    totalSetsToday,
-    todaySets,
-    todayVolume,
-    todayPrefix,
-    readiness,
-    settings,
-    plan,
-    model,
-    logStats,
-    celebrate,
-  ]);
+    void dbUpdateSession(id, patch);
+  }, []);
 
   // Ctrl+Enter finishes the session (keyboard contract, kept from F1)
   useEffect(() => {
@@ -1048,9 +1815,308 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [finishSession]);
 
-  const swapRow = useCallback((from: string, to: string) => {
+  /**
+   * Add one exercise to today's session (MCP `add_exercise`, 2026-10-13).
+   *
+   * `sets: 0` is the honest default and means **no prescription**: nobody said
+   * how many series, so the first one logged must not read as "exercise
+   * complete". `atStart` is the caller's wish for the position; the user's own
+   * sequence, applied last, still has the final word over the order.
+   */
+  const addExerciseToToday = useCallback(
+    (
+      exerciseId: string,
+      opts?: {
+        sets?: number;
+        atStart?: boolean;
+        /** The common prescription of "Añadir varios" (mockup 02). */
+        repsMin?: number;
+        repsMax?: number;
+        restSec?: number;
+        rir?: number;
+      },
+    ): boolean => {
+      const entry = plannerCatalog().find((e) => e.exercise.id === exerciseId);
+      if (!entry) return false;
+      if (rows.some((row) => row.exerciseId === exerciseId)) return false;
+      const sets = Math.max(0, Math.min(12, Math.round(opts?.sets ?? 0)));
+      // The prescription a caller can carry is the page's own three fields, and
+      // each is clamped to what the planner itself would emit: a bulk-add must
+      // not be able to write 0 rest or a 99-rep range into the session.
+      const clamp = (
+        n: number | undefined,
+        min: number,
+        max: number,
+        at: number,
+      ) => Math.max(min, Math.min(max, Math.round(n ?? at)));
+      const repsMin = clamp(opts?.repsMin, 1, 30, 8);
+      const repsMax = Math.max(repsMin, clamp(opts?.repsMax, 1, 30, 12));
+      const restSec = clamp(opts?.restSec, 15, 600, 60);
+      const rir = clamp(opts?.rir, 0, 5, 2);
+      const row: PlannedRow = {
+        exerciseId,
+        name: entry.exercise.name,
+        pattern: entry.traits.pattern,
+        families: entry.families,
+        progression: entry.traits.progression,
+        loadType: entry.traits.loadType,
+        unilateral: entry.traits.unilateral,
+        sets,
+        repsMin,
+        repsMax,
+        rir,
+        restSec,
+        minutes: entry.traits.setupMin + 4,
+        reasons: [],
+        jointStress: entry.traits.jointStress,
+        spineLoad: entry.traits.spineLoad,
+      };
+      setAddedRows((prev) => [
+        ...prev.filter((e) => e.row.exerciseId !== exerciseId),
+        { row, atStart: opts?.atStart === true },
+      ]);
+      return true;
+    },
+    [rows],
+  );
+
+  /** Take a hand-added row back out (its own undo, and the row's X one day). */
+  const removeAddedRow = useCallback((exerciseId: string) => {
+    setAddedRows((prev) => prev.filter((e) => e.row.exerciseId !== exerciseId));
+  }, []);
+
+  /** Which rows of `rows` came from the user's own hand (mockup 02's Quitar). */
+  const addedToday = useMemo(
+    () => addedRows.map((entry) => entry.row.exerciseId),
+    [addedRows],
+  );
+
+  /* ══ Routine templates (mockup 06) ════════════════════════════════════════
+   * Stored inside `settings` rather than in a new object store: every existing
+   * backup already carries settings, so a template survives an export, a
+   * restore and the automatic autobackup without a `DB_VERSION` bump — and the
+   * sanitizer in `lib/routines.ts` runs on both ends.
+   */
+  const routines = useMemo(
+    () => normalizeRoutines(settings?.routines),
+    [settings?.routines],
+  );
+
+  const saveRoutine = useCallback(
+    (input: {
+      id?: string;
+      name: string;
+      notes?: string;
+      items: RoutineItem[];
+    }): Routine | null => {
+      if (!settings) return null;
+      const now = new Date();
+      const existing = routines.find((entry) => entry.id === input.id);
+      const stored = existing
+        ? normalizeRoutine({
+            ...existing,
+            name: input.name,
+            notes: input.notes,
+            items: input.items,
+            updatedAt: now.toISOString(),
+          })
+        : makeRoutine(input.name, input.items, now, input.notes);
+      if (!stored) return null;
+      patch({ routines: upsertRoutine(routines, stored) });
+      return stored;
+    },
+    [settings, routines, patch],
+  );
+
+  const deleteRoutine = useCallback(
+    (id: string) => {
+      if (!settings) return;
+      patch({ routines: removeRoutine(routines, id) });
+    },
+    [settings, routines, patch],
+  );
+
+  const applyRoutineToday = useCallback(
+    (routine: Routine): number => {
+      let added = 0;
+      for (const item of routine.items) {
+        const ok = addExerciseToToday(item.exerciseId, {
+          sets: item.sets,
+          repsMin: item.repsMin,
+          repsMax: item.repsMax,
+          restSec: item.restSec,
+          rir: item.rir,
+        });
+        if (ok) added += 1;
+      }
+      return added;
+    },
+    [addExerciseToToday],
+  );
+
+  /**
+   * Move one set's own hour (`set_set_time`).
+   *
+   * Only `timestamp` changes: the weight, the reps and the effort are facts the
+   * owner recorded, and a correction of the clock must not touch them. `dayId`
+   * is deliberately left alone — validation proved the new instant is still
+   * today, so the set stays exactly where it was (the day key is what the plan
+   * and the finish gate read).
+   */
+  const setSetTime = useCallback((setId: string, timestamp: string) => {
+    setSets((prev) =>
+      prev.map((set) => {
+        if (set.id !== setId) return set;
+        const next: TLSet = { ...set, timestamp };
+        void saveSet(next);
+        return next;
+      }),
+    );
+  }, []);
+
+  /**
+   * Put back a session an agent deleted (the undo of `delete_session`).
+   *
+   * Sets are restored only when they were taken out with it, and merging by id
+   * makes the call idempotent: undoing twice cannot duplicate a set.
+   */
+  const restoreSession = useCallback(
+    (session: TLSession, removedSets: readonly TLSet[] = []) => {
+      setSessions((prev) =>
+        prev.some((s) => s.id === session.id) ? prev : [...prev, session],
+      );
+      void saveSession(session);
+      if (removedSets.length === 0) return;
+      setSets((prev) => {
+        const known = new Set(prev.map((s) => s.id));
+        const add = removedSets.filter((s) => !known.has(s.id));
+        if (add.length === 0) return prev;
+        void saveSetsMany(add);
+        return [...prev, ...add];
+      });
+    },
+    [],
+  );
+
+  const swapRow = useCallback(
+    (from: string, to: string) => {
+      setCoachRows(null);
+      setOverrides((prev) => ({ ...prev, [from]: to }));
+      // A swap replaces what sits in a slot without moving the slot: when the
+      // user has his own sequence, the new exercise inherits the position of the
+      // one it replaced instead of dropping to the end of the list (2026-10-11).
+      if (!settings) return;
+      const next = withRowOrderSwap(settings, todayPrefix, from, to);
+      if (next !== settings) patch(next);
+    },
+    [settings, patch, todayPrefix],
+  );
+
+  /*
+   * The rest has three verbs and no state of its own: every one of them is a
+   * pure rewrite of the deadline (`lib/rest.ts`), so the session card and the
+   * floating overlay see the same number at the same instant.
+   */
+  const extendRest = useCallback((seconds: number) => {
+    setRest((current) => (current ? extendRestState(current, seconds) : null));
+  }, []);
+
+  const toggleRestPause = useCallback(() => {
+    setRest((current) =>
+      current ? toggleRestPauseState(current, Date.now()) : null,
+    );
+  }, []);
+
+  const skipRest = useCallback(() => setRest(null), []);
+
+  /**
+   * Move one exercise of today's session (mockup 03: the list drags).
+   *
+   * `from`/`to` are positions in the session the user is looking at — the very
+   * `rows` array every screen renders — so the drop lands where he dropped it
+   * and the plan engine is never asked to guess. Persisted into settings, which
+   * means the sequence survives a reload, a re-plan and a restart.
+   */
+  const moveRow = useCallback(
+    (from: number, to: number) => {
+      if (!settings) return;
+      const ids = rows.map((row) => row.exerciseId);
+      if (
+        from === to ||
+        from < 0 ||
+        to < 0 ||
+        from >= ids.length ||
+        to >= ids.length
+      ) {
+        return;
+      }
+      const moved = ids.splice(from, 1)[0]!;
+      ids.splice(to, 0, moved);
+      patch(withRowOrder(settings, todayPrefix, ids));
+    },
+    [settings, rows, patch, todayPrefix],
+  );
+
+  /** Back to the generator's own sequence — the list's explicit way out. */
+  const resetRowOrder = useCallback(() => {
+    if (!settings) return;
+    patch(clearRowOrder(settings));
+  }, [settings, patch]);
+
+  /** True when today's session is in a sequence the user set himself. */
+  const orderIsCustom = rowOrderFor(settings, todayPrefix) !== null;
+
+  /*
+   * The two escape hatches of the session's top bar (mockup 03). Neither touches
+   * the plan: *Saltar* leaves the exercise prescribed and out of the way, and
+   * *Posponer* moves it to the end of today's session and nothing else. Both are
+   * date-keyed marks in settings, so both expire with the day and both are undone
+   * by deleting one id — which is what makes the two buttons safe to tap.
+   */
+  const skipRow = useCallback(
+    (exerciseId: string) => {
+      if (!settings) return;
+      patch(withRowSkip(settings, todayPrefix, exerciseId));
+    },
+    [settings, patch, todayPrefix],
+  );
+
+  const unskipRow = useCallback(
+    (exerciseId: string) => {
+      if (!settings) return;
+      patch(withRowSkip(settings, todayPrefix, exerciseId, false));
+    },
+    [settings, patch, todayPrefix],
+  );
+
+  const postponeRow = useCallback(
+    (exerciseId: string) => {
+      if (!settings) return;
+      patch(withRowPostpone(settings, todayPrefix, exerciseId));
+    },
+    [settings, patch, todayPrefix],
+  );
+
+  const unpostponeRow = useCallback(
+    (exerciseId: string) => {
+      if (!settings) return;
+      patch(withRowPostpone(settings, todayPrefix, exerciseId, false));
+    },
+    [settings, patch, todayPrefix],
+  );
+
+  /** Take a swap back (the undo token of an MCP `swap_exercise`): the swap is
+   *  an override keyed by the *original* slot, so undoing is deleting that key
+   *  rather than swapping again — a reverse swap would leave a dangling entry
+   *  for an exercise today's plan never contained. */
+  const clearSwap = useCallback((from: string) => {
     setCoachRows(null);
-    setOverrides((prev) => ({ ...prev, [from]: to }));
+    setOverrides((prev) => {
+      if (!(from in prev)) return prev;
+      const next = { ...prev };
+      delete next[from];
+      return next;
+    });
   }, []);
 
   const clearCoach = useCallback(() => {
@@ -1066,7 +2132,470 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
 
   const regenerateWeek = useCallback(() => setWeekSeed((s) => s + 1), []);
 
+  const setWeekOverride = useCallback(
+    (index: number, override: WeekDayOverride | null) => {
+      if (!settings) return;
+      const next: Record<number, WeekDayOverride> = {
+        ...(settings.weekOverrides ?? {}),
+      };
+      if (override === null) delete next[index];
+      else next[index] = override;
+      patch({ weekOverrides: next });
+    },
+    [settings, patch],
+  );
+
+  /**
+   * Drag a day onto another (Semana). The pure swap lives in
+   * `lib/week-swap.ts`; this callback only writes the owner's layer.
+   */
+  const swapWeekDays = useCallback(
+    (from: number, to: number) => {
+      if (!settings || !weekPlan) return false;
+      const next = swapPlanDays(
+        weekPlan,
+        settings.weekOverrides,
+        from,
+        to,
+      );
+      if (!next) return false;
+      patch({ weekOverrides: next });
+      return true;
+    },
+    [settings, weekPlan, patch],
+  );
+
   // ── The optional local coach ────────────────────────────────────────────
+  // ── MCP ACTIONS — the inbox a local model writes to ──────────────────────
+  //
+  // docs/MCP_TOOL_SURFACE.md, decisions D1/D4: the host takes the pending file
+  // (one narrow Rust command), every action is validated against the same rules
+  // the UI enforces, applied through these very callbacks, and answered with a
+  // receipt written back to `mcp-results.json`. The IndexedDB ledger is the only
+  // thing that decides whether an action runs: an id it has seen is answered
+  // with its original receipt and never applied twice.
+
+  /**
+   * A row for an exercise today's plan does not contain: an owner can log
+   * anything he did, and so can an agent. `sets: 0` means "no prescription",
+   * which is what stops the achievement cue from firing for work nobody
+   * prescribed — a record still fires, because a record is a fact.
+   */
+  const mcpRowFor = useCallback(
+    (exerciseId: string): PlannedRow | null => {
+      const planned = rows.find((r) => r.exerciseId === exerciseId);
+      if (planned) return planned;
+      const entry = plannerCatalog().find((e) => e.exercise.id === exerciseId);
+      if (!entry) return null;
+      return {
+        exerciseId,
+        name: entry.exercise.name,
+        pattern: entry.traits.pattern,
+        families: entry.families,
+        progression: entry.traits.progression,
+        loadType: entry.traits.loadType,
+        unilateral: entry.traits.unilateral,
+        sets: 0,
+        repsMin: 8,
+        repsMax: 12,
+        rir: 2,
+        restSec: 60,
+        minutes: entry.traits.setupMin + 4,
+        reasons: [],
+        jointStress: entry.traits.jointStress,
+        spineLoad: entry.traits.spineLoad,
+      };
+    },
+    [rows],
+  );
+
+  /** Take the pending batch, apply what validates, answer with receipts. */
+  const processMcpInbox = useCallback(async () => {
+    if (mcpBusy.current || !settings) return;
+    mcpBusy.current = true;
+    try {
+      const text = await takeMcpInbox();
+      if (!text) return;
+
+      const { actions, receipts: malformed } = parseMcpInbox(text);
+      // Mutable: each applied action updates it, so action N in the same file
+      // is validated against the state action N-1 actually produced.
+      const ctx: McpContext = {
+        now: new Date(),
+        settings,
+        plannedExerciseIds: rows.map((r) => r.exerciseId),
+        // Warm-ups included: `set_set_time` corrects the hour of *anything*
+        // logged today, and a warm-up is a set in the log even though no
+        // aggregate counts it as work.
+        todaySets: sets.filter((s) => localDayKey(s.timestamp) === todayPrefix),
+        sessions,
+        dayFocus,
+        weekDays: weekPlan?.rows ?? [],
+        todayPrefix,
+        todaySetCount: totalSetsToday,
+        finishedToday: finished !== null,
+        readiness,
+      };
+      /** Settings written by this batch: N actions collapse into ONE write. */
+      let settingsNext: TLSettingsData | null = null;
+      /** Sets logged in this batch — not in React state yet (see finishSession). */
+      const batchSets: TLSet[] = [];
+
+      const { receipts, fresh } = runMcpActions({
+        actions,
+        malformed,
+        ctx,
+        ledger: mcpLedgerRef.current,
+        apply: (action, validation) => {
+          if (!validation.ok) return;
+          if (validation.settingsPatch) {
+            settingsNext = {
+              ...(settingsNext ?? settings),
+              ...validation.settingsPatch,
+            };
+          }
+
+          switch (action.type) {
+            case "log_set": {
+              const exerciseId = String(action.params.exercise_id ?? "");
+              const row = mcpRowFor(exerciseId);
+              if (!row) {
+                // Validation already refused an unknown id; this is the belt to
+                // that pair — the app never logs a set it cannot explain.
+                return {
+                  ok: false,
+                  rule: "unknown_exercise",
+                  detail: {
+                    en: `No exercise with id "${exerciseId}" exists in the catalog.`,
+                    es: `No existe ningún ejercicio con id «${exerciseId}» en el catálogo.`,
+                  },
+                };
+              }
+              const rawWeight = action.params.weight_kg;
+              const weight =
+                typeof rawWeight === "number" &&
+                Number.isFinite(rawWeight) &&
+                rawWeight > 0
+                  ? rawWeight
+                  : null;
+              const set = addSet(row, weight, numOrNull(action.params.reps), {
+                ...(typeof action.params.duration_sec === "number"
+                  ? { durationSec: action.params.duration_sec }
+                  : {}),
+                ...(action.params.warmup === true ? { warmup: true } : {}),
+                ...(action.params.effort === "D" || action.params.effort === "F"
+                  ? { effort: action.params.effort }
+                  : {}),
+                ...(typeof action.params.notes === "string" &&
+                action.params.notes.length > 0
+                  ? { notes: action.params.notes }
+                  : {}),
+                // Validation normalised it and proved it belongs to today.
+                ...(validation.occurredAt
+                  ? { occurredAt: validation.occurredAt }
+                  : {}),
+              });
+              batchSets.push(set);
+              return { ok: true, undo: { kind: "remove_set", setId: set.id } };
+            }
+
+            case "finish_session": {
+              const session = finishSession(batchSets);
+              if (!session) {
+                return {
+                  ok: false,
+                  rule: "nothing_to_finish",
+                  detail: {
+                    en: "There are no sets logged today, so there is no session to close.",
+                    es: "No hay series registradas hoy, así que no hay sesión que cerrar.",
+                  },
+                };
+              }
+              return {
+                ok: true,
+                undo: { kind: "remove_session", sessionId: session.id },
+              };
+            }
+
+            case "set_readiness":
+              if (validation.readiness) {
+                setReadinessAndPersist(validation.readiness);
+              }
+              return { ok: true };
+
+            case "swap_exercise":
+              swapRow(
+                String(action.params.exercise_id ?? ""),
+                String(action.params.replacement_id ?? ""),
+              );
+              // The undo token comes from the validation (`swap_row`).
+              return { ok: true };
+
+            case "add_exercise": {
+              const exerciseId = String(action.params.exercise_id ?? "");
+              const added = addExerciseToToday(exerciseId, {
+                ...(typeof action.params.sets === "number"
+                  ? { sets: action.params.sets }
+                  : {}),
+                atStart: action.params.position === "start",
+              });
+              if (!added) {
+                // Validation already refused these cases; this is the belt to
+                // its pair (the plan moved between validate and apply).
+                return {
+                  ok: false,
+                  rule: "unknown_exercise",
+                  detail: {
+                    en: `"${exerciseId}" could not be added to today's session.`,
+                    es: `«${exerciseId}» no se ha podido añadir a la sesión de hoy.`,
+                  },
+                };
+              }
+              return { ok: true };
+            }
+
+            case "set_day_focus":
+              if (validation.dayFocus) setDayFocus(validation.dayFocus);
+              return { ok: true };
+
+            case "set_set_time": {
+              if (validation.occurredAt) {
+                setSetTime(
+                  String(action.params.set_id ?? ""),
+                  validation.occurredAt,
+                );
+              }
+              return { ok: true };
+            }
+
+            case "reorder_row": {
+              const exerciseId = String(action.params.exercise_id ?? "");
+              const from = rows.findIndex(
+                (row) => row.exerciseId === exerciseId,
+              );
+              const to = Number(action.params.position) - 1;
+              if (from < 0 || to < 0 || to >= rows.length) {
+                return {
+                  ok: false,
+                  rule: "not_in_today",
+                  detail: {
+                    en: `"${exerciseId}" is no longer in today's session.`,
+                    es: `«${exerciseId}» ya no está en la sesión de hoy.`,
+                  },
+                };
+              }
+              moveRow(from, to);
+              return { ok: true };
+            }
+
+            case "set_exercise_state": {
+              const exerciseId = String(action.params.exercise_id ?? "");
+              const state = action.params.state;
+              if (state === "skipped") skipRow(exerciseId);
+              else if (state === "postponed") postponeRow(exerciseId);
+              else {
+                // "active" clears both marks, whichever one was set.
+                unskipRow(exerciseId);
+                unpostponeRow(exerciseId);
+              }
+              return { ok: true };
+            }
+
+            case "reset_order":
+              resetRowOrder();
+              return { ok: true };
+
+            case "swap_week_days": {
+              const from = Number(action.params.from_weekday);
+              const to = Number(action.params.to_weekday);
+              if (!swapWeekDays(from, to)) {
+                return {
+                  ok: false,
+                  rule: "week_days_unchanged",
+                  detail: {
+                    en: "Those days no longer have different plans.",
+                    es: "Esos días ya no tienen planes distintos.",
+                  },
+                };
+              }
+              return { ok: true };
+            }
+
+            case "delete_session": {
+              const sessionId = String(action.params.session_id ?? "");
+              const target = sessions.find((s) => s.id === sessionId);
+              if (!target) {
+                return {
+                  ok: false,
+                  rule: "unknown_session",
+                  detail: {
+                    en: `No session with id "${sessionId}" is in the log.`,
+                    es: `No hay ninguna sesión con id «${sessionId}» en el registro.`,
+                  },
+                };
+              }
+              const deleteSets = action.params.delete_sets === true;
+              // What the undo has to put back: the session, plus its sets when
+              // they were taken out with it (`deleteSets: false` leaves them in
+              // the log, exactly like the screen's own delete).
+              const removedSets = deleteSets
+                ? sets.filter((s) => target.setIds.includes(s.id))
+                : [];
+              removeSession(sessionId, { deleteSets });
+              if (finished?.id === sessionId) setFinished(null);
+              return {
+                ok: true,
+                undo: {
+                  kind: "restore_session",
+                  session: target,
+                  sets: removedSets,
+                },
+              };
+            }
+
+            // set_goal / set_level / set_time_budget / set_inventory: the patch
+            // was accumulated above and is written once, after the batch.
+            default:
+              return { ok: true };
+          }
+        },
+      });
+
+      if (settingsNext) applySettings(settingsNext);
+      if (fresh.length > 0) {
+        const next = trimLedger([...mcpLedgerRef.current, ...fresh]);
+        mcpLedgerRef.current = next;
+        setMcpLedger(next);
+        void saveMcpLedger(next);
+      }
+      if (receipts.length > 0) await writeMcpResults(receipts);
+    } catch {
+      // The channel never takes the app down with it: the next tick retries and
+      // the ledger still holds every receipt already given.
+    } finally {
+      mcpBusy.current = false;
+    }
+  }, [
+    settings,
+    rows,
+    sets,
+    sessions,
+    dayFocus,
+    todayPrefix,
+    totalSetsToday,
+    finished,
+    readiness,
+    weekPlan,
+    mcpRowFor,
+    addSet,
+    finishSession,
+    setReadinessAndPersist,
+    swapRow,
+    addExerciseToToday,
+    setSetTime,
+    removeSession,
+    applySettings,
+    moveRow,
+    skipRow,
+    unskipRow,
+    postponeRow,
+    unpostponeRow,
+    resetRowOrder,
+    swapWeekDays,
+  ]);
+
+  // The poller always sees the latest callbacks without re-arming its timer on
+  // every keystroke (a new set logged would otherwise restart the interval).
+  const mcpProcessRef = useRef(processMcpInbox);
+  useEffect(() => {
+    mcpProcessRef.current = processMcpInbox;
+  }, [processMcpInbox]);
+
+  // Poll on a timer and on focus — the moment an agent is most likely to be
+  // waiting for its receipt. Desktop host only: the browser build has no file
+  // channel at all, and an action written while the app was closed simply waits
+  // in the file for this launch.
+  useEffect(() => {
+    if (!settings || !isDesktopHost()) return;
+    let alive = true;
+    const tick = () => {
+      if (alive) void mcpProcessRef.current();
+    };
+    const id = window.setInterval(tick, MCP_POLL_MS);
+    window.addEventListener("focus", tick);
+    tick();
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+      window.removeEventListener("focus", tick);
+    };
+  }, [settings]);
+
+  /** Reverse one applied action — Ajustes → auditoría de agentes (D4). */
+  const undoMcpAction = useCallback(
+    async (id: string) => {
+      const entry = mcpLedgerRef.current.find((e) => e.id === id);
+      if (!entry || !canUndo(entry) || !entry.undo) return;
+      const undo = entry.undo;
+      switch (undo.kind) {
+        case "remove_set":
+          removeSet(undo.setId);
+          break;
+        case "remove_session":
+          // Reopening keeps the sets: only the session record goes, so the day
+          // goes back to being editable without touching what was logged.
+          removeSession(undo.sessionId, { deleteSets: false });
+          if (finished?.id === undo.sessionId) setFinished(null);
+          break;
+        case "settings":
+          patch(undo.before);
+          break;
+        case "readiness":
+          setReadinessAndPersist(undo.before);
+          break;
+        case "swap_row":
+          clearSwap(undo.from);
+          break;
+        case "remove_row":
+          removeAddedRow(undo.exerciseId);
+          break;
+        case "day_focus":
+          setDayFocus([...undo.before]);
+          break;
+        case "restore_session":
+          // Deletion is whole-session, and so is its undo: the record comes
+          // back with the sets it took with it (none when they were kept).
+          restoreSession(undo.session, undo.sets);
+          break;
+        case "set_time":
+          setSetTime(undo.setId, undo.before);
+          break;
+      }
+      const undoneAt = new Date().toISOString();
+      const next = mcpLedgerRef.current.map((e) => {
+        if (e.id !== id) return e;
+        const clone: McpLedgerEntry = { ...e, undoneAt };
+        delete clone.undo;
+        return clone;
+      });
+      mcpLedgerRef.current = next;
+      setMcpLedger(next);
+      void saveMcpLedger(next);
+      await writeMcpResults([receiptOf({ ...entry, undoneAt })]);
+    },
+    [
+      finished,
+      removeSet,
+      removeSession,
+      patch,
+      setReadinessAndPersist,
+      clearSwap,
+      removeAddedRow,
+      restoreSession,
+      setSetTime,
+    ],
+  );
+
   const contextCsv = useMemo(() => {
     if (!plan || !settings) return "";
     const weak = Object.entries(plan.weakness)
@@ -1092,7 +2621,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       .slice(-12)
       .map(
         (s) =>
-          `${s.exerciseId},${s.timestamp.slice(0, 10)},${s.weight ?? ""},${s.reps ?? ""}`,
+          `${s.exerciseId},${localDayKey(s.timestamp)},${s.weight ?? ""},${s.reps ?? ""}`,
       )
       .join("\n");
     return [
@@ -1104,6 +2633,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       `equipment,${gear || "bodyweight only"}`,
       `weekly_sets,${volume || "none"}`,
       `deterministic_plan,${planned}`,
+      `recovering_families,${plan?.fatigue?.fatigued.join(";") || "none"}`,
       "recent_sets(exercise,date,kg,reps)",
       recent,
     ].join("\n");
@@ -1133,6 +2663,11 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
                 .sort((a, b) => (a[1] as number) - (b[1] as number))
                 .slice(0, 6),
               bodylabLinked: payload !== null,
+              /* The recovery window the log derives — the coach must not have
+                 to remember yesterday's work on its own. */
+              recoveringFamilies: plan.fatigue?.fatigued ?? [],
+              recoveryWindowHours: plan.fatigue?.windowHours ?? null,
+              soreFamilies,
             };
           case "get_deterministic_plan":
             return {
@@ -1170,11 +2705,28 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
               .filter((s) => s.exerciseId === id)
               .slice(-10)
               .map((s) => ({
-                date: s.timestamp.slice(0, 10),
+                date: localDayKey(s.timestamp),
                 weight: s.weight,
                 reps: s.reps,
               }));
           }
+          case "get_progression_verdict":
+            /*
+             * The multi-day verdict, the same call the session screen and the
+             * Inicio card read (`progressionFor`), so a model quoting it cannot
+             * contradict what the owner is looking at. Today's sets are out of
+             * it on purpose: within a day the D/F mark owns the load. The
+             * payload shape lives in `lib/coach-tools.ts`, where it is tested.
+             */
+            return progressionVerdictTool({
+              exerciseId:
+                typeof args["exerciseId"] === "string"
+                  ? String(args["exerciseId"])
+                  : null,
+              exerciseIds: rows.map((r) => r.exerciseId),
+              adviceFor: progressionFor,
+              nameOf: (id) => exerciseName(id),
+            });
           case "report_fatigue_and_query_safe": {
             const rawAreas = args["painOrFatigueAreas"];
             const painAreas = Array.isArray(rawAreas)
@@ -1259,6 +2811,14 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
               setupMinOf: (id) =>
                 plan.usable.find((u) => u.exercise.id === id)?.traits
                   .setupMin ?? 0,
+              familiesOf: (id) =>
+                plan.usable.find((u) => u.exercise.id === id)?.families ?? [],
+              fatiguedFamilies: [
+                ...new Set([
+                  ...(plan.fatigue?.fatigued ?? []),
+                  ...soreFamilies,
+                ]),
+              ],
             });
             if (!check.ok) {
               setCoachResult({
@@ -1342,7 +2902,16 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       }));
       setCoachBusy(false);
     },
-    [settings, plan, rows, readiness, payload, sets, contextCsv],
+    [
+      settings,
+      plan,
+      rows,
+      readiness,
+      payload,
+      sets,
+      contextCsv,
+      progressionFor,
+    ],
   );
 
   const value: TrainingLabStore = {
@@ -1358,6 +2927,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     loading: !settings || !plan,
     plan,
     weekPlan,
+    weekStress,
     rows,
     todaySets,
     todayVolume,
@@ -1384,21 +2954,54 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     toggleSoreFamily,
     setDayFocus,
     finishSession,
+    removeSession,
+    editSession,
     swapRow,
+    moveRow,
+    resetRowOrder,
+    orderIsCustom,
+    skipRow,
+    unskipRow,
+    postponeRow,
+    unpostponeRow,
+    skippedToday: sessionAside.skipped,
+    postponedToday: sessionAside.postponed,
+    addedToday,
+    removeAddedRow,
+    addExerciseToToday,
+    routines,
+    saveRoutine,
+    deleteRoutine,
+    applyRoutineToday,
     clearCoach,
     resetModel,
     regenerateWeek,
+    setWeekOverride,
+    swapWeekDays,
     askCoach,
     runSharedSync,
     prFor,
+    marksFor,
+    progressionFor,
     swapOptionsFor,
     setRepRange,
     logWarmup,
     exportBackup,
     importBackup,
     importSymmetry,
+    importOwnerLog,
+    previewSymmetry,
+    previewOwnerLog,
+    loadDemoData,
+    clearDemoData,
+    rest,
+    extendRest,
+    toggleRestPause,
+    skipRest,
     recoverable,
     restoreAutobackup,
+    mcpLedger,
+    undoMcpAction,
   };
 
   return (
@@ -1478,18 +3081,21 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* The rest timer must survive navigation: a rest does not stop just
-          because the user tapped another destination. */}
-      {rest && (
+      {/* The rest must survive navigation: a rest does not stop just because
+          the user tapped another destination. Inside the session the same
+          deadline is drawn in its Descanso card (mockup 03), so the overlay stays
+          away — two views of one rest would be two things to check. */}
+      {rest && route.id !== "session" && (
         <RestTimer
-          key={rest.nonce}
-          seconds={rest.seconds}
+          rest={rest}
+          variant="floating"
           nextExercise={
             rows.find((r) => r.exerciseId === rest.key)?.name[getLanguage()] ??
             null
           }
-          onDone={() => setRest(null)}
-          onDismiss={() => setRest(null)}
+          onExtend={extendRest}
+          onTogglePause={toggleRestPause}
+          onSkip={skipRest}
         />
       )}
     </StoreContext.Provider>

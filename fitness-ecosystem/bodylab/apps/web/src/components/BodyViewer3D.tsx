@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { RotateCcw, Move, ZoomIn, Wand2, Loader2, CheckCircle2, AlertTriangle, Bone, Eye, EyeOff } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { RotateCcw, Move, ZoomIn, Wand2, Loader2, CheckCircle2, AlertTriangle, Bone, Eye, EyeOff, Layers } from 'lucide-react';
 import { useApp } from '../lib/store';
 import { parseOximBinary } from '../lib/oxim-parser';
 import {
@@ -8,8 +8,16 @@ import {
   setLayerOpacity,
   disposeAtlas,
   refitAtlas,
+  tagAtlasGroups,
+  applyGroupVisibility,
+  applyGroupTint,
   type AnatomyAtlas,
 } from '../lib/anatomy-loader';
+import {
+  MUSCLE_GROUPS,
+  computeMuscleRelevance,
+  type MuscleGroupId,
+} from '../lib/muscle-groups';
 
 /** Shell opacity while x-ray mode is active (skin becomes translucent glass). */
 const XRAY_SHELL_OPACITY = 0.14;
@@ -128,9 +136,26 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
   const [muscleOpacity, setMuscleOpacity] = useState(70);
   const [boneOpacity, setBoneOpacity] = useState(90);
 
+  // ── Muscle-group layers (classify the atlas once → isolate/focus/tint) ──
+  const [groupStats, setGroupStats] = useState<Partial<Record<MuscleGroupId, number>> | null>(null);
+  const [hiddenGroups, setHiddenGroups] = useState<ReadonlySet<MuscleGroupId>>(() => new Set());
+  const [activeGroup, setActiveGroup] = useState<MuscleGroupId | null>(null);
+
   const { state } = useApp();
   const { profile, measurements } = state;
   const lang = state.language;
+
+  // The user's own data → which groups deserve the accent tint. Pure module,
+  // recomputed only when the data changes (not per render).
+  const relevance = useMemo(
+    () => computeMuscleRelevance({ measurements, exerciseSets: state.exerciseSets }),
+    [measurements, state.exerciseSets],
+  );
+  const relevanceScores = useMemo(() => {
+    const scores: Partial<Record<MuscleGroupId, number>> = {};
+    for (const [g, rel] of Object.entries(relevance)) scores[g as MuscleGroupId] = rel.score;
+    return scores;
+  }, [relevance]);
 
   // Hide hints after first interaction
   useEffect(() => {
@@ -263,6 +288,71 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
     moveCamera('front');
   }, [moveCamera]);
 
+  // Focus the camera on one muscle group (click a chip → the camera flies to
+  // that layer's bounding box; works from any angle because the direction of
+  // view is preserved).
+  const focusOnGroup = useCallback((group: MuscleGroupId) => {
+    const camera = cameraRef.current;
+    const controls = controlsRef.current as { target: import('three').Vector3; update(): void } | null;
+    const atlas = atlasRef.current;
+    if (!camera || !controls || !atlas || !THREE) return;
+
+    const box = new THREE.Box3();
+    let found = 0;
+    atlas.muscles.traverse((o) => {
+      const mesh = o as import('three').Mesh;
+      if (!mesh.isMesh || mesh.userData.muscleGroup !== group) return;
+      box.expandByObject(mesh);
+      found++;
+    });
+    if (found === 0 || box.isEmpty()) return;
+
+    const center = box.getCenter(new THREE.Vector3());
+    const radius = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 0.04);
+    const fovRad = (camera.fov * Math.PI) / 180;
+    const dist = (radius / Math.sin(fovRad / 2)) * 1.3;
+    const dir = camera.position.clone().sub(controls.target);
+    if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
+    dir.normalize();
+
+    controls.target.copy(center);
+    camera.position.copy(center).addScaledVector(dir, dist);
+    camera.near = Math.max(0.01, dist / 50);
+    camera.far = Math.max(100, dist * 10);
+    camera.updateProjectionMatrix();
+    controls.update();
+    setCameraPreset('front'); // directional presets are relative to the body
+  }, []);
+
+  // Chip behaviours: click = isolate + focus (click again = release),
+  // eye = show/hide the layer without touching the isolate.
+  const selectGroup = useCallback((group: MuscleGroupId) => {
+    if (activeGroup === group) {
+      setActiveGroup(null);
+      frameToFit();
+    } else {
+      setActiveGroup(group);
+      focusOnGroup(group);
+    }
+  }, [activeGroup, focusOnGroup, frameToFit]);
+
+  const toggleGroupHidden = useCallback((group: MuscleGroupId) => {
+    const next = new Set(hiddenGroups);
+    if (next.has(group)) {
+      next.delete(group);
+    } else {
+      next.add(group);
+      if (activeGroup === group) setActiveGroup(null); // hiding the isolate releases it
+    }
+    setHiddenGroups(next);
+  }, [hiddenGroups, activeGroup]);
+
+  const resetGroups = useCallback(() => {
+    setHiddenGroups(new Set());
+    setActiveGroup(null);
+    frameToFit();
+  }, [frameToFit]);
+
   // Live-update the body material to the selected skin tone (no mesh rebuild)
   const applySkinTone = useCallback((id: string) => {
     skinToneRef.current = id;
@@ -292,6 +382,7 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
       const atlas = await loadAnatomyAtlas();
       if (atlasRef.current) return; // double-toggle race: first load won
       atlasRef.current = atlas;
+      setGroupStats(tagAtlasGroups(atlas.muscles));
       const scene = sceneRef.current;
       const body = scene?.getObjectByName('bodyMesh') as import('three').Mesh | undefined;
       if (scene && body) {
@@ -345,6 +436,22 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
     if (!atlasRef.current || !THREE) return;
     setLayerOpacity(atlasRef.current.skeleton, boneOpacity / 100);
   }, [boneOpacity, xrayMode]);
+
+  // ── Group layers: visibility (hide / isolate) + data-driven tint ───────
+  useEffect(() => {
+    if (!atlasRef.current || !xrayMode) return;
+    applyGroupVisibility(atlasRef.current.muscles, hiddenGroups, activeGroup);
+  }, [hiddenGroups, activeGroup, xrayMode]);
+
+  useEffect(() => {
+    if (!atlasRef.current || !xrayMode || !THREE) return;
+    applyGroupTint(
+      atlasRef.current.muscles,
+      relevanceScores,
+      cssVarHex('--color-primary'),
+      THREE,
+    );
+  }, [relevanceScores, xrayMode]);
 
   // Run the engine's fit solver against the profile's real measurements
   const runFit = useCallback(async () => {
@@ -726,7 +833,7 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
               disabled={xrayLoading}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
                 xrayMode
-                  ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 active:scale-[0.98]'
+                  ? 'bl-btn bl-btn-primary active:scale-[0.98]'
                   : 'bg-slate-100 dark:bg-[var(--color-surface)] text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 dark:hover:bg-[var(--color-surface-elevated)] active:scale-[0.98]'
               }`}
               title={lang === 'es' ? 'Ver la anatomía dentro de tu cuerpo' : 'See the anatomy inside your body'}
@@ -777,7 +884,7 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
 
       {/* X-ray layer sliders — only while the mode is live */}
       {xrayMode && !loading && !error && (
-        <div className="flex items-center gap-5 flex-wrap bg-[var(--color-surface)] rounded-xl px-4 py-2.5 border border-slate-100 dark:border-transparent">
+        <div className="flex items-center gap-5 flex-wrap bl-card px-4 py-2.5">
           {xrayError ? (
             <span className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-300">
               <AlertTriangle className="w-3.5 h-3.5" /> {xrayError}
@@ -812,6 +919,111 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
               </label>
             </>
           )}
+        </div>
+      )}
+
+      {/* Muscle-group layers — isolate a group, hide layers, and see WHY a
+          group is tinted (the badge = the user's own measurements/training) */}
+      {xrayMode && !loading && !error && groupStats && (
+        <div className="bl-card p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[var(--color-text-muted)]">
+              <Layers className="w-3.5 h-3.5" />
+              {lang === 'es' ? 'Grupos musculares' : 'Muscle groups'}
+              <span className="normal-case tracking-normal px-1.5 py-0.5 rounded-md bg-[var(--color-input-bg)] text-slate-500 dark:text-[var(--color-text-muted)] text-[10px] font-medium">
+                {Object.keys(relevance).length > 0
+                  ? lang === 'es'
+                    ? `${Object.keys(relevance).length} en foco`
+                    : `${Object.keys(relevance).length} in focus`
+                  : lang === 'es'
+                    ? 'sin datos recientes'
+                    : 'no recent data'}
+              </span>
+            </h4>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span
+                className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]"
+                title={lang === 'es'
+                  ? 'Los grupos se tiñen según tus mediciones recientes y los ejercicios que has registrado'
+                  : 'Groups are tinted from your recent measurements and the exercises you have logged'}
+              >
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-sky-500" />
+                  {lang === 'es' ? 'Medida' : 'Measured'}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  {lang === 'es' ? 'Entrenado' : 'Trained'}
+                </span>
+              </span>
+              <button
+                onClick={resetGroups}
+                disabled={hiddenGroups.size === 0 && activeGroup === null}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-[var(--color-surface)] text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 dark:hover:bg-[var(--color-surface-elevated)] disabled:opacity-40 transition-colors"
+              >
+                {lang === 'es' ? 'Ver todo' : 'Show all'}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            {MUSCLE_GROUPS.filter((g) => (groupStats[g.id] ?? 0) > 0).map((g) => {
+              const count = groupStats[g.id] ?? 0;
+              const hidden = hiddenGroups.has(g.id);
+              const active = activeGroup === g.id;
+              const rel = relevance[g.id];
+              const top = rel?.sources[0];
+              const detail = rel
+                ? rel.sources.slice(0, 3).map((s) => s.label[lang]).join(' · ')
+                : '';
+              return (
+                <div
+                  key={g.id}
+                  className={`flex items-center gap-1 rounded-xl border pr-1 transition-all ${
+                    active
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
+                      : 'border-slate-200 dark:border-[var(--color-border)] bg-slate-50 dark:bg-[var(--color-input-bg)]'
+                  } ${hidden ? 'opacity-55' : ''}`}
+                >
+                  <button
+                    onClick={() => selectGroup(g.id)}
+                    className="flex-1 min-w-0 text-left pl-2.5 py-1.5"
+                    title={
+                      (detail ? `${detail} — ` : '') +
+                      (lang === 'es' ? 'aislar y enfocar' : 'isolate and focus')
+                    }
+                  >
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      {top && (
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${top.kind === 'training' ? 'bg-amber-500' : 'bg-sky-500'}`}
+                        />
+                      )}
+                      <span className="text-xs font-semibold text-slate-700 dark:text-[var(--color-text)] truncate">
+                        {g.label[lang]}
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-[var(--color-text-muted)] tabular-nums">
+                        {count}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => toggleGroupHidden(g.id)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-[var(--color-text-muted)] dark:hover:text-[var(--color-text)] hover:bg-white dark:hover:bg-[var(--color-surface-elevated)] transition-colors"
+                    title={hidden
+                      ? (lang === 'es' ? 'Mostrar grupo' : 'Show group')
+                      : (lang === 'es' ? 'Ocultar grupo' : 'Hide group')}
+                    aria-label={hidden
+                      ? (lang === 'es' ? `Mostrar ${g.label.es}` : `Show ${g.label.en}`)
+                      : (lang === 'es' ? `Ocultar ${g.label.es}` : `Hide ${g.label.en}`)}
+                    aria-pressed={!hidden}
+                  >
+                    {hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -906,7 +1118,7 @@ export default function BodyViewer3D({ width = 600, height = 700 }: BodyViewer3D
 
       {/* Model Measurements Panel */}
       {modelMeasurements && (
-        <div className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-transparent">
+        <div className="bl-card p-4 ">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-700 dark:text-[var(--color-text)]">
               {lang === 'es' ? 'Medidas del Modelo' : 'Model Measurements'}

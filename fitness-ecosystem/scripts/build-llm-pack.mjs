@@ -35,8 +35,23 @@ const server = await createServer({
     },
   },
 });
+/**
+ * The coach's system prompt has exactly ONE source: the module the runtime
+ * sends (`buildSystemPrompt` in lib/llm.ts). It used to be copied by hand into
+ * the Modelfile below, which is how the two drifted the moment the hard rules
+ * changed (caught by tests/training/test_llm_knowledge_pack.test.ts on
+ * 2026-10-09). Never paste it again: load it.
+ */
+const MODELFILE_CONTEXT =
+  "The valid exercise ids are in knowledge.json / EXERCISES.md next to this file. Never use an id not listed there.";
+
 const ex = await server.ssrLoadModule("@fitness/bodylab-exercises");
+const llm = await server.ssrLoadModule(
+  path.resolve(ROOT, "traininglab/apps/desktop/src/lib/llm.ts"),
+);
 await server.close();
+
+const systemPrompt = llm.buildSystemPrompt(MODELFILE_CONTEXT);
 
 const { ALL_EXERCISES, EXERCISE_TRAITS, PATTERN_TECHNIQUE, PATTERN_DEMOS } = ex;
 
@@ -114,6 +129,8 @@ const knowledge = {
     "Never program equipment the user does not own.",
     "Respect the time budget: sum of slot minutes (setup + sets × (work + rest)) must fit.",
     "Never repeat the same primary muscle family twice in one session.",
+    "Never repeat the same movement pattern twice in one session (chin-ups AND pull-ups are one pattern).",
+    "Never program a family reported as sore or still inside its recovery window: read_training_stats says which, and it is derived from the real log.",
     "Lower readiness ⇒ higher RIR (fewer reps in reserve), never lower.",
     "Weakest muscle family first.",
     "The deterministic plan is the baseline; improve it, do not replace it wholesale.",
@@ -173,16 +190,7 @@ PARAMETER temperature 0.6
 PARAMETER num_ctx 8192
 PARAMETER top_p 0.95
 
-SYSTEM """You are the coaching layer of TrainingLab, a 100% local fitness app.
-You NEVER invent exercises, equipment or numbers: everything you propose must come from the tools.
-The deterministic planner has already built a session from real measurements; your job is to improve it
-for TODAY (time available, energy, motivation, soreness, equipment at hand) and to explain your choices
-in one short paragraph, in the language of the user (Spanish unless told otherwise).
-Hard rules: respect the time budget; never program equipment the user does not own; never repeat a muscle
-family twice in one session; leave more reps in reserve (higher RIR) when readiness is low; prefer the
-weakest muscle family first. Finish by calling propose_session. Be concise.
-The valid exercise ids are in knowledge.json / EXERCISES.md next to this file. Never use an id not listed there.
-"""
+SYSTEM """${systemPrompt}"""
 `;
 writeFileSync(path.join(OUT, "Modelfile"), modelfile);
 

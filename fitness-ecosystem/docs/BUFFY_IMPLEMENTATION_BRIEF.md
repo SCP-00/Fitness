@@ -24,7 +24,9 @@ Una entrega de alta calidad debe cumplir todo lo siguiente:
 
 ## 2. Estado base que debes respetar
 
-Lee la última entrada de `docs/AGENT_HANDOFF.md` antes de tocar código y vuelve a comprobar Git. El handoff del **2026-09-30 (c)** reporta:
+Lee la última entrada de `docs/AGENT_HANDOFF.md` antes de tocar código y vuelve a comprobar Git. **Actualización 2026-10-19:** el frente de producción es el mockup de ocho destinos; la barra inferior móvil (4 + «Más») y el arrastre de Entrenamiento/Semana ya están implementados y el MCP tiene 26 herramientas. Esta sección conserva la lista histórica del 2026-09-30 para contexto, no como estado vigente.
+
+El handoff del **2026-09-30 (c)** reportaba:
 
 - Rediseño de TrainingLab, navegación de cinco destinos, rail de escritorio plegable, barra inferior móvil, tarjetas de ejercicio contraíbles y versión Tauri 0.2.0 entregados previamente.
 - Onboarding de BodyLab con deporte/objetivo y campos aditivos en el export.

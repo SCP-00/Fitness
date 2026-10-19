@@ -131,6 +131,7 @@ export type SessionAdvisoryCode =
   | "volume_capped"
   | "cardio_no_room"
   | "cardio_no_gear"
+  | "pattern_dedup"
   | "fatigued_all";
 
 export interface SessionAdvisory {
@@ -185,7 +186,13 @@ const LEVEL_DOSE: Record<
   advanced: { setsPerExercise: 4, maxSets: 24 },
 };
 
-const GOAL_REPS: Record<
+/**
+ * Rep ranges per goal and movement type. Exported because the coach surface (the
+ * local MCP server) must quote the SAME range the session builder prescribes — a
+ * second copy of this table is how a progression verdict ends up contradicting
+ * the plan it belongs to.
+ */
+export const GOAL_REPS: Record<
   SessionGoal,
   { compound: [number, number]; isolation: [number, number] }
 > = {
@@ -469,6 +476,11 @@ export function buildSession(input: BuildSessionInput): BuiltSession {
 
   const tryAdd = (c: Candidate, extraReasons: SessionReason[]): boolean => {
     if (chosen.has(c.entry.id)) return false;
+    // One slot per movement pattern: two chin-ups and pull-ups in the same
+    // session are the same vertical pull twice, and for a beginner on a bar
+    // that is a double dose to lat/biceps/forearm AND to the skin of the
+    // hands (blisters), which is exactly the prescription this rule exists to
+    // prevent (owner report, 2026-10-09).
     const sets = setsFor(c);
     const cost = costOf(c, sets);
     if (totalSets + sets > maxSets || minutes + cost > timeBudgetMin)
@@ -520,10 +532,16 @@ export function buildSession(input: BuildSessionInput): BuiltSession {
 
   // Pass 2 — fill with the best remaining candidates until budget or dose cap.
   const skipped: string[] = [];
+  /** Candidates dropped only because their movement pattern was already in. */
+  const duplicates: string[] = [];
   let blockedBySets = false;
   let blockedByTime = false;
   for (const c of candidates) {
     if (chosen.has(c.entry.id)) continue;
+    if (usedPatterns.has(c.entry.pattern)) {
+      duplicates.push(c.entry.id);
+      continue;
+    }
     const sets = setsFor(c);
     if (totalSets + sets > maxSets) {
       blockedBySets = true;
@@ -540,6 +558,12 @@ export function buildSession(input: BuildSessionInput): BuiltSession {
 
   if (blockedBySets)
     advisories.push({ code: "volume_capped", n: maxSets, level });
+  if (duplicates.length > 0)
+    advisories.push({
+      code: "pattern_dedup",
+      ids: duplicates.slice(0, 3),
+      n: duplicates.length,
+    });
   if (blockedByTime)
     advisories.push({
       code: "left_out",

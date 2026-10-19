@@ -89,7 +89,7 @@ export default function MuscleDetailPanel({ muscleId, onClose }: MuscleDetailPan
   if (!muscleData) return null;
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl shadow-sm border border-[var(--color-border-card)] dark:border-transparent overflow-hidden">
+    <div className=" bl-card overflow-hidden">
       {/* Header with score */}
       <div className="p-5 border-b border-[var(--color-border)] dark:border-[var(--color-border)]">
         <div className="flex items-start justify-between">

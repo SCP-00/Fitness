@@ -5,7 +5,7 @@ generator. This package is the mathematical half of the future TrainingLab
 app — the UI half will be a separate app that *consumes* this package plus
 BodyLab's export v2.
 
-**Read `docs/TRAININGLAB_UI_PLAN.md` first for the product vision.** This file is
+**Read `docs/REDESIGN_STORM.md` first for the product vision (and `docs/MCP_TOOL_SURFACE.md` for how models may write).** This file is
 the package's working contract.
 
 ## The one rule that rules them all

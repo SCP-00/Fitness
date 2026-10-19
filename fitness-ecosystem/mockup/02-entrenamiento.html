@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Entrenamiento del día</title>
+<link rel="stylesheet" href="css/tl.css" />
+<style>
+  /* The day plan is a 3-column screen: plan · why · add. */
+  .plan-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) 320px 400px;
+    gap: 18px; align-items: start;
+  }
+  .plan-head { display: flex; align-items: center; gap: 12px; padding: 4px 0 0; }
+  .plan-head h1 { margin: 0; font-size: 26px; letter-spacing: -0.6px; }
+  .plan-head .sub { color: var(--tl-text-muted); font-size: 12.5px; margin-top: 2px; }
+
+  .plan-list { display: flex; flex-direction: column; gap: 10px; }
+  .plan-row {
+    display: grid; grid-template-columns: 18px 20px 66px minmax(0, 1fr) auto;
+    gap: 12px; align-items: center;
+    border: 1px solid var(--tl-border); border-radius: var(--radius);
+    background: linear-gradient(180deg, #12181e, var(--tl-surface));
+    padding: 12px 14px; transition: border-color 120ms, opacity 120ms;
+  }
+  .plan-row:hover { border-color: var(--tl-border-strong); }
+  .plan-row.is-dragging { opacity: 0.45; border-style: dashed; }
+  .plan-row.is-over { border-color: var(--tl-accent); box-shadow: 0 0 0 2px var(--tl-accent-wash); }
+  .plan-grip { color: var(--tl-text-muted); cursor: grab; display: grid; place-items: center; }
+  .plan-grip:active { cursor: grabbing; }
+  .plan-idx { color: var(--tl-text-muted); font-weight: 700; text-align: center; }
+  .plan-thumb { width: 66px; height: 48px; border-radius: 9px; overflow: hidden; border: 1px solid var(--tl-border); background: var(--tl-surface-3); }
+  .plan-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .plan-name { font-weight: 700; font-size: 13.5px; }
+  .plan-rx { color: var(--tl-text-secondary); font-size: 12px; margin-top: 1px; }
+  .plan-gear { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .plan-gear .tag { background: var(--tl-surface-2); }
+  .plan-actions { display: flex; align-items: center; gap: 2px; }
+  .plan-action {
+    display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 8px;
+    color: var(--tl-text-muted); font-size: 11px; font-weight: 600;
+  }
+  .plan-action:hover { background: var(--tl-surface-2); color: var(--tl-text); }
+  .plan-action .icon { width: 14px; height: 14px; }
+  .plan-action.start { color: var(--tl-on-accent); background: var(--tl-accent); }
+  .plan-action.start:hover { filter: brightness(1.08); color: var(--tl-on-accent); }
+
+  .group-head {
+    display: flex; align-items: center; gap: 9px; margin: 16px 0 8px;
+    color: var(--tl-text-secondary); font-weight: 700; font-size: 12.5px;
+  }
+  .group-head .icon { width: 16px; height: 16px; color: var(--tl-accent); }
+  .group-head span.n { color: var(--tl-text-muted); font-weight: 500; }
+
+  .footbar {
+    display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+    border: 1px solid var(--tl-border); border-radius: var(--radius);
+    background: var(--tl-surface); position: sticky; bottom: 12px;
+  }
+  .footbar .bar { flex: 1; }
+
+  .why-row { display: flex; gap: 11px; padding: 9px 0; align-items: flex-start; }
+  .why-row .icon { width: 17px; height: 17px; flex: none; color: var(--tl-accent); margin-top: 2px; }
+  .why-row b { display: block; font-size: 12.5px; }
+  .why-row span { font-size: 11.5px; color: var(--tl-text-muted); }
+  .num-row { display: flex; align-items: center; gap: 9px; padding: 5px 0; color: var(--tl-text-secondary); font-size: 12.5px; }
+  .num-row .icon { width: 15px; height: 15px; color: var(--tl-text-muted); }
+  .num-row b { margin-left: auto; color: var(--tl-text); }
+
+  .add-row {
+    display: grid; grid-template-columns: 22px 20px 54px minmax(0, 1fr) 30px;
+    gap: 10px; align-items: center; padding: 9px 0;
+    border-bottom: 1px solid rgba(41,49,58,.55);
+  }
+  .add-row:last-of-type { border-bottom: none; }
+  .add-thumb { width: 54px; height: 40px; border-radius: 8px; overflow: hidden; border: 1px solid var(--tl-border); background: var(--tl-surface-3); }
+  .add-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .add-name { font-weight: 600; font-size: 12.5px; }
+  .add-rx { color: var(--tl-text-muted); font-size: 11px; }
+  .add-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .add-form .field { padding: 8px 10px; }
+  .add-form select, .add-form input {
+    width: 100%; background: transparent; border: none; outline: none; color: var(--tl-text);
+    font-size: 15px; font-weight: 700; padding: 0;
+  }
+
+  @media (max-width: 1500px) { .plan-grid { grid-template-columns: minmax(0,1fr) 300px; } .plan-grid > .add-drawer { grid-column: 1 / -1; } }
+  @media (max-width: 1180px) { .plan-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body data-page="entrenamiento">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="pill"><i data-icon="calendar"></i> Sábado, 7 de junio de 2025 <i data-icon="chevronDown"></i></button>
+      <div class="spacer"></div>
+      <div class="seg" data-switch="lugar">
+        <button class="seg-item" data-value="casa"><i data-icon="home"></i>Casa</button>
+        <button class="seg-item is-active" data-value="gym"><i data-icon="dumbbell"></i>Gym</button>
+        <button class="seg-item" data-value="parque"><i data-icon="wind"></i>Parque</button>
+      </div>
+      <div class="spacer"></div>
+      <span class="pill"><i data-icon="gauge"></i>Estás en tu plan de fuerza</span>
+      <span class="rail-logo" style="width:32px;height:32px;border-radius:50%;background:var(--tl-surface-3);color:var(--tl-text-secondary)"><i data-icon="users"></i></span>
+    </header>
+
+    <div class="content">
+      <div class="plan-grid">
+        <!-- ══ 1 · THE PLAN ═════════════════════════════════════════════════ -->
+        <div class="stack">
+          <div class="plan-head">
+            <i data-icon="target" style="width:28px;height:28px;color:var(--tl-accent)"></i>
+            <div>
+              <h1>Entrenamiento del día</h1>
+              <div class="sub">Piernas + Trapecios · 57 min · 6 ejercicios · 22 series</div>
+            </div>
+          </div>
+
+          <!-- How to order the list: mine, by machine, by muscle -->
+          <div class="seg" data-switch="orden" style="align-self:flex-start">
+            <button class="seg-item is-active" data-value="mio"><i data-icon="move"></i>Mi orden</button>
+            <button class="seg-item" data-value="equipo"><i data-icon="dumbbell"></i>Por equipamiento</button>
+            <button class="seg-item" data-value="musculo"><i data-icon="users"></i>Por músculo</button>
+          </div>
+
+          <div class="plan-list" data-drop="list" data-renumber>
+            <article class="plan-row" data-drag="1">
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="plan-idx">1</span>
+              <span class="plan-thumb" data-media="goblet-squat"></span>
+              <span>
+                <span class="plan-name">Sentadilla Copa</span>
+                <span class="plan-rx">4 × 8–12 · RIR 2 · 120 s de descanso</span>
+                <span class="plan-gear"><span class="tag"><i data-icon="dumbbell"></i>Mancuernas 24 kg</span><span class="tag"><i data-icon="layers"></i>Banco</span></span>
+              </span>
+              <span class="plan-actions">
+                <a class="plan-action start" href="03-sesion.html"><i data-icon="play"></i>Empezar</a>
+                <button class="plan-action" data-move="up"><i data-icon="arrowUp"></i>Subir</button>
+                <button class="plan-action" data-move="down"><i data-icon="arrowDown"></i>Bajar</button>
+                <button class="plan-action"><i data-icon="repeat"></i>Cambiar</button>
+                <button class="plan-action"><i data-icon="trash"></i>Quitar</button>
+              </span>
+            </article>
+
+            <article class="plan-row" data-drag="2">
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="plan-idx">2</span>
+              <span class="plan-thumb" data-media="hip-thrust"></span>
+              <span>
+                <span class="plan-name">Empuje de Cadera con Barra</span>
+                <span class="plan-rx">4 × 8–12 · RIR 2 · 120 s de descanso</span>
+                <span class="plan-gear"><span class="tag"><i data-icon="dumbbell"></i>Barra</span><span class="tag"><i data-icon="layers"></i>Banco</span></span>
+              </span>
+              <span class="plan-actions">
+                <a class="plan-action start" href="03-sesion.html"><i data-icon="play"></i>Empezar</a>
+                <button class="plan-action" data-move="up"><i data-icon="arrowUp"></i>Subir</button>
+                <button class="plan-action" data-move="down"><i data-icon="arrowDown"></i>Bajar</button>
+                <button class="plan-action"><i data-icon="repeat"></i>Cambiar</button>
+                <button class="plan-action"><i data-icon="trash"></i>Quitar</button>
+              </span>
+            </article>
+
+            <article class="plan-row" data-drag="3">
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="plan-idx">3</span>
+              <span class="plan-thumb" data-media="leg-press"></span>
+              <span>
+                <span class="plan-name">Prensa de Piernas</span>
+                <span class="plan-rx">4 × 10–12 · RIR 2 · 120 s de descanso</span>
+                <span class="plan-gear"><span class="tag"><i data-icon="layers"></i>Máquina de Prensa</span></span>
+              </span>
+              <span class="plan-actions">
+                <a class="plan-action start" href="03-sesion.html"><i data-icon="play"></i>Empezar</a>
+                <button class="plan-action" data-move="up"><i data-icon="arrowUp"></i>Subir</button>
+                <button class="plan-action" data-move="down"><i data-icon="arrowDown"></i>Bajar</button>
+                <button class="plan-action"><i data-icon="repeat"></i>Cambiar</button>
+                <button class="plan-action"><i data-icon="trash"></i>Quitar</button>
+              </span>
+            </article>
+
+            <article class="plan-row" data-drag="4">
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="plan-idx">4</span>
+              <span class="plan-thumb" data-media="lunges"></span>
+              <span>
+                <span class="plan-name">Zancadas Caminando</span>
+                <span class="plan-rx">3 × 10–12 · RIR 2 · 90 s de descanso</span>
+                <span class="plan-gear"><span class="tag"><i data-icon="dumbbell"></i>Mancuernas 24 kg</span></span>
+              </span>
+              <span class="plan-actions">
+                <a class="plan-action start" href="03-sesion.html"><i data-icon="play"></i>Empezar</a>
+                <button class="plan-action" data-move="up"><i data-icon="arrowUp"></i>Subir</button>
+                <button class="plan-action" data-move="down"><i data-icon="arrowDown"></i>Bajar</button>
+                <button class="plan-action"><i data-icon="repeat"></i>Cambiar</button>
+                <button class="plan-action"><i data-icon="trash"></i>Quitar</button>
+              </span>
+            </article>
+
+            <article class="plan-row" data-drag="5">
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="plan-idx">5</span>
+              <span class="plan-thumb" data-media="calf-raises"></span>
+              <span>
+                <span class="plan-name">Elevación de Talones de Pie</span>
+                <span class="plan-rx">4 × 12–15 · RIR 2 · 60 s de descanso</span>
+                <span class="plan-gear"><span class="tag"><i data-icon="layers"></i>Máquina de Elevación</span></span>
+              </span>
+              <span class="plan-actions">
+                <a class="plan-action start" href="03-sesion.html"><i data-icon="play"></i>Empezar</a>
+                <button class="plan-action" data-move="up"><i data-icon="arrowUp"></i>Subir</button>
+                <button class="plan-action" data-move="down"><i data-icon="arrowDown"></i>Bajar</button>
+                <button class="plan-action"><i data-icon="repeat"></i>Cambiar</button>
+                <button class="plan-action"><i data-icon="trash"></i>Quitar</button>
+              </span>
+            </article>
+
+            <article class="plan-row" data-drag="6">
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="plan-idx">6</span>
+              <span class="plan-thumb" data-media="dumbbell-shrugs"></span>
+              <span>
+                <span class="plan-name">Encogimientos con Mancuernas</span>
+                <span class="plan-rx">3 × 10–12 · RIR 2 · 90 s de descanso</span>
+                <span class="plan-gear"><span class="tag"><i data-icon="dumbbell"></i>Mancuernas 24 kg</span></span>
+              </span>
+              <span class="plan-actions">
+                <a class="plan-action start" href="03-sesion.html"><i data-icon="play"></i>Empezar</a>
+                <button class="plan-action" data-move="up"><i data-icon="arrowUp"></i>Subir</button>
+                <button class="plan-action" data-move="down"><i data-icon="arrowDown"></i>Bajar</button>
+                <button class="plan-action"><i data-icon="repeat"></i>Cambiar</button>
+                <button class="plan-action"><i data-icon="trash"></i>Quitar</button>
+              </span>
+            </article>
+          </div>
+
+          <div class="row" style="gap:10px">
+            <button class="btn btn-lg" style="flex:1"><i data-icon="plus"></i>Añadir ejercicio</button>
+            <button class="btn btn-lg" style="flex:1"><i data-icon="list"></i>Desde mi rutina</button>
+          </div>
+
+          <!-- Same list, grouped by machine: what you need to walk in with -->
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:4px"><i data-icon="layers"></i>Agrupado por equipamiento</h2>
+            <p class="tiny muted" style="margin:0 0 4px">
+              Para saber dónde empezar cuando una máquina está ocupada.
+            </p>
+
+            <div class="group-head"><i data-icon="dumbbell"></i>Mancuernas 24 kg <span class="n">· 3 ejercicios</span></div>
+            <div class="row-wrap">
+              <span class="tag"><i data-icon="layers"></i>Sentadilla Copa</span>
+              <span class="tag"><i data-icon="layers"></i>Zancadas Caminando</span>
+              <span class="tag"><i data-icon="layers"></i>Encogimientos con Mancuernas</span>
+            </div>
+
+            <div class="group-head"><i data-icon="dumbbell"></i>Barra <span class="n">· 1 ejercicio</span></div>
+            <div class="row-wrap"><span class="tag"><i data-icon="layers"></i>Empuje de Cadera con Barra</span></div>
+
+            <div class="group-head"><i data-icon="layers"></i>Máquinas <span class="n">· 2 ejercicios</span></div>
+            <div class="row-wrap">
+              <span class="tag"><i data-icon="layers"></i>Prensa de Piernas</span>
+              <span class="tag"><i data-icon="layers"></i>Elevación de Talones de Pie</span>
+            </div>
+
+            <div class="warn-strip" style="margin-top:14px">
+              <i data-icon="alert"></i>
+              <span>Si el banco está ocupado, empieza por la <b>Prensa de Piernas</b>: no necesita banco.</span>
+            </div>
+          </section>
+
+          <div class="footbar">
+            <span class="small secondary"><b>180 min</b> de 60</span>
+            <div class="bar"><i style="width:95%"></i></div>
+            <span class="tiny muted">6 ejercicios · 22 series · sin pantorrilla</span>
+          </div>
+        </div>
+
+        <!-- ══ 2 · WHY THIS SELECTION ════════════════════════════════════════ -->
+        <div class="stack">
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:4px">¿Por qué estos?</h2>
+            <p class="tiny muted" style="margin:0 0 8px">Esta selección la hace el sistema con base en:</p>
+
+            <div class="why-row"><i data-icon="target"></i><span><b>Tus objetivos</b><span>Fuerza + Hipertrofia</span></span></div>
+            <div class="why-row"><i data-icon="bars"></i><span><b>Tu nivel</b><span>Intermedio</span></span></div>
+            <div class="why-row"><i data-icon="dumbbell"></i><span><b>Tu disponibilidad</b><span>Mancuernas, banco, barra</span></span></div>
+            <div class="why-row"><i data-icon="clock"></i><span><b>Ventana de recuperación</b><span>54 h (grupo principal)</span></span></div>
+            <div class="why-row"><i data-icon="trendingUp"></i><span><b>Volumen objetivo</b><span>18–24 series (hoy)</span></span></div>
+            <div class="why-row"><i data-icon="shield" data-icon-class=""></i><span><b>RIR objetivo</b><span>1–2 (compuesto) · 2–3 (aislado)</span></span></div>
+
+            <div class="divider" style="margin:12px 0"></div>
+            <div class="small bold secondary" style="margin-bottom:6px">En números</div>
+            <div class="num-row"><i data-icon="bars"></i>Ejercicios<b>6</b></div>
+            <div class="num-row"><i data-icon="list"></i>Series totales<b>22</b></div>
+            <div class="num-row"><i data-icon="clock"></i>Duración estimada<b>57 min</b></div>
+            <div class="num-row"><i data-icon="trendingUp"></i>Volumen<b>+8.400 kg</b></div>
+
+            <div class="warn-strip" style="margin-top:12px;border-color:var(--tl-border);background:var(--tl-surface-2);color:var(--tl-text-secondary)">
+              <i data-icon="lightbulb" style="color:var(--tl-warning)"></i>
+              <span class="tiny">
+                <b>Tip.</b> Si terminas muy fuerte, mantén el RIR en 2. Si te quedas corto,
+                sube 2–5 % el peso la próxima semana.
+              </span>
+            </div>
+          </section>
+        </div>
+
+        <!-- ══ 3 · ADD MANY (the drawer, open) ══════════════════════════════ -->
+        <section class="card add-drawer" style="position:sticky;top:88px">
+          <div class="card-head">
+            <h2 class="card-title" style="font-size:17px">Añadir varios</h2>
+            <div class="spacer"></div>
+            <button class="icon-btn"><i data-icon="x"></i></button>
+          </div>
+          <div class="card-body" style="padding-top:0">
+            <p class="tiny muted" style="margin:0 0 8px">
+              Selecciona varios ejercicios para agregarlos de una vez y ajusta la prescripción común.
+            </p>
+            <div class="row" style="gap:8px;padding-bottom:8px;border-bottom:1px solid var(--tl-border)">
+              <span class="checkbox is-on"><i data-icon="check"></i></span>
+              <span class="small bold">Seleccionar todo (4)</span>
+              <div class="spacer"></div>
+              <span class="tiny muted">del equipamiento disponible</span>
+            </div>
+
+            <div class="add-row">
+              <span class="checkbox is-on"><i data-icon="check"></i></span>
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="add-thumb" data-media="hip-thrust"></span>
+              <span><span class="add-name">Empuje de Cadera con Barra</span><span class="add-rx">4 × 8–12 · RIR 2 · 120 s</span></span>
+              <button class="icon-btn"><i data-icon="trash"></i></button>
+            </div>
+            <div class="add-row">
+              <span class="checkbox is-on"><i data-icon="check"></i></span>
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="add-thumb" data-media="leg-press"></span>
+              <span><span class="add-name">Prensa de Piernas</span><span class="add-rx">4 × 10–12 · RIR 2 · 120 s</span></span>
+              <button class="icon-btn"><i data-icon="trash"></i></button>
+            </div>
+            <div class="add-row">
+              <span class="checkbox is-on"><i data-icon="check"></i></span>
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="add-thumb" data-media="pull-ups"></span>
+              <span><span class="add-name">Dominadas</span><span class="add-rx">4 × 8–12 · RIR 2 · 120 s</span></span>
+              <button class="icon-btn"><i data-icon="trash"></i></button>
+            </div>
+            <div class="add-row">
+              <span class="checkbox"><i data-icon="check"></i></span>
+              <span class="plan-grip"><i data-icon="grip"></i></span>
+              <span class="add-thumb" data-media="lunges"></span>
+              <span><span class="add-name">Zancadas Caminando</span><span class="add-rx">3 × 10–12 · RIR 2 · 90 s</span></span>
+              <button class="icon-btn"><i data-icon="trash"></i></button>
+            </div>
+
+            <div class="divider" style="margin:14px 0"></div>
+            <div class="small bold" style="margin-bottom:8px">Aplicar a los 3 seleccionados</div>
+            <div class="add-form">
+              <div class="field"><div class="field-label">Series</div><select><option>3</option><option>4</option><option>5</option></select></div>
+              <div class="field"><div class="field-label">Reps</div><select><option>10–12</option><option>8–12</option><option>12–15</option></select></div>
+              <div class="field"><div class="field-label">Descanso</div><select><option>90 s</option><option>120 s</option><option>60 s</option></select></div>
+            </div>
+
+            <div class="field" style="margin-top:10px">
+              <div class="field-label">Equipamiento (opcional)</div>
+              <select><option>Mancuernas 24 kg</option><option>Barra</option><option>Máquina</option><option>Peso corporal</option></select>
+            </div>
+
+            <button class="btn btn-primary btn-xl" style="margin-top:14px"><i data-icon="check"></i>Aplicar</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

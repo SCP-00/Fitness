@@ -148,7 +148,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="bl-page bl-page--narrow space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl leading-8 sm:text-[28px] sm:leading-9 font-bold text-slate-900 dark:text-[var(--color-text)]">
@@ -160,7 +160,7 @@ export default function Settings() {
       </div>
 
       {/* Profile Card */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+      <div className="bl-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <User className="w-5 h-5 text-slate-400" />
           <h2 className="text-lg font-semibold">{t("settings.profile")}</h2>
@@ -310,7 +310,7 @@ export default function Settings() {
       </div>
 
       {/* Language — neutral active state */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+      <div className="bl-card p-6">
         <div className="flex items-center gap-3 mb-4">
           <Globe className="w-5 h-5 text-slate-400" />
           <h2 className="text-lg font-semibold">{t("settings.language")}</h2>
@@ -340,7 +340,7 @@ export default function Settings() {
       </div>
 
       {/* Units — neutral active state */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+      <div className="bl-card p-6">
         <div className="flex items-center gap-3 mb-4">
           <Ruler className="w-5 h-5 text-slate-400" />
           <h2 className="text-lg font-semibold">{t("settings.units")}</h2>
@@ -373,7 +373,7 @@ export default function Settings() {
       </div>
 
       {/* Software updates — desktop only, opt-in, never automatic (§privacy) */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent">
+      <div className="bl-card p-6">
         <div className="flex items-center gap-3 mb-4">
           <ShieldCheck className="w-5 h-5 text-slate-400" />
           <h2 className="text-lg font-semibold">{t("settings.updates")}</h2>
@@ -449,7 +449,7 @@ export default function Settings() {
       <MobileTestingCard />
 
       {/* Reference redirect */}
-      <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-transparent">
+      <div className="bl-card p-6">
         <p className="text-sm text-slate-500 dark:text-[var(--color-text-muted)]">
           {state.language === "es"
             ? "Gestiona tus perfiles de referencia en"

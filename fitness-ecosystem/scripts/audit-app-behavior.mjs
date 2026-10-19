@@ -269,57 +269,27 @@ async function seedTraininglab(page, { withHistory = true } = {}) {
   await page.evaluate(
     ({ settings, payload, history }) =>
       new Promise((resolve, reject) => {
-        const req = (window.__dbSeedReq = indexedDB.open("traininglab", 1));
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains("meta"))
-            db.createObjectStore("meta", { keyPath: "id" });
-          if (!db.objectStoreNames.contains("sets"))
-            db.createObjectStore("sets", { keyPath: "id" });
-          if (!db.objectStoreNames.contains("sessions"))
-            db.createObjectStore("sessions", { keyPath: "id" });
-        };
-        req.onerror = () => {
-          delete window.__dbSeedReq;
-          reject(req.error || new Error("IDB open error"));
-        };
-        req.onblocked = () => {
-          delete window.__dbSeedReq;
-          reject(new Error("IDB open blocked"));
-        };
+        const req = indexedDB.open("traininglab");
+        req.onerror = () => reject(req.error);
         req.onsuccess = () => {
           const db = req.result;
-          try {
-            const tx = db.transaction(["meta", "sets"], "readwrite");
-            const meta = tx.objectStore("meta");
-            meta.put({ id: "settings", value: settings });
-            meta.put({ id: "payload", value: payload });
-            meta.put({
-              id: "readiness",
-              value: {
-                date: new Date().toISOString().slice(0, 10),
-                readiness: { energy: 4, motivation: 4, soreness: 3 },
-              },
-            });
-            if (history) {
-              const sets = tx.objectStore("sets");
-              for (const s of history) sets.put(s);
-            }
-            tx.oncomplete = () => {
-              delete window.__dbSeedReq;
-              db.close();
-              resolve(true);
-            };
-            tx.onerror = () => {
-              delete window.__dbSeedReq;
-              db.close();
-              reject(tx.error || new Error("IDB tx error"));
-            };
-          } catch (err) {
-            delete window.__dbSeedReq;
-            db.close();
-            reject(err);
+          const tx = db.transaction(["meta", "sets"], "readwrite");
+          const meta = tx.objectStore("meta");
+          meta.put({ id: "settings", value: settings });
+          meta.put({ id: "payload", value: payload });
+          meta.put({
+            id: "readiness",
+            value: {
+              date: new Date().toISOString().slice(0, 10),
+              readiness: { energy: 4, motivation: 4, soreness: 3 },
+            },
+          });
+          if (history) {
+            const sets = tx.objectStore("sets");
+            for (const s of history) sets.put(s);
           }
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
         };
       }),
     {
@@ -359,30 +329,10 @@ const countSets = (page) =>
   page.evaluate(
     () =>
       new Promise((resolve) => {
-        const req = (window.__dbCountReq = indexedDB.open("traininglab", 1));
-        req.onerror = () => {
-          delete window.__dbCountReq;
-          resolve(0);
-        };
+        const req = indexedDB.open("traininglab");
         req.onsuccess = () => {
-          const db = req.result;
-          try {
-            const c = db.transaction("sets").objectStore("sets").count();
-            c.onsuccess = () => {
-              delete window.__dbCountReq;
-              db.close();
-              resolve(c.result);
-            };
-            c.onerror = () => {
-              delete window.__dbCountReq;
-              db.close();
-              resolve(0);
-            };
-          } catch {
-            delete window.__dbCountReq;
-            db.close();
-            resolve(0);
-          }
+          const c = req.result.transaction("sets").objectStore("sets").count();
+          c.onsuccess = () => resolve(c.result);
         };
       }),
   );
@@ -1432,7 +1382,11 @@ async function traininglabMobile(browser) {
     fail("TL-móvil", "Esfuerzo opcional tiene un control expandible");
   }
 
-  await page.locator(".tl-zen-input").first().focus();
+  // `.tl-zen-input` was renamed to `.tl-zen-step-input`; the stale selector made
+  // this check — and the whole run after it — die on a locator that no longer
+  // exists. `pnpm audit:css` reports that drift for the stylesheet and the
+  // components; the harness is not scanned, so it is fixed by hand here.
+  await page.locator(".tl-zen-step-input").first().focus();
   const focusedActionPosition = await page
     .locator(".tl-zen-actions")
     .evaluate((bar) => getComputedStyle(bar).position);
@@ -1828,7 +1782,6 @@ try {
   await bodylabDesktop(browser);
   await bodylabOnboarding(browser);
 } catch (e) {
-  console.error("AUDIT ERROR STACK:", e.stack);
   fail("audit", "El recorrido se interrumpió", String(e).slice(0, 400));
 } finally {
   await browser.close();

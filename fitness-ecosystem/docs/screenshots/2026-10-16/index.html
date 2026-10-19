@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TrainingLab · capturas 2026-10-16 (datos reales del dueño)</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101216;
+        --card: #171a20;
+        --text: #e7e9ee;
+        --muted: #9aa3af;
+        --accent: #f97316;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 32px 24px 64px;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.5 system-ui,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 4px;
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 28px;
+        max-width: 70ch;
+      }
+      h2 {
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--accent);
+        margin: 36px 0 12px;
+      }
+      .grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      }
+      figure {
+        margin: 0;
+        background: var(--card);
+        border: 1px solid #242832;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      figcaption {
+        padding: 10px 12px;
+        font-size: 12.5px;
+        color: var(--muted);
+        border-top: 1px solid #242832;
+      }
+      figcaption b {
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>TrainingLab · capturas PC 1440 × 900 y móvil 390 × 844</h1>
+    <p class="lead">
+      Tomadas el 2026-10-16 contra el bundle real (<code>vite build</code>, con
+      Historial ya implementado) sembrado con los datos del dueño:
+      <b>Buendia</b>, 28/09/2005 (21 años), 176 cm, 76 kg, sexo masculino, y su
+      registro real importado (<code>owner-training-log.csv</code>: 19 sesiones,
+      442 series, 149 107 kg de volumen, 02/09/2026 → 07/10/2026). Cada captura
+      abre un contexto nuevo, siembra el log por las vías de la app y
+      <b>afirma</b> una cadena visible antes de guardar el PNG.
+    </p>
+    <h2>Escritorio</h2>
+    <div class="grid">
+      <figure>
+        <img src="01-hoy.png" alt="Hoy" />
+        <figcaption>
+          <b>01 · Hoy</b> — solo Hoy: día, reanudar, plan de hoy, enfoque, notas
+          y Estado de hoy.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="03-sesion.png" alt="Sesión" />
+        <figcaption>
+          <b>03 · Sesión (ZEN)</b> — registro serie a serie, demo de técnica,
+          progresión y descanso.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="04-semana.png" alt="Semana" />
+        <figcaption>
+          <b>04 · Semana</b> — 7 días, estrés semanal y edición por día.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="05-ejercicios.png" alt="Ejercicios" />
+        <figcaption>
+          <b>05 · Ejercicios</b> — 151 ejercicios, filtros por familia y equipo.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="05b-ejercicio-detalle.png" alt="Ficha de ejercicio" />
+        <figcaption>
+          <b>05b · Ficha</b> — Guía · Resumen · Rango (deshabilitado) ·
+          Historial.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="07-progreso.png" alt="Progreso" />
+        <figcaption>
+          <b>07 · Progreso</b> — últimos 30 días sobre el log real.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="09-configuracion.png" alt="Configuración" />
+        <figcaption>
+          <b>09 · Configuración</b> — perfil, equipo, tiempo, copias, datos de
+          ejemplo y la nueva <i>Importar historial</i>.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="12-importacion.png" alt="Importar historial" />
+        <figcaption>
+          <b>12 · Importar historial</b> — vista previa sobre el CSV real del
+          dueño: «442 series nuevas de 19 sesiones» y las 18 filas que no se
+          inventan id.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="08-historial.png" alt="Historial" />
+        <figcaption>
+          <b>08 · Historial</b> — sus 19 sesiones cerradas: fecha, series de
+          trabajo, ejercicios, volumen y marcas D/F (la duración solo cuando una
+          fuente la sostiene).
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="02-entrenamiento.png" alt="Entrenamiento (marcador)" />
+        <figcaption>
+          <b>02 · Entrenamiento</b> — destino presente, todavía marcador
+          «Próximamente».
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="06-rutinas.png" alt="Rutinas (marcador)" />
+        <figcaption><b>06 · Rutinas</b> — marcador «Próximamente».</figcaption>
+      </figure>
+    </div>
+    <h2>Móvil</h2>
+    <div class="grid">
+      <figure>
+        <img src="10-hoy-phone.png" alt="Hoy en móvil" />
+        <figcaption>
+          <b>10 · Hoy (390×844)</b> — barra inferior en vez de raíl.
+        </figcaption>
+      </figure>
+      <figure>
+        <img src="11-sesion-phone.png" alt="Sesión en móvil" />
+        <figcaption>
+          <b>11 · Sesión (390×844)</b> — registro con el pulgar.
+        </figcaption>
+      </figure>
+    </div>
+  </body>
+</html>

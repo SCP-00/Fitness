@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Configuración</title>
+<link rel="stylesheet" href="css/tl.css" />
+<style>
+  .set-grid { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 22px; align-items: start; }
+  .set-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 92px; }
+  .set-nav a {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px;
+    color: var(--tl-text-secondary); font-size: 13px; font-weight: 600;
+  }
+  .set-nav a:hover { background: var(--tl-surface-2); color: var(--tl-text); }
+  .set-nav a.is-active { background: var(--tl-accent-wash); color: var(--tl-accent); }
+  .set-nav .icon { width: 17px; height: 17px; }
+  .set-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .set-form .wide { grid-column: 1 / -1; }
+  .gear-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .gear-item {
+    display: flex; align-items: center; gap: 10px; padding: 11px 12px;
+    border: 1px solid var(--tl-border); border-radius: 10px; background: var(--tl-surface);
+    font-size: 12.5px; font-weight: 600;
+  }
+  .gear-item.is-on { border-color: var(--tl-accent-border); background: var(--tl-accent-wash); color: var(--tl-accent-strong); }
+  .switch { width: 42px; height: 24px; border-radius: 999px; background: var(--tl-surface-3); position: relative; flex: none; border: 1px solid var(--tl-border); }
+  .switch i { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--tl-text-muted); }
+  .switch.is-on { background: var(--tl-accent-wash); border-color: var(--tl-accent-border); }
+  .switch.is-on i { left: auto; right: 2px; background: var(--tl-accent); }
+  .set-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid rgba(41,49,58,.55); }
+  .set-row:last-child { border-bottom: none; }
+  .set-row .grow b { display: block; font-size: 13px; }
+  .set-row .grow span { font-size: 11.5px; color: var(--tl-text-muted); }
+  @media (max-width: 1100px) { .set-grid { grid-template-columns: 1fr; } .set-nav { position: static; flex-direction: row; overflow-x: auto; } .set-form, .gear-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-page="ajustes">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Configuración</div>
+        <div class="topbar-sub">Tu perfil, tu equipo y cómo se comporta la app.</div>
+      </div>
+      <div class="spacer"></div>
+      <span class="pill"><i data-icon="clock"></i>Guardado automático</span>
+      <span class="rail-logo" style="width:32px;height:32px;border-radius:50%;background:var(--tl-surface-3);color:var(--tl-text-secondary)"><i data-icon="users"></i></span>
+    </header>
+
+    <div class="content">
+      <div class="set-grid">
+        <nav class="set-nav">
+          <a class="is-active" href="#perfil"><i data-icon="users"></i>Perfil</a>
+          <a href="#meta"><i data-icon="target"></i>Objetivos</a>
+          <a href="#equipo"><i data-icon="dumbbell"></i>Equipo</a>
+          <a href="#prefs"><i data-icon="settings"></i>Preferencias</a>
+          <a href="#coach"><i data-icon="bot"></i>Coach local</a>
+          <a href="#datos"><i data-icon="layers"></i>Datos</a>
+        </nav>
+
+        <div class="stack">
+          <!-- Profile -->
+          <section class="card card-pad" id="perfil">
+            <h2 class="card-title" style="margin-bottom:14px"><i data-icon="users"></i>Perfil</h2>
+            <div class="set-form">
+              <div class="field"><div class="field-label">Nombre</div><input value="Alejandro" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+              <div class="field"><div class="field-label">Sexo (para las referencias)</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px"><option>Hombre</option><option>Mujer</option><option>Prefiero no decirlo</option></select></div>
+              <div class="field"><div class="field-label">Fecha de nacimiento</div><input type="date" value="1998-03-14" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+              <div class="field"><div class="field-label">Altura (cm)</div><input value="178" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+              <div class="field"><div class="field-label">Peso (kg)</div><input value="76,4" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+              <div class="field"><div class="field-label">Unidad de peso</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px"><option>kg</option><option>lb</option></select></div>
+              <p class="wide tiny muted" style="margin:0">
+                La edad se calcula desde la fecha; no se guarda como número aparte.
+              </p>
+            </div>
+          </section>
+
+          <!-- Goals -->
+          <section class="card card-pad" id="meta">
+            <h2 class="card-title" style="margin-bottom:14px"><i data-icon="target"></i>Objetivos</h2>
+            <div class="set-form">
+              <div class="field"><div class="field-label">Objetivo principal</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px"><option>Fuerza + Hipertrofia</option><option>Hipertrofia</option><option>Fuerza</option><option>Resistencia</option><option>Salud general</option></select></div>
+              <div class="field"><div class="field-label">Nivel</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option></select></div>
+              <div class="field"><div class="field-label">Días por semana</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px"><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
+              <div class="field"><div class="field-label">Duración objetivo (min)</div><input value="60" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+              <div class="field"><div class="field-label">RIR objetivo (compuesto)</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px"><option>1–2</option><option>0–1</option><option>2–3</option></select></div>
+              <div class="field"><div class="field-label">RIR objetivo (aislado)</div><select style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px"><option>2–3</option><option>1–2</option><option>0–1</option></select></div>
+            </div>
+          </section>
+
+          <!-- Gear -->
+          <section class="card card-pad" id="equipo">
+            <h2 class="card-title" style="margin-bottom:6px"><i data-icon="dumbbell"></i>Equipo disponible</h2>
+            <p class="tiny muted" style="margin:0 0 12px">
+              El plan nunca te pedirá un ejercicio que este equipo no pueda cargar.
+            </p>
+            <div class="gear-grid">
+              <div class="gear-item is-on"><span class="checkbox is-on"><i data-icon="check"></i></span>Mancuernas 24 kg</div>
+              <div class="gear-item is-on"><span class="checkbox is-on"><i data-icon="check"></i></span>Barra + discos</div>
+              <div class="gear-item is-on"><span class="checkbox is-on"><i data-icon="check"></i></span>Banco ajustable</div>
+              <div class="gear-item is-on"><span class="checkbox is-on"><i data-icon="check"></i></span>Rack de sentadilla</div>
+              <div class="gear-item is-on"><span class="checkbox is-on"><i data-icon="check"></i></span>Barra de dominadas</div>
+              <div class="gear-item is-on"><span class="checkbox is-on"><i data-icon="check"></i></span>Bandas elásticas</div>
+              <div class="gear-item"><span class="checkbox"><i data-icon="check"></i></span>Máquina de poleas</div>
+              <div class="gear-item"><span class="checkbox"><i data-icon="check"></i></span>Kettlebell</div>
+              <div class="gear-item"><span class="checkbox"><i data-icon="check"></i></span>Colchoneta</div>
+            </div>
+          </section>
+
+          <!-- Preferences -->
+          <section class="card card-pad" id="prefs">
+            <h2 class="card-title" style="margin-bottom:6px"><i data-icon="settings"></i>Preferencias</h2>
+            <div class="set-row"><span class="grow"><b>Sonido al terminar la serie</b><span>Tres avisos sintetizados: campana, logro y récord</span></span><span class="switch is-on"><i></i></span></div>
+            <div class="set-row"><span class="grow"><b>Aviso del descanso</b><span>Notificación del sistema cuando acaba el tiempo</span></span><span class="switch is-on"><i></i></span></div>
+            <div class="set-row"><span class="grow"><b>Modo ZEN</b><span>Sesión a pantalla completa, un ejercicio a la vez</span></span><span class="switch is-on"><i></i></span></div>
+            <div class="set-row"><span class="grow"><b>Recordar el lugar</b><span>Casa, gimnasio o parque según la última sesión</span></span><span class="switch"><i></i></span></div>
+            <div class="set-row"><span class="grow"><b>Tema claro</b><span>La app está pensada para el tema oscuro</span></span><span class="switch"><i></i></span></div>
+          </section>
+
+          <!-- Local coach -->
+          <section class="card card-pad" id="coach">
+            <h2 class="card-title" style="margin-bottom:6px"><i data-icon="bot"></i>Coach local (IA)</h2>
+            <p class="tiny muted" style="margin:0 0 12px">
+              Opcional. Habla con un modelo que corre en tu propio ordenador por loopback; la app
+              nunca envía nada a internet. Las reglas y las cuentas las sigue haciendo la app.
+            </p>
+            <div class="set-form">
+              <div class="field wide"><div class="field-label">Dirección del servidor (OpenAI API compatible)</div><input value="http://127.0.0.1:8080/v1" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+              <div class="field"><div class="field-label">Modelo</div><input value="qwen2.5-7b-instruct" style="width:100%;background:transparent;border:none;outline:none;color:var(--tl-text);font-size:14px" /></div>
+              <div class="field"><div class="field-label">Estado</div><span class="row" style="gap:8px;color:var(--tl-success)"><i data-icon="circleCheck" style="width:16px;height:16px"></i><b style="font-size:14px">Conectado</b></span></div>
+            </div>
+            <div class="row" style="gap:10px;margin-top:12px">
+              <button class="btn"><i data-icon="refresh"></i>Probar conexión</button>
+              <button class="btn"><i data-icon="rotate"></i>Cargar el paquete de conocimiento</button>
+            </div>
+            <div class="note-box" style="margin-top:12px">
+              <b class="small">El modelo propone; las cuentas deciden.</b>
+              <p class="tiny muted" style="margin:6px 0 0">
+                Toda propuesta pasa por el validador: equipo, familias musculares, ventana de
+                recuperación y presupuesto de tiempo. Si no cuadra, no llega a la pantalla.
+              </p>
+            </div>
+          </section>
+
+          <!-- Data -->
+          <section class="card card-pad" id="datos">
+            <h2 class="card-title" style="margin-bottom:6px"><i data-icon="layers"></i>Datos y copias de seguridad</h2>
+            <p class="tiny muted" style="margin:0 0 14px">
+              Todo vive en este dispositivo. La copia automática guarda el historial completo fuera
+              del perfil del navegador, junto a la app.
+            </p>
+            <div class="set-row"><span class="grow"><b>Copia de seguridad automática</b><span>Última: hoy 11:09 · 8 copias guardadas</span></span><span class="switch is-on"><i></i></span></div>
+            <div class="row-wrap" style="margin-top:12px;gap:10px">
+              <button class="btn"><i data-icon="arrowDown"></i>Exportar historial (JSON)</button>
+              <button class="btn"><i data-icon="arrowUp"></i>Importar</button>
+              <button class="btn"><i data-icon="refresh"></i>Restaurar mi historial</button>
+              <button class="btn"><i data-icon="arrowDown"></i>Exportar progreso (CSV)</button>
+            </div>
+            <div class="divider" style="margin:16px 0"></div>
+            <div class="set-row"><span class="grow"><b>Acciones de agentes</b><span>Registro de lo que un agente propuso y aplicó, con deshacer</span></span><button class="btn btn-sm">Ver auditoría</button></div>
+            <div class="set-row"><span class="grow" style="color:var(--tl-danger)"><b>Borrar todo el historial</b><span>No se puede deshacer</span></span><button class="btn btn-sm" style="border-color:rgba(255,79,79,.4);color:var(--tl-danger)"><i data-icon="trash"></i>Borrar</button></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

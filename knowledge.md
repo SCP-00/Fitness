@@ -1,210 +1,287 @@
 # Project knowledge
 
-The real codebase lives in **`fitness-ecosystem/`** — a pnpm monorepo ("Fitness Ecosystem"). Run every command from `fitness-ecosystem/` unless noted. Docs and UI copy are **Spanish**; code identifiers/comments are English. Requires Node >=20, pnpm >=9.
-
-Source of truth for architecture: `fitness-ecosystem/docs/ARCHITECTURE.md` (it wins over any conflicting README).
+> Detailed companion to `AGENTS.md` (repository root). Run every command from
+> **`fitness-ecosystem/`** unless noted. Docs and UI copy are **Spanish**; code
+> identifiers and comments are **English**. Node >= 20. Source of truth for
+> architecture: `fitness-ecosystem/docs/ARCHITECTURE.md` (it wins over any README).
+> Owner-facing status: root `ROADMAP.md` + `fitness-ecosystem/docs/AGENT_HANDOFF.md`.
+> Last refreshed: **2026-10-14**.
 
 ## What this is
-Two independent but compatible apps:
-- **BodyLab** — anthropometry, 2D/3D body modeling, anatomy, exercise, and progress tracking (web + Tauri desktop). 100% offline, no accounts/cloud, IndexedDB persistence.
-- **TrainingLab** — the gym-logging half (**built 2026-09-28, redesigned + Tauri 0.2.0 on 2026-09-29**: `traininglab/apps/desktop`, React+Vite+Tailwind, ember-on-charcoal tokens, own i18n/db, modular `app/ui/screens/features/lib`). Five screens behind a hash router; **collapsible 245 px rail** on desktop, bottom tab bar on phones. The session is **time-budgeted** (`core/training/session.ts`): readiness self-report, declared gear inventory, keyboard-first logging, rest timer, swap-by-pattern, load suggestion grounded in the log + PRs + the increment the owned gear allows; **rep ranges are user-overridable per exercise**. Owner direction (2026-09-30): the Progreso heatmap's **primary view compares recorded/estimated lift strength to an external published ideal/reference**; an alternate tag may show logged training exposure/volume. The owner wants sex, height and body weight considered, but each adjustment must be supported by the chosen source/model; do not invent height corrections, muscle-strength proxies, percentiles, or an "ideal" tier. The meaning of ideal is an external published norm (not the golden-ratio measurement preset). Preserve the current anthropometric goal lens as distinct until the owner approves how it fits. See `docs/TRAININGLAB_UI_PLAN.md` §9 and append-only `docs/AGENT_HANDOFF.md`. The BodyLab export v2 is **optional personalisation**, not a prerequisite (the catalog lives in `@fitness/bodylab-exercises`). Local AI: a JEV-class decision model (`core/training/decision.ts`) and an opt-in LLM bridge (`src/lib/llm.ts`, OpenAI-compatible, tool calling, validated proposals). Strategy: `docs/ECOSYSTEM_STRATEGY.md` (**JEV ≠ JEPA**; JEV is TypeSafe AI's commercial typed-decision model, so what we built is a local model *of that class*, never "JEV"). **Mobile (2026-09-28):** both apps are phone-ready and `pnpm lan` (or `LAN Server.bat`) builds and serves both from one port behind a hub page for iPhone testing.
-- **TrainingLab map status:** the muscle-strength norm is still pending; existing map modes are exposure and anthropometric goals. The reported whole-body condition card is a separate feature. Do not infer that the published strength-vs-reference requirement has shipped. Buffy’s task order and acceptance criteria are in `fitness-ecosystem/docs/BUFFY_IMPLEMENTATION_BRIEF.md`.
-- **Feedback in the workout (2026-09-28 c):** `lib/records.ts` (pure PR/completion logic, Epley rounded exactly like BodyLab so the two apps can never disagree about a best) drives `lib/sounds.ts` (three Web-Audio cues synthesised from oscillators — bell on session end, arpeggio when a prescription completes, fanfare on a record; no audio assets to license) and a visible celebration banner. `lib/notifications.ts` raises one Web Notification when the rest countdown ends, which is what makes the timer work with the tab in the background; permission is only asked from an explicit click. The OS-native toast channel still needs the Tauri notification plugin on the Rust side.
 
-Key directories (under `fitness-ecosystem/`):
-- `bodylab/core/<pkg>` — pure TS engine, **never** imports React/Three/Tauri/DOM. Packages: `anthropometry` (McCallum/Venus/Adonis/WHtR/frame/score), `measurements`, `composition`, `references`, `progress`, `validation`, `export`, `analytics` (body age/risk/prediction/correlation), `database` (schema + repository), `conditioning`, `training` (plan/validator/generator + `session.ts` day builder + `decision.ts` local decision model), `exercises` (the shared 94-exercise catalog + equipment/pattern traits).
-- `bodylab/integrations/` — external adapters: `oxihuman` (3D WASM), `musclemapjs` (2D maps), `clad-body` (ISO 8559-1), `z-anatomy` (empty placeholder).
-- `bodylab/packages/contracts` — JSON schemas. The design system is **in-app** (Tailwind tokens in `apps/web/src/index.css`); the orphan `bodylab/packages/ui` was deleted 2026-09-11 (no consumers, no dark mode, duplicated the in-app tokens).
-- `bodylab/apps/web` — React 19 + Vite 8 + Tailwind v4 + three.js. Pages in `src/pages/`, domain logic in `src/lib/` (`store.tsx` Context+useReducer, `db.ts` IndexedDB, `queries.ts`, `constants.ts` re-exports core, `exercises.ts`, `morph-mapper.ts`, `age.ts` (**birthDate is stored, age is derived**), `oxim-parser.ts`, `oxihuman-loader.ts`), components in `src/components/` and `src/features/`.
-- `bodylab/apps/desktop` — **canonical Tauri 2 shell** (`@fitness/bodylab-desktop`, `src-tauri/`). Beta target is an NSIS installer (current: **1.0.0-beta.3**, smoke-tested via `scripts/smoke-desktop.ps1`); wraps the web build, capabilities are `core:default` + `opener` only, data stays in the webview's IndexedDB. (The old `bodylab/apps/web/src-tauri` was removed.) Root launchers: `BodyLab.bat` (prod) / `BodyLab Dev.bat` (dev menu) / `TrainingLab.bat` (serves the web app and opens it). **Desktop shortcuts** (`install-shortcut.ps1`, idempotent) cover both apps and the LAN server, and every one sets an explicit `IconLocation` at `resources/brand/<app>-icon.ico` — the real desktop is `%OneDrive%\Desktop` when OneDrive redirects it.
-- `corpus/` — standalone Vite app (`pnpm --filter corpus dev`, port **5222**) rendering the parametric layered body (skin/fat/muscles/skeleton) from `corpus/public/anatomy/*.glb`. Not part of BodyLab's runtime.
-- `tests/` — extra core test suites (anthropometry, database, data, exercises, training incl. the app-side adapter/decision/LLM bridge tests) plus `tests/adversarial/` (zero-trust analytics + binary-parser attacks; 2 known defects pinned with `it.fails`). `docs/` — specs (`PRODUCT_SPEC`, `ARCHITECTURE`, `UI_DESIGN`, `TRAININGLAB_UI_PLAN`, `TESTING`, `EXERCISE_DATA_AUDIT`, `RESEARCH_FEATURE_VALIDATION`, `ECOSYSTEM_STRATEGY`, `BUFFY_IMPLEMENTATION_BRIEF`, `PLAN_CSV_SQLITE_CLI`) plus the owner's adopted plans `plan_optimizacion_ecosistema`, `plan_evaluacion_qa_ui_ux` and `plan_ejecucion_llm_coach_qwen` (proposals — status per file; adoption is not approval).
-- UI spec: `BodyLab_Web_UI_Design_Specification.md` at the repo root (next to `AGENTS.md`). Agent skills live in `.agents/skills/`.
+Two **local, account-free** apps sharing one data contract; everything is offline and
+data lives in IndexedDB inside the browser/WebView — there is no backend.
 
-## Commands
-Run from `fitness-ecosystem/`.
+- **BodyLab** — anthropometry, 2D/3D body modeling, exercise education, progress
+  tracking (web app + Tauri desktop shell). The "science half".
+- **TrainingLab** — the gym logger: today's time-budgeted session, readiness,
+  gear inventory, keyboard-first set logging, rest timer, records/sounds, optional
+  local LLM coach (own app + own Tauri shell). The "acting half".
+
+The cycle: BodyLab exports a `bodylab-traininglab-link` file (contract **v2**,
+`bodylab/apps/web/src/lib/traininglab-export.ts`) whose weakness map feeds
+TrainingLab's planner; measuring → training → re-measuring recalculates the plan.
+
+## Where the code lives (under `fitness-ecosystem/`)
+
+- `bodylab/core/<pkg>` — pure TS engine; **never** imports React/Three/Tauri/DOM.
+  Packages: `anthropometry` (McCallum/Venus/Adonis/WHtR/frame/score), `measurements`,
+  `composition` (somatotype, Navy body fat), `references`, `progress`, `validation`,
+  `export`, `analytics` (body age/risk/prediction), `database` (schema + repository),
+  `conditioning` (Cooper, resting HR, body fat, J-P skinfolds), `training`
+  (plan/validator/generator + `session.ts` day builder + `decision.ts` local
+  decision model + `laya.ts` typed-decision contract), `exercises` (**151**
+  exercises + equipment/movement traits in `catalog.ts` + `catalog-additions.ts` +
+  `catalog-expansion.ts`, `traits.ts` + `traits-expansion.ts`, `equipment.ts`).
+- `bodylab/integrations/` — external adapters: `oxihuman` (3D WASM), `musclemapjs`
+  (2D maps), `clad-body` (ISO 8559-1), `z-anatomy` (empty).
+- `bodylab/packages/contracts` — JSON schemas. The design system is **in-app**
+  (Tailwind tokens in `apps/web/src/index.css`); no `packages/ui` exists.
+- `bodylab/apps/web` — React 19 + Vite + Tailwind v4 + three.js. Pages in
+  `src/pages/`, domain logic in `src/lib/` (`store.tsx` Context+useReducer, `db.ts`
+  IndexedDB, `queries.ts`, `age.ts` — birthDate stored, age derived at the UI edge).
+- `bodylab/apps/desktop` — canonical BodyLab Tauri 2 shell (`src-tauri/`, NSIS).
+- `traininglab/apps/desktop` — TrainingLab (React + Vite + own Tauri 2 shell).
+  Modular layout: `src/app/` (shell + hash router + store), `src/ui/` (design-system
+  primitives, screen-agnostic), `src/screens/` (one per destination), `src/features/`
+  (pure logic + components), `src/lib/` (engine glue). Root-suite tests import
+  `src/lib/*` by relative path → **never move `lib/` without updating `tests/`**.
+- `tests/` — extra root suites (anthropometry, database, data/golden, conditioning,
+  somatotype, training incl. MCP/CSS-audit/day-focus, exercises, lan, adversarial).
+- `scripts/` — `serve-lan.mjs`, `fitness-mcp-server.mjs` (local-model tool surface),
+  `audit-exercise-coverage.mjs`, `css-class-audit.mjs`, `build-ieee-docs.mjs`,
+  `capture-screenshots.mjs`, `import-symmetry.mjs`, `build-owner-import.mjs`,
+  `render-brand-icons.mjs`, `fitness-data-cli.mjs`, etc.
+- `ml/laya/` — Python RLCD training pipeline + fixtures mirroring `core/training/laya.ts`.
+- `corpus/` — deliberately **not** a pnpm workspace member (kept out of installs);
+  a standalone Vite app for the parametric layered body.
+- `docs/` — see below; `resources/` (brand icons, manifests, anatomy — anatomy is
+  gitignored), `mockup/` (review mockups, new/untracked), `tools/ai-media`.
+- Repo root (outside the monorepo): `ROADMAP.md`, `AGENTS.md`, `REPORTE.md`,
+  `IMPORT_SYMMETRY/` (owner's gitignored screenshots), `.github/workflows/`.
+
+## Commands that work in this checkout (verified 2026-10-14)
+
+CI (`.github/workflows/ci.yml` at the repo root) pins **pnpm 11 + Node 22** and runs
+`pnpm check` (typecheck → root vitest → web vitest → Playwright E2E). The working
+tree, however, has an **uncommitted bun migration**: `bun.lock`, `node_modules`
+installed by bun (`.bun/` store), root scripts switched to `bun run …` — and the
+root scripts `lint`, `lint:fix`, `typecheck`, `check` currently call themselves
+(`"check": "bun run check"`) while `build` references non-existent `build:core` /
+`build:web`. pnpm and bun are **not on PATH** in this shell. Until that migration is
+finished, run the tools directly:
 
 ```bash
-pnpm install                  # install all workspace deps
-pnpm dev                      # BodyLab web dev server (http://localhost:5173)
-pnpm lan                      # build + serve BOTH apps on the LAN (http://<ip>:8090/) for phone testing
-                              #   Windows: double-click `LAN Server.bat`. Flags: --port 8090, --build, --no-build, --open [app]
-node scripts/render-brand-icons.mjs      # masters → favicons + apple-touch + 512 + multi-size .ico (no ImageMagick)
-node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import.json   # OCR de la historia Symmetry (caché + idempotente)
-node scripts/verify-symmetry-overlap.mjs ../IMPORT_SYMMETRY   # cadena de solape píxel a píxel entre capturas
-powershell -File install-shortcut.ps1    # (re)write the desktop shortcuts with the real icons
-cd bodylab/apps/web && pnpm dev          # same, run from the package
-pnpm test                     # root vitest: core tests (node env, vitest 1.x)
-pnpm test:watch / test:coverage          # watch / coverage (80% thresholds on bodylab/core)
-pnpm typecheck                # --filter web tsc -b + --filter "./bodylab/core/**" typecheck
-pnpm format / format:check    # prettier (whole workspace)
-pnpm build                    # core build (tsc) + web build
-pnpm build:desktop / dev:desktop         # Tauri (needs Rust + VS Build Tools C++)
-pnpm check                    # typecheck + core tests + web tests + web e2e
+cd fitness-ecosystem
+# Install: CI does `pnpm install --frozen-lockfile` (pnpm 11, Node 22); this
+# checkout was installed with bun (`bun install`, untracked bun.lock).
+# Neither CLI is on PATH in this shell.
+npx vitest run                              # root suite (node env, vitest 1.x)
+cd bodylab/apps/web && npx vitest run       # web suite (vitest + jsdom)
+cd bodylab/apps/web && npx oxlint           # lint — oxlint, no ESLint config anywhere
+cd bodylab/apps/web && npx playwright test  # browser E2E (Playwright + chromium)
+
+# Typecheck: each app must use its OWN TypeScript 6.0.x
+cd bodylab/apps/web && node node_modules/typescript/bin/tsc -b
+cd traininglab/apps/desktop && node node_modules/typescript/bin/tsc -b
+
+cd bodylab/apps/web && npx vite              # dev server → http://localhost:5173
+cd traininglab/apps/desktop && npx vite      # dev server → http://localhost:5174
+cd bodylab/apps/web && npx vite build        # production build (CI runs this)
+cd traininglab/apps/desktop && npx vite build
+node scripts/serve-lan.mjs                   # both apps, one port (8090) + hub page
+cd bodylab/apps/desktop && npx tauri build   # NSIS installer (needs Rust + MSVC)
 ```
 
-Per-scope targets:
+Audits / generators (run from `fitness-ecosystem/`):
+
 ```bash
-cd bodylab/apps/web && pnpm lint           # oxlint (.oxlintrc.json) — NOT ESLint
-cd bodylab/apps/web && npx vitest run      # web tests (jsdom, vitest 4, src/**/*.test.{ts,tsx})
-cd bodylab && npx vitest run               # core tests, explicit
-cd bodylab/apps/desktop && pnpm dev        # native window on the Vite dev server
-cd bodylab/apps/desktop && pnpm build      # NSIS installer → src-tauri/target/release/bundle/
-cd bodylab/apps/web && pnpm test:e2e       # Playwright (e2e/*.spec.ts)
+node scripts/audit-exercise-coverage.mjs [sheet.xlsx] [--json]   # catalog health
+node scripts/css-class-audit.mjs        # classes used vs defined (also `pnpm audit:css`)
+node scripts/build-ieee-docs.mjs [--check]      # tectonic, looks in .tools/ first
+node scripts/capture-screenshots.mjs [--base URL]   # seeds fixtures via Playwright
+node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import.json
 ```
 
-Verified 2026-09-28: **708 tests in the root suite** (`pnpm test`, 41 files) · **82 web tests** · **21 browser E2E** · lint clean (0 warnings) · both apps build. Prefer fresh `pnpm test` output over any number in docs.
+**Verified today (2026-10-14) — prefer fresh output; counts move fast:**
 
-TrainingLab's root-suite tests (`tests/training/`, `tests/exercises/`) import the app modules by relative path (`../../traininglab/apps/desktop/src/lib/...`) and resolve core packages through the root aliases — the established precedent from the F1 adapter tests.
-
-## Product vision (owner-confirmed 2026-09-27)
-- **BodyLab** was conceived as a **private, personal, educational-scientific platform**: precise anthropometric measurement with mathematical/scientific analysis for men and women, exercise education (GIFs, mechanical movement types, progress impact), guidance on how to record, and **active suggestions** for training and records. It is the "science half" of a two-app ecosystem.
-- **TrainingLab** is the **private training log** (the space covered by Hevy/Symmetry/Apple Health): weights, sets, reps, effort level, session duration, rests. Inspired by **Symmetry app** for classification; the differentiator is the closed loop measurement → weakness map → routine → re-measure.
-- **Local LLM coach (planned)**: a small local model (Qwen-class ~4B Q4) reading a CSV-like table with a custom AGENT.md + SKILL suggests progressive load, exercise selection (by effort, trained/untrained muscle groups), rest between sets, session end, and injury prevention — **grounded in serious math models** for men and women. The LLM proposes; deterministic math + hard validators decide. Architecture and hard rules live in `docs/TRAININGLAB_UI_PLAN.md` and `bodylab/core/training/AGENTS.md`.
-- **Bridge**: `bodylab/apps/web/src/lib/traininglab-export.ts` (contract **v2** — v2 added the `conditioning` weakness map: `conditioningScore`, per-axis `axes` (Cooper/FC/%BF/pliegues + J-P), `classifiedCount`) exports the weakness map + training state for TrainingLab; contract-pinning tests live in `apps/web/src/__tests__/data-integrity.test.ts`. Any breaking change must bump `TRAININGLAB_EXPORT_VERSION` and update the pinning suite in the same commit. Consumers must ignore unknown fields (forward compatibility).
-- **TrainingLab T1 (done 2026-09-27 → `core/training`)**: pure plan types (`Routine`/`Day`/`ExerciseSlot`/`AiProposal`) + the five hard-rule validator (catalog+equipment, no big family on consecutive days, weekly direct-volume windows per level [4-12/6-18/8-22], focus coverage, AI weak-muscle citation). **Catalog is INJECTED (`ExerciseCatalog` structural subset), never imported — core/training has zero deps and must stay that way.** Granular 34-muscle ids map to 13 rule families via `muscleFamilyOf`. The validator never throws; `validateAiProposal` guards hostile LLM shapes (a real crash was found adversarially and fixed).
-- **TrainingLab T2 (done 2026-09-27 → `core/training/generator.ts`)**: deterministic routine generator — pattern split by week shape (1=fullbody, 2=lower+upper, 3-6=lower/push/pull rotated weak-first, 7=rest), weak family→window ceiling / strong→floor, spill fix-point against REAL `weeklySetsByFamily` totals (trims the strongest spiller first), auto-widens slots to reach floors, granular `focus`, self-validates and only ever throws `GeneratorError` with actionable messages (spill-only family without a PRIMARY exercise is rejected early). **Golden tests pin byte-identical output.** Integration tests feed a real export-v2 payload (muscleScores+conditioning) straight into the generator — no adapter needed. Package guide: `bodylab/core/training/AGENTS.md`. Living roadmap: `ROADMAP.md` (repo root) — read at session start, update at session end.
-
-- **Desktop auto-update**: manual, opt-in (Settings), Tauri updater plugin; signing keys are local + gitignored, feed generated by `.github/workflows/release.yml`. Privacy intact: a check is one GET of a static `latest.json`; nothing automatic, no telemetry.
-- **Conditioning fields (owner backlog item, DONE 2026-09-27 → `@fitness/bodylab-conditioning` v1)**: Cooper 12-min run distance (+VO2max estimate, Cooper 1968 table), resting heart rate (AHA-style bands), measured body-fat % (ACE bands; below-essential-fat rejected per sex), abdominal skinfold (J-P 3-site site bands + density→Siri %BF). Pure core package; per-sex, age-aware, provenance strings on every table; null on out-of-domain input (no NaN/negative physiology). Web types + `MEASUREMENT_TYPES` entries + `lib/conditioning.ts` bridge are in place; the **Conditioning tab in Measurements** (tutorials + quick-add) is wired since 2026-09-27. Note: this covers "Cooper, FC, grasa real, abdomen"; average heart rate *during* sessions belongs to TrainingLab's logger, not BodyLab.
-
-- **Somatotype (done 2026-09-27 → `classifySomatotype()` in core/composition)**: Heath-Carter *proxy variant* — endomorphy from measured %BF (piecewise-linear, ACE-anchored, shared cut-offs with conditioning), ectomorphy via the real Heath-Carter HWR equation (0.4643·HWR−17.63, floor 0.1/cap 12), mesomorphy as frame proxy (height/wrist → 2/4/6 + lean bonus; medium-frame default with `frameMeasured:false` when no wrist). Returns full triple + `category` (13-name Carter-style grammar, adjective=2nd/noun=dominant) + per-component provenance. Feeds the planned 30-model 2D selector (2 sexes × 5 BF levels × 3 somatotypes) and TrainingLab's planner. **Gotcha pinned in tests: `calculateFrameSize` takes height in METERS (guard ≤2.5) despite its cm-sounding names** — somatotype delegates with `heightCm/100`.
-- **Measurement guides + tape-only body fat (done 2026-09-27)**: `estimateBodyFatNavy` (core/composition; Hodgdon & Beckett 1984 metric form, SEE ±3.5%, hip required for females, null on waist≤neck / out-of-domain / non-physical density) serves users WITHOUT calipers. `apps/web/src/lib/measurement-guides.ts` is the bilingual tutorial registry (equipment tiers: none/tape/GPS/caliper, certainty levels, no-equipment fallbacks like string+ruler and printable tape). **Science stance encoded: skinfold sites DIFFER BY SEX (J-P female = triceps/suprailiac/thigh) because fat storage distribution varies; single-abdominal-fold is a male-biased proxy** — caveats pinned in tests. Guides are linked from the Measurements page's **Conditioning tab** (full tutorials + per-type mini-guides).
-- **J-P female sites + Navy form + illustrated sites (done 2026-09-27, later)**: conditioning's female J-P branch was replaced with the **published JPW 1980 equation** (`D = 1.0994921 − 0.0009929·Σ + 0.0000023·Σ²`, no age term) — the old form was dead code (density ≥ 1.12 for ANY plausible Σ → always null). New `jacksonPollockBodyFatPct` (sites → density → Siri), `JP3_SITES` and an independent `jacksonPollockFemaleBodyFatPct` profile axis; 46 conditioning tests. The Conditioning tab has a **Navy tape form** (neck/waist/hip per sex, height from the profile, live preview) that saves `body_fat_measured` with `confidence:'low'` + SEE in notes, and the JP3 guide renders **schematic ♀/♂ figures** with numbered sites and per-sex fat-distribution warnings. **Routing gotcha: `pages/Measurements.tsx` was historically orphaned (not mounted anywhere) — it now lives at `/history`** (sidebar 'History' + `H` shortcut); the legacy `/measurements` redirect targets `/history`.
-
-## Symmetry import (histórico real del dueño, 2026-10-04)
-
-- Los 45 capturas de pantalla de su historia en Symmetry viven en `IMPORT_SYMMETRY/`
-  (raíz del workspace, **gitignored** — el repo es público, nunca commitear datos
-  crudos ni `.ocr-cache.json`). Importador: `fitness-ecosystem/scripts/import-symmetry.mjs`
-  (OCR local tesseract.js, sin red); cadena de capturas: `verify-symmetry-overlap.mjs`;
-  mapeo a catálogo: `map-symmetry-exercises.mjs`.
-- Comando: `node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import.json`
-  (usa caché OCR; idempotente — dos corridas, mismo MD5).
-- **Estado verificado 2026-10-04: 20/20 sesiones cuadran con el contador de series de
-  la cabecera de Symmetry, 425 series, 58 nombres distintos.** Convención de peso del
-  dueño: ejercicios de DOS mancuernas guardan el TOTAL en Symmetry → se importa ÷2
-  (tabla `BILATERAL_DB`, crudo preservado en `symmetryWeightKg`); unilaterales de una
-  mancuerna y máquinas/barra/cable se quedan tal cual. `location` por fecha:
-  `gym` ≤ 2026-09-26 (su último día), `home` después (tope real 28,6 kg). Badges:
-  número=serie normal, W=warm-up (flag `warmup`), D=drop, F=failure (en `notes`).
-  Series con hora (`Set Time`) llevan `durationSec`. 5 series aparecen con 0 reps
-  literales en la captura (confirmado por XOR de píxeles); `pa® (Maquina)` (03/09) es
-  un nombre propio ilegible pendiente del dueño.
-- **Cerrado 2026-10-05 (T1–T4):** los 13 huecos de mapeo se resolvieron **añadiendo 8
-  ejercicios al catálogo** (`crunch`, `decline-crunch`, `oblique-crunch`,
-  `dumbbell-shrugs`, `tricep-kickback`, `wrist-roller`, `hip-abduction-machine`,
-  `hip-adduction-machine` → **151 ejercicios**) → mapeo **410/425 series (96 %)**,
-  53 nombres con id, 0 sin resolver. La importación se ejecutó en la app: 20 sesiones,
-  658 sets, **reimportar es no-op**. T4 = `weeklyVolume()` + `WeeklyVolumeCard` en
-  Progreso. Sigue pendiente del dueño: vetar 13 propuestas y nombrar `pa® (Maquina)`.
-
-## Datos corporales reales del dueño (2026-10-05)
-
-- `node scripts/build-owner-import.mjs` genera **`.cache/bodylab-owner.json`** (forma
-  de export legacy de BodyLab) + `.cache/bodylab-owner.mapping.json` (qué se guardó, qué
-  no y por qué). Ambos están bajo `.cache/`, que `.gitignore` excluye: son datos
-  personales reales y el repo es público — **nunca commitearlos**.
-- Perfil importado: 76 kg · 1,76 m · **nacimiento 2005-09-28** (la edad la deriva
-  `lib/age.ts`; no se congela un número) · sexo masculino. 10 mediciones: peso, muñeca
-  16,5, hombros 116, pecho 95, cintura 83, caderas 97, muslo 55/55 + muslo genérico
-  (el Resumen lee el tipo genérico, la simetría los lados), pantorrilla 39.
-- **Lo que NO cabe en `MEASUREMENT_TYPES`** (reportado, nunca inventado): «manzana»
-  (37,5), «boxer» (86), «abdomen templado» (78 — se guardó el abdomen *libre* 83, que es
-  el protocolo de la app), talla de zapato 26, bíceps izq/der sin valor, y cuello /
-  antebrazos / %grasa / FC reposo nunca dados. El «muslo» genérico sí se derivó
-  (media 55/55) y lleva la procedencia en `notes`.
-- La importación se probó por la interfaz real (**Datos → Importar**, `format: "bodylab"`),
-  no inyectando en IndexedDB: `IMPORT_DATA` **reemplaza**, así que reimportar el mismo
-  archivo no duplica (verificado: 10 filas antes y después).
-
-## Objetivo del dueño y cómo se lee Progreso (2026-10-05, e)
-
-- **Físico objetivo:** «musculoso como boxeador de peso ligero o mediano», con músculos
-  bien desarrollados. **No usa modelo local para las rutinas: el modelo es Buffy** — el
-  planificador determinista sigue siendo el suelo y no hay que habilitar el LLM.
-- **Progreso empieza por el panel «Hacia tu ideal»** (`features/progress/GoalPanel.tsx`,
-  montado en `pages/Progress.tsx`): agregado de cercanía al ideal + las 8 filas McCallum
-  con barra, fichas Adonis / WHtR / peso y los huecos como «sin medir». Con sus 13
-  medidas sale **65/100** y las brechas son bíceps 32 %, pecho 54 %, cintura 58 %.
-- **Bíceps vs tríceps (respuesta dada y aceptada):** con cinta son **la misma lectura** —
-  la cinta rodea todo el brazo y el tríceps es ~2/3 de su masa a media altura; el «tríceps»
-  del ISAK es un pliegue con plicómetro, fuera del alcance sin calibre. Sus 32/32 eran el
-  mismo punto; lo que sí distingue es relajado vs `biceps_flexed`. **Pendiente de que
-  mida `forearm` y `biceps_flexed`** para cerrar la 8.ª fila del panel.
-- Los ideales salen de la proporción **publicada** (McCallum con su muñeca de 16,5 cm);
-  la pie lo declara índice de referencia, no meta de salud. «Peso ligero/medio» es
-  categoría de competición, no un physique: sin Lean Mass medido no se afirma ningún
-  peso objetivo.
-- **Training Progreso arranca con «Objetivo de volumen»** (2026-10-05, f): la tarjeta
-  `features/stats/VolumeTargetCard.tsx` compara las **series directas** de los últimos 7
-  días (familia, `weeklyDirectSets`) con la franja publicada **12–20 series/semana por
-  grupo** (Baz-Valle 2022, PMID 35291645; tríceps **12–24** porque ahí el volumen alto sí
-  fue mejor, p = 0,01), y declara en pantalla los rendimientos decrecientes de Pelland 2025
-  y el suelo de Schoenfeld 2017. La franja vive **una sola vez**, en
-  `traininglab/apps/desktop/src/lib/volume-target.ts`, con sus citas; el índice fraccionado
-  del mapa corporal (1/0,66/0,33) sigue siendo otra métrica, sin mezcla.
-  Ojo: `.tl-row` es rejilla de **2 columnas**; una fila con barra debe declarar su propio
-  `gridTemplateColumns` o se parte en dos.
-- **Pantorrilla grande y sin grasa: no es malo.** El riesgo clínico documentado es la
-  pantorrilla **pequeña** (cortes de sarcopenia 34–36 cm en hombres; González 2021 AJCN
-  NHANES). Con 39 cm / 1,76 m = 22,2 cm/m está muy por encima. El ideal de McCallum es una
-  **proporción, no un techo**: por eso el panel de BodyLab ahora dice «sobre la referencia» y
-  avisa de que estar por encima no es un defecto.
-
-## Escritorio (2026-10-05)
-
-- **TrainingLab SÍ tiene shell Tauri** (`traininglab/apps/desktop/src-tauri`, NSIS);
-  instalar con `npx tauri build` desde `traininglab/apps/desktop`. Los installers
-  reconstruidos: `…/traininglab/apps/desktop/src-tauri/target/release/bundle/nsis/TrainingLab_0.2.0_x64-setup.exe`
-  (15,3 MB) y `…/bodylab/apps/desktop/…/BodyLab_1.0.0-beta.8_x64-setup.exe` (23,4 MB).
-- `npx tauri build` de **BodyLab sale con código 1 aunque el installer salga bien**:
-  `createUpdaterArtifacts: true` exige `TAURI_SIGNING_PRIVATE_KEY`, que solo existe en el
-  workflow de release. El instalador es válido; lo que falta es la firma del updater.
-- **Los datos del dueño no van dentro del instalador**: IndexedDB es por dispositivo.
-  El flujo real es instalar → *Datos → Importar* (BodyLab) / *Ajustes → Mis datos →
-  Importar historial de Symmetry* (TrainingLab) con los dos JSON de `.cache/`.
-
-## Freebuff session communication
-
-- Read `AGENTS.md`, this file, and the relevant source-of-truth doc before acting; read/update root `ROADMAP.md` for roadmap work.
-- For TrainingLab quality, PC/mobile UI, or its muscle-map work, read `fitness-ecosystem/docs/BUFFY_IMPLEMENTATION_BRIEF.md` first. It is the detailed execution order and resolves a key distinction: the reported whole-body `Condición física` card is not the pending per-family strength-reference map; volume and anthropometric goals also keep distinct meanings.
-- After every substantive work session, append (never overwrite) a dated Spanish status note to `fitness-ecosystem/docs/AGENT_HANDOFF.md`, including: objective, what changed, exact files, checks actually run and results, open questions/approval gates, and the next safe action. If interrupted, leave a partial-progress note before yielding when possible.
-- For handoff to Buffy/Chatty, add the exact resume point, Git dirty-state preservation, actual test/visual evidence (viewport/browser and screenshot path), blockers and approval status. Do not rely on messages outside the repository for session continuity.
-- Keep notes factual and brief enough for the owner and a later agent to scan. These notes do not grant permission to cross an owner approval gate.
+- `npx vitest run` (root): **1282 tests / 83 files, all passing** as of
+  2026-10-14. The three red MCP tests were fixed that day:
+  `scripts/fitness-mcp-server.mjs` now resolves `vite` from the app manifests
+  (`createRequire` per app — neither a strict pnpm root nor this bun install puts
+  `vite` at the monorepo root) and compares mirror dates with the **local day**
+  (`localDay()`), not UTC — the UTC comparison broke `read_recovery` /
+  `read_current_state` from 19:00 in UTC-5. `tests/training/test_mcp_server.test.ts`
+  pins both fixes. The MCP reads (history, recovery, progression, plan) work from
+  the terminal with no app and no Playwright; writes still need the desktop app
+  open to apply the action files.
+- `cd bodylab/apps/web && npx vitest run`: **167/167 (11 files)**.
+- `tsc -b` exit **0** in both apps using each app's own TypeScript **6.0.3**; the
+  root-installed TypeScript **5.9.3** fails both with `TS5103: Invalid value for
+  '--ignoreDeprecations'` (the app configs declare `"ignoreDeprecations": "6.0"`).
+- `npx oxlint` (web): **1 warning / 0 errors** (a React Compiler `getRange` warning).
 
 ## Conventions & gotchas
-- **Core imports are aliased, not relative.** Keep the alias map in sync across three places: `bodylab/apps/web/vite.config.ts`, `bodylab/apps/web/tsconfig.app.json` (`paths`), and root `vitest.config.ts`. The `@fitness/bodylab-ui` alias was removed with the orphan `packages/ui` (2026-09-11).
-- **Workspace package `name`s are exact-match filters.** The web app is `web` (NOT `@fitness/bodylab-web`) and there is no aggregate `@fitness/bodylab-core`; root `dev`/`build`/`typecheck` now filter `web` / `"./bodylab/core/**"` correctly. If a root script ever errors with "No projects matched the filters", the package name in the filter is wrong. Root `lint` runs oxlint via the web app (there is no root ESLint config).
-- **Two core-package generations:** older packages (`anthropometry`, …) are `0.1.0`, build to `dist/` (`main: dist/index.js`) and have their own build/typecheck/test scripts; newer ones (`analytics`, `database`, …) are `1.0.0` and point `main`/`exports` at `src/index.ts` with no build step. Check the package's `package.json` before assuming a build.
-- **Alias map:** root `vitest.config.ts` and the web config/tsconfig alias 10 core packages (anthropometry, measurements, references, composition, progress, validation, export, analytics, **conditioning**, **training**). **`database` has no alias** anywhere — its tests use relative imports. Keep the three in sync when a new core package appears.
-- **Vitest configs differ by scope:** root uses vitest ^1.4, node env, `**/*.test.ts`, 80% coverage thresholds; the web app uses vitest ^4 + jsdom + `src/test-setup.ts` and matches `src/**/*.test.{ts,tsx}`. Run tests from the right level so the right config/version is picked.
-- **TypeScript is strict** (`tsconfig.base.json`: strict, noUnusedLocals/Parameters). Web adds `verbatimModuleSyntax`, `erasableSyntaxOnly`, `noFallthroughCasesInSwitch`; web `tsconfig.app.json` excludes tests.
-- Web lint is **oxlint** (`.oxlintrc.json`); there is no ESLint config anywhere. Root `pnpm lint` delegates to oxlint in the web app and is clean (0 warnings / 0 errors).
-- Data flow: components → `useApp()` (`lib/store.tsx`) → `lib/queries.ts` → `lib/db.ts` → IndexedDB (DB `bodylab`, version 1; auto-migrates legacy localStorage). Exception: `pages/ExportImport.tsx` talks to `db.ts` directly for bulk `.bodylab` (ZIP via `jszip`) export/import. No backend.
-- Units: weight `kg`, lengths `cm` (see `web/src/lib/constants.ts` → `MEASUREMENT_TYPES`). Measurements keep full history; IDs are UUIDs; timestamps ISO-8601.
-- **Routing is `HashRouter`** (App.tsx): survives hard reload on GitHub Pages/WebView2 with no server rewrites; all E2E navigation uses the hash-aware `gotoRoute` helper. Static 3D/anatomy asset URLs must stay `BASE_URL`-aware (`import.meta.env.BASE_URL`) for subpath hosting. **CSP is mirrored**: vite.config.ts injects a prod-only meta CSP and `tauri.conf.json` carries the same policy — change them together.
-- **Tauri desktop build gotchas:** (1) `tauri.conf.json` paths resolve relative to `src-tauri/`, so `frontendDist` is `../../web/dist`; (2) `beforeDevCommand`/`beforeBuildCommand` must be explicit `cd ../web && …` or a bare `pnpm build` recurses into `tauri build`; (3) bundle `category` must be `Healthcare and Fitness`; (4) MSI/WiX rejects semver pre-release tags like `1.0.0-beta.1` — NSIS is the beta target; (5) building needs Rust stable + VS Build Tools with the C++ workload (MSVC linker + Windows SDK). Static 3D assets live in `apps/web/public/` (`oxihuman-core-v1.ohpk`, `wasm/`).
-- `pnpm-workspace.yaml` globs `bodylab/{apps,packages,core}/*`, `traininglab/{apps,packages,core}/*`, and `corpus`; `allowBuilds: esbuild`.
 
-## Protocolo de medición corporal sin escáner (investigación 2026-10-05)
+- **Core is pure**: no React/Three/Tauri/DOM imports. Measurements keep full history;
+  IDs are UUIDs; timestamps ISO-8601; units kg / cm.
+- **Never parse user numeric input with bare `parseFloat`/`parseInt`** — use
+  `parseNumberInput` (`lib/parse-num.ts`): the Spanish decimal comma (`"75,5"`)
+  would be silently truncated.
+- **Core imports are aliased, not relative**: `@fitness/bodylab-<pkg>`. The alias map
+  spans **six files**: root `vitest.config.ts`, `bodylab/apps/web/vite.config.ts`,
+  `bodylab/apps/web/vitest.config.ts`, `bodylab/apps/web/tsconfig.app.json`,
+  `traininglab/apps/desktop/vite.config.ts`, `traininglab/apps/desktop/tsconfig.app.json`.
+  The root/web four carry all **11** aliases; the two TrainingLab files carry the
+  three TrainingLab imports (`conditioning`, `exercises`, `training`). **`database`
+  has no alias** anywhere — its tests use relative paths.
+- **TypeScript strict everywhere**; web adds `verbatimModuleSyntax` +
+  `erasableSyntaxOnly`. Formatting: Prettier (`pnpm format`). Linting: oxlint in the
+  web app; no ESLint config anywhere.
+- Routing is **HashRouter**; all static asset URLs must go through
+  `import.meta.env.BASE_URL` for subpath hosting. The prod CSP is injected by Vite
+  and **mirrored in `tauri.conf.json`** — change them together.
+- **Screenshots are generated, never hand-taken** (`scripts/capture-screenshots.mjs`);
+  `fitness-ecosystem/docs/reference/` (screenshots of other apps) is gitignored —
+  never commit or redistribute it.
+- **Install landmines**: pnpm 11 fails an install when a dependency ships an
+  undeclared build script (`ERR_PNPM_IGNORED_BUILDS` — new deps with a `postinstall`
+  need an entry in `allowBuilds` in `pnpm-workspace.yaml`); `.gitattributes` pins
+  `eol=lf` for text (CRLF only for `.bat`/`.cmd`/`.ps1`, or `scripts/lan-store.mjs`'s
+  shebang breaks vitest on a CRLF checkout). `pnpm install --frozen-lockfile` in a
+  dirty working copy short-circuits on existing `node_modules` — reproduce install
+  checks in a throwaway clone.
+- **Tauri desktop**: `tauri.conf.json` paths resolve relative to `src-tauri/`
+  (`frontendDist: ../../web/dist`); bundle category must be `Healthcare and Fitness`;
+  MSI rejects pre-release semver, so **NSIS is the beta target**. BodyLab's
+  `tauri build` exits **1** even on success when `createUpdaterArtifacts` has no
+  `TAURI_SIGNING_PRIVATE_KEY` (release-workflow only) — the criterion is a new valid
+  `.exe`, not the exit code.
+- **REGLA DE CIERRE — no delivery is done with the old `.exe`**: any UI/logic change
+  in `bodylab/apps/web` or `traininglab/apps/desktop` ends with `pnpm tauri build`
+  from the **same commit**, and both installers copied to the real desktop
+  (`%OneDrive%\Desktop`, not `%USERPROFILE%\Desktop`). Verify the **bundle content**
+  (new strings in `dist/assets`), not just that the `.exe` exists; record size and time.
+- **Mobile**: both apps must work on a phone (the owner tests on an iPhone over LAN).
+  Never use `input[type='text']` in touch-target selectors (many inputs omit `type=`);
+  grid children need explicit `grid-cols-1` below `sm`; touch targets ≥ 40 px.
+- `tauri dev` and the installed build use **different IndexedDB stores** — a dev-run
+  test sees an empty log, not the owner's.
 
-- Documento: `fitness-ecosystem/docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`. Fuentes
-  ISAK, Whyte & Gallagher (PMID 35240646), US Navy, Jackson–Pollock, Drillis–Contini y
-  Merrill (CDC 2019). **Solo investigación: ningún tipo de medición nuevo implementado.**
-- El esquema de BodyLab (`MEASUREMENT_TYPES`) es casi todo perímetros; faltan pliegues,
-  anchuras óseas, longitudes segmentarias y ángulos posturales, que son lo que permite
-  un modelo paramétrico sin escáner. Los ids propuestos son `hip_upper` (el «boxer» del
-  dueño), `biceps_flexed`, `triceps`, más `subscapular`/`biceps` skinfold.
-- Límites que la app debe seguir respetando: %grasa por pliegues **no** es afirmación
-  individual (Whyte & Gallagher); US Navy da **SEE ±3,5 %**; el volumen/forma 3D desde
-  cinta es **estimación** (error publicado hasta 40 %, Merrill).
-- **2026-10-05 (d): esquema ampliado con «todo lo medible con cinta o recursos caseros»**
-  (mandato del dueño): 22 tipos nuevos — 6 perímetros (`hip_upper`, `triceps`,
-  `biceps_flexed`, `forearm_flexed`, `mid_axillary`, `ankle`), 9 longitudes (categoría
-  `length`) y 7 anchuras (categoría `breadth`), con guías en `Measurements.tsx`. Las
-  categorías de `MeasurementTypeInfo.category` pasaron de 3 a 5. **Pliegues NO**: exigen
-  plicómetro, que no es recurso casero. Arreglo incluido: las guías se mostraban en
-  inglés en la página en español (`guide.en` → `guide[lang]`). Su archivo de datos es
-  `.cache/bodylab-owner.json` (17 mediciones) y se genera con
-  `node scripts/build-owner-import.mjs`.
+## Product direction & approval gates
+
+- **Four metric views must not be mixed** (see `docs/BUFFY_IMPLEMENTATION_BRIEF.md`):
+  **Condición física** (whole-body axes: Cooper/%BF/WHtR/FFMI — reported implemented;
+  it is NOT a per-muscle strength map), **strength vs an external published
+  reference** (the intended primary heatmap — still **not implemented**, gate closed:
+  needs a source that supports sex/age/weight/height as claimed, no invented
+  adjustments), **training exposure** (logged working sets — a separate lens), and
+  **anthropometric goals** (the existing `Objetivos` lens — keep distinct). Do not
+  infer muscle strength from unrelated exercises; show neutral/unavailable where no
+  defensible mapping exists. Details: `docs/REDESIGN_STORM.md` §4 (PÁGINA 7) and
+  `docs/AGENT_HANDOFF.md`.
+- **MCP tool surface** (`scripts/fitness-mcp-server.mjs`, design in
+  `docs/MCP_TOOL_SURFACE.md`): **26 tools since 2026-10-19** for local models —
+  HISTORY (read-only; the only destructive door is whole-session `delete_session`
+  with `confirm: true` + undo), STATE reads, and validated ACTIONS applied by the app
+  through its own reducers with receipts (`applied`/`rejected` + rule), idempotency
+  keys and undo. The maths disposes; the model proposes.
+- **AI is three-level and local**: deterministic rules are the floor; a JEV-class
+  decision model (`core/training/decision.ts`) is local and explainable; an optional
+  LLM (llama.cpp/LM Studio/Ollama/Jan, OpenAI API over loopback) has real tool
+  calling and its only terminal tool is validated before reaching the screen.
+  **JEV is TypeSafe AI's commercial typed-decision model — never call ours JEV; it is
+  a model of that class. JEV ≠ JEPA.**
+- **Profile age**: `Profile.birthDate` is stored; the age is derived at the UI
+  boundary (`lib/age.ts`). Core APIs take `age: number` — pure maths, never a date.
+- **Feedback**: sounds are synthesised (Web Audio, no assets); records use Epley
+  rounded exactly like BodyLab; notifications only ask permission on an explicit click.
+- **Updater**: manual, opt-in check in Settings (Tauri updater); releases/signing are
+  automated in `.github/workflows/release.yml`; installers publish under a stable
+  alias (`<app>-setup.exe`). No telemetry, no background downloads.
+- **Design authority**: `docs/REDESIGN_STORM.md` (the interface contract: personas,
+  invariants, screens) — a proposal unless the owner approved it. BodyLab's design
+  stays frozen.
+
+## Agent session protocol
+
+- Read `AGENTS.md`, this file, and the relevant source-of-truth doc before acting;
+  read/update root `ROADMAP.md` for roadmap work.
+- For TrainingLab quality / PC-mobile UI / the muscle map, read
+  `docs/BUFFY_IMPLEMENTATION_BRIEF.md` first (execution order + approval boundary).
+- After every substantive session, **append** (never overwrite) a dated Spanish entry
+  to `docs/AGENT_HANDOFF.md` using its template: objective, changes with paths, exact
+  checks run and results, blockers/approval gates, safest next step. Say "not run"
+  where true; never claim tests/screenshots you did not run.
+- Handoff notes are project status, **not authorization**. Never cross an owner
+  approval gate (especially the muscle-map integration) based on a note.
+
+## Working-tree state (2026-10-14)
+
+- HEAD is `1289602`; the checkout carries **~137 modified/untracked paths** — much of
+  the recent work (MCP server + tests, CSS audit, `docs/REDESIGN_STORM.md`,
+  `mockup/`, research docs, bun migration) is **uncommitted**. Do not revert, format
+  or commit other agents' dirty work without inspecting it.
+- Several docs that `AGENTS.md` describes as deleted on 2026-10-09 (`UI_DESIGN.md`,
+  `TRAININGLAB_UI_PLAN.md`, `plan_evaluacion_qa_ui_ux.md`,
+  `plan_optimizacion_ecosistema.md`, `PLAN_CSV_SQLITE_CLI.md`,
+  `plan_ejecucion_llm_coach_qwen.md`) are **still on disk/tracked in this checkout** —
+  the purge is not applied here. Treat `REDESIGN_STORM.md` as the live design doc.
+- `AGENT_HANDOFF.md`'s last entry is **2026-10-06 (m)**; the 2026-10-08…10-13 sessions
+  are recorded in `ROADMAP.md` §4.x and `docs/MCP_TOOL_SURFACE.md`.
+- Owner's personal data (`IMPORT_SYMMETRY/`, `.cache/*.json`, `owner-training-log.csv`)
+  is gitignored and must **never** be committed or printed in full — the repo is public.
+
+## TrainingLab front migration (2026-10-15): the mockup is the production front
+
+- **Owner decision (2026-10-14/15)**: `fitness-ecosystem/mockup/` is the production
+  front. The old React screens are **deleted screen by screen** as each mockup page is
+  ported — `src/app/App.tsx` maps each route to the old screen (wrapped in the
+  `Legacy` bridge) or to `screens/PlaceholderScreen.tsx` in the meantime. Only the
+  backend is carried over: `app/store.tsx`, `lib/*`, the core packages, IndexedDB and
+  the MCP channel.
+- **Ported so far: the shell + `Hoy`.**
+  - `traininglab/apps/desktop/src/mockup.css` — `mockup/css/tl.css` **verbatim**,
+    plus a marked section for page-local rules (`.day-mini`, from `01-hoy.html`) and
+    the ≤640 px adaptation of `.exrow` (the mockup's row is desktop-only and crushed
+    the exercise name at 390 px). Imported **after** `index.css` in `main.tsx`: the
+    namespaces do not collide (old = `tl-*`, mockup = bare).
+  - `src/ui/mockup-icons.tsx` — the mockup's **64 icons**, *generated* from
+    `mockup/js/tl.js` by `.tmp-verify/gen-mockup-icons.mjs` (gitignored). Regenerate;
+    never hand-edit.
+  - `src/app/router.ts` — **9 routes**: the mockup's 8 destinations (`#/hoy`,
+    `#/entrenamiento`, `#/historial`, `#/progreso`, `#/ejercicios`, `#/semana`,
+    `#/rutinas`, `#/ajustes`) plus `#/sesion` (ZEN, opened from Hoy, never a rail
+    destination). `src/app/nav.ts` holds the 8 rail items; below 900 px they split
+    into 4 bottom tabs + a «Más» sheet (2026-10-19), pinned by
+    `tests/training/test_mobile_nav.test.ts`.
+  - **Drag** (2026-10-19): `src/ui/pointer-drag.ts` uses Pointer Events behind an
+    explicit grip in Entrenamiento and Semana; the queue previews locally and writes
+    once, Semana swaps effective days through `src/lib/week-swap.ts`. Arrow keys move
+    a focused grip, and an `aria-live` region announces the result. HTML5 DnD was
+    rejected because it does not fire on iOS.
+  - `src/screens/TodayScreen.tsx` — the mockup's Hoy, 1:1, over the real store.
+    **Its rows no longer log inline** (the old `features/today/SlotCard.tsx` is
+    deleted): a row opens `#/sesion`. Consequently `logWarmup`, `swapRow` and
+    `swapOptionsFor` have **no screen** until the Entrenamiento (02) and Sesión (03)
+    ports land — the actions still exist in the store and are reachable through the
+    MCP.
+- **The CSS audit is this migration's instrument**: `node
+  scripts/css-class-audit.mjs` reports the `tl-*` rules the ported screens orphan, and
+  `.tmp-verify/strip-unused-css.mjs` (gitignored) deletes exactly those. It judges the
+  `tl-*` namespace only — the mockup's unprefixed classes are **not** audited, which is
+  a known gap to close when the old stylesheet dies (`tests/training/test_css_class_audit.test.ts`
+  now floors `usedTl` at 80 for that reason).
+- **Toolchain facts (updated 2026-10-19)**: `pnpm` and `bun` are **not on PATH**; the app's
+  `node_modules/.bin` holds bun shims (`*.exe`, `*.bunx`) **without** bare shell
+  scripts, so **`npx tsc` fetches a stub and prints "This is not the tsc command you
+  are looking for"** — call `./node_modules/.bin/tsc.exe -b` (same for
+  `vite.exe`, and at the repo root `vitest.exe` / `prettier.exe`). Rust is **working**
+  again (`rustc 1.99.1`), and both installers were rebuilt on 2026-10-19; BodyLab's
+  `tauri build` still exits 1 after producing the installer because the updater has a
+  public key and no `TAURI_SIGNING_PRIVATE_KEY` (expected; the bundle is valid).
+  The `--config '{"build":{"beforeBuildCommand":""}}'` override is still needed because
+  `beforeBuildCommand` calls pnpm, which is not on PATH.
+- **Working-tree state (2026-10-19)**: HEAD `1289602` on `main`, still a large dirty
+  tree from the 2026-10-14→18 migration plus this round. Commit and push are the closing
+  step of this session; until then, treat checkout state as shared and do not discard it.

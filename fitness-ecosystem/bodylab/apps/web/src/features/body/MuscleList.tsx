@@ -26,7 +26,7 @@ export default function MuscleList({ onSelectMuscle }: MuscleListProps) {
   const { assessment } = state;
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border-card)] dark:border-transparent ">
+    <div className="bl-card p-6 ">
       <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-[var(--color-text)]">{t('body.allMuscles')}</h2>
       {REGIONS.map(({ key, ids }) => {
         const muscles = MUSCLE_GROUPS.filter(m => (ids as readonly string[]).includes(m.id));

@@ -13,20 +13,29 @@
  *   3. a screen is addressable, so Playwright and the screenshot script can
  *      open it directly instead of clicking through the UI.
  *
+ * **2026-10-14 (migration): the destinations are the mockup's.** The owner
+ * promoted the approved mockup to the production front, so the rail now has its
+ * eight destinations — Hoy · Entrenamiento · Historial · Progreso · Ejercicios ·
+ * Semana · Rutinas · Configuración — and this table is the only place their URLs
+ * are written. `session` (the ZEN logger) stays a route a screen navigates to,
+ * but is not a rail destination, exactly as in the mockup (it opens from Hoy).
+ *
  * @module app/router
  */
 
 import { useEffect, useState } from "react";
 
-/**
- * The six destinations. Everything else is a parameter of one of them.
- *
- * `week` arrived with the Inicio slimming (2026-09-30 f): the weekly plan, its
- * regeneration and its explanation are a surface of their own, so Inicio can
- * answer one question (what do I do now?) instead of four.
- */
+/** The eight rail destinations plus the session, which is opened from them. */
 export type RouteId =
-  "today" | "exercises" | "week" | "session" | "progress" | "settings";
+  | "today"
+  | "training"
+  | "history"
+  | "progress"
+  | "exercises"
+  | "week"
+  | "routines"
+  | "settings"
+  | "session";
 
 export interface Route {
   id: RouteId;
@@ -46,37 +55,50 @@ const SEGMENTS: Record<string, RouteId> = {
   hoy: "today",
   today: "today",
   inicio: "today",
+  entrenamiento: "training",
+  training: "training",
+  historial: "history",
+  history: "history",
+  progreso: "progress",
+  progress: "progress",
   ejercicios: "exercises",
   exercises: "exercises",
   semana: "week",
   week: "week",
+  rutinas: "routines",
+  routines: "routines",
+  ajustes: "settings",
+  configuracion: "settings",
+  settings: "settings",
   sesion: "session",
   session: "session",
-  entrenamiento: "session",
-  progreso: "progress",
-  progress: "progress",
-  ajustes: "settings",
-  settings: "settings",
+  entrenar: "session",
 };
 
 /** The canonical hash for a destination (what `href` and `navigate` write). */
 export const HASH: Record<RouteId, string> = {
   today: "#/hoy",
+  training: "#/entrenamiento",
+  history: "#/historial",
+  progress: "#/progreso",
   exercises: "#/ejercicios",
   week: "#/semana",
-  session: "#/sesion",
-  progress: "#/progreso",
+  routines: "#/rutinas",
   settings: "#/ajustes",
+  session: "#/sesion",
 };
 
 /** Route segment per destination — one source for every plain `<a href>`. */
 export const SEGMENT: Record<RouteId, string> = {
   today: "hoy",
+  training: "entrenamiento",
+  history: "historial",
+  progress: "progreso",
   exercises: "ejercicios",
   week: "semana",
-  session: "sesion",
-  progress: "progreso",
+  routines: "rutinas",
   settings: "ajustes",
+  session: "sesion",
 };
 
 /** Parse a `location.hash` (with or without the leading `#`) into a route. */

@@ -20,14 +20,59 @@ import { buildBackup, parseBackup, type TrainingLabBackup } from "./backup";
 import type { TLSet, TLSession, TLSettingsData } from "./types";
 import type { HealthRecord } from "./shared";
 import type { DecisionModel } from "@fitness/bodylab-training";
+import type { TrainingLabMirror } from "./backup";
 
 /** Coalesce bursts: logging four sets in a minute writes one snapshot. */
 export const AUTOBACKUP_DEBOUNCE_MS = 2000;
 
 /**
- * Cheap fingerprint of the log. A snapshot is only worth writing when something
- * actually changed — otherwise merely opening the app would rewrite the file and
- * push the eight kept snapshots past anything useful.
+ * The settings that change what the app *does*, and nothing else.
+ *
+ * A mere presence bit (`settings ? "s" : "-"`) used to be enough — and that was
+ * a bug (2026-10-09): changing the goal, the budget, the level or the inventory
+ * left the mirror stale, so a model that had just called `configure_training`
+ * kept reading the values it had replaced. Writing the whole object into the
+ * signature would rewrite the file for a change in a display-only field (unit,
+ * language) that no plan depends on. This is the middle ground: the plan's own
+ * inputs, serialised cheaply.
+ */
+function settingsKey(settings: TLSettingsData | null): string {
+  if (!settings) return "-";
+  return [
+    settings.goal,
+    settings.level,
+    settings.timeBudgetMin,
+    settings.daysPerWeek,
+    settings.useDecisionModel ? "dm" : "-",
+    (settings.inventory ?? [])
+      .map((i) => `${i.presetId ?? i.label}:${i.maxLoadKg ?? "-"}:${i.incrementKg ?? "-"}`)
+      .join("+"),
+    Object.keys(settings.weekOverrides ?? {}).sort().join(","),
+    Object.entries(settings.repOverrides ?? {})
+      .map(([id, range]) => `${id}:${range.min}-${range.max}`)
+      .sort()
+      .join(","),
+  ].join("~");
+}
+
+/** Today's live state (self-report + the plan the app shows) as a fingerprint. */
+function mirrorKey(mirror: TrainingLabMirror | null | undefined): string {
+  if (!mirror) return "-";
+  return [
+    mirror.date,
+    mirror.readiness
+      ? `${mirror.readiness.energy}/${mirror.readiness.motivation}/${mirror.readiness.soreness}`
+      : "-",
+    (mirror.plan ?? [])
+      .map((r) => `${r.exerciseId}x${r.sets}x${r.repsMin}-${r.repsMax}@${r.restSec}`)
+      .join("+"),
+  ].join("~");
+}
+
+/**
+ * Cheap fingerprint of everything the mirror carries. A snapshot is only worth
+ * writing when something actually changed — otherwise merely opening the app
+ * would rewrite the file and push the eight kept snapshots past anything useful.
  */
 export function logSignature(input: {
   sets: readonly TLSet[];
@@ -35,6 +80,7 @@ export function logSignature(input: {
   settings: TLSettingsData | null;
   health?: readonly HealthRecord[];
   decisionModel?: DecisionModel | null;
+  mirror?: TrainingLabMirror | null;
 }): string {
   const latestSet = input.sets.reduce((max, s) => (s.timestamp > max ? s.timestamp : max), "");
   const latestSession = input.sessions.reduce(
@@ -47,8 +93,9 @@ export function logSignature(input: {
     input.health?.length ?? 0,
     latestSet,
     latestSession,
-    input.settings ? "s" : "-",
+    settingsKey(input.settings),
     input.decisionModel ? "d" : "-",
+    mirrorKey(input.mirror),
   ].join("|");
 }
 
@@ -66,6 +113,7 @@ export interface AutobackupSource {
   health: readonly HealthRecord[];
   settings: TLSettingsData | null;
   decisionModel: DecisionModel | null;
+  mirror?: TrainingLabMirror | null;
 }
 
 /**

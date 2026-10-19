@@ -32,6 +32,12 @@ import {
 import { getTraits } from "@fitness/bodylab-exercises";
 import { muscleFamilyOf } from "@fitness/bodylab-training";
 import { getLanguage, t, tInterp } from "../lib/i18n";
+import {
+  EFFORT_MARKERS,
+  EFFORT_MEANING,
+  markerOf,
+  type EffortMarker,
+} from "../lib/effort";
 import { categoryLabel, familyLabel, muscleLabel } from "../lib/format";
 import { ExerciseThumbLarge } from "../features/exercises/ExerciseThumb";
 import {
@@ -123,6 +129,7 @@ export default function ExerciseDetailScreen({
       </button>
 
       <ExerciseThumbLarge
+        exerciseId={exercise.id}
         label={familyLabel(families[0] ?? "core")}
         alt={exercise.name[lang] ?? exercise.name.en}
       />
@@ -457,30 +464,39 @@ function formatDayDate(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
   if (!y || !m || !d) return date;
   const lang = getLanguage();
-  return new Date(y, m - 1, d).toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return new Date(y, m - 1, d).toLocaleDateString(
+    lang === "es" ? "es-ES" : "en-US",
+    {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    },
+  );
 }
 
 /**
  * The logged history of this exercise, one block per training day.
  *
  * Warm-up sets are shown (they are real work) but struck through as warm-ups and
- * excluded from the day's tonnage; a `D`/`F` note from an imported log is kept as
- * a chip instead of being dropped, because losing it would rewrite the owner's
- * history. The estimated 1RM is labelled as an estimate — it is Epley, and only
- * shown when there is a real load with reps.
+ * excluded from the day's tonnage; the `D`/`F` mark a set was logged or imported
+ * with is rendered as a chip **with its name in the user's language** ("D ·
+ * Cerca del fallo"), because a bare letter the reader has to remember is not an
+ * explanation. The estimated 1RM is labelled as an estimate — it is Epley, and
+ * only shown when there is a real load with reps.
  */
 function HistoryTab({ exerciseId }: { exerciseId: string }) {
-  const { sets } = useStore();
-  const history = useMemo(() => exerciseHistory(sets, exerciseId), [sets, exerciseId]);
+  const { sets, editSet, removeSet } = useStore();
+  const history = useMemo(
+    () => exerciseHistory(sets, exerciseId),
+    [sets, exerciseId],
+  );
   // All-time marks over **every** logged set, not just the days rendered below:
   // a "best ever" that silently forgot older sessions would be a lie.
   const marks = useMemo(
     () =>
-      marksOf(sets.filter((s) => s.exerciseId === exerciseId && s.warmup !== true)),
+      marksOf(
+        sets.filter((s) => s.exerciseId === exerciseId && s.warmup !== true),
+      ),
     [sets, exerciseId],
   );
 
@@ -522,10 +538,42 @@ function HistoryTab({ exerciseId }: { exerciseId: string }) {
             )}
           </p>
         )}
+        {/*
+         * The unloaded marks, named as marks and with their rule next to them
+         * (2026-10-13). They are a different currency from the line above — reps
+         * and seconds, not kilos — and they are the only thing a set with no
+         * load can beat, which is what most of this log is: pull-ups, dips,
+         * push-ups, planks and hangs.
+         */}
+        {marks.bestReps !== null && (
+          <p className="text-sm mt-2" data-testid="mark-reps">
+            <span className="font-semibold">
+              {tInterp("mark.reps", { n: marks.bestReps })}
+            </span>{" "}
+            <span className="text-[var(--tl-text-secondary)]">
+              · {t("mark.repsWhy")}
+            </span>
+          </p>
+        )}
+        {marks.bestHoldSec !== null && (
+          <p className="text-sm mt-1" data-testid="mark-hold">
+            <span className="font-semibold">
+              {tInterp("mark.hold", { sec: marks.bestHoldSec })}
+            </span>{" "}
+            <span className="text-[var(--tl-text-secondary)]">
+              · {t("mark.holdWhy")}
+            </span>
+          </p>
+        )}
       </Card>
 
       {history.days.map((day) => (
-        <HistoryDayCard key={day.date} day={day} />
+        <HistoryDayCard
+          key={day.date}
+          day={day}
+          onEditSet={editSet}
+          onRemoveSet={removeSet}
+        />
       ))}
 
       {hiddenDays > 0 && (
@@ -537,7 +585,50 @@ function HistoryTab({ exerciseId }: { exerciseId: string }) {
   );
 }
 
-function HistoryDayCard({ day }: { day: HistoryDay }) {
+function HistoryDayCard({
+  day,
+  onEditSet,
+  onRemoveSet,
+}: {
+  day: HistoryDay;
+  onEditSet: (
+    id: string,
+    patch: {
+      weight?: number | null;
+      reps?: number | null;
+      effort?: EffortMarker | null;
+    },
+  ) => void;
+  onRemoveSet: (id: string) => void;
+}) {
+  const lang = getLanguage();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editWeight, setEditWeight] = useState("");
+  const [editReps, setEditReps] = useState("");
+  const [editEffort, setEditEffort] = useState<EffortMarker | null>(null);
+
+  const startEdit = (set: HistoryDay["sets"][number]) => {
+    setEditingId(set.id);
+    setEditWeight(set.weight !== null ? String(set.weight) : "");
+    setEditReps(set.reps !== null ? String(set.reps) : "");
+    const mark = markerOf(set);
+    setEditEffort(mark === "D" || mark === "F" ? mark : null);
+  };
+
+  const saveEdit = (set: HistoryDay["sets"][number]) => {
+    const w =
+      editWeight.trim() === ""
+        ? null
+        : parseFloat(editWeight.replace(",", "."));
+    const r = editReps.trim() === "" ? null : parseInt(editReps, 10);
+    onEditSet(set.id, {
+      weight: Number.isNaN(w) ? set.weight : w,
+      reps: Number.isNaN(r) ? set.reps : r,
+      effort: editEffort,
+    });
+    setEditingId(null);
+  };
+
   return (
     <Card>
       <div className="flex items-baseline justify-between gap-3">
@@ -551,27 +642,127 @@ function HistoryDayCard({ day }: { day: HistoryDay }) {
             : tInterp("ex.history.daySets", { n: day.workingSets })}
         </p>
       </div>
-      <ul className="mt-2 flex flex-col gap-1">
-        {day.sets.map((set) => (
-          <li
-            key={set.id}
-            className="flex flex-wrap items-center gap-2 text-sm"
-            data-testid="history-set"
-          >
-            <span className={set.warmup ? "text-[var(--tl-text-muted)] line-through" : ""}>
-              {set.weight !== null
-                ? tInterp("ex.history.setLoad", {
-                    kg: kg(set.weight),
-                    reps: set.reps ?? 0,
-                  })
-                : set.durationSec !== null
-                  ? tInterp("ex.history.setTime", { sec: set.durationSec })
-                  : t("ex.history.setBodyweight")}
-            </span>
-            {set.warmup && <Badge tone="neutral">{t("ex.history.warmup")}</Badge>}
-            {!set.warmup && set.notes && <Badge tone="info">{set.notes}</Badge>}
-          </li>
-        ))}
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {day.sets.map((set) => {
+          const mark = markerOf(set);
+          if (editingId === set.id) {
+            return (
+              <li
+                key={set.id}
+                className="flex flex-wrap items-center gap-2 text-sm bg-[var(--tl-surface-2)] p-2 rounded"
+              >
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={editWeight}
+                  onChange={(e) => setEditWeight(e.target.value)}
+                  placeholder="kg"
+                  className="tl-input w-20 px-2 py-1 text-xs"
+                />
+                <span className="text-xs text-[var(--tl-text-muted)]">×</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={editReps}
+                  onChange={(e) => setEditReps(e.target.value)}
+                  placeholder="reps"
+                  className="tl-input w-16 px-2 py-1 text-xs"
+                />
+                {/* D/F: tapping the active mark again clears it. */}
+                {EFFORT_MARKERS.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setEditEffort(editEffort === m ? null : m)}
+                    aria-pressed={editEffort === m}
+                    aria-label={EFFORT_MEANING[m].label[lang]}
+                    title={`${EFFORT_MEANING[m].label[lang]} · ${EFFORT_MEANING[m].detail[lang]}`}
+                    className={`w-7 h-7 rounded-lg border text-xs font-bold tl-focusable transition-colors ${
+                      editEffort === m
+                        ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)] border-transparent"
+                        : "bg-[var(--tl-surface)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => saveEdit(set)}
+                  className="tl-btn tl-btn-primary px-2 py-1 text-xs"
+                >
+                  {t("common.save")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingId(null)}
+                  className="tl-btn tl-btn-ghost px-2 py-1 text-xs"
+                >
+                  {t("common.cancel")}
+                </button>
+              </li>
+            );
+          }
+
+          return (
+            <li
+              key={set.id}
+              className="flex flex-wrap items-center justify-between gap-2 text-sm py-0.5"
+              data-testid="history-set"
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className={
+                    set.warmup ? "text-[var(--tl-text-muted)] line-through" : ""
+                  }
+                >
+                  {set.weight !== null
+                    ? tInterp("ex.history.setLoad", {
+                        kg: kg(set.weight),
+                        reps: set.reps ?? 0,
+                      })
+                    : set.durationSec !== null
+                      ? tInterp("ex.history.setTime", { sec: set.durationSec })
+                      : t("ex.history.setBodyweight")}
+                </span>
+                {set.warmup && (
+                  <Badge tone="neutral">{t("ex.history.warmup")}</Badge>
+                )}
+                {!set.warmup && (mark === "D" || mark === "F") && (
+                  <Badge
+                    tone={mark === "F" ? "danger" : "warning"}
+                    title={EFFORT_MEANING[mark].detail[lang]}
+                  >
+                    {mark} · {EFFORT_MEANING[mark].label[lang]}
+                  </Badge>
+                )}
+                {/* A real note still shows — but not when it *is* the badge,
+                    which is what the legacy `notes: "D"` rows are. */}
+                {!set.warmup && set.notes && mark === null && (
+                  <Badge tone="info">{set.notes}</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => startEdit(set)}
+                  className="text-xs text-[var(--tl-text-muted)] hover:text-[var(--tl-accent)] px-1.5 py-0.5 rounded"
+                  title={t("common.edit")}
+                >
+                  {t("common.edit")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemoveSet(set.id)}
+                  className="text-xs text-[var(--tl-text-muted)] hover:text-red-400 px-1.5 py-0.5 rounded"
+                  title={t("common.delete")}
+                >
+                  {t("common.delete")}
+                </button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );

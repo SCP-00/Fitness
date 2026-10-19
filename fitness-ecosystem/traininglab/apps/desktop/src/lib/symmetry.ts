@@ -24,6 +24,7 @@
  * @module lib/symmetry
  */
 
+import { effortFromNote } from "./effort";
 import type { TLSession, TLSet } from "./types";
 
 /** What the importer writes as the JSON root's `source`. */
@@ -182,7 +183,14 @@ export function parseSymmetry(text: string): SymmetryImportResult {
         `${dateIso}|${exerciseName}|${index}|${weight ?? "-"}|${reps ?? "-"}|${durationSec ?? "-"}`,
       )}`;
       setIds.push(setId);
-      const note = noteOf(row.notes);
+      /*
+       * The badge is structured now: `D` (near failure) and `F` (to failure)
+       * become `TLSet.effort` instead of a free-text note, so the fatigue and
+       * progression models can read it (owner-confirmed 2026-10-09). Any other
+       * content of the cell stays in `notes` as before.
+       */
+      const effort = effortFromNote(row.notes);
+      const note = effort ? null : noteOf(row.notes);
       sets.push({
         id: setId,
         exerciseId,
@@ -192,6 +200,7 @@ export function parseSymmetry(text: string): SymmetryImportResult {
         reps,
         ...(durationSec !== null && durationSec > 0 ? { durationSec } : {}),
         ...(row.warmup === true ? { warmup: true } : {}),
+        ...(effort ? { effort } : {}),
         ...(note ? { notes: note } : {}),
       });
       report.sets++;

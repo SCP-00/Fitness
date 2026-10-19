@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Sesión en vivo</title>
+<link rel="stylesheet" href="css/tl.css" />
+</head>
+<body data-page="entrenamiento">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <!-- ── Top bar: now / next, and the escape hatches ───────────────────── -->
+    <header class="topbar">
+      <span class="nownext">
+        <i data-icon="target" style="color:var(--tl-accent);width:19px;height:19px"></i>
+        <span class="small muted">Ahora:</span>
+        <b>Sentadilla Copa</b>
+        <i data-icon="chevronRight" style="width:15px;height:15px;color:var(--tl-text-muted)"></i>
+        <span class="small muted">Siguiente:</span>
+        <b class="secondary">Zancadas Caminando</b>
+      </span>
+      <div class="spacer"></div>
+      <button class="btn"><i data-icon="chevronRight"></i>Saltar</button>
+      <button class="btn"><i data-icon="clock"></i>Posponer</button>
+      <button class="btn"><i data-icon="repeat"></i>Cambiar</button>
+      <div class="spacer"></div>
+      <span class="small secondary mono">Sáb, 7 jun 2025 · 10:24</span>
+      <span class="rail-logo" style="width:32px;height:32px;border-radius:50%;background:var(--tl-surface-3);color:var(--tl-text-secondary)"><i data-icon="users"></i></span>
+    </header>
+
+    <div class="content">
+      <div class="cols-wide">
+        <!-- ══ LEFT ══════════════════════════════════════════════════════════ -->
+        <div class="stack">
+
+          <!-- Media first: there is ALWAYS a GIF, a photo or an honest empty state -->
+          <section class="card">
+            <div class="card-head" style="padding-bottom:8px">
+              <span class="card-title" style="font-size:22px">
+                <i data-icon="target" style="width:22px;height:22px"></i>Sentadilla Copa
+              </span>
+              <div class="spacer"></div>
+              <span class="small muted">Cuádriceps · Glúteos · Core</span>
+              <button class="icon-btn"><i data-icon="external"></i></button>
+            </div>
+
+            <div class="card-body" style="padding-top:0">
+              <div class="row" style="gap:8px;margin-bottom:12px">
+                <button class="btn"><i data-icon="notebook"></i>Técnica</button>
+                <button class="btn"><i data-icon="users"></i>Músculos</button>
+                <div class="spacer"></div>
+                <span class="badge badge-accent"><i data-icon="image"></i>GIF de referencia</span>
+              </div>
+
+              <div class="hero-media" style="padding:0;border:none;background:none">
+                <div class="frame" style="aspect-ratio:16/9;max-height:360px">
+                  <div data-media="goblet-squat" style="width:100%;height:100%"></div>
+                  <div class="media-toggle">
+                    <button class="is-active">GIF</button>
+                    <button>Inicio</button>
+                    <button>Fin</button>
+                  </div>
+                </div>
+                <p class="tiny muted" style="margin:0;text-align:center">
+                  Referencia de técnica · mira la posición de la espalda y el recorrido completo
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Live set entry: type it, or tap it -->
+          <section class="card">
+            <div class="card-head">
+              <h2 class="card-title" style="font-size:17px">Serie 2 de 4</h2>
+              <div class="spacer"></div>
+              <span class="tiny muted">Escribe el número o usa − / +</span>
+            </div>
+            <div class="card-body" style="padding-top:0">
+              <div class="stepper-row">
+                <div class="field" data-stepper data-step="2" data-min="0" data-decimals="1">
+                  <div class="field-label">Peso (kg)</div>
+                  <div class="stepper">
+                    <button class="stepper-btn" data-step="down" aria-label="Bajar peso"><i data-icon="minus"></i></button>
+                    <input class="stepper-input" value="26" inputmode="decimal" aria-label="Peso en kilos" />
+                    <button class="stepper-btn" data-step="up" aria-label="Subir peso"><i data-icon="plus"></i></button>
+                  </div>
+                  <div class="stepper-unit">kg · de 2 en 2</div>
+                </div>
+
+                <div class="field" data-stepper data-step="1" data-min="0">
+                  <div class="field-label">Reps</div>
+                  <div class="stepper">
+                    <button class="stepper-btn" data-step="down" aria-label="Bajar reps"><i data-icon="minus"></i></button>
+                    <input class="stepper-input" value="10" inputmode="numeric" aria-label="Repeticiones" />
+                    <button class="stepper-btn" data-step="up" aria-label="Subir reps"><i data-icon="plus"></i></button>
+                  </div>
+                  <div class="stepper-unit">objetivo 10–12</div>
+                </div>
+
+                <div class="field">
+                  <div class="field-label">RIR</div>
+                  <select class="stepper-input" style="font-size:26px;text-align:left;border-bottom-color:var(--tl-border-strong)" aria-label="RIR">
+                    <option>2</option><option>1</option><option>0</option><option>3</option><option>4+</option>
+                  </select>
+                  <div class="stepper-unit">repeticiones en reserva</div>
+                </div>
+              </div>
+
+              <button class="btn btn-primary btn-xl" style="margin-top:14px"><i data-icon="check"></i>Registrar</button>
+            </div>
+          </section>
+
+          <!-- The set log lives BELOW, and it is big enough to read -->
+          <section class="card">
+            <div class="card-head">
+              <h2 class="card-title">Registro de hoy <span class="muted" style="font-weight:500">· Sentadilla Copa</span></h2>
+              <div class="spacer"></div>
+              <span class="badge badge-success"><i data-icon="circleCheck"></i>2 / 4 series</span>
+            </div>
+            <div class="card-body" style="padding:0 0 6px">
+              <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width:64px">Serie</th>
+                    <th style="width:130px">Peso (kg)</th>
+                    <th style="width:110px">Reps</th>
+                    <th>Marca</th>
+                    <th style="width:190px">Anterior</th>
+                    <th style="width:44px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="bold">1</td>
+                    <td class="mono">24</td>
+                    <td class="mono">10</td>
+                    <td><span class="row" style="gap:6px;color:var(--tl-success)"><i data-icon="circleCheck" style="width:15px;height:15px"></i>Completada</span></td>
+                    <td class="muted mono">22 kg · 10 reps</td>
+                    <td></td>
+                  </tr>
+                  <tr class="is-active">
+                    <td class="bold">2</td>
+                    <td>
+                      <div class="field" style="padding:4px 8px;border-color:var(--tl-accent-border)" data-stepper data-step="2" data-min="0" data-decimals="1">
+                        <input class="stepper-input" value="26" inputmode="decimal"
+                          style="font-size:19px;text-align:left;height:30px" aria-label="Peso de la serie 2" />
+                      </div>
+                    </td>
+                    <td>
+                      <div class="field" style="padding:4px 8px" data-stepper data-step="1" data-min="0">
+                        <input class="stepper-input" value="10" inputmode="numeric"
+                          style="font-size:19px;text-align:left;height:30px" aria-label="Reps de la serie 2" />
+                      </div>
+                    </td>
+                    <td class="muted">—</td>
+                    <td class="muted mono">24 kg · 10 reps</td>
+                    <td><button class="icon-btn" title="Repetir la anterior"><i data-icon="rotate"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td class="bold">3</td>
+                    <td><input class="stepper-input" value="26" style="font-size:19px;height:30px;border-bottom:none" aria-label="Peso serie 3" /></td>
+                    <td><input class="stepper-input" value="10" style="font-size:19px;height:30px;border-bottom:none" aria-label="Reps serie 3" /></td>
+                    <td class="muted">—</td>
+                    <td class="muted mono">26 kg · 10 reps</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td class="bold">4</td>
+                    <td><input class="stepper-input" value="26" style="font-size:19px;height:30px;border-bottom:none" aria-label="Peso serie 4" /></td>
+                    <td><input class="stepper-input" value="10" style="font-size:19px;height:30px;border-bottom:none" aria-label="Reps serie 4" /></td>
+                    <td class="muted">—</td>
+                    <td class="muted mono">26 kg · 10 reps</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- What comes next, and in what order — reorderable -->
+          <section class="card">
+            <div class="card-head">
+              <h2 class="card-title"><i data-icon="layers"></i>Después de esta serie</h2>
+              <div class="spacer"></div>
+              <span class="tiny muted">Arrastra para cambiar el orden</span>
+            </div>
+            <div class="card-body" style="padding-top:0">
+              <div class="upnext" data-drop="list" data-renumber>
+                <div class="upnext-item is-now" data-drag="1">
+                  <span class="upnext-move"><i data-icon="grip"></i></span>
+                  <span class="idx">1</span>
+                  <span><b>Sentadilla Copa</b><small>Mancuerna / Pesa Rusa · en curso</small></span>
+                </div>
+                <div class="upnext-item" data-drag="2">
+                  <span class="upnext-move"><i data-icon="grip"></i></span>
+                  <span class="idx">2</span>
+                  <span><b>Zancadas Caminando</b><small>Mancuernas · 3 × 10–12</small></span>
+                </div>
+                <div class="upnext-item" data-drag="3">
+                  <span class="upnext-move"><i data-icon="grip"></i></span>
+                  <span class="idx">3</span>
+                  <span><b>Prensa de Piernas</b><small>Máquina de Prensa · 3 × 12–15</small></span>
+                </div>
+                <div class="upnext-item" data-drag="4">
+                  <span class="upnext-move"><i data-icon="grip"></i></span>
+                  <span class="idx">4</span>
+                  <span><b>Elevación de Talones de Pie</b><small>Máquina · 4 × 12–15</small></span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ══ RIGHT: only recommendations and guidance ══════════════════════ -->
+        <div class="stack">
+
+          <!-- Progresión recomendada -->
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:12px">Progresión recomendada</h2>
+            <div class="row" style="gap:10px">
+              <i data-icon="bars" style="color:var(--tl-accent);width:20px;height:20px"></i>
+              <div>
+                <div class="tiny muted">Peso sugerido (próxima serie)</div>
+                <div class="bold" style="font-size:17px">+2 kg</div>
+              </div>
+            </div>
+            <div class="note-box" style="margin-top:12px">
+              <span class="mono">24 kg + 2 kg = <b style="color:var(--tl-text)">26 kg</b></span>
+            </div>
+            <div class="divider" style="margin:12px 0"></div>
+            <div class="row" style="gap:8px;color:var(--tl-text-muted)">
+              <i data-icon="trendingUp" style="width:16px;height:16px"></i>
+              <span class="tiny">Basado en tu progreso de las últimas 2 semanas</span>
+            </div>
+          </section>
+
+          <!-- Cues -->
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:6px">Cues de técnica</h2>
+            <div class="cue"><span class="cue-num">1</span><p>Mantén el pecho arriba y la espalda recta.</p></div>
+            <div class="cue"><span class="cue-num">2</span><p>Rodillas alineadas con los pies, sin colapsar hacia dentro.</p></div>
+            <div class="cue"><span class="cue-num">3</span><p>Controla la bajada, sin perder la tensión del tronco.</p></div>
+          </section>
+
+          <!-- Rest timer -->
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:14px">Descanso</h2>
+            <div class="row" style="gap:18px;justify-content:center">
+              <div class="ring progress-ring-lg" style="--pct:47;--ring-color:var(--tl-accent)">
+                <div>
+                  <div class="ring-value">42<small>s</small></div>
+                  <div class="tiny muted" style="margin-top:2px">/ 90 s</div>
+                </div>
+              </div>
+              <div class="stack" style="gap:10px">
+                <button class="btn" style="width:74px;height:44px"><i data-icon="pause"></i></button>
+                <button class="btn" style="width:74px;height:44px">+15 s</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Exercise summary -->
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:12px">Resumen del ejercicio</h2>
+            <div class="summary-grid">
+              <div class="summary-cell"><i data-icon="trendingUp"></i><b>4</b><span>series</span></div>
+              <div class="summary-cell"><i data-icon="repeat"></i><b>10–12</b><span>reps</span></div>
+              <div class="summary-cell"><i data-icon="clock"></i><b>60–90</b><span>descanso</span></div>
+              <div class="summary-cell"><i data-icon="users"></i><b style="font-size:12px">Piernas · Glúteos</b><span>músculos</span></div>
+            </div>
+          </section>
+
+          <!-- The same screen on a phone -->
+          <section class="card card-pad">
+            <h2 class="card-title" style="margin-bottom:12px">En el móvil, con una mano</h2>
+            <div class="phone-wrap">
+              <div class="phone">
+                <div class="phone-screen">
+                  <div class="phone-notch"></div>
+                  <div class="phone-top"><span>10:24</span><span>▮▮▮ ▮▮</span></div>
+                  <div class="phone-title"><i data-icon="target" style="width:15px;height:15px;color:var(--tl-accent)"></i>Sentadilla Copa</div>
+                  <div class="tiny muted">Cuádriceps · Glúteos · Core</div>
+                  <div class="phone-frame"><div data-media="goblet-squat" style="width:100%;height:100%"></div></div>
+                  <div class="tiny bold">Serie 2 de 4</div>
+                  <div class="phone-field">
+                    <div class="phone-box" data-stepper data-step="2" data-min="0" data-decimals="1">
+                      <div class="lbl">Peso (kg)</div>
+                      <div class="val">
+                        <button data-step="down"><i data-icon="minus"></i></button>
+                        <input value="26" inputmode="decimal" aria-label="Peso móvil" />
+                        <button data-step="up"><i data-icon="plus"></i></button>
+                      </div>
+                    </div>
+                    <div class="phone-box" data-stepper data-step="1" data-min="0">
+                      <div class="lbl">Reps</div>
+                      <div class="val">
+                        <button data-step="down"><i data-icon="minus"></i></button>
+                        <input value="10" inputmode="numeric" aria-label="Reps móvil" />
+                        <button data-step="up"><i data-icon="plus"></i></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="phone-box">
+                    <div class="lbl">RIR</div>
+                    <div style="font-size:15px;font-weight:700;margin-top:2px">2</div>
+                  </div>
+                  <button class="btn btn-primary" style="width:100%"><i data-icon="check"></i>Registrar</button>
+                  <div class="phone-numpad" data-numpad>
+                    <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="+">+</button>
+                    <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="-">−</button>
+                    <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="del"><i data-icon="x" style="width:14px;height:14px;margin:0 auto"></i></button>
+                    <button data-key=",">,</button><button data-key="0">0</button><button data-key="00">00</button>
+                    <button class="ok" data-key="ok">Listo</button>
+                  </div>
+                </div>
+              </div>
+              <p class="tiny muted" style="max-width:280px;text-align:center">
+                El teclado numérico es opcional: el campo acepta el número directamente.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

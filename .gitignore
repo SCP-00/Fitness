@@ -140,3 +140,16 @@ fitness-ecosystem/.cache/
 # The owner's hand-correctable training log. It lives at the repo root on
 # purpose — he opens and edits it — but it is his body data, not source code.
 owner-training-log.csv
+
+# ── Mockup assets (generated, third-party reference media) ──────────────────
+# The mockup pages are source; the images they show are NOT.
+#   * `mockup/assets/media/`  — 36 cleared GIFs copied from the web app plus
+#     public-domain stills downloaded from free-exercise-db. Both are
+#     reproducible with `node mockup/tools/fetch-media.mjs`, and neither is
+#     redistributed: the mockup is a review artefact, not a shipped bundle.
+#   * `mockup/shots/`         — Playwright full-page captures of every screen.
+#   * `mockup/data/media-audit.txt` — the per-exercise match report, so a wrong
+#     demo image shows up in a diff.
+fitness-ecosystem/mockup/assets/media/
+fitness-ecosystem/mockup/shots/
+fitness-ecosystem/mockup/data/media-audit.txt

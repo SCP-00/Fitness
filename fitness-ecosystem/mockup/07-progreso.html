@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrainingLab · Progreso</title>
+<link rel="stylesheet" href="css/tl.css" />
+<style>
+  .pg-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.85fr); gap: 18px; align-items: start; }
+  .pg-span2 { grid-column: span 2; }
+  .pg-wide { grid-column: span 3; }
+  .bodyline { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+  .bodyline img { height: 210px; width: auto; max-width: 100%; }
+  .bodyline img.male { filter: invert(1) brightness(1.05); mix-blend-mode: screen; opacity: .92; }
+  .bodyline img.female { opacity: .92; }
+  .metric-big { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
+  .metric-big > * { min-width: 0; }
+  .legend-col { display: flex; flex-direction: column; gap: 7px; font-size: 11.5px; color: var(--tl-text-secondary); }
+  .chart-card { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .chart-box { border: 1px solid var(--tl-border); border-radius: 10px; padding: 10px; background: var(--tl-surface); }
+  .chart-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .chart-head b { font-size: 12.5px; }
+  .adherence { display: grid; grid-template-columns: repeat(7, 1fr) 92px; gap: 6px; align-items: center; }
+  .ad-day { text-align: center; }
+  .ad-day .lbl { font-size: 10.5px; color: var(--tl-text-muted); }
+  .ad-ring {
+    --pct: 100; width: 34px; height: 34px; border-radius: 50%; margin: 4px auto 2px;
+    background: conic-gradient(var(--rc, var(--tl-success)) calc(var(--pct) * 1%), var(--tl-surface-3) 0);
+    display: grid; place-items: center;
+  }
+  .ad-ring::after { content: ""; width: 24px; height: 24px; border-radius: 50%; background: var(--tl-surface); grid-area: 1/1; }
+  .ad-ring span { grid-area: 1/1; z-index: 1; font-size: 9.5px; font-weight: 700; }
+  .ad-day em { font-style: normal; font-size: 10px; }
+  .pr-row { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(41,49,58,.5); }
+  .pr-row:last-child { border-bottom: none; }
+  .pr-ico { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--tl-surface-2); border: 1px solid var(--tl-border); }
+  .pr-ico .icon { width: 17px; height: 17px; color: var(--tl-accent); }
+  .pr-name { font-size: 12.5px; font-weight: 600; }
+  .pr-val { font-size: 11.5px; color: var(--tl-text-muted); }
+  .pr-date { font-size: 10.5px; color: var(--tl-text-muted); text-align: right; }
+  .sym-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .sym-cell b { font-size: 22px; font-weight: 700; }
+  .sym-cell span { display: block; font-size: 11px; color: var(--tl-text-muted); }
+  .sim-note { display: flex; gap: 9px; align-items: flex-start; color: var(--tl-success); font-size: 12px; }
+  .footer-strip { display: flex; align-items: center; gap: 12px; color: var(--tl-text-muted); font-size: 11.5px; }
+  @media (max-width: 1400px) { .pg-grid { grid-template-columns: 1fr 1fr; } .pg-wide { grid-column: span 2; } }
+  @media (max-width: 980px) { .pg-grid { grid-template-columns: 1fr; } .pg-span2, .pg-wide { grid-column: span 1; } }
+</style>
+</head>
+<body data-page="progreso">
+<div class="app">
+  <aside class="rail" data-rail></aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Progreso</div>
+        <div class="topbar-sub">Cómo evoluciona tu cuerpo, fuerza y rendimiento.</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="seg" data-switch="rango">
+        <button class="seg-item" data-value="7">7 días</button>
+        <button class="seg-item is-active" data-value="30">30 días</button>
+        <button class="seg-item" data-value="all">Todo</button>
+      </div>
+      <button class="pill"><i data-icon="calendar"></i>7 jun 2025 – 6 jul 2025 <i data-icon="chevronDown"></i></button>
+      <span class="rail-logo" style="width:32px;height:32px;border-radius:50%;background:var(--tl-surface-3);color:var(--tl-text-secondary)"><i data-icon="users"></i></span>
+    </header>
+
+    <div class="content">
+      <div class="pg-grid">
+        <!-- ── Whole body ─────────────────────────────────────────────────── -->
+        <section class="card card-pad">
+          <h2 class="card-title" style="margin-bottom:14px">
+            Tu cuerpo en general
+            <i data-icon="info" style="width:14px;height:14px;color:var(--tl-text-muted)"></i>
+          </h2>
+          <div class="metric-big">
+            <div class="ring" style="--size:132px;--pct:72;--ring-color:var(--tl-success)">
+              <div>
+                <div class="ring-value" style="font-size:30px">72<small style="font-size:14px">%</small></div>
+                <div class="tiny muted">Progreso total</div>
+              </div>
+            </div>
+            <div class="legend-col">
+              <div><i style="width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--band-excellent);margin-right:7px"></i>Avanzado · 12 grupos</div>
+              <div><i style="width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--band-moderate);margin-right:7px"></i>En progreso · 8 grupos</div>
+              <div><i style="width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--tl-info);margin-right:7px"></i>Sin entrenar · 0 grupos</div>
+            </div>
+          </div>
+          <div class="bodyline" style="margin-top:6px">
+            <img class="male" src="assets/bodymap/traininglab-body-map.png" alt="Mapa muscular" />
+            <img class="female" src="assets/bodymap/traininglab-body-map-woman.png" alt="Mapa muscular (figura femenina)" />
+          </div>
+          <div class="row" style="gap:8px;margin-top:12px">
+            <i data-icon="trendingUp" style="width:16px;height:16px;color:var(--tl-success)"></i>
+            <span class="small" style="color:var(--tl-success)"><b>+6 %</b></span>
+            <span class="tiny muted">vs. mes anterior</span>
+          </div>
+          <p class="secondary small" style="margin:10px 0 0">
+            Vas por buen camino. Tus piernas y espalda son tus puntos más fuertes.
+          </p>
+        </section>
+
+        <!-- ── Muscle groups ──────────────────────────────────────────────── -->
+        <section class="card card-pad">
+          <div class="row" style="margin-bottom:10px">
+            <h2 class="card-title grow">Grupos musculares</h2>
+            <div class="seg" data-switch="volumen">
+              <button class="seg-item is-active" data-value="series">Series / semana</button>
+              <button class="seg-item" data-value="objetivo">Rango objetivo</button>
+            </div>
+          </div>
+
+          <div class="bar-row"><span class="name"><i class="dot" style="background:var(--fam-quadriceps);width:8px;height:8px;border-radius:50%" data-icon="circle"></i>Piernas</span><div class="bar"><i style="width:90%;background:var(--band-strong)"></i></div><span class="num">18 <span class="muted">(12–20)</span></span></div>
+          <div class="bar-row"><span class="name">Espalda</span><div class="bar"><i style="width:80%;background:var(--band-strong)"></i></div><span class="num">16 <span class="muted">(12–20)</span></span></div>
+          <div class="bar-row"><span class="name">Pecho</span><div class="bar"><i style="width:60%;background:var(--tl-info)"></i></div><span class="num">12 <span class="muted">(10–16)</span></span></div>
+          <div class="bar-row"><span class="name">Hombros</span><div class="bar"><i style="width:50%;background:var(--tl-info)"></i></div><span class="num">10 <span class="muted">(8–14)</span></span></div>
+          <div class="bar-row"><span class="name">Bíceps</span><div class="bar"><i style="width:40%;background:var(--band-moderate)"></i></div><span class="num">8 <span class="muted">(6–10)</span></span></div>
+          <div class="bar-row"><span class="name">Tríceps</span><div class="bar"><i style="width:40%;background:var(--band-moderate)"></i></div><span class="num">8 <span class="muted">(6–10)</span></span></div>
+          <div class="bar-row"><span class="name">Core</span><div class="bar"><i style="width:30%;background:var(--fam-core)"></i></div><span class="num">6 <span class="muted">(4–8)</span></span></div>
+        </section>
+
+        <!-- ── Personal records ───────────────────────────────────────────── -->
+        <section class="card card-pad">
+          <div class="row" style="margin-bottom:8px">
+            <h2 class="card-title grow"><i data-icon="trophy"></i>Récords personales</h2>
+            <a class="card-link" href="#">Ver todos <i data-icon="arrowRight"></i></a>
+          </div>
+
+          <div class="pr-row"><span class="pr-ico"><i data-icon="trophy"></i></span><span><span class="pr-name">Sentadilla Copa</span><span class="pr-val">26 kg × 12 reps</span></span><span class="pr-date">7 jun 2025</span></div>
+          <div class="pr-row"><span class="pr-ico"><i data-icon="trophy"></i></span><span><span class="pr-name">Peso Muerto Rumano</span><span class="pr-val">32 kg × 10 reps</span></span><span class="pr-date">5 jun 2025</span></div>
+          <div class="pr-row"><span class="pr-ico"><i data-icon="trophy"></i></span><span><span class="pr-name">Empuje de Cadera con Barra</span><span class="pr-val">42 kg × 10 reps</span></span><span class="pr-date">2 jun 2025</span></div>
+          <div class="pr-row"><span class="pr-ico"><i data-icon="trophy"></i></span><span><span class="pr-name">Press con Barra</span><span class="pr-val">30 kg × 8 reps</span></span><span class="pr-date">28 may 2025</span></div>
+          <div class="pr-row"><span class="pr-ico"><i data-icon="trophy"></i></span><span><span class="pr-name">Dominadas</span><span class="pr-val">8 reps (peso corporal)</span></span><span class="pr-date">25 may 2025</span></div>
+        </section>
+
+        <!-- ── Strength evolution ─────────────────────────────────────────── -->
+        <section class="card card-pad pg-span2">
+          <div class="row" style="margin-bottom:12px">
+            <h2 class="card-title grow"><i data-icon="trendingUp"></i>Evolución de fuerza (e1RM)</h2>
+            <button class="pill">Últimos 30 días <i data-icon="chevronDown"></i></button>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-box">
+              <div class="chart-head"><span class="legend"><i style="background:var(--tl-success)"></i></span><b>Sentadilla Copa</b><div class="spacer"></div><span class="badge badge-success">52 kg</span></div>
+              <svg class="chart" viewBox="0 0 320 150" preserveAspectRatio="none">
+                <line class="chart-grid" x1="0" y1="30" x2="320" y2="30" />
+                <line class="chart-grid" x1="0" y1="70" x2="320" y2="70" />
+                <line class="chart-grid" x1="0" y1="110" x2="320" y2="110" />
+                <text class="chart-axis" x="2" y="26">60</text>
+                <text class="chart-axis" x="2" y="66">40</text>
+                <text class="chart-axis" x="2" y="106">20</text>
+                <path class="chart-area" fill="var(--tl-success)"
+                  d="M14,132 L60,116 L106,104 L152,96 L198,84 L244,74 L290,62 L306,56 L306,140 L14,140 Z" />
+                <polyline class="chart-line" stroke="var(--tl-success)"
+                  points="14,132 60,116 106,104 152,96 198,84 244,74 290,62 306,56" />
+                <circle cx="306" cy="56" r="4" fill="var(--tl-success)" />
+                <text class="chart-axis" x="8" y="148">7 jun</text>
+                <text class="chart-axis" x="140" y="148">21 jun</text>
+                <text class="chart-axis" x="272" y="148">6 jul</text>
+              </svg>
+            </div>
+
+            <div class="chart-box">
+              <div class="chart-head"><span class="legend"><i style="background:var(--tl-info)"></i></span><b>Peso Muerto Rumano</b><div class="spacer"></div><span class="badge badge-info">68 kg</span></div>
+              <svg class="chart" viewBox="0 0 320 150" preserveAspectRatio="none">
+                <line class="chart-grid" x1="0" y1="30" x2="320" y2="30" />
+                <line class="chart-grid" x1="0" y1="70" x2="320" y2="70" />
+                <line class="chart-grid" x1="0" y1="110" x2="320" y2="110" />
+                <text class="chart-axis" x="2" y="26">80</text>
+                <text class="chart-axis" x="2" y="66">50</text>
+                <text class="chart-axis" x="2" y="106">20</text>
+                <path class="chart-area" fill="var(--tl-info)"
+                  d="M14,120 L60,112 L106,92 L152,86 L198,74 L244,58 L290,46 L306,40 L306,140 L14,140 Z" />
+                <polyline class="chart-line" stroke="var(--tl-info)"
+                  points="14,120 60,112 106,92 152,86 198,74 244,58 290,46 306,40" />
+                <circle cx="306" cy="40" r="4" fill="var(--tl-info)" />
+                <text class="chart-axis" x="8" y="148">7 jun</text>
+                <text class="chart-axis" x="140" y="148">21 jun</text>
+                <text class="chart-axis" x="272" y="148">6 jul</text>
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Symmetry ───────────────────────────────────────────────────── -->
+        <section class="card card-pad">
+          <h2 class="card-title" style="margin-bottom:14px">
+            Simetría y equilibrio
+            <i data-icon="info" style="width:14px;height:14px;color:var(--tl-text-muted)"></i>
+          </h2>
+          <div class="sym-row">
+            <div class="sym-cell">
+              <span>Pierna izquierda</span>
+              <b>95 %</b>
+              <div class="bar bar-thin" style="margin-top:6px"><i style="width:95%"></i></div>
+            </div>
+            <div class="sym-cell">
+              <span>Pierna derecha</span>
+              <b>100 %</b>
+              <div class="bar bar-thin" style="margin-top:6px"><i style="width:100%"></i></div>
+            </div>
+          </div>
+          <div class="sim-note">
+            <i data-icon="circleCheck" style="width:17px;height:17px;flex:none"></i>
+            <span>Muy buena simetría. Mantén la consistencia en los ejercicios unilaterales.</span>
+          </div>
+        </section>
+
+        <!-- ── AI advice ──────────────────────────────────────────────────── -->
+        <section class="card card-pad">
+          <h2 class="card-title" style="margin-bottom:10px"><i data-icon="lightbulb"></i>Consejos de IA</h2>
+          <p class="secondary small" style="margin:0 0 12px">
+            Tus piernas han ganado un <b style="color:var(--tl-success)">12 %</b> de fuerza en las
+            últimas 4 semanas. Considera añadir 1–2 series extra de trabajo de glúteos la próxima
+            semana para seguir progresando.
+          </p>
+          <button class="btn">Ver recomendación completa <i data-icon="arrowRight"></i></button>
+        </section>
+
+        <!-- ── Weekly adherence ───────────────────────────────────────────── -->
+        <section class="card card-pad">
+          <h2 class="card-title" style="margin-bottom:12px"><i data-icon="calendar"></i>Adherencia semanal</h2>
+          <div class="adherence">
+            <div class="ad-day"><div class="lbl">Lun</div><div class="ad-ring" style="--pct:100"><span>100%</span></div><em style="color:var(--tl-success)">✓</em></div>
+            <div class="ad-day"><div class="lbl">Mar</div><div class="ad-ring" style="--pct:100"><span>100%</span></div><em style="color:var(--tl-success)">✓</em></div>
+            <div class="ad-day"><div class="lbl">Mié</div><div class="ad-ring" style="--pct:100"><span>100%</span></div><em style="color:var(--tl-success)">✓</em></div>
+            <div class="ad-day"><div class="lbl">Jue</div><div class="ad-ring" style="--pct:67;--rc:var(--tl-warning)"><span>67%</span></div><em style="color:var(--tl-warning)">!</em></div>
+            <div class="ad-day"><div class="lbl">Vie</div><div class="ad-ring" style="--pct:100"><span>100%</span></div><em style="color:var(--tl-success)">✓</em></div>
+            <div class="ad-day"><div class="lbl">Sáb</div><div class="ad-ring" style="--pct:100"><span>100%</span></div><em style="color:var(--tl-success)">✓</em></div>
+            <div class="ad-day"><div class="lbl">Dom</div><div class="ad-ring" style="--pct:0;--rc:var(--tl-danger)"><span>0%</span></div><em style="color:var(--tl-danger)">×</em></div>
+            <div class="ring" style="--pct:71;--size:82px;margin-left:auto">
+              <div><div class="ring-value" style="font-size:17px">5/7</div><div class="tiny muted">sesiones</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Session history ────────────────────────────────────────────── -->
+        <section class="card">
+          <div class="card-head"><h2 class="card-title grow"><i data-icon="notebook"></i>Historial de sesiones</h2></div>
+          <table class="table" style="width:100%">
+            <thead><tr><th>Fecha</th><th>Entrenamiento</th><th>Duración</th><th class="num">Volumen</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>7 jun 2025</td><td>Piernas + Trapecios</td><td>57 min</td><td class="num">4.320 kg</td><td><i data-icon="chevronRight" style="width:15px;height:15px;color:var(--tl-text-muted)"></i></td></tr>
+              <tr><td>5 jun 2025</td><td>Espalda + Bíceps</td><td>52 min</td><td class="num">3.980 kg</td><td><i data-icon="chevronRight" style="width:15px;height:15px;color:var(--tl-text-muted)"></i></td></tr>
+              <tr><td>2 jun 2025</td><td>Pecho + Hombro</td><td>60 min</td><td class="num">4.650 kg</td><td><i data-icon="chevronRight" style="width:15px;height:15px;color:var(--tl-text-muted)"></i></td></tr>
+              <tr><td>30 may 2025</td><td>Piernas + Core</td><td>49 min</td><td class="num">3.760 kg</td><td><i data-icon="chevronRight" style="width:15px;height:15px;color:var(--tl-text-muted)"></i></td></tr>
+              <tr><td>28 may 2025</td><td>Hombro + Core</td><td>46 min</td><td class="num">3.420 kg</td><td><i data-icon="chevronRight" style="width:15px;height:15px;color:var(--tl-text-muted)"></i></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ── Whole-body overview, second lens ───────────────────────────── -->
+        <section class="card card-pad">
+          <div class="row" style="margin-bottom:10px">
+            <h2 class="card-title grow"><i data-icon="users"></i>Vista general del cuerpo</h2>
+            <div class="seg" data-switch="lente">
+              <button class="seg-item is-active" data-value="musculos"><i data-icon="users"></i>Músculos</button>
+              <button class="seg-item" data-value="fuerza"><i data-icon="trendingUp"></i>Fuerza</button>
+            </div>
+          </div>
+          <div class="bodyline" style="justify-content:center">
+            <img class="male" src="assets/bodymap/traininglab-body-map.png" alt="Mapa muscular" style="height:190px" />
+            <img class="female" src="assets/bodymap/traininglab-body-map-woman.png" alt="Mapa muscular (figura femenina)" style="height:190px" />
+            <div class="bodymap-legend">
+              <div><i style="background:var(--band-excellent)"></i>Muy desarrollado</div>
+              <div><i style="background:var(--band-moderate)"></i>En progreso</div>
+              <div><i style="background:var(--band-weak)"></i>Por mejorar</div>
+              <div><i style="background:var(--tl-info)"></i>Sin trabajar</div>
+            </div>
+          </div>
+          <button class="btn" style="margin-top:12px;width:100%">Ver detalle por músculo <i data-icon="arrowRight"></i></button>
+        </section>
+
+        <!-- Footer -->
+        <div class="footer-strip pg-wide">
+          <span class="row" style="gap:7px">
+            <i style="width:8px;height:8px;border-radius:50%;background:var(--tl-success);display:inline-block"></i>
+            Última actualización: 6 jul 2025 · 22:14
+          </span>
+          <div class="spacer"></div>
+          <button class="btn"><i data-icon="arrowDown"></i>Exportar progreso (CSV)</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/tl.js"></script>
+</body>
+</html>

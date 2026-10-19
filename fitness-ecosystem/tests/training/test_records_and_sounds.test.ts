@@ -9,7 +9,10 @@
  *      never disagree about a personal best;
  *   3. the achievement cue fires on exactly one set (the one that completed the
  *      prescription), never again on extra volume;
- *   4. the audio module is safe on a machine with no Web Audio and never throws
+ *   4. unloaded work has marks of its own (2026-10-13): reps for pull-ups, dips
+ *      and push-ups, seconds for planks and hangs, and neither currency can
+ *      cross into the other;
+ *   5. the audio module is safe on a machine with no Web Audio and never throws
  *      from a cue — it is called mid-workout.
  *
  * `lib/sounds.ts` is imported directly (not mocked) to prove it is safe to
@@ -23,6 +26,7 @@ import {
   EMPTY_MARKS,
   completionRatio,
   detectRecord,
+  type BestMarks,
   epleyOneRm,
   isExerciseComplete,
   marksByExercise,
@@ -78,31 +82,86 @@ describe("marksOf / mergeMarks", () => {
     expect(marks.bestEst1RmKg).toBe(112);
   });
 
-  it("ignores bodyweight sets when computing the load mark", () => {
-    expect(marksOf([{ weight: null, reps: 20 }]).bestWeightKg).toBeNull();
+  it("keeps a bodyweight set out of the load mark and puts it in the rep mark", () => {
+    const marks = marksOf([{ weight: null, reps: 20 }]);
+    expect(marks.bestWeightKg).toBeNull();
+    expect(marks.bestReps).toBe(20);
+  });
+
+  it("tracks reps and holds in their own currency at the same time", () => {
+    const marks = marksOf([
+      { weight: null, reps: 12 }, // pull-ups
+      { weight: null, reps: 8 },
+      { weight: null, reps: null, durationSec: 62 }, // dead hang
+      { weight: 40, reps: 5 }, // weighted dip: a load, not a bodyweight mark
+    ]);
+    expect(marks.bestReps).toBe(12);
+    expect(marks.bestHoldSec).toBe(62);
+    expect(marks.bestWeightKg).toBe(40);
+  });
+
+  it("reads a set with reps *and* seconds as timed work, never as both", () => {
+    const marks = marksOf([{ weight: null, reps: 3, durationSec: 45 }]);
+    expect(marks.bestHoldSec).toBe(45);
+    expect(marks.bestReps).toBeNull();
+  });
+
+  it("ignores a zero-second or negative hold instead of inventing a mark", () => {
+    const marks = marksOf([
+      { weight: null, reps: null, durationSec: 0 },
+      { weight: null, reps: null, durationSec: -10 },
+      { weight: null, reps: 9 },
+    ]);
+    expect(marks.bestHoldSec).toBeNull();
+    expect(marks.bestReps).toBe(9);
   });
 
   it("folds BodyLab's exported PRs into the local history", () => {
     const local = marksOf([{ weight: 90, reps: 5 }]);
-    const imported = { bestWeightKg: 120, bestEst1RmKg: 140 };
+    const imported: BestMarks = {
+      bestWeightKg: 120,
+      bestEst1RmKg: 140,
+      bestReps: null,
+      bestHoldSec: null,
+    };
     expect(mergeMarks(local, imported)).toEqual({
       bestWeightKg: 120,
       bestEst1RmKg: 140,
+      bestReps: null,
+      bestHoldSec: null,
     });
   });
 
   it("keeps a one-sided mark (BodyLab export without a weight)", () => {
     expect(
-      mergeMarks(EMPTY_MARKS, { bestWeightKg: null, bestEst1RmKg: 95 }),
-    ).toEqual({
-      bestWeightKg: null,
-      bestEst1RmKg: 95,
+      mergeMarks(EMPTY_MARKS, {
+        bestWeightKg: null,
+        bestEst1RmKg: 95,
+        bestReps: null,
+        bestHoldSec: null,
+      }),
+    ).toEqual({ bestWeightKg: null, bestEst1RmKg: 95, bestReps: null, bestHoldSec: null });
+  });
+
+  it("does not let an export without bodyweight marks erase the local ones", () => {
+    // BodyLab only exports load PRs, so its `bestReps: null` means "nothing to
+    // say", never "you have no reps recorded".
+    const local = marksOf([{ weight: null, reps: 15 }]);
+    expect(mergeMarks(local, { ...EMPTY_MARKS, bestWeightKg: 60, bestEst1RmKg: 70 })).toEqual({
+      bestWeightKg: 60,
+      bestEst1RmKg: 70,
+      bestReps: 15,
+      bestHoldSec: null,
     });
   });
 });
 
 describe("detectRecord", () => {
-  const best = { bestWeightKg: 100, bestEst1RmKg: 110 };
+  const best: BestMarks = {
+    ...EMPTY_MARKS,
+    bestWeightKg: 100,
+    bestEst1RmKg: 110,
+  };
 
   it("reports a heavier load as a load record", () => {
     expect(detectRecord(best, 105, 3)).toEqual({
@@ -137,9 +196,102 @@ describe("detectRecord", () => {
     });
   });
 
-  it("ignores bodyweight and duration work", () => {
-    expect(detectRecord(best, null, 12)).toBeNull();
-    expect(detectRecord(best, 0, 12)).toBeNull();
+  it("judges a bodyweight set on its reps, since it has no load to compare", () => {
+    // The owner's log is mostly pull-ups, dips and push-ups: before 2026-10-13
+    // this returned null and no bodyweight set could ever be a record.
+    const bodyweight: BestMarks = { ...EMPTY_MARKS, bestReps: 10 };
+    expect(detectRecord(bodyweight, null, 12)).toEqual({
+      kind: "reps",
+      value: 12,
+      previous: 10,
+    });
+    // `0` is the app's other spelling of "no load" (see `lib/set-entry`).
+    expect(detectRecord(bodyweight, 0, 12)).toEqual({
+      kind: "reps",
+      value: 12,
+      previous: 10,
+    });
+  });
+
+  it("calls the first bodyweight set of an exercise a first mark", () => {
+    expect(detectRecord(EMPTY_MARKS, null, 5)).toEqual({
+      kind: "reps",
+      value: 5,
+      previous: null,
+    });
+  });
+
+  it("never celebrates the same bodyweight set twice", () => {
+    const bodyweight: BestMarks = { ...EMPTY_MARKS, bestReps: 12 };
+    expect(detectRecord(bodyweight, null, 12)).toBeNull();
+    expect(detectRecord(bodyweight, null, 11)).toBeNull();
+  });
+
+  it("times a hold against holds, and only against holds", () => {
+    const plannedHold: BestMarks = {
+      ...EMPTY_MARKS,
+      bestHoldSec: 45,
+      bestReps: 30,
+    };
+    expect(detectRecord(plannedHold, null, null, { durationSec: 60 })).toEqual({
+      kind: "hold",
+      value: 60,
+      previous: 45,
+    });
+    expect(detectRecord(plannedHold, null, null, { durationSec: 45 })).toBeNull();
+    // A hold is timed work even when the set also carries reps.
+    expect(detectRecord(plannedHold, null, 2, { durationSec: 50 })).toEqual({
+      kind: "hold",
+      value: 50,
+      previous: 45,
+    });
+  });
+
+  it("will not let a rep count stand in for a hold or the other way round", () => {
+    // 60 s on record says nothing about how many reps you can do: the 40-rep set
+    // is never measured against it, it just opens the rep mark.
+    const holdOnly: BestMarks = { ...EMPTY_MARKS, bestHoldSec: 60 };
+    expect(detectRecord(holdOnly, null, 40)).toEqual({
+      kind: "reps",
+      value: 40,
+      previous: null,
+    });
+    // ...and with both marks known, a tie on reps is silent however far the
+    // hold mark is, because the two never talk to each other.
+    const both: BestMarks = { ...EMPTY_MARKS, bestHoldSec: 60, bestReps: 45 };
+    expect(detectRecord(both, null, 45)).toBeNull();
+    expect(detectRecord(both, null, 46)).toEqual({
+      kind: "reps",
+      value: 46,
+      previous: 45,
+    });
+    // The mirror case: nothing is known about holds, so the first one is a
+    // first mark (previous: null), not a comparison against reps.
+    const repsOnly: BestMarks = { ...EMPTY_MARKS, bestReps: 40 };
+    expect(detectRecord(repsOnly, null, null, { durationSec: 20 })).toEqual({
+      kind: "hold",
+      value: 20,
+      previous: null,
+    });
+  });
+
+  it("stays silent for a bodyweight set with neither reps nor seconds", () => {
+    expect(detectRecord(EMPTY_MARKS, null, null)).toBeNull();
+    expect(detectRecord(EMPTY_MARKS, null, 0)).toBeNull();
+    expect(detectRecord(EMPTY_MARKS, 0, null, { durationSec: 0 })).toBeNull();
+  });
+
+  it("keeps the loaded and unloaded records from crossing over", () => {
+    // A 40 kg dip of 5 must not be read as a 5-rep bodyweight mark, nor the
+    // 12 bodyweight dips as a load mark.
+    const weighted: BestMarks = { ...EMPTY_MARKS, bestWeightKg: 40, bestEst1RmKg: 46.7, bestReps: null };
+    expect(detectRecord(weighted, 40, 5)).toBeNull();
+    const bodyweight: BestMarks = { ...EMPTY_MARKS, bestReps: 12 };
+    expect(detectRecord(bodyweight, 40, 5)).toEqual({
+      kind: "weight",
+      value: 40,
+      previous: null,
+    });
   });
 });
 
