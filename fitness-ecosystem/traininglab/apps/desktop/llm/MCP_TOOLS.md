@@ -1,4 +1,4 @@
-# Las 22 herramientas del MCP `fitness` — guía de uso para el coach local
+# Las 26 herramientas del MCP `fitness` — guía de uso para el coach local
 
 Este fichero es para el modelo que actúa como coach (Qwen u otro) cuando habla con
 TrainingLab por el servidor MCP (`scripts/fitness-mcp-server.mjs`). No es
@@ -85,7 +85,7 @@ app contra tu presupuesto.
 su razón (recuperación, patrón, dificultad) y no prometas números que la
 herramienta no ha devuelto.
 
-## 4. Acciones (11) — con acuse y deshacer
+## 4. Acciones (15) — con acuse y deshacer
 
 | Herramienta | Qué hace | Claves |
 |---|---|---|
@@ -99,6 +99,10 @@ herramienta no ha devuelto.
 | `set_week_override` | Escribe UN día de su semana: `rest: true`, `families: [...]`, o `families: []` para devolverlo al planificador. | `weekday` (0 = lunes), `rest`, `families`, `idempotency_key` |
 | `delete_session` | **Borra una sesión cerrada del registro.** Destructiva: **exige `confirm: true`** y que el usuario lo haya pedido. | `session_id` (de `read_history`), `delete_sets`, `confirm`, `idempotency_key` |
 | `set_set_time` | Corrige la hora de una serie registrada HOY. | `set_id`, `occurred_at` (ISO de hoy), `idempotency_key` |
+| `reorder_today` | Mueve una fila de la sesión de HOY a una posición 1-based (el arrastre de Entrenamiento). | `exercise_id`, `position`, `idempotency_key` |
+| `set_exercise_state` | Marca una fila de hoy como `active`, `skipped` o `postponed`; no cambia la prescripción. | `exercise_id`, `state`, `idempotency_key` |
+| `reset_today_order` | Devuelve la sesión de hoy al orden del planificador (falla si no hay orden propio). | `idempotency_key` |
+| `swap_week_days` | Intercambia dos días efectivos de la semana (0 = lunes … 6 = domingo), como el arrastre de Semana. | `from_weekday`, `to_weekday`, `idempotency_key` |
 | `log_body_measurement` | Escribe en el **espejo local de análisis**, NO en BodyLab (esa app no tiene canal todavía). Sin acuse ni deshacer. | `type`, `value`, `unit`, `notes` |
 
 Reglas de uso (aprendidas de verdad, no teóricas):
