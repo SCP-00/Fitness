@@ -2313,7 +2313,8 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   **CI de GitHub (run 39353436093, commit `aeb2a77`)**: **4/4 jobs en verde** —
   `lint + typecheck + unit + browser E2E`, `TrainingLab desktop shell compiles (Windows)`,
   `BodyLab desktop shell compiles (Windows)` y `BodyLab desktop binary smoke (Windows)`
-  (SMOKE PASS). Pages ya en verde antes.
+  (SMOKE PASS). Pages ya en verde antes. El commit documental de cierre
+  (`cf4e0bb`, run 39355477269) también salió **4/4 en verde**, con Pages en verde.
   **Instaladores reconstruidos desde este mismo commit (regla de cierre)**:
   `pnpm tauri build` en TrainingLab → **exit 0**, NSIS 16,67 MiB (17.475.317 bytes,
   20:42); en BodyLab → **exit 1 por `TAURI_SIGNING_PRIVATE_KEY`** (lo esperado y
