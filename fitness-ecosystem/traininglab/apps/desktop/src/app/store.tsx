@@ -111,6 +111,7 @@ import {
   trimLedger,
   type McpContext,
   type McpLedgerEntry,
+  type McpUndoOp,
 } from "../lib/mcp-actions";
 import {
   makeRoutine,
@@ -2209,6 +2210,79 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     [rows],
   );
 
+  /**
+   * Perform one ledger undo operation — the single implementation shared by
+   * Ajustes' «Deshacer» button and the agent `undo` action (2026-10-19): an
+   * agent that undoes its own swap must run the exact same code path the human
+   * does, or the two would drift into two apps.
+   */
+  const applyUndoOp = useCallback(
+    (undo: McpUndoOp) => {
+      switch (undo.kind) {
+        case "remove_set":
+          removeSet(undo.setId);
+          break;
+        case "remove_session":
+          // Reopening keeps the sets: only the session record goes, so the day
+          // goes back to being editable without touching what was logged.
+          removeSession(undo.sessionId, { deleteSets: false });
+          if (finished?.id === undo.sessionId) setFinished(null);
+          break;
+        case "settings":
+          patch(undo.before);
+          break;
+        case "readiness":
+          setReadinessAndPersist(undo.before);
+          break;
+        case "swap_row":
+          clearSwap(undo.from);
+          break;
+        case "remove_row":
+          removeAddedRow(undo.exerciseId);
+          break;
+        case "remove_rows":
+          // `apply_routine`'s undo: every row it poured comes back out.
+          for (const exerciseId of undo.exerciseIds) removeAddedRow(exerciseId);
+          break;
+        case "day_focus":
+          setDayFocus([...undo.before]);
+          break;
+        case "restore_session":
+          // Deletion is whole-session, and so is its undo: the record comes
+          // back with the sets it took with it (none when they were kept).
+          restoreSession(undo.session, undo.sets);
+          break;
+        case "set_time":
+          setSetTime(undo.setId, undo.before);
+          break;
+        case "decision_model":
+          // `reset_model`'s undo: the weights that existed at that instant.
+          {
+            const restored = undo.before ?? emptyModel();
+            setModel(restored);
+            void saveDecisionModel(restored);
+          }
+          break;
+        case "week_seed":
+          // `regenerate_week`'s undo: the same seed draws the same week.
+          setWeekSeed(undo.before);
+          break;
+      }
+    },
+    [
+      finished,
+      removeSet,
+      removeSession,
+      patch,
+      setReadinessAndPersist,
+      clearSwap,
+      removeAddedRow,
+      setDayFocus,
+      restoreSession,
+      setSetTime,
+    ],
+  );
+
   /** Take the pending batch, apply what validates, answer with receipts. */
   const processMcpInbox = useCallback(async () => {
     if (mcpBusy.current || !settings) return;
@@ -2235,6 +2309,16 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         todaySetCount: totalSetsToday,
         finishedToday: finished !== null,
         readiness,
+        // 2026-10-19 (second round): `undo` reaches only this caller's own,
+        // still-undoable tokens; `reset_model` and `regenerate_week` carry
+        // their restore in the validation.
+        undoable: mcpLedgerRef.current.filter(canUndo).map((entry) => ({
+          id: entry.id,
+          origin: entry.origin,
+          type: entry.type,
+        })),
+        model,
+        weekSeed,
       };
       /** Settings written by this batch: N actions collapse into ONE write. */
       let settingsNext: TLSettingsData | null = null;
@@ -2256,6 +2340,78 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
           }
 
           switch (action.type) {
+            case "undo": {
+              const token = String(action.params.undo_token ?? "");
+              const target = mcpLedgerRef.current.find((e) => e.id === token);
+              if (!target?.undo || target.undoneAt) {
+                // Validation checked the same against the snapshot it got;
+                // this is the belt to its pair (the ledger moved in between).
+                return {
+                  ok: false,
+                  rule: "undo_token_unknown",
+                  detail: {
+                    en: `"${token}" is no longer undoable.`,
+                    es: `«${token}» ya no es deshacible.`,
+                  },
+                };
+              }
+              applyUndoOp(target.undo);
+              const undoneAt = new Date().toISOString();
+              const marked = mcpLedgerRef.current.map((e) => {
+                if (e.id !== token) return e;
+                const clone: McpLedgerEntry = { ...e, undoneAt };
+                delete clone.undo;
+                return clone;
+              });
+              mcpLedgerRef.current = marked;
+              setMcpLedger(marked);
+              void saveMcpLedger(marked);
+              return { ok: true };
+            }
+
+            case "apply_routine": {
+              // Read from the batch's own settings, not the memo: a file that
+              // saves a routine and pours it in the next action must see the
+              // routine it just wrote (validation advances ctx the same way).
+              const stored = normalizeRoutines(
+                (settingsNext ?? settings)?.routines,
+              );
+              const routine = stored.find(
+                (entry) =>
+                  entry.id === String(action.params.routine_id ?? ""),
+              );
+              if (!routine) {
+                return {
+                  ok: false,
+                  rule: "unknown_routine",
+                  detail: {
+                    en: "That routine no longer exists.",
+                    es: "Esa rutina ya no existe.",
+                  },
+                };
+              }
+              const added = applyRoutineToday(routine);
+              if (added === 0) {
+                return {
+                  ok: false,
+                  rule: "already_in_session",
+                  detail: {
+                    en: `Nothing of "${routine.name}" could be added to today's session.`,
+                    es: `No se ha podido añadir nada de «${routine.name}» a la sesión de hoy.`,
+                  },
+                };
+              }
+              return { ok: true };
+            }
+
+            case "reset_model":
+              resetModel();
+              return { ok: true };
+
+            case "regenerate_week":
+              regenerateWeek();
+              return { ok: true };
+
             case "log_set": {
               const exerciseId = String(action.params.exercise_id ?? "");
               const row = mcpRowFor(exerciseId);
@@ -2486,6 +2642,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     finished,
     readiness,
     weekPlan,
+    model,
+    weekSeed,
     mcpRowFor,
     addSet,
     finishSession,
@@ -2502,6 +2660,10 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     unpostponeRow,
     resetRowOrder,
     swapWeekDays,
+    applyUndoOp,
+    applyRoutineToday,
+    resetModel,
+    regenerateWeek,
   ]);
 
   // The poller always sees the latest callbacks without re-arming its timer on
@@ -2536,41 +2698,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       const entry = mcpLedgerRef.current.find((e) => e.id === id);
       if (!entry || !canUndo(entry) || !entry.undo) return;
-      const undo = entry.undo;
-      switch (undo.kind) {
-        case "remove_set":
-          removeSet(undo.setId);
-          break;
-        case "remove_session":
-          // Reopening keeps the sets: only the session record goes, so the day
-          // goes back to being editable without touching what was logged.
-          removeSession(undo.sessionId, { deleteSets: false });
-          if (finished?.id === undo.sessionId) setFinished(null);
-          break;
-        case "settings":
-          patch(undo.before);
-          break;
-        case "readiness":
-          setReadinessAndPersist(undo.before);
-          break;
-        case "swap_row":
-          clearSwap(undo.from);
-          break;
-        case "remove_row":
-          removeAddedRow(undo.exerciseId);
-          break;
-        case "day_focus":
-          setDayFocus([...undo.before]);
-          break;
-        case "restore_session":
-          // Deletion is whole-session, and so is its undo: the record comes
-          // back with the sets it took with it (none when they were kept).
-          restoreSession(undo.session, undo.sets);
-          break;
-        case "set_time":
-          setSetTime(undo.setId, undo.before);
-          break;
-      }
+      applyUndoOp(entry.undo);
       const undoneAt = new Date().toISOString();
       const next = mcpLedgerRef.current.map((e) => {
         if (e.id !== id) return e;
@@ -2583,17 +2711,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       void saveMcpLedger(next);
       await writeMcpResults([receiptOf({ ...entry, undoneAt })]);
     },
-    [
-      finished,
-      removeSet,
-      removeSession,
-      patch,
-      setReadinessAndPersist,
-      clearSwap,
-      removeAddedRow,
-      restoreSession,
-      setSetTime,
-    ],
+    [applyUndoOp],
   );
 
   const contextCsv = useMemo(() => {

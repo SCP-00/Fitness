@@ -63,17 +63,66 @@ nueva interfaz introduce y las que ya existían sin canal:
 | Saltar / restaurar / posponer un ejercicio | `set_exercise_state` | Nueva |
 | Volver al orden del plan | `reset_today_order` | Nueva |
 | Intercambiar dos días de la semana | `swap_week_days` | Nueva |
-| Regenerar la semana | `regenerate_week` | Nueva |
+| Regenerar la semana | `regenerate_week` | Nueva (2.ª ronda) |
+| Deshacer una acción propia | `undo_action` | Nueva (2.ª ronda) |
+| Crear / verter / borrar rutinas | `save_routine` / `apply_routine` / `delete_routine` | Nuevas (2.ª ronda) |
+| Idioma, sonido, reiniciar modelo | `set_language` / `set_sound` / `reset_decision_model` | Nuevas (2.ª ronda) |
 | Registrar, cerrar, readiness, plan, swaps, borrar sesión, hora | las 10 existentes | Ya cubiertas |
-| Crear / editar rutinas, exportar, idioma, sonido | pendientes | Documentadas como hueco |
+| Exportar / importar datos | — | Abierto a propósito: exportar es un diálogo de guardado del usuario; importar reemplaza la BD entera sin frontera de deshacer segura |
 
 El canal no gana una segunda implementación: cada acción valida contra el contexto que la
-app publica y se aplica con el callback del store que ya usa la pantalla.
+app publica y se aplica con el callback del store que ya usa la pantalla. En la 2.ª ronda
+la regla se hizo literal con `applyUndoOp`: el deshacer del agente y el botón *Deshacer*
+de Ajustes ejecutan **el mismo código**, o los dos caminos divergirían hasta ser dos apps.
 
-## 4. Fuera de alcance (sugerencias registradas)
+## 4. STT durante el entrenamiento — cuadro de decisión (sugerencia del dueño, deferred)
 
-- **STT durante el entrenamiento**: el dueño lo plantea como sugerencia, no como orden. Se
-  deja documentado en el backlog; no se añade dependencia ni modelo en esta ronda. Cualquier
-  elección futura debe medir latencia, idioma (ES/EN), consumo y privacidad antes de entrar.
+El dueño lo plantea como **sugerencia**: feedback por voz durante la sesión sin detenerse a
+teclear, con algo «súper ligero como whisper turbo o variante ultra ligera, alta calidad en
+EN y ES». Evaluado el 2026-10-19; **deferred** — no se añade dependencia ni modelo en esta
+ronda, pero el camino queda fijado para que la implementación futura no reabra lo decided.
+
+| Opción | Tamaño | Latencia | ES + EN | Privacidad (offline) | Integración en el stack actual | Veredicto |
+|---|---|---|---|---|---|---|
+| **A. Web Speech API del navegador** | 0 | ~1 s | Depende del SO/servicio | **No**: en Chrome/Safari la audio sale del dispositivo | Un `<input speech>`; sin Tauri | **Descartada** — viola el «100 % offline, sin telemetry» del producto |
+| **B. whisper.cpp con modelo `tiny`/`base` int8, vía WASM (whisper.wasm) o binario lateral del Tauri shell** | tiny ≈ 75 MB, base ≈ 145 MB descargados una vez | 0,3–1 s por fragmento de 1–3 s (no streaming real: transcribe por ventanas) | **Ambos, con `multilingual`**; `base` es usable para ES ruidoso de gimnasio | **Sí**: el modelo vive en disco y nada sale | Un worker WASM + un comando Rust de apoyo; sin tocar el canal MCP | **Elegida como primera opción** — es el «whisper ligero» que pidió el dueño |
+| **C. whisper.cpp con modelo `small` int8** | ≈ 240 MB | 0,5–1,5 s | Mejor que `base` en ruido | Sí | Igual que B | Reserva: si `base` falla con el ruido real del dueño |
+| **D. Vosk / sherpa-onnx (modelos-streaming propios)** | 30–50 MB | **< 300 ms, streaming real** | Modelos ES/EN separados, peor en acentos LatAm | Sí | Dos integraciones distintas por idioma | Descartada por ahora: más piezas, peor ES, sin ganancia que justifique dos modelos |
+| **E. Whisper en la nube (API)** | 0 | ~1 s | Excelente | **No**: la audio sube | Clave API, red, coste | **Descartada** — contrario al modelo de privacidad del ecosistema |
+
+**Decisión: B**, con estas condiciones fijas (para que la implementación futura no negocie
+de nuevo):
+
+1. **Opt-in explícito y descarga bajo control del usuario.** El modelo se descarga la
+   primera vez que activa la función, con tamaño y hash a la vista; sin descarga no hay
+   botón. Nada se pre-descarga en la instalación (la app pesa 14,6 MiB hoy; 75 MB no
+   viajan sin pedirlos).
+2. **100 % local, siempre.** Un worker WASM con `Proxyquire`/fetch del modelo desde
+   `asset://` o un comando Rust estrecho tipo `read_model`; ningún `fetch` a internet en
+   el camino. El gate de privacidad de `REDESIGN_STORM.md` §8 se cumple por
+   construcción.
+3. **El STT escribe *hechos*, no decisiones.** Lo transcrito entra como `notes` de una
+   serie vía `log_training_set` (o como feedback del día en readiness), nunca como
+   cambio de plan: el modelo propone, la app dispone — también con la voz.
+4. **Latencia objetivo y medición antes de prometer**: ≤ 1 s de la última palabra al
+   texto en el hardware del dueño, medido con el modelo `base` sobre audio con ruido
+   de gimnasio. Si `base` no llega, se prueba `small` (opción C) antes que aceptar
+   latencias de streaming rotas.
+5. **Detección automática de idioma** (`language: "auto"`): el dueño entrena con
+   podcasts y apps en EN y ES; un selector manual sería una decisión que la voz ya
+   respondió.
+
+Por qué no A: la Web Speech API del navegador envía el audio a servidores del proveedor
+en los dos motores que la app empaqueta (WebView2 de Chromium la resuelve en la nube,
+Safari en la de Apple). Es la primera cosa que este producto no puede tener.
+
+Por qué no D primero: streaming real suena mejor, pero exige dos modelos (uno por
+idioma), integraciones distintas y una calidad de ES que ningún modelo abierto ligero
+iguala a whisper. Si la medición de B falla, D vuelve a la mesa con datos.
+
+## 5. Fuera de alcance (sugerencias registradas)
+
 - **Telemetría durable**, **mapa de fuerza con referencia publicada** y **GIFs propios**:
   siguen bajo sus gates de evidencia/contenido; no se tocan aquí.
+- El STT queda en **deferred con decisión B fijada** (arriba): no es «no», es «cuando la
+  ronda lo permita, por este camino».

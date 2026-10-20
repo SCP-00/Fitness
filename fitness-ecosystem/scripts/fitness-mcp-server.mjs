@@ -948,6 +948,123 @@ export const TOOLS = [
     },
   },
   {
+    name: 'undo_action',
+    description:
+      'ACCIÓN: deshace UNA acción tuya ya aplicada, por su undoToken (el que traía su acuse en read_receipts). Solo puedes deshacer las tuyas (mismo origin); no deshace finish_session ni delete_session (abrir o restaurar el historial es cosa del usuario desde Ajustes). Un undo no es deshacible: el bucle se cierra una vez.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        undo_token: {
+          type: 'string',
+          description: 'El undoToken del acuse de la acción que quieres deshacer.',
+        },
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+      required: ['undo_token'],
+    },
+  },
+  {
+    name: 'save_routine',
+    description:
+      'ACCIÓN: crea o reescribe una plantilla de rutina del usuario (la pestaña Rutinas). Los números se rechazan si están fuera de rango (no se recortan en silencio): sets 1-12, reps 1-30, rest_sec 15-600, rir 0-5, máximo 24 ejercicios y uno por ejercicio. Con routine_id reescribes esa plantilla; sin él, creas una nueva. Se puede deshacer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Nombre de la plantilla (máx. 60).' },
+        routine_id: {
+          type: 'string',
+          description: 'Id de la plantilla a reescribir; omítelo para crear una nueva.',
+        },
+        notes: { type: 'string', description: 'Nota libre opcional (máx. 400).' },
+        items: {
+          type: 'array',
+          description:
+            'Ejercicios: [{ exercise_id, sets, reps_min, reps_max, rest_sec, rir }]. Los que omitas usan el valor por defecto del catálogo.',
+          items: { type: 'object' },
+        },
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+      required: ['name', 'items'],
+    },
+  },
+  {
+    name: 'apply_routine',
+    description:
+      'ACCIÓN: vierte una plantilla de rutina en la sesión de HOY (el botón «Usar hoy»). Cada ejercicio pasa por las mismas reglas que el botón: los que ya estén en la sesión se omiten; si no se puede añadir ninguno, se rechaza. Se puede deshacer (quita las filas añadidas).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        routine_id: { type: 'string', description: 'Id de la plantilla (read_current_state.routines).' },
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+      required: ['routine_id'],
+    },
+  },
+  {
+    name: 'delete_routine',
+    description:
+      'ACCIÓN DESTRUCTIVA: borra una plantilla de rutina del usuario. Exige confirm: true y que el usuario lo pida; su acuse trae deshacer, que restaura la plantilla entera.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        routine_id: { type: 'string', description: 'Id de la plantilla a borrar.' },
+        confirm: { type: 'boolean', description: 'Debe ser true. Borrar es destructivo.' },
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+      required: ['routine_id', 'confirm'],
+    },
+  },
+  {
+    name: 'set_language',
+    description:
+      'ACCIÓN: cambia el idioma de la interfaz ("en" o "es"). Solo presentación: no toca datos ni registros.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        language: { type: 'string', enum: ['en', 'es'], description: 'Idioma de la interfaz.' },
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+      required: ['language'],
+    },
+  },
+  {
+    name: 'set_sound',
+    description:
+      'ACCIÓN: activa o desactiva los avisos de sonido (campana de sesión, logro, récord) y/o fija su volumen maestro (0-1). Solo presentación.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean', description: 'True para activar los avisos, false para callarlos.' },
+        volume: { type: 'number', description: 'Volumen maestro, 0-1.' },
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+    },
+  },
+  {
+    name: 'reset_decision_model',
+    description:
+      'ACCIÓN: reinicia el modelo local de decisión (los pesos aprendidos de tus registros). Exige confirm: true. Volverá a aprender de los próximos registros; el acuse trae un deshacer que restaura el modelo de ese instante.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        confirm: { type: 'boolean', description: 'Debe ser true: borra lo aprendido.' },
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+      required: ['confirm'],
+    },
+  },
+  {
+    name: 'regenerate_week',
+    description:
+      'ACCIÓN: regenera la semana del planificador (el botón «Regenerar» de Semana). Tus días autorizados a mano se conservan. Se puede deshacer: vuelve la semana anterior exacta.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        idempotency_key: { type: 'string', description: 'Clave para reintentar sin duplicar.' },
+      },
+    },
+  },
+  {
     name: 'read_receipts',
     description:
       'ACUSE de las acciones: devuelve los recibos que la app escribió (applied/rejected, con la regla que falló y su deshacer). Úsala tras un status: pending para saber si tu acción se aplicó.',
@@ -1229,6 +1346,83 @@ export async function handleToolCall(name, args = {}) {
             args,
           ),
         ]),
+      );
+    }
+
+    case 'undo_action': {
+      return renderOutcome(
+        await submitActions([
+          buildAction('undo', { undo_token: args.undo_token }, args),
+        ]),
+      );
+    }
+
+    case 'save_routine': {
+      const params = { name: args.name, items: args.items };
+      if (typeof args.routine_id === 'string' && args.routine_id) {
+        params.routine_id = args.routine_id;
+      }
+      if (typeof args.notes === 'string' && args.notes) params.notes = args.notes;
+      return renderOutcome(
+        await submitActions([buildAction('save_routine', params, args)]),
+      );
+    }
+
+    case 'apply_routine': {
+      return renderOutcome(
+        await submitActions([
+          buildAction('apply_routine', { routine_id: args.routine_id }, args),
+        ]),
+      );
+    }
+
+    case 'delete_routine': {
+      return renderOutcome(
+        await submitActions([
+          buildAction(
+            'delete_routine',
+            { routine_id: args.routine_id },
+            { ...args, confirm: args.confirm === true },
+          ),
+        ]),
+      );
+    }
+
+    case 'set_language': {
+      return renderOutcome(
+        await submitActions([
+          buildAction('set_language', { language: args.language }, args),
+        ]),
+      );
+    }
+
+    case 'set_sound': {
+      const params = {};
+      if (typeof args.enabled === 'boolean') params.enabled = args.enabled;
+      if (typeof args.volume === 'number') params.volume = args.volume;
+      if (Object.keys(params).length === 0) {
+        return toolText({
+          status: 'rejected',
+          rule: 'sound_params_required',
+          message: 'Envía enabled (true/false) o volume (0-1).',
+        });
+      }
+      return renderOutcome(
+        await submitActions([buildAction('set_sound', params, args)]),
+      );
+    }
+
+    case 'reset_decision_model': {
+      return renderOutcome(
+        await submitActions([
+          buildAction('reset_model', {}, { ...args, confirm: args.confirm === true }),
+        ]),
+      );
+    }
+
+    case 'regenerate_week': {
+      return renderOutcome(
+        await submitActions([buildAction('regenerate_week', {}, args)]),
       );
     }
 

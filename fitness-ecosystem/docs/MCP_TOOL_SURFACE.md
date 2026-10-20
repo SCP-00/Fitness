@@ -1,8 +1,11 @@
 # MCP tool surface — how every local model talks to the apps (design, 2026-10-09)
 
-Status: **implemented; 26 tools since 2026-10-19** (§10 added the five plan actions the
-owner asked for and §11 the four the drag work introduced; §9's sweep exercised the 17 that existed then, one by one from his chat,
-after he approved the connector in Freebuff; agent `buffy`). The read channels (HISTORY +
+Status: **implemented; 34 tools since 2026-10-19 (second round)** (§10 added the five plan
+actions the owner asked for, §11 the four the drag work introduced, and §12 the eight that
+close the parity list §11 left open — `undo`, the three routine actions, language, sound,
+the model reset and the week regeneration; §9's sweep exercised the 17 that existed then,
+one by one from his chat, after he approved the connector in Freebuff; agent `buffy`).
+The read channels (HISTORY +
 STATE) and the write channel (ACTIONS over files) are both live: the app polls
 `mcp/mcp-actions.json`, validates each action with its own rules, applies it through its own
 reducers and answers in `mcp/mcp-results.json`. What the sweep verified, against the
@@ -364,16 +367,52 @@ Verified in the root suite: `tests/training/test_mcp_actions.test.ts` (60 cases,
 the four new refusals) and `tests/training/test_mcp_server.test.ts` (26 tools, names and
 schemas).
 
-What is still missing, in the owner's parity language:
+What was still missing after §11, in the owner's parity language — and where it landed:
 
-- **`undo_action`** — every applied receipt carries `undoToken`, but an agent still cannot
-  use it; the human presses the button. This is the highest-value next tool.
-- **Routines** — `save_routine`, `apply_routine`, `delete_routine` have UI verbs but no
-  actions yet.
-- **Export/import, language, sound, reset model** — settings the UI can change and the
-  channel cannot. None of them changes training data, which is why they were not in this
-  round.
+- **`undo_action`** — done, §12. Every applied receipt carries `undoToken`, and now an
+  agent can use it too, with three guards (own origin, still undoable, never a closed
+  session).
+- **Routines** — done, §12: `save_routine`, `apply_routine`, `delete_routine`.
+- **Language, sound, reset model** — done, §12, plus `regenerate_week` (a UI verb §11 had
+  listed as new but never wired).
+- **Export/import** — still open, and deliberately so: an export is a *file the owner
+  picks a destination for* (a save dialog), and an import replaces the whole database.
+  Neither is expressible as an action with a receipt the app could honestly give, and a
+  blind import is the one operation with no safe undo boundary. If a channel ever opens,
+  it will be an export *the app writes to a path it chose*, never an import an agent can
+  fire.
 - **Browser preview selectors** — `data-testid` was added to the phone tabs, the queue and
   week grips, the ZEN weight/reps fields and the routine name. They make a Playwright or
   preview run fill fields and drag without guessing at Spanish copy; they are not a new
-  transport and do not expose the app to the network.
+  transport and do not expose the app to the network. The inventory and the fast loop are
+  now documented for the agent itself in `knowledge.md` («Fast browser QA»).
+
+## 12. 2026-10-19 (second round) — parity: undo, routines, and the settings
+
+The owner's rule from §11 kept going: *anything a user can do in the interface should be
+requestable by an agent.* Eight tools closed the remaining list:
+
+| Tool | Interface action it mirrors | Why it is safe |
+|---|---|---|
+| `undo_action` | the *Deshacer* button of Ajustes → Acciones de agentes | only the **same origin**'s own tokens, only entries still undoable (`canUndo`), and **never** `finish_session`/`delete_session` (opening or restoring HISTORY stays human); one undo closes the loop — an undo is not undoable |
+| `save_routine` | the routine editor's *Guardar* | name/notes/items bounded by `ROUTINE_LIMITS`, out-of-range numbers **refused with the numbers** (never silently clamped), one entry per exercise, unknown ids refused; undo restores the whole previous list |
+| `apply_routine` | «Usar hoy» on a routine card | each item goes through the store's own `addExerciseToToday`; rows already in today are skipped; if nothing can be added it is **refused** instead of reporting a no-op; undo removes exactly the rows it added |
+| `delete_routine` | the card's delete | `confirm: true` mandatory; undo restores the full previous list |
+| `set_language` | the language control in Ajustes | display-only; undo restores the previous language |
+| `set_sound` | the sound controls in Ajustes | `enabled` / `volume` 0-1; undo restores the previous object |
+| `reset_decision_model` | *Reiniciar modelo* in Ajustes | `confirm: true` mandatory; the undo carries the model **of that instant**, so a reset by mistake is recoverable while the receipt lives |
+| `regenerate_week` | «Regenerar» in Semana | the owner's authored layer (`weekOverrides`) is untouched; undo restores the seed, so the exact previous week comes back |
+
+Same three promises as everything else: validated by `validateMcpAction` against the app's
+own context, applied by the store's own callbacks (`applyRoutineToday`, `resetModel`,
+`regenerateWeek`, and the shared `applyUndoOp` — the agent's undo and the human's button
+run the **same code path**, or the two would drift into two apps), and reversible from
+Ajustes. The context advances for the stateful ones: a consumed `undo_token` cannot be
+replayed inside the same batch (`undo_token_unknown`), an `apply_routine` adds its rows to
+`plannedExerciseIds` for the next action to see, `reset_model` nulls the model and
+`regenerate_week` bumps the seed.
+
+Verified in the root suite: `tests/training/test_mcp_actions.test.ts` (the parity block:
+own-token guard, HISTORY guard, double-undo in one batch, routine bounds/duplicates,
+apply/undo of a routine, language/sound patches, model reset, seed restore) and
+`tests/training/test_mcp_server.test.ts` (34 tools, names and schemas).

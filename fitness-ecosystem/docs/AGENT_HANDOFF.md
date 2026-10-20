@@ -2257,3 +2257,66 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   dependencia ni modelo.
 - **Siguiente paso seguro:** commit de esta ronda y push a `main`; después, `undo_action` con
   la misma validación y recibo que el resto, sin abrir una segunda implementación.
+
+## 2026-10-19 (b) — Paridad MCP completa: deshacer, rutinas y ajustes por agente
+
+- **Resultado:** El canal MCP pasó de 26 a **34 herramientas**, cerrando la lista de
+  paridad que la ronda anterior dejó abierta. Lo que un usuario puede hacer en la
+  interfaz ahora es pedible por agente, con las mismas tres promesas de siempre
+  (validado, idempotente, reversible):
+  - **`undo_action`** — el agente deshace **sus propias** acciones aplicadas usando el
+    `undoToken` que su acuse ya traía. Tres guardas: solo tokens del mismo `origin`,
+    solo entradas aún deshacibles (`canUndo`), y **nunca** `finish_session` ni
+    `delete_session` (abrir o restaurar el historial sigue siendo cosa del usuario desde
+    Ajustes). Un undo no es deshacible: el bucle se cierra una vez. El deshacer del
+    agente y el botón *Deshacer* de Ajustes ejecutan **el mismo código**
+    (`applyUndoOp` en el store): dos caminos serían dos apps.
+  - **Rutinas**: `save_routine` (crea/re escribe plantilla; números fuera de rango
+    rechazados con los números, nunca recortados en silencio), `apply_routine` (vierte
+    una plantilla en HOY como «Usar hoy»; si no cabe nada, se rechaza en vez de fingir
+    un cambio), `delete_routine` (`confirm: true` + deshacer completo).
+  - **Ajustes**: `set_language`, `set_sound`, `reset_decision_model` (`confirm: true`;
+    el deshacer restaura el modelo de ese instante) y `regenerate_week` (la capa
+    autorizada del usuario se conserva; el deshacer restaura la semana exacta).
+  - El contexto avanza para los acciones con estado: un `undo_token` consumido no se
+    puede repetir en el mismo lote, `apply_routine` añade sus filas a
+    `plannedExerciseIds`, `reset_model` anula el modelo y `regenerate_week` suma el seed.
+  - **Export/import queda abierto a propósito**: exportar es un diálogo de guardado del
+    usuario y importar reemplaza la BD entera sin frontera de deshacer segura; ninguno es
+    expresible honestamente como acción con acuse.
+  - **STT: deferred con decisión fijada** (cuadro completo en
+    `docs/DECISIONS_2026-10-19.md` §4): whisper.cpp `base` int8 vía WASM, opt-in con
+    descarga a la vista, 100 % local, la voz escribe `notes` (nunca cambia el plan),
+    detección automática de idioma, latencia objetivo ≤ 1 s medida antes de prometer.
+    Descartadas la Web Speech API (sacaría audio del dispositivo) y la nube.
+  - **Buffy + browser preview** (`knowledge.md` «Fast browser QA»): inventario de los 20
+    `data-testid` estables (pestañas, asas de arrastre, campos ZEN de peso/reps,
+    nombre de rutina, tarjetas de stats, ajustes) + el cargador de demo (`load-demo`)
+    como bucle rápido de verificación; y el recordatorio de que el canal de ACCIONES es
+    solo de escritorio (en el build de navegador se maneja la UI por testids).
+- **Cambios:** `traininglab/apps/desktop/src/lib/mcp-actions.ts` (8 tipos de acción, 8
+  validadores, 3 undo ops nuevos, contexto `undoable`/`model`/`weekSeed`);
+  `src/app/store.tsx` (`applyUndoOp` compartido, contexto del lote, cases del apply);
+  `scripts/fitness-mcp-server.mjs` (8 herramientas + handlers); tests
+  `tests/training/test_mcp_actions.test.ts` (bloque «parity»: guarda de token propio,
+  guarda de historial, doble undo en un lote, límites/duplicados de rutinas, vertido y
+  deshacer, parches de idioma/sonido, reset de modelo, restauración de seed) y
+  `test_mcp_server.test.ts` (34 herramientas, nombres y schemas); documentación
+  `docs/MCP_TOOL_SURFACE.md` §12 (nuevo), `docs/DECISIONS_2026-10-19.md` (§4 STT y §3
+  actualizada), `traininglab/apps/desktop/llm/MCP_TOOLS.md` (34, reglas 12-15, códigos
+  de refuso nuevos), `AGENTS.md`, `knowledge.md` y esta entrada.
+- **Verificación:** root `./node_modules/.bin/vitest run` → **90 archivos / 1360 tests,
+  exit 0**; web `npx vitest run` → **167 tests, exit 0**; `npx oxlint` → **0 warnings /
+  0 errors**; `tsc -b` web y TrainingLab (TypeScript 6.0.3 de cada app) → **exit 0**;
+  `vite build` web y TrainingLab → **exit 0**; `node scripts/css-class-audit.mjs` →
+  **exit 0, sin hallazgos**. No se ejecutó Playwright E2E ni `tauri build` en esta ronda
+  (cambios confinados a la capa MCP/docs; ningún JSX de pantalla cambió de árbol).
+  **Pendiente de la ronda: commit + push, y reconstruir instaladores si el dueño quiere
+  el binario con las 34 herramientas** (el canal de acciones vive en el bundle de la
+  app; un modelo que llame a `undo_action` sobre un `.exe` viejo verá
+  `unknown_action`).
+- **Pendiente / decisión del dueño:** export/import por MCP (explicado por qué no);
+  STT (deferred, decisión B fijada); el mapa de fuerza sigue bajo su gate de evidencia.
+- **Siguiente paso seguro:** commit + push de esta ronda; si el dueño quiere usar las 8
+  herramientas nuevas desde un modelo local, rebuild Tauri de TrainingLab desde este
+  commit y copiar el instalador al escritorio (regla de cierre).

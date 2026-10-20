@@ -45,6 +45,7 @@ import {
   ownedFromPreset,
 } from "@fitness/bodylab-exercises";
 import type {
+  DecisionModel,
   MuscleFamily,
   Readiness,
   SessionGoal,
@@ -52,6 +53,17 @@ import type {
 import { localDayKey } from "./day";
 import { focusFamiliesOf, isMuscleFamily } from "./day-focus";
 import { plannerCatalog } from "./plan";
+import {
+  ROUTINE_LIMITS,
+  isKnownExercise,
+  makeRoutine,
+  normalizeRoutine,
+  normalizeRoutines,
+  removeRoutine,
+  routineItemFor,
+  upsertRoutine,
+  type RoutineItem,
+} from "./routines";
 import { swapWeekOverrides, type WeekDayShape } from "./week-swap";
 import type {
   TLSession,
@@ -86,6 +98,15 @@ export const MCP_ACTION_TYPES = [
   "set_exercise_state",
   "reset_order",
   "swap_week_days",
+  /* 2026-10-19 (second round): parity with the rest of the interface. */
+  "undo",
+  "save_routine",
+  "apply_routine",
+  "delete_routine",
+  "set_language",
+  "set_sound",
+  "reset_model",
+  "regenerate_week",
 ] as const;
 
 export type McpActionType = (typeof MCP_ACTION_TYPES)[number];
@@ -118,7 +139,14 @@ export type McpUndoOp =
   /** Put back the whole session a `delete_session` removed, sets included. */
   | { kind: "restore_session"; session: TLSession; sets: TLSet[] }
   /** Restore one set's own hour (`timestamp`, ISO). */
-  | { kind: "set_time"; setId: string; before: string };
+  | { kind: "set_time"; setId: string; before: string }
+  /* Added 2026-10-19 (second round), with the parity actions. */
+  /** Drop the several rows an `apply_routine` poured into today. */
+  | { kind: "remove_rows"; exerciseIds: string[] }
+  /** Put the local decision model back (a reset is otherwise re-learned). */
+  | { kind: "decision_model"; before: DecisionModel | null }
+  /** Put the week seed back, so a regeneration is reversible. */
+  | { kind: "week_seed"; before: number };
 
 export interface McpText {
   en: string;
@@ -168,6 +196,13 @@ export interface McpContext {
   /** Whether today's session is already closed. */
   finishedToday: boolean;
   readiness: Readiness;
+  /** Ledger entries this caller may still undo (`canUndo`): the `undo` action
+   *  only reaches its **own** tokens, and never into closed history. */
+  undoable: readonly { id: string; origin: string; type: string }[];
+  /** The local decision model, so `reset_model` can carry its restore. */
+  model: DecisionModel | null;
+  /** The in-memory week seed: `regenerate_week`'s undo restores it. */
+  weekSeed: number;
 }
 
 export type McpValidation =
@@ -516,6 +551,30 @@ export function validateMcpAction(action: McpAction, ctx: McpContext): McpValida
 
     case "swap_week_days":
       return validateWeekSwap(action, ctx);
+
+    case "undo":
+      return validateUndo(action, ctx);
+
+    case "save_routine":
+      return validateSaveRoutine(action, ctx);
+
+    case "apply_routine":
+      return validateApplyRoutine(action, ctx);
+
+    case "delete_routine":
+      return validateDeleteRoutine(action, ctx);
+
+    case "set_language":
+      return validateLanguage(action, ctx);
+
+    case "set_sound":
+      return validateSound(action, ctx);
+
+    case "reset_model":
+      return validateResetModel(action, ctx);
+
+    case "regenerate_week":
+      return validateRegenerateWeek(action, ctx);
 
     default:
       return failed("unknown_action", {
@@ -1391,6 +1450,401 @@ function validateWeekSwap(action: McpAction, ctx: McpContext): McpValidation {
   };
 }
 
+/**
+ * `undo` (2026-10-19, second round) — the agent closes its own loop.
+ *
+ * Every applied receipt carries an `undoToken`, but until now only the human
+ * could press *Deshacer* in Ajustes. Three guards keep this from loosening
+ * anything: the token must be **applied and still undoable**, it must belong to
+ * the **same origin** that is asking (one agent does not unwind another
+ * agent's work), and it never reaches a **closed session** — undoing
+ * `finish_session` (reopening HISTORY) or deleting/restoring a whole session
+ * stays a human decision from Ajustes. An undo of an undo is not offered: the
+ * loop closes once, and the ledger records it.
+ */
+function validateUndo(action: McpAction, ctx: McpContext): McpValidation {
+  const token = asString(action.params.undo_token);
+  if (!token) {
+    return failed("undo_token_required", {
+      en: "undo needs `undo_token` (the undoToken of an applied receipt).",
+      es: "undo necesita `undo_token` (el undoToken de un acuse aplicado).",
+    });
+  }
+  const entry = ctx.undoable.find((e) => e.id === token);
+  if (!entry) {
+    return failed("undo_token_unknown", {
+      en: `No applied, still-undoable action with id "${token}". Check it with read_receipts; an already-undone or rejected action cannot be undone again.`,
+      es: `No hay ninguna acción aplicada y aún deshacible con id «${token}». Mírala en read_receipts: una acción ya deshecha o rechazada no se puede deshacer otra vez.`,
+    });
+  }
+  if (entry.origin !== action.origin) {
+    return failed("undo_not_yours", {
+      en: `Action "${token}" was requested by ${entry.origin}, not by ${action.origin}: only the agent that made a change may undo it.`,
+      es: `La acción «${token}» la pidió ${entry.origin}, no ${action.origin}: solo el agente que hizo el cambio puede deshacerlo.`,
+    });
+  }
+  if (entry.type === "finish_session" || entry.type === "delete_session") {
+    return failed("undo_session_closed", {
+      en: `"${token}" is a ${entry.type}: opening or restoring HISTORY is not undoable by an agent — the owner undoes it from Ajustes → Acciones de agentes.`,
+      es: `«${token}» es un ${entry.type}: abrir o restaurar el HISTORIAL no lo deshace un agente — el dueño lo hace desde Ajustes → Acciones de agentes.`,
+    });
+  }
+  return {
+    ok: true,
+    detail: {
+      en: `Undoing "${token}" (${entry.type}).`,
+      es: `Deshaciendo «${token}» (${entry.type}).`,
+    },
+    // The store owns the ledger: it performs the op and drops the token.
+    undo: null,
+  };
+}
+
+/**
+ * `save_routine` — create or rewrite one of the user's own templates (06).
+ *
+ * The same sanitizer the editor uses (`lib/routines.ts`) runs on the way in,
+ * but this channel refuses instead of silently clamping: an agent that asked
+ * for 20 sets deserves the number back, not a quiet 12. `routine_id` updates
+ * an existing template (and is refused when it does not exist); without it a
+ * new one is created. Undo restores the whole previous list — a template edit
+ * is one write, so one reversal.
+ */
+function validateSaveRoutine(action: McpAction, ctx: McpContext): McpValidation {
+  const name = asString(action.params.name);
+  if (!name) {
+    return failed("routine_name_required", {
+      en: "save_routine needs `name` (the template's name).",
+      es: "save_routine necesita `name` (el nombre de la plantilla).",
+    });
+  }
+  if (name.length > ROUTINE_LIMITS.name) {
+    return failed("routine_name_too_long", {
+      en: `name is ${name.length} characters; the limit is ${ROUTINE_LIMITS.name}.`,
+      es: `name tiene ${name.length} caracteres; el límite es ${ROUTINE_LIMITS.name}.`,
+    });
+  }
+  const notes = action.params.notes;
+  if (notes !== undefined && typeof notes !== "string") {
+    return failed("routine_notes_invalid", {
+      en: "notes must be text.",
+      es: "notes debe ser texto.",
+    });
+  }
+  if (typeof notes === "string" && notes.length > ROUTINE_LIMITS.notes) {
+    return failed("routine_notes_too_long", {
+      en: `notes is ${notes.length} characters; the limit is ${ROUTINE_LIMITS.notes}.`,
+      es: `notes tiene ${notes.length} caracteres; el límite es ${ROUTINE_LIMITS.notes}.`,
+    });
+  }
+
+  const current = normalizeRoutines(ctx.settings?.routines);
+  const routineId = asString(action.params.routine_id);
+  const existing = routineId
+    ? current.find((entry) => entry.id === routineId) ?? null
+    : null;
+  if (routineId && !existing) {
+    return failed("unknown_routine", {
+      en: `No routine with id "${routineId}" exists; omit routine_id to create one.`,
+      es: `No existe ninguna rutina con id «${routineId}»; omite routine_id para crear una.`,
+    });
+  }
+
+  const rawItems = action.params.items;
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    return failed("routine_items_required", {
+      en: "save_routine needs `items`, a non-empty array of { exercise_id, sets, reps_min, reps_max, rest_sec, rir }.",
+      es: "save_routine necesita `items`, un array no vacío de { exercise_id, sets, reps_min, reps_max, rest_sec, rir }.",
+    });
+  }
+  if (rawItems.length > ROUTINE_LIMITS.items) {
+    return failed("routine_items_too_many", {
+      en: `${rawItems.length} items; the limit is ${ROUTINE_LIMITS.items}.`,
+      es: `${rawItems.length} elementos; el límite es ${ROUTINE_LIMITS.items}.`,
+    });
+  }
+
+  const items: RoutineItem[] = [];
+  const seen = new Set<string>();
+  for (const [index, raw] of rawItems.entries()) {
+    const row = asRecord(raw);
+    const exerciseId = row ? asString(row.exercise_id) : null;
+    if (!exerciseId) {
+      return failed("exercise_required", {
+        en: `items[${index}] needs \`exercise_id\` (a catalog id).`,
+        es: `items[${index}] necesita \`exercise_id\` (un id del catálogo).`,
+      });
+    }
+    if (!isKnownExercise(exerciseId)) {
+      return failed("unknown_exercise", {
+        en: `items[${index}]: no exercise with id "${exerciseId}" exists in the catalog.`,
+        es: `items[${index}]: no existe ningún ejercicio con id «${exerciseId}» en el catálogo.`,
+      });
+    }
+    if (seen.has(exerciseId)) {
+      return failed("routine_duplicate_exercise", {
+        en: `items[${index}] repeats "${exerciseId}": one entry per exercise.`,
+        es: `items[${index}] repite «${exerciseId}»: una entrada por ejercicio.`,
+      });
+    }
+    seen.add(exerciseId);
+
+    // Refuse, never clamp: the number an agent asked for comes back with the
+    // rule, exactly like reps_out_of_range does for a logged set.
+    const bounds: Array<[string, number | undefined, readonly [number, number]]> = [
+      ["sets", row?.sets as number | undefined, ROUTINE_LIMITS.sets],
+      ["reps_min", row?.reps_min as number | undefined, ROUTINE_LIMITS.reps],
+      ["reps_max", row?.reps_max as number | undefined, ROUTINE_LIMITS.reps],
+      ["rest_sec", row?.rest_sec as number | undefined, ROUTINE_LIMITS.restSec],
+      ["rir", row?.rir as number | undefined, ROUTINE_LIMITS.rir],
+    ];
+    for (const [key, value, [min, max]] of bounds) {
+      if (value === undefined) continue;
+      if (
+        typeof value !== "number" ||
+        !Number.isFinite(value) ||
+        !Number.isInteger(value) ||
+        value < min ||
+        value > max
+      ) {
+        return failed("routine_value_out_of_range", {
+          en: `items[${index}].${key} must be a whole number between ${min} and ${max}; received ${JSON.stringify(value)}.`,
+          es: `items[${index}].${key} debe ser un entero entre ${min} y ${max}; llegó ${JSON.stringify(value)}.`,
+        });
+      }
+    }
+    const item = routineItemFor(exerciseId, {
+      ...(typeof row?.sets === "number" ? { sets: row.sets } : {}),
+      ...(typeof row?.reps_min === "number" ? { repsMin: row.reps_min } : {}),
+      ...(typeof row?.reps_max === "number" ? { repsMax: row.reps_max } : {}),
+      ...(typeof row?.rest_sec === "number" ? { restSec: row.rest_sec } : {}),
+      ...(typeof row?.rir === "number" ? { rir: row.rir } : {}),
+    });
+    if (!item) {
+      return failed("unknown_exercise", {
+        en: `items[${index}]: "${exerciseId}" could not become a routine item.`,
+        es: `items[${index}]: «${exerciseId}» no se ha podido convertir en un elemento de rutina.`,
+      });
+    }
+    items.push(item);
+  }
+
+  const stored = existing
+    ? normalizeRoutine({
+        ...existing,
+        name,
+        ...(typeof notes === "string" ? { notes } : {}),
+        items,
+        updatedAt: ctx.now.toISOString(),
+      })
+    : makeRoutine(name, items, ctx.now, typeof notes === "string" ? notes : undefined);
+  if (!stored) {
+    return failed("routine_invalid", {
+      en: "The routine has no name or no usable exercise; nothing was saved.",
+      es: "La rutina no tiene nombre ni ningún ejercicio usable; no se ha guardado nada.",
+    });
+  }
+
+  return {
+    ok: true,
+    detail: {
+      en: `Routine "${stored.name}" saved (${stored.items.length} exercise(s), id ${stored.id}).`,
+      es: `Rutina «${stored.name}» guardada (${stored.items.length} ejercicio(s), id ${stored.id}).`,
+    },
+    settingsPatch: { routines: upsertRoutine(current, stored) },
+    undo: { kind: "settings", before: { routines: ctx.settings?.routines ?? [] } },
+  };
+}
+
+/**
+ * `apply_routine` — pour one template into today (the screen's «Usar hoy»).
+ *
+ * Each item goes through the same `addExerciseToToday` the button uses, so a
+ * routine cannot smuggle in an exercise the session would refuse. Rows already
+ * in today are skipped, not duplicated; if nothing can be added the action is
+ * refused instead of reporting a change that did not happen.
+ */
+function validateApplyRoutine(action: McpAction, ctx: McpContext): McpValidation {
+  const routineId = asString(action.params.routine_id);
+  if (!routineId) {
+    return failed("routine_required", {
+      en: "apply_routine needs `routine_id` (from read_current_state routines or the app).",
+      es: "apply_routine necesita `routine_id` (de las rutinas de read_current_state o de la app).",
+    });
+  }
+  const routine =
+    normalizeRoutines(ctx.settings?.routines).find((entry) => entry.id === routineId) ?? null;
+  if (!routine) {
+    return failed("unknown_routine", {
+      en: `No routine with id "${routineId}" exists.`,
+      es: `No existe ninguna rutina con id «${routineId}».`,
+    });
+  }
+  if (ctx.finishedToday) {
+    return failed("already_finished", {
+      en: "Today's session is closed; a routine can only be poured into an open day.",
+      es: "La sesión de hoy está cerrada; una rutina solo se vierte en un día abierto.",
+    });
+  }
+  const addable = routine.items
+    .map((item) => item.exerciseId)
+    .filter((id) => !ctx.plannedExerciseIds.includes(id));
+  if (addable.length === 0) {
+    return failed("already_in_session", {
+      en: `Every exercise of "${routine.name}" is already in today's session.`,
+      es: `Todos los ejercicios de «${routine.name}» ya están en la sesión de hoy.`,
+    });
+  }
+  return {
+    ok: true,
+    detail: {
+      en: `Routine "${routine.name}" poured into today: ${addable.length} exercise(s) added (${addable.join(", ")}).`,
+      es: `Rutina «${routine.name}» vertida en hoy: ${addable.length} ejercicio(s) añadido(s) (${addable.join(", ")}).`,
+    },
+    // Complete here: the ids that will be added are exactly these.
+    undo: { kind: "remove_rows", exerciseIds: addable },
+  };
+}
+
+/** `delete_routine` — drop one template. Confirmable, and fully restorable. */
+function validateDeleteRoutine(action: McpAction, ctx: McpContext): McpValidation {
+  if (!action.confirm) {
+    return failed("confirm_required", {
+      en: "delete_routine removes one of the owner's templates — call it with confirm: true.",
+      es: "delete_routine borra una de las plantillas del dueño: llámala con confirm: true.",
+    });
+  }
+  const routineId = asString(action.params.routine_id);
+  if (!routineId) {
+    return failed("routine_required", {
+      en: "delete_routine needs `routine_id`.",
+      es: "delete_routine necesita `routine_id`.",
+    });
+  }
+  const current = normalizeRoutines(ctx.settings?.routines);
+  const routine = current.find((entry) => entry.id === routineId) ?? null;
+  if (!routine) {
+    return failed("unknown_routine", {
+      en: `No routine with id "${routineId}" exists.`,
+      es: `No existe ninguna rutina con id «${routineId}».`,
+    });
+  }
+  return {
+    ok: true,
+    detail: {
+      en: `Routine "${routine.name}" deleted (${routine.items.length} exercise(s)); undo restores it.`,
+      es: `Rutina «${routine.name}» borrada (${routine.items.length} ejercicio(s)); deshacer la restaura.`,
+    },
+    settingsPatch: { routines: removeRoutine(current, routineId) },
+    undo: { kind: "settings", before: { routines: ctx.settings?.routines ?? [] } },
+  };
+}
+
+/** `set_language` — the interface language (en | es). Display-only. */
+function validateLanguage(action: McpAction, ctx: McpContext): McpValidation {
+  const language = asString(action.params.language);
+  if (language !== "en" && language !== "es") {
+    return failed("language_invalid", {
+      en: 'language must be "en" or "es".',
+      es: 'language debe ser "en" o "es".',
+    });
+  }
+  return {
+    ok: true,
+    detail: {
+      en: `Interface language set to ${language}.`,
+      es: `Idioma de la interfaz puesto en ${language}.`,
+    },
+    settingsPatch: { language },
+    undo: {
+      kind: "settings",
+      before: { language: ctx.settings?.language ?? "es" },
+    },
+  };
+}
+
+/** `set_sound` — the three feedback cues: on/off and master volume (0-1). */
+function validateSound(action: McpAction, ctx: McpContext): McpValidation {
+  const enabled = action.params.enabled;
+  const volume = action.params.volume;
+  if (enabled === undefined && volume === undefined) {
+    return failed("sound_params_required", {
+      en: "set_sound needs `enabled` (true/false) or `volume` (0-1).",
+      es: "set_sound necesita `enabled` (true/false) o `volume` (0-1).",
+    });
+  }
+  if (enabled !== undefined && typeof enabled !== "boolean") {
+    return failed("enabled_invalid", {
+      en: "enabled must be true or false.",
+      es: "enabled debe ser true o false.",
+    });
+  }
+  if (
+    volume !== undefined &&
+    (typeof volume !== "number" || !Number.isFinite(volume) || volume < 0 || volume > 1)
+  ) {
+    return failed("volume_out_of_range", {
+      en: `volume must be a number between 0 and 1; received ${JSON.stringify(volume)}.`,
+      es: `volume debe ser un número entre 0 y 1; llegó ${JSON.stringify(volume)}.`,
+    });
+  }
+  const before = ctx.settings?.sound ?? { enabled: true, volume: 0.5 };
+  const next = {
+    enabled: typeof enabled === "boolean" ? enabled : before.enabled,
+    volume: typeof volume === "number" ? volume : before.volume,
+  };
+  return {
+    ok: true,
+    detail: {
+      en: `Sound cues ${next.enabled ? "on" : "off"} at volume ${next.volume}.`,
+      es: `Avisos de sonido ${next.enabled ? "activados" : "desactivados"} con volumen ${next.volume}.`,
+    },
+    settingsPatch: { sound: next },
+    undo: { kind: "settings", before: { sound: before } },
+  };
+}
+
+/**
+ * `reset_model` — clear the local decision model (Ajustes → reset). It is the
+ * one settings action with nothing to restore *by default*: the learned
+ * weights are re-learned from the next logs. The undo still carries the model
+ * that existed at this instant, so a reset by mistake is recoverable while the
+ * receipt lives in the ledger.
+ */
+function validateResetModel(action: McpAction, ctx: McpContext): McpValidation {
+  if (!action.confirm) {
+    return failed("confirm_required", {
+      en: "reset_model clears the learned local model — call it with confirm: true.",
+      es: "reset_model borra el modelo local aprendido: llámala con confirm: true.",
+    });
+  }
+  return {
+    ok: true,
+    detail: {
+      en: "Local decision model reset (it re-learns from the next logs; undo restores this instant's model).",
+      es: "Modelo local de decisión reiniciado (volverá a aprender de los próximos registros; deshacer restaura el modelo de este instante).",
+    },
+    undo: { kind: "decision_model", before: ctx.model },
+  };
+}
+
+/**
+ * `regenerate_week` — the Semana screen's «Regenerar»: re-roll the generated
+ * week. The owner's authored layer (`weekOverrides`) is never touched, and the
+ * undo restores the seed, so the exact previous week comes back.
+ */
+function validateRegenerateWeek(action: McpAction, ctx: McpContext): McpValidation {
+  void action;
+  return {
+    ok: true,
+    detail: {
+      en: "Week regenerated (your authored days in Semana are kept).",
+      es: "Semana regenerada (tus días autorizados en Semana se conservan).",
+    },
+    undo: { kind: "week_seed", before: ctx.weekSeed },
+  };
+}
+
 // ── The batch runner (idempotency lives here) ───────────────────────────
 
 /** What the impure half (the store) reports back about one applied action. */
@@ -1491,6 +1945,28 @@ export function runMcpActions(input: {
             ...ctx.plannedExerciseIds,
             String(action.params.exercise_id ?? ""),
           ];
+        }
+        // 2026-10-19 (second round): the four stateful parity actions advance
+        // the context too, for the same reason the others do — action N+1 in
+        // one file is validated against what N really produced.
+        if (action.type === "apply_routine") {
+          const routine = normalizeRoutines(ctx.settings?.routines).find(
+            (entry) => entry.id === String(action.params.routine_id ?? ""),
+          );
+          if (routine) {
+            const added = routine.items
+              .map((item) => item.exerciseId)
+              .filter((id) => !ctx.plannedExerciseIds.includes(id));
+            ctx.plannedExerciseIds = [...ctx.plannedExerciseIds, ...added];
+          }
+        }
+        if (action.type === "reset_model") ctx.model = null;
+        if (action.type === "regenerate_week") ctx.weekSeed += 1;
+        if (action.type === "undo") {
+          // The token is consumed: a second undo of the same id in the same
+          // file hits `undo_token_unknown` instead of replaying the operation.
+          const token = String(action.params.undo_token ?? "");
+          ctx.undoable = ctx.undoable.filter((entry) => entry.id !== token);
         }
         if (validation.dayFocus) ctx.dayFocus = validation.dayFocus;
         if (action.type === "reorder_row") {

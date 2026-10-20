@@ -39,11 +39,11 @@ function payload(result: { content: Array<{ text: string }> }) {
 }
 
 describe("mcp server: the registry a local model sees", () => {
-  it("exposes the whole surface, 26 tools", () => {
-    expect(TOOLS).toHaveLength(26);
+  it("exposes the whole surface, 34 tools", () => {
+    expect(TOOLS).toHaveLength(34);
   });
 
-  it("exposes the action tools, the newest drags included", () => {
+  it("exposes the action tools, the parity round included", () => {
     const names = (TOOLS as Array<{ name: string }>).map((tool) => tool.name);
     // The five the owner asked for on 2026-10-13, next to the older actions.
     for (const name of [
@@ -62,6 +62,15 @@ describe("mcp server: the registry a local model sees", () => {
       "set_exercise_state",
       "reset_today_order",
       "swap_week_days",
+      // 2026-10-19 (second round): parity with the rest of the interface.
+      "undo_action",
+      "save_routine",
+      "apply_routine",
+      "delete_routine",
+      "set_language",
+      "set_sound",
+      "reset_decision_model",
+      "regenerate_week",
     ]) {
       expect(names).toContain(name);
     }

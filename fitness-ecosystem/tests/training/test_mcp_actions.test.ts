@@ -93,6 +93,9 @@ function makeCtx(over: Partial<McpContext> = {}): McpContext {
     todaySetCount: 4,
     finishedToday: false,
     readiness: { energy: 3, motivation: 3, soreness: 3 },
+    undoable: [],
+    model: null,
+    weekSeed: 0,
     ...over,
   };
 }
@@ -1013,5 +1016,288 @@ describe("MCP actions: the queue and the week drag", () => {
     expect(
       verdict(action("swap_week_days", { from_weekday: 0, to_weekday: 3 }), identical),
     ).toBe("week_days_unchanged");
+  });
+});
+
+/**
+ * The parity round of 2026-10-19 (second): `undo`, the three routine actions,
+ * the display-only settings, the model reset and the week regeneration.
+ */
+describe("MCP actions: parity with the rest of the interface", () => {
+  it("undoes only the caller's own, still-undoable token", () => {
+    const ctx = makeCtx({
+      undoable: [
+        { id: "swap-1", origin: "mcp:test-agent", type: "swap_exercise" },
+        { id: "other-2", origin: "mcp:another-agent", type: "log_set" },
+      ],
+    });
+    const out = validateMcpAction(action("undo", { undo_token: "swap-1" }), ctx);
+    expect(out.ok).toBe(true);
+
+    // Another agent's token is not mine to unwind…
+    expect(verdict(action("undo", { undo_token: "other-2" }), ctx)).toBe(
+      "undo_not_yours",
+    );
+    // …and an unknown (already undone, rejected or never applied) one is gone.
+    expect(verdict(action("undo", { undo_token: "ghost" }), ctx)).toBe(
+      "undo_token_unknown",
+    );
+    expect(verdict(action("undo", {}), ctx)).toBe("undo_token_required");
+  });
+
+  it("never opens HISTORY through undo: finish_session and delete_session stay human", () => {
+    const ctx = makeCtx({
+      undoable: [
+        { id: "fin-1", origin: "mcp:test-agent", type: "finish_session" },
+        { id: "del-1", origin: "mcp:test-agent", type: "delete_session" },
+      ],
+    });
+    expect(verdict(action("undo", { undo_token: "fin-1" }), ctx)).toBe(
+      "undo_session_closed",
+    );
+    expect(verdict(action("undo", { undo_token: "del-1" }), ctx)).toBe(
+      "undo_session_closed",
+    );
+  });
+
+  it("consumes the token inside one batch: a double undo cannot replay", () => {
+    const ledger: McpLedgerEntry[] = [
+      {
+        id: "swap-1",
+        type: "swap_exercise",
+        origin: "mcp:test-agent",
+        status: "applied",
+        detail: { en: "swapped", es: "cambiado" },
+        undoToken: "swap-1",
+        undo: { kind: "swap_row", from: "barbell-bench-press", to: "incline-bench-press" },
+      },
+    ];
+    const performed: string[] = [];
+    const { receipts, fresh } = runMcpActions({
+      actions: [
+        action("undo", { undo_token: "swap-1" }, { id: "undo-1" }),
+        action("undo", { undo_token: "swap-1" }, { id: "undo-2" }),
+      ],
+      ctx: makeCtx({
+        undoable: [
+          { id: "swap-1", origin: "mcp:test-agent", type: "swap_exercise" },
+        ],
+      }),
+      ledger,
+      apply: () => {
+        performed.push("applied");
+        return { ok: true };
+      },
+    });
+    // The first undo applies; the second one is validated against the context
+    // the first one advanced, so it never reaches `apply` a second time.
+    expect(performed).toHaveLength(1);
+    expect(receipts[0]!.status).toBe("applied");
+    expect(receipts[1]!.status).toBe("rejected");
+    expect(receipts[1]!.rule).toBe("undo_token_unknown");
+    expect(fresh).toHaveLength(2);
+  });
+
+  it("saves a routine, refusing bad ids, duplicates and out-of-range numbers", () => {
+    const items = [
+      { exercise_id: "push-ups", sets: 3, reps_min: 8, reps_max: 12 },
+    ];
+    expect(verdict(action("save_routine", { name: "Push day", items }))).toBe("ok");
+    expect(verdict(action("save_routine", { name: "", items }))).toBe(
+      "routine_name_required",
+    );
+    expect(verdict(action("save_routine", { name: "X", items: [] }))).toBe(
+      "routine_items_required",
+    );
+    expect(
+      verdict(
+        action("save_routine", {
+          name: "X",
+          items: [{ exercise_id: "telekinesis" }],
+        }),
+      ),
+    ).toBe("unknown_exercise");
+    expect(
+      verdict(
+        action("save_routine", {
+          name: "X",
+          items: [{ exercise_id: "push-ups" }, { exercise_id: "push-ups" }],
+        }),
+      ),
+    ).toBe("routine_duplicate_exercise");
+    expect(
+      verdict(
+        action("save_routine", {
+          name: "X",
+          items: [{ exercise_id: "push-ups", sets: 20 }],
+        }),
+      ),
+    ).toBe("routine_value_out_of_range");
+    // Rewriting requires the routine to exist; creating never does.
+    expect(
+      verdict(action("save_routine", { name: "X", items, routine_id: "ghost" })),
+    ).toBe("unknown_routine");
+  });
+
+  it("carries the whole previous routine list as the undo of a save", () => {
+    const before = [
+      {
+        id: "routine-1",
+        name: "Vieja",
+        createdAt: NOW.toISOString(),
+        updatedAt: NOW.toISOString(),
+        items: [{ exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 }],
+      },
+    ];
+    const ctx = makeCtx({
+      settings: { ...DEFAULT_SETTINGS, routines: before },
+    });
+    const out = validateMcpAction(
+      action("save_routine", {
+        name: "Nueva",
+        items: [{ exercise_id: "plank", sets: 2 }],
+      }),
+      ctx,
+    );
+    expect(out.ok).toBe(true);
+    expect(out.ok && out.undo).toEqual({
+      kind: "settings",
+      before: { routines: before },
+    });
+    expect(out.ok && out.settingsPatch?.routines).toHaveLength(2);
+  });
+
+  it("pours a routine into today and names exactly what it adds", () => {
+    const routine = {
+      id: "routine-1",
+      name: "Full body",
+      createdAt: NOW.toISOString(),
+      updatedAt: NOW.toISOString(),
+      items: [
+        { exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 },
+        // goblet-squat is already in the default plan: it must be skipped.
+        { exerciseId: "plank", sets: 2, repsMin: 10, repsMax: 10, restSec: 60, rir: 2 },
+      ],
+    };
+    const ctx = makeCtx({
+      settings: { ...DEFAULT_SETTINGS, routines: [routine] },
+    });
+    const out = validateMcpAction(action("apply_routine", { routine_id: "routine-1" }), ctx);
+    expect(out.ok).toBe(true);
+    // Only the row that is not already there: the undo removes what was added.
+    expect(out.ok && out.undo).toEqual({
+      kind: "remove_rows",
+      exerciseIds: ["push-ups", "plank"],
+    });
+
+    expect(verdict(action("apply_routine", {}), ctx)).toBe("routine_required");
+    expect(
+      verdict(action("apply_routine", { routine_id: "ghost" }), ctx),
+    ).toBe("unknown_routine");
+    expect(
+      verdict(
+        action("apply_routine", { routine_id: "routine-1" }),
+        makeCtx({ finishedToday: true, settings: { ...DEFAULT_SETTINGS, routines: [routine] } }),
+      ),
+    ).toBe("already_finished");
+
+    // Both of its exercises are already planned (`goblet-squat` and
+    // `barbell-bench-press` are the default plan's slots): nothing to add.
+    const allInSession = makeCtx({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        routines: [
+          {
+            ...routine,
+            items: [
+              { exerciseId: "goblet-squat", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 },
+              { exerciseId: "barbell-bench-press", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 },
+            ],
+          },
+        ],
+      },
+    });
+    expect(
+      verdict(action("apply_routine", { routine_id: "routine-1" }), allInSession),
+    ).toBe("already_in_session");
+  });
+
+  it("deletes a routine only confirmed, and restores the full list", () => {
+    const before = [
+      {
+        id: "routine-1",
+        name: "Para borrar",
+        createdAt: NOW.toISOString(),
+        updatedAt: NOW.toISOString(),
+        items: [{ exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 }],
+      },
+    ];
+    const ctx = makeCtx({ settings: { ...DEFAULT_SETTINGS, routines: before } });
+    expect(verdict(action("delete_routine", { routine_id: "routine-1" }), ctx)).toBe(
+      "confirm_required",
+    );
+    expect(
+      verdict(action("delete_routine", { routine_id: "ghost" }, { confirm: true }), ctx),
+    ).toBe("unknown_routine");
+    const out = validateMcpAction(
+      action("delete_routine", { routine_id: "routine-1" }, { confirm: true }),
+      ctx,
+    );
+    expect(out.ok).toBe(true);
+    expect(out.ok && out.settingsPatch?.routines).toEqual([]);
+    expect(out.ok && out.undo).toEqual({
+      kind: "settings",
+      before: { routines: before },
+    });
+  });
+
+  it("switches language and sound as display-only patches with their undo", () => {
+    expect(verdict(action("set_language", { language: "en" }))).toBe("ok");
+    expect(verdict(action("set_language", { language: "fr" }))).toBe(
+      "language_invalid",
+    );
+    const lang = validateMcpAction(
+      action("set_language", { language: "en" }),
+      makeCtx({ settings: { ...DEFAULT_SETTINGS, language: "es" } }),
+    );
+    expect(lang.ok && lang.settingsPatch).toEqual({ language: "en" });
+    expect(lang.ok && lang.undo).toEqual({
+      kind: "settings",
+      before: { language: "es" },
+    });
+
+    expect(verdict(action("set_sound", {}))).toBe("sound_params_required");
+    expect(verdict(action("set_sound", { enabled: false }))).toBe("ok");
+    expect(verdict(action("set_sound", { volume: 1.5 }))).toBe("volume_out_of_range");
+    expect(verdict(action("set_sound", { enabled: "yes" }))).toBe("enabled_invalid");
+    const sound = validateMcpAction(
+      action("set_sound", { volume: 0.8 }),
+      makeCtx({ settings: { ...DEFAULT_SETTINGS, sound: { enabled: true, volume: 0.5 } } }),
+    );
+    expect(sound.ok && sound.settingsPatch).toEqual({
+      sound: { enabled: true, volume: 0.8 },
+    });
+    expect(sound.ok && sound.undo).toEqual({
+      kind: "settings",
+      before: { sound: { enabled: true, volume: 0.5 } },
+    });
+  });
+
+  it("resets the model only with confirm, carrying the model of that instant", () => {
+    expect(verdict(action("reset_model"))).toBe("confirm_required");
+    const out = validateMcpAction(
+      action("reset_model", {}, { confirm: true }),
+      makeCtx(),
+    );
+    expect(out.ok).toBe(true);
+    // The default ctx has no model; the undo still names the kind, so the
+    // store restores whatever existed (an empty model when there was none).
+    expect(out.ok && out.undo).toEqual({ kind: "decision_model", before: null });
+  });
+
+  it("regenerates the week and restores the exact previous seed", () => {
+    const out = validateMcpAction(action("regenerate_week"), makeCtx({ weekSeed: 7 }));
+    expect(out.ok).toBe(true);
+    expect(out.ok && out.undo).toEqual({ kind: "week_seed", before: 7 });
   });
 });

@@ -12,8 +12,17 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
 - CI/release/Pages workflows live in **`.github/workflows/` at the repository root** (GitHub never reads a subdirectory's `.github/`). Each job runs from `fitness-ecosystem`, and step-level `working-directory:` overrides must spell out `fitness-ecosystem/...`.
 - TrainingLab (own app): `cd traininglab/apps/desktop && pnpm dev` (→ http://localhost:5174) / `npx tsc -b` / `npx vite build`. Its root-suite tests live in `fitness-ecosystem/tests/training/` and import the app modules by relative path.
 - **Phone navigation (2026-10-19):** below 900 px the rail is replaced by a fixed bottom bar of four destinations (Hoy · Entrenamiento · Historial · Progreso) plus a «Más» sheet (Ejercicios · Semana · Rutinas · Configuración). Only the active tab prints its name; the fifth control shows the active secondary destination. The decision and the measurements behind it are in `fitness-ecosystem/docs/DECISIONS_2026-10-19.md`; the partition lives in `app/nav.ts` and is pinned by `tests/training/test_mobile_nav.test.ts`.
-- **Drag (2026-10-19):** Entrenamiento's queue and Semana's days are reorderable by dragging an explicit grip (`ui/pointer-drag.ts`, Pointer Events — not HTML5 DnD, which does not fire on iOS). The queue previews locally and writes one `rowOrder` on release; Semana swaps the effective days through `lib/week-swap.ts` and `weekOverrides`. Keyboard: arrows on the focused grip. Root tests: `tests/training/test_drag_reorder.test.ts`.
-- **MCP surface (2026-10-19): 26 tools.** The four new ones are `reorder_today`, `set_exercise_state`, `reset_today_order` and `swap_week_days`; every one validates against the app's published context, applies through the store's own callback, and is reversible from Ajustes. `fitness-ecosystem/docs/MCP_TOOL_SURFACE.md` §11 lists the remaining parity gaps (`undo_action`, routines, export/import).
+- **Drag (2026-10-19):** Entrenamiento's queue and Semana's days are reorderable by dragging an explicit grip (`ui/pointer-drag.ts`, Pointer Events — not HTML5 DnD, which does not fire on iOS). The queue previews locally and writes one `rowOrder` on release; Semana swaps the effective days through `lib/week-swap.ts` and `weekOverrides`. Keyboard: arrows on the focused grip. Root tests: `tests/training/test_drag_reorder.test.ts`.- **MCP surface (2026-10-19, second round): 34 tools.** The drag round added
+  `reorder_today`, `set_exercise_state`, `reset_today_order` and `swap_week_days`; the
+  parity round then added `undo_action` (an agent undoes **its own** applied actions —
+  never `finish_session`/`delete_session`), `save_routine`/`apply_routine`/
+  `delete_routine`, `set_language`, `set_sound`, `reset_decision_model` and
+  `regenerate_week`. Every one validates against the app's published context, applies
+  through the store's own callback (the agent's undo and the human's *Deshacer* share
+  one code path, `applyUndoOp`), and is reversible from Ajustes.
+  `fitness-ecosystem/docs/MCP_TOOL_SURFACE.md` §11-§12 are the source; the only parity
+  gap left open is export/import (a save dialog and a whole-DB replace — not honestly
+  expressible as an action with a receipt).
 - Typecheck: `pnpm typecheck` (web `tsc -b` is the effective whole-monorepo check)
 - Lint: `pnpm lint` (oxlint via the web app; currently 0 warnings / 0 errors)
 - Desktop (Tauri 2): `cd bodylab/apps/desktop && pnpm dev` / `pnpm build` (needs Rust + MSVC Build Tools). Root launchers: `BodyLab.bat` (prod) / `BodyLab Dev.bat` (dev menu incl. build + smoke test) / `TrainingLab.bat` (serves + opens the web app).

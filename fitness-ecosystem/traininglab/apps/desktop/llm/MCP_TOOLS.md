@@ -1,4 +1,4 @@
-# Las 26 herramientas del MCP `fitness` — guía de uso para el coach local
+# Las 34 herramientas del MCP `fitness` — guía de uso para el coach local
 
 Este fichero es para el modelo que actúa como coach (Qwen u otro) cuando habla con
 TrainingLab por el servidor MCP (`scripts/fitness-mcp-server.mjs`). No es
@@ -85,7 +85,7 @@ app contra tu presupuesto.
 su razón (recuperación, patrón, dificultad) y no prometas números que la
 herramienta no ha devuelto.
 
-## 4. Acciones (15) — con acuse y deshacer
+## 4. Acciones (23) — con acuse y deshacer
 
 | Herramienta | Qué hace | Claves |
 |---|---|---|
@@ -103,6 +103,14 @@ herramienta no ha devuelto.
 | `set_exercise_state` | Marca una fila de hoy como `active`, `skipped` o `postponed`; no cambia la prescripción. | `exercise_id`, `state`, `idempotency_key` |
 | `reset_today_order` | Devuelve la sesión de hoy al orden del planificador (falla si no hay orden propio). | `idempotency_key` |
 | `swap_week_days` | Intercambia dos días efectivos de la semana (0 = lunes … 6 = domingo), como el arrastre de Semana. | `from_weekday`, `to_weekday`, `idempotency_key` |
+| `undo_action` | **Deshace UNA acción tuya ya aplicada** por su `undoToken` (el del acuse en `read_receipts`). Solo deshace las tuyas (mismo `origin`); no deshace `finish_session` ni `delete_session` (abrir/restaurar el historial es cosa del usuario desde Ajustes). Un undo no es deshacible: el bucle se cierra una vez. | `undo_token`, `idempotency_key` |
+| `save_routine` | Crea o reescribe una plantilla de rutina del usuario. Los números fuera de rango se **rechazan** (no se recortan): sets 1-12, reps 1-30, descanso 15-600 s, rir 0-5, máx. 24 ejercicios, uno por ejercicio. | `name`, `items` (obligatorio), `routine_id` (para reescribir), `notes`, `idempotency_key` |
+| `apply_routine` | Vierte una plantilla en la sesión de HOY (como el botón «Usar hoy»). Los ejercicios ya presentes se omiten; si no cabe ninguno, se rechaza. | `routine_id`, `idempotency_key` |
+| `delete_routine` | **Borra una plantilla del usuario.** Destructiva: **exige `confirm: true`** y que él lo pida; el acuse trae deshacer. | `routine_id`, `confirm`, `idempotency_key` |
+| `set_language` | Idioma de la interfaz (`en`/`es`). Solo presentación. | `language`, `idempotency_key` |
+| `set_sound` | Activa/calla los avisos de sonido y/o fija el volumen maestro (0-1). Solo presentación. | `enabled`, `volume`, `idempotency_key` |
+| `reset_decision_model` | Reinicia el modelo local (los pesos aprendidos). **Exige `confirm: true`.** Vuelve a aprender de los próximos registros; el deshacer restaura el modelo de ese instante. | `confirm`, `idempotency_key` |
+| `regenerate_week` | Regenera la semana del planificador (botón «Regenerar»). Tus días autorizados a mano se conservan. Deshacer = la semana anterior exacta. | `idempotency_key` |
 | `log_body_measurement` | Escribe en el **espejo local de análisis**, NO en BodyLab (esa app no tiene canal todavía). Sin acuse ni deshacer. | `type`, `value`, `unit`, `notes` |
 
 Reglas de uso (aprendidas de verdad, no teóricas):
@@ -143,6 +151,23 @@ Reglas de uso (aprendidas de verdad, no teóricas):
 11. **`log_body_measurement` no llega a BodyLab.** Si el usuario quiere una
     medida en su app, díselo claro: tiene que introducirla él. No la presentes
     como registrada en BodyLab.
+12. **`undo_action` es tu deshacer, no el de todos.** Solo puedes deshacer tus
+    propias acciones (mismo `origin`), y un undo no se deshace. Para abrir o
+    restaurar una sesión cerrada, díle al usuario que lo pulse en **Ajustes →
+    Acciones de agentes**.
+13. **Las rutinas son plantillas, no la sesión.** `save_routine` escribe en la
+    pestaña Rutinas (sobrevive a reinicios); `apply_routine` vierte una en HOY
+    (se pierde al reiniciar). Si el usuario dice «guárdame esto como rutina»,
+    usa la primera; si dice «haz esta hoy», la segunda. Los números fuera de
+    rango se rechazan con `routine_value_out_of_range`: no los recortes tú
+    tampoco, pídele el correcto.
+14. **`set_language` y `set_sound` no tocan datos.** Son ajustes de presentación
+    que la app ya permite cambiar a mano; pedírselos por chat es válido («pásame
+    el idioma a inglés»), pero nunca las uses para «arreglar» una sesión.
+15. **`regenerate_week` no borra lo que el usuario escribió.** Regenera el plan
+    del planificador; sus días autorizados en Semana se conservan. Y
+    `reset_decision_model` borra lo aprendido: pide `confirm: true` y solo si
+    él lo pide.
 
 ## 5. Comprobar (1) — el acuse, después
 
@@ -196,6 +221,14 @@ Mensaje del usuario: *«me duelen los hombros, quiero entrenar pero no sé qué�
 | `occurred_at_invalid` / `occurred_at_not_today` / `occurred_at_required` | La hora no es ISO válido, no es de hoy, o no la enviaste. | Manda la hora en ISO y del día de hoy. |
 | `unknown_preset` / `inventory_row_invalid` | Material mal especificado. | Usa `{ presetId: "..." }` o label + capabilities. |
 | `expired` | La acción caducó antes de que la app abriera. | Vuelve a proponerla. |
+| `undo_token_required` / `undo_token_unknown` | Falta el `undo_token` o ese id no está aplicado y deshacible. | Míralo en `read_receipts` (campo `undoToken`). |
+| `undo_not_yours` | Esa acción la pidió otro agente. | No es tuya: no la deshagas. |
+| `undo_session_closed` | El token es un `finish_session` o `delete_session`. | Eso lo deshace el usuario desde Ajustes. |
+| `routine_name_required` / `routine_name_too_long` / `routine_items_required` / `routine_items_too_many` | La plantilla no tiene nombre, es larga, no tiene items o pasa de 24. | Corrige la forma. |
+| `routine_value_out_of_range` / `routine_duplicate_exercise` | Un número de `items` está fuera de rango o un ejercicio se repite. | Corrige el número; uno por ejercicio. |
+| `routine_required` / `unknown_routine` | Falta `routine_id` o esa plantilla no existe. | Sácalo de `read_current_state` o de la app. |
+| `language_invalid` | Idioma distinto de `en`/`es`. | Usa uno de los dos. |
+| `sound_params_required` / `enabled_invalid` / `volume_out_of_range` | Sin parámetros, `enabled` no es boolean o `volume` fuera de 0-1. | Corrige. |
 
 ## 8. Lo que NO debes hacer
 

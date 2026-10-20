@@ -181,11 +181,15 @@ node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import
   defensible mapping exists. Details: `docs/REDESIGN_STORM.md` §4 (PÁGINA 7) and
   `docs/AGENT_HANDOFF.md`.
 - **MCP tool surface** (`scripts/fitness-mcp-server.mjs`, design in
-  `docs/MCP_TOOL_SURFACE.md`): **26 tools since 2026-10-19** for local models —
-  HISTORY (read-only; the only destructive door is whole-session `delete_session`
-  with `confirm: true` + undo), STATE reads, and validated ACTIONS applied by the app
-  through its own reducers with receipts (`applied`/`rejected` + rule), idempotency
-  keys and undo. The maths disposes; the model proposes.
+  `docs/MCP_TOOL_SURFACE.md`): **34 tools since 2026-10-19 (second round)** for local
+  models — HISTORY (read-only; the only destructive door is whole-session
+  `delete_session` with `confirm: true` + undo), STATE reads, and validated ACTIONS
+  applied by the app through its own reducers with receipts (`applied`/`rejected` +
+  rule), idempotency keys and undo. The parity round added `undo_action` (own tokens
+  only, never a closed session), the three routine actions, `set_language`,
+  `set_sound`, `reset_decision_model` and `regenerate_week`; export/import stays open
+  on purpose (a save dialog and a whole-DB replace are not honest actions). The maths
+  disposes; the model proposes.
 - **AI is three-level and local**: deterministic rules are the floor; a JEV-class
   decision model (`core/training/decision.ts`) is local and explainable; an optional
   LLM (llama.cpp/LM Studio/Ollama/Jan, OpenAI API over loopback) has real tool
@@ -285,3 +289,42 @@ node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import
 - **Working-tree state (2026-10-19)**: HEAD `1289602` on `main`, still a large dirty
   tree from the 2026-10-14→18 migration plus this round. Commit and push are the closing
   step of this session; until then, treat checkout state as shared and do not discard it.
+
+## Fast browser QA (2026-10-19): testids + demo, the agent's own loop
+
+Owner's order: when Buffy verifies TrainingLab in the browser preview (or Playwright),
+filling names/weights/reps and moving rows must be **fast and mechanical**, not a hunt
+through Spanish copy. Two instruments, both already in the app:
+
+1. **`data-testid` hooks** (added 2026-10-19, §11 of `docs/MCP_TOOL_SURFACE.md`).
+   Stable inventory — never assert on visible copy when one of these exists:
+   - Navigation/sheets: `tab-<id>` (e.g. `tab-hoy`, `tab-entrenamiento`), `tab-more`,
+     `sheet-<id>` (the «Más» sheet entries).
+   - ZEN session (03): `set-weight`, `set-reps`, `log-set` — the weight/reps fields and
+     the log button. Fill via `preview_type` / Playwright `fill`, then click `log-set`.
+   - Queue drag: `drag-<exerciseId>` (the grip — start pointer events here, not on the
+     row); week drag: `week-drag-<0..6>` (Monday-first day cell grip).
+   - Routines: `routine-name` (the editor's name field).
+   - Stats cards: `weekly-volume`, `volume-target`, `condition-<id>`.
+   - History/detail: `history-set`, `exercise-history`, `mark-reps`, `mark-hold`.
+   - Settings: `export-csv`, `export-backup`, `restore-backup`, `import-csv`,
+     `import-symmetry`, `import-confirm`, `load-demo`, `clear-demo`, `mcp-audit-list`.
+2. **The demo loader** (`Settings → load-demo`, testid `load-demo`): seeds six weeks of
+   realistic history through the app's **own import path** (ids prefixed `demo-`,
+   removable with `clear-demo`). Use it instead of hand-logging sets when a screen needs
+   a populated log — it exercises the real migration/normalisation code too.
+
+Fast loop in the preview panel: `load-demo` → navigate by hash (`#/entrenamiento`,
+`#/sesion`, …) → act through testids → assert on text that only the action could have
+written. For drags, dispatch Pointer Events on the grip (`pointerdown` → `pointermove` over the target → `pointerup`); HTML5 DnD does nothing (iOS parity is the whole point
+of `ui/pointer-drag.ts`).
+
+**MCP and the browser build**: the ACTIONS file channel is **desktop-host only**
+(`isDesktopHost()` gates the poller; the browser build has no Tauri filesystem). In a
+browser preview, MCP writes cannot land — drive the UI through the testids above. The
+MCP **reads** (`node scripts/fitness-mcp-server.mjs --test`, or a chat client) still
+work anywhere because they only read the autobackup mirror / `.cache`.
+
+When adding a new screen control that an agent or an E2E run should reach, give it a
+testid in this same pass — it is cheaper than a follow-up and it is what made this loop
+fast.
