@@ -2309,14 +2309,31 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   exit 0**; web `npx vitest run` → **167 tests, exit 0**; `npx oxlint` → **0 warnings /
   0 errors**; `tsc -b` web y TrainingLab (TypeScript 6.0.3 de cada app) → **exit 0**;
   `vite build` web y TrainingLab → **exit 0**; `node scripts/css-class-audit.mjs` →
-  **exit 0, sin hallazgos**. No se ejecutó Playwright E2E ni `tauri build` en esta ronda
-  (cambios confinados a la capa MCP/docs; ningún JSX de pantalla cambió de árbol).
-  **Pendiente de la ronda: commit + push, y reconstruir instaladores si el dueño quiere
-  el binario con las 34 herramientas** (el canal de acciones vive en el bundle de la
-  app; un modelo que llame a `undo_action` sobre un `.exe` viejo verá
-  `unknown_action`).
+  **exit 0, sin hallazgos**.
+  **CI de GitHub (run 39353436093, commit `aeb2a77`)**: **4/4 jobs en verde** —
+  `lint + typecheck + unit + browser E2E`, `TrainingLab desktop shell compiles (Windows)`,
+  `BodyLab desktop shell compiles (Windows)` y `BodyLab desktop binary smoke (Windows)`
+  (SMOKE PASS). Pages ya en verde antes.
+  **Instaladores reconstruidos desde este mismo commit (regla de cierre)**:
+  `pnpm tauri build` en TrainingLab → **exit 0**, NSIS 16,67 MiB (17.475.317 bytes,
+  20:42); en BodyLab → **exit 1 por `TAURI_SIGNING_PRIVATE_KEY`** (lo esperado y
+  documentado: el instalador sale bien), NSIS 24,27 MiB (25.446.596 bytes, 20:45).
+  Contenido verificado, no solo la existencia: `traininglab.exe` referencia el chunk
+  actual `index-ChZjQNLG.js` y ese chunk contiene `undo_token`, `save_routine` y
+  `reset_model` (los tipos internos de la app; el servidor los llama `undo_action` y
+  `reset_decision_model`); `bodylab.exe` referencia `index-CoSKp6Sg.js`,
+  `Progress-BK_R8AyZ.js` y `anatomy-muscles.glb`.
+  **Los dos copiados al escritorio real** (`C:\Users\andyh\Desktop`; en esta máquina
+  **no** existe `%OneDrive%\Desktop`): `TrainingLab_0.2.0_x64-setup.exe` (20:43) y
+  `BodyLab_1.0.0-beta.8_x64-setup.exe` (20:47). BodyLab estaba viejo (el `.exe` del
+  escritorio era de las 17:58, anterior a `f560f3c`, que sí tocó
+  `bodylab/apps/web`), así que se reconstruyó aunque esta ronda no lo modificara.
 - **Pendiente / decisión del dueño:** export/import por MCP (explicado por qué no);
   STT (deferred, decisión B fijada); el mapa de fuerza sigue bajo su gate de evidencia.
-- **Siguiente paso seguro:** commit + push de esta ronda; si el dueño quiere usar las 8
-  herramientas nuevas desde un modelo local, rebuild Tauri de TrainingLab desde este
-  commit y copiar el instalador al escritorio (regla de cierre).
+- **Siguiente paso seguro:** commit + push **hechos** (`aeb2a77`, push `295dda3..aeb2a77`)
+  e instaladores reconstruidos y copiados. Lo siguiente que aporta valor real es
+  **export/import por MCP** (hoy abierto: `export` es un diálogo de guardado y
+  `import` reemplaza la BD entera — falta una frontera de deshacer segura) o **STT**
+  (decisión B ya fijada en `docs/DECISIONS_2026-10-19.md` §4: whisper.cpp `base` int8
+  vía WASM, opt-in, 100 % local). Ninguno de los dos necesita un gate del dueño más
+  allá de lo ya escrito.
