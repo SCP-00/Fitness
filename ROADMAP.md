@@ -221,6 +221,17 @@ matemática y las reglas duras disponen; el usuario decide.
 - [ ] beta.5 o 1.0.0 estable cuando Gate A esté cerrado
 - [?] ¿Publicar la web (GitHub Pages) antes del GA desktop?
 
+### Fase A.1 — BodyLab: protocolo visual de medidas (2026-10-20, primer unfrozen)
+
+- [x] **Guía visual de dónde va la cinta/el metro** — `lib/measurement-protocols.ts` (32
+      protocolos: punto de referencia, orientación del instrumento, postura, respiración,
+      errores y fuente) + `components/MeasurementProtocol.tsx` (SVG: banda o segmento sobre
+      una figura esquemática). Visible en el paso guiado de medición y en Medidas → Vista
+      general. Test de cobertura: ningún tipo puede salir sin protocolo ni con la banda fuera
+      de la figura. Texto derivado de `docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`.
+- [ ] **Pendiente:** diagramas por vista lateral para los perímetros de brazo/muslo, y un
+      enlace desde cada campo del asistente al protocolo largo del documento.
+
 ### Fase B — TrainingLab F2 (biblioteca, programas, historial)
 
 - [x] **Condición física whole-body (2026-09-30, según handoff)** — tarjeta en Progreso
@@ -272,14 +283,42 @@ matemática y las reglas duras disponen; el usuario decide.
 - [x] **Historial por ejercicio con edición y borrado in-situ (2026-10-08)** —
       en `ExerciseDetailScreen.tsx`: series listadas por día con opción de editar peso/reps
       y botón de eliminar serie con recálculo automático de marcas y volumen.
-- [~] **Editar/borrar una serie y una sesión completa + E2E** (2026-10-08):
+      **Actualizado (2026-10-22):** las dos cosas son **reversibles**. `lib/set-undo.ts`
+      compara campo a campo (carga, reps, marca D/F) para que guardar sin cambios no abra
+      ninguna ventana, y la barra de deshacer dice qué se deshace — «Serie editada · Press
+      con Barra · 75 kg × 10 → 7 kg × 10» / «Serie eliminada · Press con Barra · 75 kg ×
+      10» — durante 20 s, con escritura en IndexedDB. La edición parsea con
+      `parseNumberInput` (antes `parseFloat`, que rompía con la coma decimal agrupada).
+      13 tests en `tests/training/test_set_undo.test.ts` y E2E
+      `node .tmp-verify/set-undo.mjs` (editar/conservar/borrar → deshacer).
+- [x] **Editar/borrar una serie y una sesión completa + E2E** (2026-10-08, cerrado 2026-10-21):
       primitivas de base de datos (`deleteSession`, `updateSession`, `deleteSetsMany`) en `db.ts`
-      y store (`removeSession`, `editSession`) completadas; edición de series en `SlotCard` y
-      `ExerciseDetailScreen` operativas; pendiente lista visual de sesiones en Progreso y test E2E.
-- [ ] Biblioteca con filtros (músculo/equipo/patrón/nivel) + favoritos.
+      y store (`removeSession`, `restoreSession`, `editSession`); edición de series en `SlotCard` y
+      `ExerciseDetailScreen`. **Historial** ahora permite renombrar la sesión y decir dónde fue, y
+      borrarla entera con una confirmación que declara las series y el volumen que desaparecen
+      (`lib/session-delete.ts`, 5 tests) más **Deshacer** de 20 s que restaura sesión y series por
+      `restoreSession` (el mismo camino que el undo del agente). E2E manual con datos DEMO:
+      `node .tmp-verify/shots-historial.mjs` → 29 sesiones/515 series → borrar → 28/495 → deshacer →
+      29/515. Capturas: `docs/screenshots/2026-10-21-historial-{borrar,deshacer}.png`.
+- [x] Biblioteca con filtros (músculo/equipo/patrón/nivel) + favoritos (2026-10-20) —
+      búsqueda, chips de familia/categoría y **chips de favoritos** con estrella de 44 px en
+      cada fila; `settings.favorites` + `lib/favorites.ts`, 7 tests.
 - [ ] Plantillas manuales (PPL, Upper/Lower, Full body) como datos editables.
-- [ ] **Multi-perfil de equipamiento**: «casa» vs. «gimnasio» (hoy hay un único
-      inventario; el owner quiere poder alternar).
+      **Ojo (2026-10-18):** la decisión del dueño registrada en `lib/routines.ts` fue «plantillas del
+      usuario, editables — **no** un catálogo de programas inventados ni un segundo planificador».
+      Antes de sembrar PPL/Upper-Lower/Full body hay que confirmar que eso no contradice esa
+      decisión; Rutinas ya guarda/edita/duplica plantillas propias.
+- [x] **Multi-perfil de equipamiento** (2026-10-20) — «casa» y «gimnasio» como estantería de
+      inventarios: `lib/gear-profiles.ts` (20 tests), chips en Ajustes con confirmación antes
+      de cambiar, y `set_gear_profile` (35ª herramienta MCP). Cambiar **aparca** el inventario
+      actual en vez de borrarlo y no toca `rowOrder`, `sessionAside`, `weekOverrides` ni el
+      registro. **Renombrar desde la UI cerrado el 2026-10-22:** `withGearProfileRename`
+      (`lib/gear-profiles.ts`) renombra el perfil **en uso** y los **aparcados** conservando id,
+      elementos y posición; rechaza vacío/duplicado con su motivo y no cambia el perfil activo. El
+      lápiz del chip «En uso» (44 px) y la acción «Renombrar» del panel de un aparcado son las dos
+      puertas; E2E `node .tmp-verify/gear-rename.mjs` y `…-mobile.mjs` (nombrar → renombrar → aparcar →
+      renombrar el aparcado → recargar), 7 tests nuevos en
+      `tests/training/test_gear_profiles.test.ts` (26 en total).
 
 **Bloque «Histórico Symmetry + volumen semanal» (encargo del dueño 2026-10-04):**
 

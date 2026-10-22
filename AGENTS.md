@@ -12,7 +12,7 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
 - CI/release/Pages workflows live in **`.github/workflows/` at the repository root** (GitHub never reads a subdirectory's `.github/`). Each job runs from `fitness-ecosystem`, and step-level `working-directory:` overrides must spell out `fitness-ecosystem/...`.
 - TrainingLab (own app): `cd traininglab/apps/desktop && pnpm dev` (→ http://localhost:5174) / `npx tsc -b` / `npx vite build`. Its root-suite tests live in `fitness-ecosystem/tests/training/` and import the app modules by relative path.
 - **Phone navigation (2026-10-19):** below 900 px the rail is replaced by a fixed bottom bar of four destinations (Hoy · Entrenamiento · Historial · Progreso) plus a «Más» sheet (Ejercicios · Semana · Rutinas · Configuración). Only the active tab prints its name; the fifth control shows the active secondary destination. The decision and the measurements behind it are in `fitness-ecosystem/docs/DECISIONS_2026-10-19.md`; the partition lives in `app/nav.ts` and is pinned by `tests/training/test_mobile_nav.test.ts`.
-- **Drag (2026-10-19):** Entrenamiento's queue and Semana's days are reorderable by dragging an explicit grip (`ui/pointer-drag.ts`, Pointer Events — not HTML5 DnD, which does not fire on iOS). The queue previews locally and writes one `rowOrder` on release; Semana swaps the effective days through `lib/week-swap.ts` and `weekOverrides`. Keyboard: arrows on the focused grip. Root tests: `tests/training/test_drag_reorder.test.ts`.- **MCP surface (2026-10-19, second round): 34 tools.** The drag round added
+- **Drag (2026-10-19):** Entrenamiento's queue and Semana's days are reorderable by dragging an explicit grip (`ui/pointer-drag.ts`, Pointer Events — not HTML5 DnD, which does not fire on iOS). The queue previews locally and writes one `rowOrder` on release; Semana swaps the effective days through `lib/week-swap.ts` and `weekOverrides`. Keyboard: arrows on the focused grip. Root tests: `tests/training/test_drag_reorder.test.ts`.- **MCP surface (2026-10-20): 35 tools.** The drag round added
   `reorder_today`, `set_exercise_state`, `reset_today_order` and `swap_week_days`; the
   parity round then added `undo_action` (an agent undoes **its own** applied actions —
   never `finish_session`/`delete_session`), `save_routine`/`apply_routine`/
@@ -20,7 +20,10 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
   `regenerate_week`. Every one validates against the app's published context, applies
   through the store's own callback (the agent's undo and the human's *Deshacer* share
   one code path, `applyUndoOp`), and is reversible from Ajustes.
-  `fitness-ecosystem/docs/MCP_TOOL_SURFACE.md` §11-§12 are the source; the only parity
+  The gear round then added `set_gear_profile` (one inventory per room, §13): a switch
+  parks the live inventory on a shelf instead of discarding it, and an unknown profile is
+  refused rather than replaced by an empty one.
+  `fitness-ecosystem/docs/MCP_TOOL_SURFACE.md` §11-§13 are the source; the only parity
   gap left open is export/import (a save dialog and a whole-DB replace — not honestly
   expressible as an action with a receipt).
 - Typecheck: `pnpm typecheck` (web `tsc -b` is the effective whole-monorepo check)
@@ -33,9 +36,21 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
 
 - Two apps, one shared data contract: **BodyLab** (built: anthropometry, 2D/3D body modeling, exercise, progress) and **TrainingLab** (`traininglab/apps/desktop` — time-budgeted session, readiness, gear inventory, keyboard-first logging, rest timer, optional local LLM coach; own i18n/db; Tauri shell present).
 - **TrainingLab is modular since 2026-09-29 (c), redesign complete 2026-09-29 (e)**: `src/app/` (App shell + `router.ts` hash routes + `nav.ts` destinations + `store.tsx` holding the state), `src/ui/` (design-system primitives + `icons.tsx`, screen-agnostic), `src/screens/` (one file per destination: Inicio · Ejercicios · Entrenamiento · Progreso · Ajustes), `src/features/<domain>/` (pure logic + its components), `src/lib/` (engine glue). Five destinations, one list in `app/nav.ts`, rendered as a **245 px collapsible rail (78 px compact, persisted in localStorage)** ≥1024px or a **bottom tab bar below** it. The Progreso body map recolours the owner's PNG line art through a pixel-ID mask. **Owner direction (2026-09-30): its primary heatmap is strength relative to an externally published, evidence-backed ideal/reference; a second tag/lens may switch to logged training exposure/volume.** Do not treat stimulus as the default strength score, compare absolute kilos across muscle groups, invent an ideal, or silently repurpose the existing anthropometric-goal lens. The standard's support for sex, age, body weight and especially height must be verified against its source; where a variable is not supported, disclose the gap and ask before deriving a substitute. See `docs/REDESIGN_STORM.md` §4 (PÁGINA 7 · Progreso) and `docs/AGENT_HANDOFF.md`. Rep ranges are user-overridable per exercise (`settings.repOverrides` → `lib/settings.ts`). Root-suite tests import `src/lib/*` by relative path, so **never move `lib/` without updating `tests/`**.
+- **Gear profiles (2026-10-20):** `settings.inventory` is still *the* live inventory every
+  consumer reads; a profile is a name for it plus the other setups parked in
+  `settings.gearProfiles` (`lib/gear-profiles.ts`). Switching parks the current items and
+  does not touch `rowOrder`, `sessionAside`, `weekOverrides` or anything logged. **Library
+  favourites** live in `settings.favorites` (`lib/favorites.ts`) and are a filter chip, not a
+  ranking.
+- **BodyLab unfrozen (2026-10-20, first time since the design purge):** the anthropometry
+  form now carries a **visual protocol** per measurement — `lib/measurement-protocols.ts`
+  (landmark, tape/caliper orientation, posture, the errors that move the number, source) +
+  `components/MeasurementProtocol.tsx`, which draws the band/segment on a schematic body.
+  Shown in the guided session step (the moment of doubt) and in Medidas' overview. Text
+  comes from `docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`; nothing is invented.
 - **Progreso status clarification (2026-09-30, handoff c):** the strength-reference heatmap above is a target, not an implemented feature. The current anatomical map still has `Entrenamiento` (logged exposure) and `Objetivos` (anthropometric goals); the separately reported `Condición física` card is whole-body and does not score local muscle strength. Follow `fitness-ecosystem/docs/BUFFY_IMPLEMENTATION_BRIEF.md` for the exact status, F2 order and approval boundary.
 - `bodylab/core/<pkg>` — pure TS engine, zero UI/DOM deps (hard rule, enforced in review): anthropometry, measurements, composition, references, progress, validation, export, analytics, database, **conditioning**, **training**, **exercises**.
-  - `exercises` (2026-09-28): the shared catalog (94 entries) + `traits.ts` (equipment requirements, movement pattern, load type, joint/spine stress, progression axes) + `equipment.ts` (gear presets, capabilities, max load/increment). **Both apps plan against it; TrainingLab works standalone because of it.**
+  - `exercises` (2026-09-28): the shared catalog (**152 entries**, incl. `table-row` — the zero-equipment horizontal pull added 2026-10-20 for the owner's bodyweight back week) + `traits.ts` (equipment requirements, movement pattern, load type, joint/spine stress, progression axes) + `equipment.ts` (gear presets, capabilities, max load/increment) + `technique.ts` (setup/execution/mistakes/safety, with `replace` for variants whose pattern advice does not apply) + `demo.ts` (drawn animations, `EXERCISE_DEMOS` for movements no pattern figure shows honestly). **Both apps plan against it; TrainingLab works standalone because of it.**
   - `training`: plan/validator/generator (weekly) **plus** `session.ts` (day-level, time-budgeted, readiness-aware, never throws) and `decision.ts` (local contextual-bandit decision model, explainable + clamped).
 - `bodylab/integrations/` — oxihuman (3D WASM), musclemapjs (2D maps), clad-body (ISO 8559-1), z-anatomy (empty).
 - `bodylab/packages/contracts` (JSON schemas). The design system is **in-app** (Tailwind tokens in `apps/web/src/index.css` + components); the orphan `packages/ui` was removed 2026-09-11.

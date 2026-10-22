@@ -30,9 +30,10 @@ TrainingLab's planner; measuring → training → re-measuring recalculates the 
   `export`, `analytics` (body age/risk/prediction), `database` (schema + repository),
   `conditioning` (Cooper, resting HR, body fat, J-P skinfolds), `training`
   (plan/validator/generator + `session.ts` day builder + `decision.ts` local
-  decision model + `laya.ts` typed-decision contract), `exercises` (**151**
+  decision model + `laya.ts` typed-decision contract), `exercises` (**152**
   exercises + equipment/movement traits in `catalog.ts` + `catalog-additions.ts` +
-  `catalog-expansion.ts`, `traits.ts` + `traits-expansion.ts`, `equipment.ts`).
+  `catalog-expansion.ts`, `traits.ts` + `traits-expansion.ts`, `equipment.ts`;
+  `demo.ts` draws the movement, `technique.ts` coaches it).
 - `bodylab/integrations/` — external adapters: `oxihuman` (3D WASM), `musclemapjs`
   (2D maps), `clad-body` (ISO 8559-1), `z-anatomy` (empty).
 - `bodylab/packages/contracts` — JSON schemas. The design system is **in-app**
@@ -180,14 +181,28 @@ node scripts/import-symmetry.mjs ../IMPORT_SYMMETRY --out .cache/symmetry-import
   infer muscle strength from unrelated exercises; show neutral/unavailable where no
   defensible mapping exists. Details: `docs/REDESIGN_STORM.md` §4 (PÁGINA 7) and
   `docs/AGENT_HANDOFF.md`.
+- **Gear shelf and favourites (2026-10-20, TrainingLab):** `settings.inventory` is still the
+  live inventory; a *profile* is its name plus the other rooms parked in
+  `settings.gearProfiles` (`lib/gear-profiles.ts`, 20 root tests). Switching parks the items
+  and never touches `rowOrder`/`sessionAside`/`weekOverrides`/the log. Favourites are
+  `settings.favorites` + `lib/favorites.ts`, surfaced as a chip and a star (44 px) in
+  Ejercicios. Both are filter/labels, never a ranking or a record of training.
+- **BodyLab unfrozen (2026-10-20):** every circumference/breadth/length now has a **visual**
+  protocol (`lib/measurement-protocols.ts` + `components/MeasurementProtocol.tsx`) drawn as
+  an SVG band or caliper segment on a schematic body — shown in the guided measuring step and
+  in Medidas' overview. Prose comes from `docs/ANTHROPOMETRY_MEASUREMENT_PROTOCOL.md`
+  (ISAK/F2/F3/F5); the test `src/__tests__/measurement-protocols.test.ts` fails if a type
+  ships without a protocol or with a band outside the figure.
 - **MCP tool surface** (`scripts/fitness-mcp-server.mjs`, design in
-  `docs/MCP_TOOL_SURFACE.md`): **34 tools since 2026-10-19 (second round)** for local
+  `docs/MCP_TOOL_SURFACE.md`): **35 tools since 2026-10-20** for local
   models — HISTORY (read-only; the only destructive door is whole-session
   `delete_session` with `confirm: true` + undo), STATE reads, and validated ACTIONS
   applied by the app through its own reducers with receipts (`applied`/`rejected` +
   rule), idempotency keys and undo. The parity round added `undo_action` (own tokens
   only, never a closed session), the three routine actions, `set_language`,
-  `set_sound`, `reset_decision_model` and `regenerate_week`; export/import stays open
+  `set_sound`, `reset_decision_model` and `regenerate_week`; the gear round added
+  `set_gear_profile` (§13: switching parks the live inventory, an unknown profile is a
+  refusal, never an empty room); export/import stays open
   on purpose (a save dialog and a whole-DB replace are not honest actions). The maths
   disposes; the model proposes.
 - **AI is three-level and local**: deterministic rules are the floor; a JEV-class

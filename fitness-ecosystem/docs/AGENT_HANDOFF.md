@@ -2338,3 +2338,570 @@ tests/training/test_anatomy_focus.test.ts tests/training/test_body_map.test.ts` 
   (decisión B ya fijada en `docs/DECISIONS_2026-10-19.md` §4: whisper.cpp `base` int8
   vía WASM, opt-in, 100 % local). Ninguno de los dos necesita un gate del dueño más
   allá de lo ya escrito.
+---
+
+## 2026-10-20 — estantería de equipamiento, favoritos, BodyLab desbloqueado y la semana sin equipo del dueño
+
+**Fase/tarea:** TrainingLab F2 (perfiles de equipo + favoritos de biblioteca), MCP 35 herramientas,
+BodyLab Fase A.1 (protocolo visual de medidas) y la configuración real de la semana del dueño.
+No se tocó el mapa de fuerza (sigue bajo gate) ni STT (aplazado por el dueño en esta sesión).
+
+**Pedido del dueño (2026-10-20):** «agrega en mi aplicación de escritorio todo el entrenamiento
+recomendado de esta semana para mí sin ningún equipamiento… actúa como el LLM de decisión… para
+tener un rico abdomen y crecer espalda… que los ejercicios cuenten con su tutorial de calidad.
+También este el primer unfrozen de BodyLab en un buen tiempo: busca recursos visuales o
+descriptivos de cómo tomar las medidas antropométricas correctas, porque es difícil saber medir en
+diámetro o anchura sin ver en qué posición debería estar la cinta o el metro».
+
+### 1. TrainingLab — estantería de equipamiento (casa / gimnasio)
+
+- **Modelo puro:** `src/lib/gear-profiles.ts` (nuevo). `settings.inventory` sigue siendo **el**
+  inventario vivo que leen el plan, la progresión, `set_inventory` y el contexto MCP; un perfil es
+  **un nombre para ese inventario** (`settings.activeGearProfile: {id,name} | null`) más los demás
+  equipos **aparcados** en `settings.gearProfiles` (el vivo NO se guarda ahí — invariante aplicada
+  en cada lectura por `gearShelf()`). Operaciones: `withGearProfileName`, `withNewGearProfile`,
+  `withGearProfileSwitch`, `withGearProfileDelete`, `freeGearName`.
+- **Reglas que el dueño aprobó antes de empezar:** un perfil nuevo **no borra** el anterior (se
+  aparca), y cambiar de perfil **no reescribe** el plan de hoy sin aceptación → la barra pide
+  confirmación con un toque («¿Cambiar a «Casa»? El plan de hoy se recalculará con ese equipo. Lo
+  que has registrado, ordenado o diseñado no cambia»).
+- **UI:** `src/features/today/GearProfileBar.tsx` (nuevo) dentro de Ajustes → Mi equipamiento.
+  Chips «En uso: X», chips de aparcados, «Guardar como perfil» / «Nuevo perfil» con nombre
+  sugerido (`Casa` → `Gimnasio` → `Casa 2`…), «Borrar perfil» solo para aparcados.
+- **Persistencia y saneado:** `lib/types.ts` (tres campos nuevos), `lib/db.ts`
+  (`normalizeSettings` sanea perfiles, activo y favoritos), `lib/i18n.ts` (19 claves ES/EN).
+- **MCP:** `lib/mcp-actions.ts` → acción `set_gear_profile` (35ª). Casa el objetivo por id o por
+  nombre; rechaza `unknown_profile`, `no_gear_profiles`, `profile_required`, `already_active`; el
+  `settingsPatch` lleva inventario + activo + estantería, y el `undo` restaura **todo**.
+  `scripts/fitness-mcp-server.mjs`: definición de la herramienta, handler, `gearShelfOf()` (espejo
+  del módulo TS, obligado porque el servidor es `.mjs` sin build) y `read_current_state.gear`.
+- **Contexto del coach local:** `contextCsv` publica ahora `gear_profile,<nombre>` junto al
+  equipamiento.
+
+### 2. TrainingLab — favoritos de biblioteca
+
+- `src/lib/favorites.ts` (nuevo): `normalizeFavorites`, `favoriteIds`, `isFavorite`,
+  `withFavorite` (toggle idempotente; un doble toque no duplica).
+- `features/exercises/library.ts`: `LibraryFilters.onlyFavorites` + 4º argumento `favorites`; el
+  filtro es AND con familia/categoría y no asigna nada cuando está apagado.
+- `screens/ExercisesScreen.tsx`: chip «Favoritos» (con estrella) y **estrella de 44 px** por fila,
+  hermana del `NavRow` — no hija, porque `NavRow` renderiza un `<button>` y un botón dentro de otro
+  es HTML inválido (y se traga el toque en iOS). Vacío propio: «Aún no has marcado nada».
+
+### 3. La semana del dueño, configurada por el canal real de acciones
+
+No se escribió la base de datos: se usó el canal de acciones del MCP (`mcp-actions.json`) y la app
+**validó y aplicó** cada acción con sus propias reglas. Recibos reales (`applied`, 9/9):
+
+| Acción | Resultado |
+|---|---|
+| `set_inventory` → `[bodyweight]` | «Equipamiento puesto en 1 elemento(s): Peso corporal» |
+| `set_time_budget` → 50 | «Presupuesto diario de tiempo puesto en 50 min» |
+| `set_week_override` 1 mar | core + traps |
+| `set_week_override` 2 mié | descanso |
+| `set_week_override` 3 jue | core |
+| `set_week_override` 4 vie | descanso |
+| `set_week_override` 5 sáb | core + traps |
+| `set_week_override` 6 dom | descanso |
+| `set_day_focus` | core + traps |
+
+El espejo de la app quedó en `mirror.date 2026-10-20` con el plan real: `v-up 3×10-15`,
+`hollow-body-hold 4×8-12`, `side-plank 3×10-15`, `russian-twist 3×10-15`, `prone-y-raise 4×8-12`.
+Backup nuevo: `backups/traininglab-00000001792501479328.json`.
+
+**Hallazgo verificado, y es el límite honesto de lo que pidió:** con **cero** equipamiento el
+catálogo solo tiene **un** ejercicio de espalda practicable: `prone-y-raise` (trapecio, no requiere
+nada). Todo lo demás que entrena dorsales necesita algo — `band-row`, `band-pull-apart` y
+`band-lat-pulldown` (una banda), `pull-ups`/`chin-ups`/`scapular-pull-up`/`inverted-row` (barra o
+paralelas) — comprobado contra el catálogo real, no de memoria. Con **una banda** pasan de 1 a 5.
+El plan de la semana por tanto es **de core** (rico abdomen: sí) y la espalda se queda en el Y
+prono; así se le dijo al dueño, sin inventar una rutina de espalda que el motor no puede sostener.
+
+**Tutoriales:** los 14 ejercicios que el plan puede prescribir con peso corporal tienen guía
+completa en el catálogo (`setup`, `execution`, `mistakes`, `breathing`, `effort`, `tempo`,
+`safety`) — eso es lo que muestra la pestaña Guía. Lo que **no** tienen esos 14 es **GIF**: la media
+cubre 115 de 151 y este subconjunto está fuera. No se inventó media ni se prometió.
+
+### 4. BodyLab — primer unfrozen: protocolo **visual** de medidas
+
+- `bodylab/apps/web/src/lib/measurement-protocols.ts` (nuevo): **32 protocolos** que cubren todos
+  los `CIRCUMFERENCE_TYPES`, `BREADTH_TYPES` y `LENGTH_TYPES` (las variantes `_left/_right`
+  resuelven a su base). Cada uno: punto de apoyo, orientación de la cinta/calibre, postura,
+  respiración cuando importa, 1–3 errores que mueven el número, fuente (F1 ISAK, F2 Whyte &
+  Gallagher, F3 Hodgdon & Beckett, F5 Drillis) y **geometría del dibujo** (elipse de banda o
+  segmento entre dos puntos, en un viewBox 100×240). `STANDARD_CONDITIONS` recoge las cinco
+  condiciones estándar del documento.
+- `bodylab/apps/web/src/components/MeasurementProtocol.tsx` (nuevo): silueta esquemática (frente o
+  lateral) dibujada por nosotros + la banda punteada o el segmento con sus dos extremos, y el texto
+  bilingüe. Sin licencias de imagen, offline, funciona en oscuro.
+- **Dónde se ve:** en el **paso guiado de medición** (`pages/Measure.tsx`, siempre visible debajo
+  del texto — el momento de la duda es ese, con la cinta en la mano) y en **Medidas → Vista
+  general** (botón ⓘ por medida, panel a ancho completo bajo la fila).
+- **Test nuevo:** `bodylab/apps/web/src/__tests__/measurement-protocols.test.ts` (7 casos):
+  cobertura de todos los tipos, geometría dentro de la figura y no degenerada, `shoulders` como
+  **anchura** y no como perímetro, texto bilingüe y fuente citada. Falla si un tipo se añade al
+  formulario sin protocolo — que es como este hueco apareció.
+- Captura real: `docs/screenshots/2026-10-20-measure-protocol.png` (paso 3/10, Cintura, Chromium,
+  1440×900, dev server 5184).
+
+### 5. Investigación de fuerza vs. referencia externa (encargo §3 del brief)
+
+`docs/STRENGTH_REFERENCE_RESEARCH_2026-10-20.md` (nuevo). Dictamen: **no existe** un estándar
+validado que cubra población general + mismo ejercicio/protocolo + sexo/peso/edad/**estatura**.
+Opciones con fuente y licencia: Piper et al. (10RM medido, 18–25 a, sexo y peso, **sin ajuste por
+estatura**, CC BY 4.0), Strength Level (referencia de usuarios, no norma; sin licencia abierta) y
+prensión (Statistics Canada y Tomkinson: los **únicos** con estatura, y solo para esa prueba).
+Descartadas como norma: ExRx, Symmetric Strength, extrapolar powerlifting. Sigue **sin aprobar**:
+ningún color del mapa cambia con esto.
+
+### 6. Verificación (comandos y resultados reales)
+
+- Root, desde `fitness-ecosystem/`: `./node_modules/.bin/vitest run` → **93 archivos / 1404
+  tests, exit 0** (+37: 20 de `test_gear_profiles`, 7 de `test_favorites`, 3 de favoritos en
+  `test_exercise_library`, 7 de `set_gear_profile` en `test_mcp_actions`, 1 de servidor).
+- Web BodyLab: `bodylab/apps/web` → `npx vitest run` → **12 archivos / 174 tests, exit 0**.
+- `npx oxlint` (web) → **0 warnings / 0 errores**. `node scripts/css-class-audit.mjs` → **exit 0,
+  sin hallazgos**.
+- `tsc -b`: TrainingLab **exit 0**; BodyLab web **exit 0**.
+- `npx vite build`: TrainingLab **exit 0**, BodyLab web **exit 0**.
+- UI verificada en Chromium contra los dev servers (5183 TrainingLab, 5184 BodyLab): crear «Casa»
+  con mancuernas → «Gimnasio» nuevo (inventario vacío, 38/151 disponibles) → añadir barra (47/151)
+  → cambiar a «Casa» con confirmación (61/151 y la mancuerna de vuelta, la barra aparcada) →
+  recarga y todo persiste. Favoritos: 2 estrellas, el chip «Favoritos» deja 2 filas, recarga y
+  siguen marcadas.
+- La app de escritorio **real** aplicó las 9 acciones (recibos en
+  `%APPDATA%/com.traininglab.desktop/mcp/mcp-results.json`) y publicó su espejo con el plan de hoy.
+
+### 7. Estado Git y pendientes
+
+- Commits de esta sesión: **ninguno todavía** (el árbol queda para revisión del dueño; no se hace
+  commit ni push sin pedirlo). Archivos propios: los listados arriba + `AGENTS.md`, `knowledge.md`,
+  `ROADMAP.md`, `docs/MCP_TOOL_SURFACE.md` §13, `llm/MCP_TOOLS.md` (35), este handoff y el documento
+  de investigación.
+- **Sin tocar a propósito:** mapa de fuerza (gate de evidencia), STT (aplazado por el dueño),
+  export/import por MCP (la frontera de deshacer no es honesta todavía) y el `GearPanel` dentro de
+  su `SectionCard` anidada (deuda visual previa, no de esta ronda).
+- **Instaladores:** pendientes de reconstruir al terminar la verificación (`pnpm tauri build` en
+  ambas apps, copia a `C:\Users\andyh\Desktop`). BodyLab sale con exit 1 por
+  `TAURI_SIGNING_PRIVATE_KEY` aunque el installer sea válido: el criterio es `.exe` nuevo +
+  contenido del bundle.
+- **Siguiente paso seguro:** abrir TrainingLab y ver la semana aplicada; si el dueño consigue una
+  banda elástica, `set_inventory` con `[bodyweight, bands]` multiplica por cinco el trabajo de
+  espalda disponible (se le puede ofrecer como acción, con su undo).
+
+## 2026-10-20 (b) — la espalda sin equipo: el catálogo no tenía ni un jalón horizontal, y el tutorial imprimía su propio comentario
+
+**Fase/tarea:** continuación de la sesión anterior (misma petición del dueño: semana sin
+equipamiento, abdomen + espalda, «tutorial de calidad»). Aquí se cierra el frente de la
+espalda, que la primera pasada **no** resolvía, y dos defectos que la verificación visual
+destapó. Sigue sin tocarse el mapa de fuerza (gate de evidencia) y sin commits.
+
+### 1. El hueco real: con equipo cero no existía ningún jalón horizontal
+
+- Medido con el motor de la app (`.tmp-verify/preview-week-2026-10-20.mjs`): con
+  `inventory = [bodyweight]` el catálogo dejaba **38 de 151** ejercicios y, entre ellos, de
+  espalda solo `prone-y-raise` (hyper 2) y dos presses verticales. `inverted-row` exige
+  `dip_bars | pullup_bar | bench`; `band-row` exige banda. Por eso la primera pasada del plan
+  salió **4 series de core × 1 de espalda**: no era un fallo de programación, era ausencia de
+  movimiento. Con `focus: lats+rhomboids+traps` la app devolvía dos ejercicios y 23 de los 50
+  minutos sin usar.
+- **`table-row`** (nuevo, `bodylab/core/exercises/src/catalog-additions.ts`): «Remo bajo Mesa
+  (Invertido en Casa)», bodyweight, difficulty 2, hypertrophy 4, `lats_mid` 3 · `rhomboids` 3 ·
+  `traps_mid` 2 · `posterior_deltoid` 2 · `biceps_long` 2. `requires: []` es deliberado: una mesa
+  es mobiliario, no material de entrenamiento; la seguridad va en las indicaciones, no en una
+  puerta de equipamiento. Traits en `traits.ts` (horizontal_pull, bodyweight, joint 1 / spine 1,
+  progresión reps-leverage-tempo-volume, 1 min de montaje).
+- Catálogo **151 → 152**. Consecuencias fijadas: `scripts/build-llm-pack.mjs` regenerado
+  (152 ejercicios, 115 con media), `integration-total.test.ts` (152 y 37 sin media, con
+  `table-row` nombrado) y dos tests nuevos que impiden que el hueco vuelva:
+  `test_exercise_traits` («con el preset bodyweight existe al menos un `horizontal_pull`») y
+  `test_technique` (el catálogo entero sigue cumpliendo los mínimos de coaching).
+
+### 2. Tutorial: un comentario JSX que se imprimía en pantalla, y consejos que no aplicaban
+
+- **Defecto visible (arreglado):** `features/today/ExerciseDemo.tsx` tenía un comentario de bloque
+  **sin llaves** dentro de los hijos del JSX. React lo renderiza como texto: al abrir «Técnica
+  completa» aparecía impreso el párrafo entero («Wider when there is a reference GIF to look
+  at…») cruzado sobre el diálogo. Ahora es un comentario JSX con llaves. El primer intento lo
+  rompió de otra forma —el texto del comentario contenía el cierre de bloque, que terminaba el
+  comentario antes de tiempo—, y `tsc` lo cazó en el acto.
+- **Consejos que no aplicaban:** `horizontal_pull` entrena un remo unilateral con mancuerna («apoya
+  la mano libre», «muñecas neutras, sin enganchar el agarre», «pecho girado al lado que trabaja»).
+  En un remo a dos manos bajo una mesa eso es una instrucción sobre nada. `TechniqueOverride`
+  admite ahora `replace: TechniqueSection[]`: la sección listada **sustituye** a la del patrón en
+  vez de concatenarse, y vuelve al patrón si el override la deja vacía. `table-row` reemplaza
+  setup, ejecución, errores y seguridad con sus propias indicaciones (mesa firme, ángulo del
+  codo, «una mesa que se desliza no es un entrenamiento, es una nariz rota»).
+- **Figura:** el dibujo es por patrón, y el de `horizontal_pull` es un remo inclinado de pie
+  anclado en el tobillo — para un remo tumbado bajo una mesa eso es mentira visual. Se añadió
+  `EXERCISE_DEMOS` + `demoFor(exerciseId, pattern)` en `demo.ts` (tabla pequeña, a mano) y
+  `table-row` trae su propia animación: cuerpo horizontal, pelvis fija (`anchor: "hip"`), el codo
+  viaja y el pecho sube. `getExerciseTechnique` y las dos llamadas de `ExerciseDemo.tsx` ya usan
+  el resolutor, así que una figura nueva llega a todas las pantallas a la vez.
+
+### 3. La semana corregida, aplicada por el canal de acciones de la app
+
+- Primer pase: `family = traps`, que el planificador solo puede llenar con elevaciones. Segundo
+  pase, por el mismo canal (`set_week_override`, `.tmp-verify/apply-back-week-2026-10-20.mjs`):
+  **mar = core + lats + rhomboids + traps · mié descanso · jue = core · vie descanso ·
+  sáb = core + lats + rhomboids + traps · dom descanso**, foco de hoy igual, presupuesto 50 min,
+  inventario `[bodyweight]`. Las 7 acciones quedaron `applied` con su `undoToken` en Ajustes
+  (recibos en `%APPDATA%/com.traininglab.desktop/mcp/mcp-results.json`).
+- **Lo que la app prescribe hoy** (verificado en la UI, no en el código): «Core + Dorsales»,
+  41 min, 5 ejercicios, 17 series — **1. Remo bajo Mesa 4×8-12 RIR 2 (120 s)**, 2. V-Up 3×,
+  3. Hueco 4×, 4. Plancha lateral 3×, 5. Giros rusos 3×.
+- **Límite honesto que queda:** el planificador elige **un** movimiento por patrón, así que en
+  casa la espalda recibe 4 series de jalón horizontal por sesión de espalda (8/semana con dos
+  días) más las elevaciones en Y. Con banda elástica (`set_inventory [bodyweight, bands]`) habría
+  `band-row` y `band-pull-apart`; con una mesa más baja o los pies elevados se progresa sin
+  añadir material.
+- **Defecto de UI anotado, no tocado:** con una lista de familias a medida los chips «Enfoque de
+  hoy» marcan **«Automático»** (`focusKeyOf` devuelve `auto` cuando no coincide con un preset)
+  aunque el día sí esté filtrado.
+
+### 4. Herramienta: el regenerador del pack no arrancaba
+
+`scripts/build-llm-pack.mjs` importaba `vite` de forma estática; en esta copia instalada con bun
+`vite` vive solo dentro de las apps y el comando moría con `ERR_MODULE_NOT_FOUND`, así que tras
+editar el catálogo el pack **no se podía** regenerar. Ahora resuelve Vite como ya hace
+`scripts/fitness-mcp-server.mjs` (import dinámico + `createRequire` desde el manifiesto de la app).
+
+### 5. Verificación (comandos y resultados reales, 2026-10-20)
+
+- Raíz, desde `fitness-ecosystem/`: `./node_modules/.bin/vitest run` → **93 archivos / 1409
+  tests, exit 0**.
+- Web BodyLab (`bodylab/apps/web`): `./node_modules/.bin/vitest run` → **12 archivos / 174
+  tests, exit 0**.
+- `tsc -b` (TrainingLab, binario local de la app) → **exit 0**. `oxlint` (web) → **0 warnings / 0
+  errores**. `node scripts/css-class-audit.mjs` → **exit 0, sin hallazgos**.
+- `node scripts/build-llm-pack.mjs` → 152 ejercicios, 115 con media.
+- UI en Chromium contra el dev server (5183) con los ajustes sembrados en IndexedDB (bodyweight,
+  50 min, la semana aplicada): Inicio muestra «Core + Dorsales», el remo es la fila 1, y el
+  diálogo de técnica muestra las indicaciones propias y **ya no** el comentario impreso.
+  Capturas: `docs/screenshots/2026-10-20-table-row-technique-v4.png` (estado final: sin
+  comentario impreso y con las indicaciones propias sustituyendo a las del patrón) y
+  `docs/screenshots/2026-10-20-table-row-technique.png` (el defecto, conservada como
+  evidencia).
+- Instaladores reconstruidos desde este estado (`pnpm tauri build` en ambas apps) y copiados al
+  escritorio real `C:\Users\andyh\Desktop`, con sha256 comparado y el contenido del bundle
+  comprobado (`table-row` / «Remo bajo Mesa» presentes en `dist/assets` y dentro del `.exe`).
+
+### 6. Estado Git y pendientes
+
+- **Sin commits:** el árbol queda para revisión del dueño. Archivos de esta pasada:
+  `bodylab/core/exercises/src/{catalog-additions,traits,technique,demo}.ts`,
+  `traininglab/apps/desktop/src/features/today/ExerciseDemo.tsx`,
+  `scripts/build-llm-pack.mjs`,
+  `bodylab/apps/web/src/__tests__/integration-total.test.ts`,
+  `tests/exercises/{test_technique,test_exercise_traits}.test.ts`,
+  `traininglab/apps/desktop/llm/*` (regenerado), `AGENTS.md`, `knowledge.md`, este archivo.
+- **Pendiente / decisión del dueño:** (a) instalar el `.exe` nuevo para dejar de correr la build
+  de las 08:25; (b) si quiere más volumen de espalda sin material, valorar banda elástica o pies
+  elevados en una silla; (c) el chip «Automático» con foco a medida; (d) el mapa de fuerza sigue
+  bajo gate.
+- **Siguiente paso seguro:** abrir TrainingLab → Hoy y registrar la primera serie del remo. Si la
+  mesa es alta, la progresión está en las indicaciones (pies en una silla, tempo, repeticiones).
+
+## 2026-10-21 — Media de ejercicios: fuentes, IA y el tutorial de los 37 sin imagen
+
+**Fase / subtarea:** conocimiento del catálogo + ficha de técnica (F2, sin tocar el gate del mapa
+de fuerza). Petición del dueño: usar IA/superpíxeles para las imágenes de referencia, buscar los
+GIF/fotos que faltan y añadir conocimiento real a las sugerencias.
+
+### 1. La pregunta de las imágenes, respondida con fuentes
+
+Documento nuevo: `docs/EXERCISE_MEDIA_SOURCES_2026-10-21.md`. Resumen verificado:
+
+- **free-exercise-db (Unlicense)** es la única fuente que puede empaquetarse entera. Descargado
+  hoy `dist/exercises.json`: **876 entradas**. Cruzado por nombre contra los 37 ids sin media:
+  **cero coincidencias** (`sumo squat`, `clamshell`, `fire hydrant`, `nordic`, `copenhagen`,
+  `hollow`, `bulgarian`, `pike push`, `diamond`, `burpee`, `jump rope`, `table`: 0 cada uno;
+  `tibialis` solo devuelve dos estiramientos). La fuente segura está agotada por nombre, y la
+  regla del `NOTICE.md` (solo nombre exacto) impide subir «algo parecido».
+- **wger** es CC BY-SA **por imagen** y su mantenedor avisa de material sin auditar
+  (issue 2196); **ExerciseDB** prohíbe redistribuir los GIF como archivos; **RepDB**, Human3.6M,
+  Fit3D, M3GYM y AthletePose3D tampoco sirven para un repo abierto.
+- **IA / superpíxeles:** la difusión pose-condicionada no garantiza la pose (arXiv 2411.12872:
+  «nunca se igualan perfectamente»; Buchheim WACV 2025: la pose 2D tiene ambigüedad de
+  profundidad). SuperSVG (CVPR 2024) usa SLIC, pero **reconstruye la imagen, no la postura**, y
+  sus pesos no tienen licencia verificable. Decisión registrada: la referencia autoritativa sigue
+  siendo el rig de `demo.ts` (ángulos explícitos, sin licencia); la IA solo podría estilizar una
+  pose ya corregida a mano, y no se ha empaquetado nada.
+
+### 2. Los 37 ejercicios sin GIF ni foto ahora se enseñan de verdad
+
+Antes, para esos ids la app solo podía mostrar las indicaciones del **patrón**, que son correctas
+pero genéricas (`elbow_extension` describe un jalón de tríceps con polea para enseñar una flexión
+diamante; `knee_flexion` habla del eje de la máquina para un curl nórdico). Se añadieron
+**25 entradas nuevas en `TECHNIQUE_OVERRIDES`** (`bodylab/core/exercises/src/technique.ts`) con
+indicaciones específicas y con fuente:
+
+- Reemplazan al patrón cuando éste describe otro ejercicio: `diamond-push-up`, `pike-push-up`,
+  `prone-y-raise`, `clamshells`, `fire-hydrants`, `nordic-curl`, `copenhagen-plank`,
+  `hollow-body-hold`, `push-up-plus` (usa `replace`, la maquinaria que ya existía para `table-row`).
+- Se suman al patrón donde solo faltaba el número: `lying-hip-abduction` (45°),
+  `banded-hip-abduction`, `band-*` (anclaje y banda como equipo que falla), `tibialis-raise`,
+  `sumo-squat`, `hollow-rock`, `bird-dog`, `deficit/archer/pseudo-planche-push-up`,
+  `dumbbell-squeeze-press`, `bulgarian-split-squat`, y los 11 bloques de acondicionamiento
+  (largo de cuerda, altura de sillín, el descenso como recuperación…).
+- Los datos concretos (45°, 135°, 90° de rodilla, palanca corta antes de larga, la lumbar en
+  contacto en el hollow, la advertencia EMG de que el clamshell no aísla el glúteo medio) salen de
+  ACE, NASM, ExRx y estudios PMC citados en el documento nuevo; nada inventado.
+
+### 3. Interfaz: tres defectos que solo se ven abriendo la app
+
+**a) La ficha de sesión no enseñaba la preparación.**
+
+`ExerciseDemoModal` (`traininglab/apps/desktop/src/features/today/ExerciseDemo.tsx`) mostraba
+ejecución, errores, seguridad y respiración, y **nunca** la preparación — que sí existe en el dato
+y sí aparece en la guía completa. Ahora la muestra antes de la ejecución (máx. 3 indicaciones,
+`tech.setup` nuevo en `i18n.ts`, ES/EN). Es la pantalla que se abre a mitad de serie, justo cuando
+hace falta saber dónde poner los pies.
+
+**b) La figura dibujada se comía el diálogo.** Sin GIF, el SVG se dimensionaba por su viewBox: a
+`w-full` una figura de pie medía ~600 px de alto y empujaba preparación, ejecución y seguridad
+fuera de pantalla. Ahora el modal la capa a 240 px (`DemoFigure` acepta `className`), como ya se
+hacía con el GIF.
+
+**c) La figura de la flexión diamante era la de un jalón de tríceps de pie.** El trait la archiva
+bajo `elbow_extension` porque el codo termina la repetición, y ese patrón se dibuja de pie con
+polea. Se añadió `DEMO_PATTERN_OVERRIDES` (`demo.ts`) para que tome la figura de `horizontal_push`,
+que es una flexión en el suelo. Test nuevo: el mapa solo puede apuntar a ejercicios reales y a un
+patrón distinto del suyo.
+
+**d) El «por qué cuesta» seguía siendo el del patrón.** `TECHNIQUE_OVERRIDES` ahora puede
+sobrescribir `techniqueWhy` y `techniqueLevel`: la diamante explicaba que «el hombro debe quedarse
+quieto mientras el codo se mueve» (cierto en polea, falso en flexión) y el nórdico heredaba 2/5 de
+una máquina de curl. Ahora la diamante dice que es una flexión, el nórdico 4/5, y el Copenhagen
+que lo sostiene el aductor.
+
+### 4. Test nuevo que fija la promesa
+
+En `tests/exercises/test_technique.test.ts`, bloque
+«technique: no image never means no specific teaching»: (a) todo ejercicio sin entrada en
+`asset-manifest.json` tiene overrides propios, (b) esas indicaciones añaden al menos una frase que
+el patrón no dice. Si mañana alguien añade un ejercicio sin media y sin texto, la suite falla.
+
+### 5. Verificación real (2026-10-21)
+
+- Raíz (`fitness-ecosystem/`): `pnpm test` → **93 archivos / 1415 tests, exit 0** (+6 de esta ronda).
+- `pnpm typecheck` (web `tsc -b` + 11 paquetes core) → **exit 0**; `traininglab/apps/desktop`:
+  `pnpm exec tsc -b` → **exit 0**. `pnpm lint` → **0 warnings / 0 errores**. `pnpm audit:css` →
+  **exit 0, sin hallazgos**.
+- `node scripts/build-llm-pack.mjs` → 152 ejercicios, 115 con media (el pack del LLM se regeneró
+  con las indicaciones nuevas; `test_llm_knowledge_pack` en verde).
+- **Instalador de TrainingLab reconstruido** desde este estado: `pnpm tauri build` → 
+  `TrainingLab_0.2.0_x64-setup.exe`, **16,68 MiB, 17:02**, copiado a `C:\Users\andyh\Desktop\
+  TrainingLab-setup.exe` (17 488 165 bytes, sha256 idéntico `41ceeb98…`). Cadena comprobada: el
+  bundle de `dist/assets` contiene `tech.setup` y la clase `h-[240px]` de la figura capada.
+- **Verificado en la interfaz real** (Vite dev server 5187 + navegador del panel, sin sembrar
+  IndexedDB: la sesión arranca con los ajustes por defecto). Pasos: `#/sesion` → fila «Flexión
+  Diamante» (sin GIF ni foto en el manifiesto) → botón «Técnica». El diálogo devuelve, en orden:
+  `PREPARACIÓN` (índice 7), `EJECUCIÓN` (11), `ERRORES COMUNES` (15); la figura es ahora una
+  flexión en el suelo de 240 px; la seguridad ya no habla de «bajar el peso». Captura:
+  `docs/screenshots/2026-10-21-tecnica-diamante.png`. El intento anterior con siembra de IndexedDB
+  tumbaba la pestaña y se abandonó: no hacía falta, la pantalla de sesión no depende del log.
+
+### 6. Estado Git y pendientes
+
+- **Sin commits.** Archivos de esta pasada: `docs/EXERCISE_MEDIA_SOURCES_2026-10-21.md` (nuevo),
+  `bodylab/core/exercises/src/{technique,demo}.ts`,
+  `traininglab/.../features/today/ExerciseDemo.tsx`, `traininglab/.../lib/i18n.ts`,
+  `tests/exercises/test_technique.test.ts`, `traininglab/apps/desktop/llm/*` (regenerado),
+  `docs/screenshots/2026-10-21-tecnica-diamante.png` (prueba visual) y este archivo. BodyLab
+  (la app) no se tocó.
+- **Pendiente / decisión del dueño:** (a) instalar el `.exe` nuevo (el del escritorio ya es el de
+  hoy); (b) si quiere fotos propias para los 37, la única vía legal es dibujarlas o rodarlas —
+  ofrecer el pipeline keypoints→SVG con revisión humana; (c) el chip «Automático» con foco a
+  medida sigue abierto desde ayer; (d) el mapa de fuerza sigue bajo gate.
+- **Siguiente paso seguro:** abrir TrainingLab → Entrenamiento → «Técnica» en cualquier fila y
+  comprobar que aparece «Preparación» antes de «Ejecución».
+
+## 2026-10-21 (b) — Historial: borrar una sesión con deshacer (cierra el `[~]` del ROADMAP)
+
+**Fase / subtarea:** Fase 1.5 del brief (CRUD de sesión, P0) y F2 «Editar/borrar una serie y una
+sesión completa + E2E», que estaba `[~]` desde el 2026-10-08: la base de datos y el store sabían
+borrar y restaurar, pero **ninguna pantalla lo ofrecía**.
+
+**Por qué esta y no otra:** antes de elegir se descartaron dos candidatos del ROADMAP.
+**Plantillas PPL/Upper-Lower/Full body** choca con la decisión del dueño anotada en
+`lib/routines.ts` («plantillas del usuario, editables — no un catálogo de programas inventados ni
+un segundo planificador»): queda anotado en el ROADMAP para pedir confirmación antes de tocarlo.
+**`generateRoutine` en la pantalla Semana** duplicaría `buildWeekPlan`, que ya la alimenta. El
+borrado de sesión era lo único P0 pendiente sin contradicciones.
+
+### Qué se hizo
+
+- **`lib/session-delete.ts` (nuevo, puro).** `sessionDeletePlan(session, sets)` devuelve qué se va:
+  ids de las series, series de trabajo, de calentamiento, **volumen solo de trabajo**
+  (`weight × reps`, calentamientos fuera como en todo el resto) e ids de ejercicios distintos.
+  Cuenta aparte las series que la sesión reclama y ya no están en el registro (`missingSets`) en
+  vez de fingir que se van. 5 tests en `tests/training/test_session_delete.test.ts`.
+- **Historial (`screens/HistoryScreen.tsx`).** Cada tarjeta cerrada gana dos acciones:
+  * **Editar** — nombre y lugar. Solo texto libre que el log guarda como tal; series, cargas y
+    tiempos son el registro y no se editan aquí.
+  * **Eliminar** — confirmación en la propia tarjeta que declara los números reales («sus 21
+    series, 7349 kg de volumen de trabajo…»), con aviso de las series de calentamiento incluidas
+    (singular/plural resuelto: «Se incluye 1 serie»).
+  * Tras borrar, barra **Deshacer** de 20 s con cuenta atrás que restaura sesión y series por
+    `restoreSession` — el **mismo camino** que el `restore_session` del agente, así que humano y
+    agente no pueden restaurar distinto. `restoreSession` se expone ahora en el contexto del store.
+  * La pista de la sección decía «las sesiones cerradas son inmutables»: ya era falso y se
+    reescribió («Aquí no se reescriben las series: renombra la sesión, di dónde fue o bórrala»).
+- **i18n ES/EN**: 16 claves nuevas (`hist.edit*`, `hist.delete*`, `hist.undo*`, `hist.place.none`).
+
+### Verificación real
+
+- `pnpm test` → **94 archivos / 1420 tests, exit 0** (+5 de `test_session_delete`).
+  `pnpm typecheck` → 0 · `tsc -b` de TrainingLab → 0 · `pnpm lint` → 0/0 · `pnpm audit:css` → 4/4 ✓.
+- **E2E en navegador real** (`node .tmp-verify/shots-historial.mjs`, Vite dev 5188, Chromium de
+  Playwright, contexto nuevo, datos DEMO cargados por la UI): **29 sesiones / 515 series de
+  trabajo → Eliminar (confirmación con 21 series y 7349 kg) → 28 / 495 y barra de deshacer →
+  Deshacer → 29 / 515**, con «Espalda + Bíceps» de vuelta en la lista. `PASS historial: borrar +
+  deshacer`. Capturas: `docs/screenshots/2026-10-21-historial-borrar.png` y
+  `docs/screenshots/2026-10-21-historial-deshacer.png` (revisadas a ojo: la confirmación y la
+  barra de deshacer se ven completas, con los números correctos).
+- **Instalador reconstruido desde este estado**: `TrainingLab_0.2.0_x64-setup.exe` **17:31**,
+  16,68 MiB, copiado a `C:\Users\andyh\Desktop\TrainingLab-setup.exe` (17 490 061 bytes, sha256
+  idéntico `a47a2943…`); el chunk `HistoryScreen-*.js` del bundle contiene las claves nuevas.
+
+### Estado Git y pendientes
+
+- **Sin commits.** Archivos: `traininglab/.../lib/session-delete.ts` (nuevo),
+  `traininglab/.../screens/HistoryScreen.tsx`, `traininglab/.../app/store.tsx` (exponer
+  `restoreSession`), `traininglab/.../lib/i18n.ts`, `tests/training/test_session_delete.test.ts`
+  (nuevo), `.tmp-verify/shots-historial.mjs` (script E2E), `ROADMAP.md`, capturas y este archivo.
+- **Pendiente:** (a) el chip «Automático» con foco a medida (sigue abierto del 2026-10-20);
+  (b) plantillas PPL/Upper-Lower: **requiere confirmación del dueño** por la decisión de
+  `lib/routines.ts`; (c) renombrar un perfil de equipamiento desde la UI; (d) el mapa de fuerza
+  sigue bajo gate; (e) las series editables de `ExerciseDetailScreen` no tienen deshacer (solo
+  el borrado de sesión lo tiene).
+- **Siguiente paso seguro:** abrir Historial en el `.exe` nuevo, pulsar Eliminar en una sesión
+  DEMO, leer la confirmación y deshacer — sin tocar datos reales si la demo está cargada.
+
+## 2026-10-22 — Deshacer al editar y borrar una serie (cierra la última grieta del CRUD de series)
+
+**Fase / subtarea:** Fase 1.5 del brief (P0, «editar y borrar: … oportunidad de deshacer cuando sea
+segura»). Quedaba el hueco que la propia entrada anterior dejó anotado: el borrado de una serie tenía
+un «Deshacer» que no decía qué devolvía y **la edición no tenía ninguno** — guardar un `10` encima de
+un `100` pisaba el registro sin vuelta atrás.
+
+**Por qué esta y no otra:** es la continuación natural del borrado de sesión del 2026-10-21 y la
+única pieza del CRUD de series con pérdida silenciosa de datos todavía abierta. Las plantillas
+PPL/Upper-Lower siguen necesitando confirmación del dueño (`lib/routines.ts`) y la pantalla Semana
+sigue duplicando `buildWeekPlan`; no se tocan.
+
+### Qué se hizo
+
+- **`lib/set-undo.ts` (nuevo, puro).** `setEditDiff(before, after)` compara **solo lo que el historial
+  puede escribir** (carga, reps, marca D/F), de modo que guardar los mismos números es un no-op y no
+  abre ventana. `describeSet()` describe una serie con la misma copia que la columna del historial
+  (`100 kg × 5`, `45 s`, `8 reps`, más calentamiento y marca). `setUndoLine()` compone la frase de la
+  barra: `Press con Barra · 75 kg × 10 → 7 kg × 10`. `setUndoRestore()` / `setUndoExerciseId()` son
+  la versión que se reescribe y el ejercicio al que pertenece.
+- **Store (`app/store.tsx`).** `removedSet` + `undoRemoveSet` se sustituyen por **una sola** entrada
+  `setUndo: SetUndoEntry | null` (`remove` | `edit`) y `undoSetChange()`: una única ventana de 20 s,
+  escritura en IndexedDB (`saveSet`), empuje al historial compartido y reinserción cronológica.
+  `editSet` captura el `before` **antes** de aplicar el parche y solo registra la entrada si el diff
+  cambió algo. La barra flotante dice el título (`Serie eliminada` / `Serie editada`), el detalle y
+  se puede cerrar; botones de 44 px (objetivo táctil del brief §4).
+- **Ficha de ejercicio (`screens/ExerciseDetailScreen.tsx`).** La edición de series usa
+  `parseNumberInput` (`lib/parse-num`) en vez de `parseFloat`/`parseInt`: `"1.234,5"` o `"75,5"`
+  dejan de poder truncarse. Campo vacío = sin carga / sin reps; valor ilegible conserva el guardado.
+- **i18n ES/EN:** `log.edited` y `log.repsOnly` (el resto se reutiliza: `log.removed`,
+  `common.undo`, `common.close`, `ex.history.*`).
+
+### Verificación real
+
+- `pnpm test` → **95 archivos / 1433 tests, exit 0** (+13 de `test_set_undo`).
+  `tsc -b` de TrainingLab → 0 · `pnpm lint` → 0/0 · `pnpm audit:css` → sin hallazgos (4/4).
+- **E2E navegador real** (`node .tmp-verify/set-undo.mjs`, Vite dev 5188, Edge de Playwright,
+  contexto nuevo, datos DEMO cargados por Ajustes): 34 series de press banca →
+  **guardar sin cambios no abre barra** → editar 75 → 7 kg → barra «Serie editada · Press con Barra ·
+  75 kg × 10 → 7 kg × 10» → Deshacer devuelve 75 kg → Eliminar (34 → 33) → barra «Serie eliminada ·
+  Press con Barra · 75 kg × 10» → Deshacer (33 → 34) → cerrar la barra tras borrar no toca el log.
+  `PASS deshacer de series: editar + borrar`.
+- **Móvil 390×844** (`node .tmp-verify/set-undo-mobile.mjs`): la barra queda sobre la barra inferior,
+  sin desbordamiento horizontal (`scrollWidth − innerWidth = 0`). La primera captura reveló un fallo
+  real que ninguna aserción veía: con `truncate`, la línea se cortaba justo en «7 k…» — la flecha
+  existe para decir el valor nuevo. Se cambió a `break-words` (ahora ocupa dos líneas) y el script
+  comprueba `scrollWidth − clientWidth ≤ 1` además del texto completo. Reverificado: «Press con
+  Barra · 75 kg × 10 → 7 kg × 10», sin recorte.
+- Capturas: `docs/screenshots/2026-10-21-serie-editada.png`,
+  `…-serie-borrada.png` y `…-serie-deshacer-movil.png`.
+- El bundle construido contiene las cadenas nuevas (`grep -rl "Serie editada" dist/assets` →
+  `dist/assets/index-*.js`), el atributo `data-testid="set-undo-line"` y la clase `break-words`.
+- **Instalador reconstruido desde este estado final**: `TrainingLab_0.2.0_x64-setup.exe` **12:02**,
+  17 489 587 bytes, copiado a `C:\Users\andyh\Desktop\TrainingLab-setup.exe` (12:03, sha256 idéntico
+  `03ef159d…`). Nota de la regla de cierre: el `.exe` anterior de 11:56 era de un estado intermedio
+  (antes del arreglo del recorte) y **fue sustituido**, no entregado.
+
+### Estado Git y pendientes
+
+- **Sin commits.** Archivos: `traininglab/.../lib/set-undo.ts` (nuevo),
+  `traininglab/.../app/store.tsx`, `traininglab/.../screens/ExerciseDetailScreen.tsx`,
+  `traininglab/.../lib/i18n.ts`, `tests/training/test_set_undo.test.ts` (nuevo),
+  `.tmp-verify/set-undo.mjs` y `.tmp-verify/set-undo-mobile.mjs` (scripts E2E), `ROADMAP.md`,
+  capturas y este archivo.
+- **Pendiente:** (a) el chip «Automático» con foco a medida (sigue abierto del 2026-10-20);
+  (b) plantillas PPL/Upper-Lower **requieren confirmación del dueño**; (c) renombrar un perfil de
+  equipamiento desde la UI; (d) el mapa de fuerza sigue bajo gate; (e) `set_set_time` del agente
+  no deja entrada de deshacer propia (el humano no puede revertir la hora de una serie desde la
+  barra; sí desde el ledger de Ajustes).
+- **Siguiente paso seguro:** abrir la ficha de press banca → Historial en el `.exe` nuevo, editar una
+  serie DEMO y usar «Deshacer»; repetir con «Eliminar».
+
+## 2026-10-22 (b) — Renombrar perfiles de equipamiento (cierra el pendiente del 2026-10-20)
+
+**Fase / subtarea:** Fase 2.5 del brief («inventario por contexto») y el pendiente que la entrada del
+2026-10-20 dejó escrito como «renombrar un perfil desde la UI». Nombrar era posible una sola vez y
+un perfil aparcado no se podía reetiquetar nunca: una errata se quedaba en la estantería para siempre.
+
+**Qué se hizo**
+
+- **`lib/gear-profiles.ts`.** Nuevo `withGearProfileRename(settings, id, name)`: renombra el perfil
+  **en uso** delegando en `withGearProfileName` (mismo camino, mismo id) y renombra un **aparcado in
+  situ**. Conserva id, elementos y posición en la estantería, no cambia cuál está activo, y aplica las
+  mismas reglas: vacío → `name_empty`, choque con el activo u otro aparcado → `name_taken`, id
+  inexistente → `unknown_profile`, y el mismo nombre → no-op **por identidad**.
+- **`features/today/GearProfileBar.tsx`.** Lápiz de 44×44 px junto al chip «En uso» (abre el
+  formulario con el nombre actual) y acción «Renombrar» en el panel del chip aparcado, que es donde
+  se lee el nombre. El formulario de etiqueta es el mismo para nombrar, crear y renombrar.
+- **i18n ES/EN:** `gear.profiles.rename` y `gear.profiles.renameActive`.
+
+**Verificación real**
+
+- `pnpm test` → **95 archivos / 1439 tests, exit 0** (6 tests nuevos en
+  `test_gear_profiles.test.ts`, que pasa de 20 a 26: cinco del renombrado y uno de que el nombre
+  sobrevive a un cambio de perfil).
+  `tsc -b` → 0 · `pnpm lint` → 0/0 · `pnpm audit:css` → sin hallazgos.
+- **E2E navegador real** (`node .tmp-verify/gear-rename.mjs`, Edge, contexto nuevo, sin datos DEMO):
+  añadir equipo → «Guardar como perfil» («Casa») → lápiz → «Casa de prueba» → «Nuevo perfil»
+  («Gimnasio», que aparca el anterior con su nombre) → chip aparcado → «Renombrar» → «Casa vieja» →
+  nombre repetido «Gimnasio» rechazado con «Ese nombre ya está en uso.» → **recarga** → «En uso:
+  Gimnasio» y «Casa vieja» siguen. `PASS perfiles de equipamiento: renombrar activo y aparcado`.
+- **Móvil 390×844** (`node .tmp-verify/gear-rename-mobile.mjs`): sin desbordamiento horizontal en
+  ninguno de los tres estados (chip, formulario, renombrado), lápiz ≥32 px de ancho y ≥44 de alto
+  (medido 44×44 tras el arreglo: el primer intento daba 28×44 y el script lo detectó).
+- Capturas: `docs/screenshots/2026-10-22-perfiles-renombrar.png` y
+  `…-perfiles-renombrar-movil.png`.
+- Bundle comprobado (`dist/assets/index-*.js` contiene «Renombrar el perfil en uso»).
+  **Instalador reconstruido**: `TrainingLab_0.2.0_x64-setup.exe` **12:13**, 17 489 958 bytes,
+  copiado a `C:\Users\andyh\Desktop\TrainingLab-setup.exe` a las 12:15 con sha256 idéntico
+  (`f8a78bc8…`).
+
+**Estado Git y pendientes**
+
+- **Sin commits.** Archivos: `traininglab/.../lib/gear-profiles.ts`,
+  `traininglab/.../features/today/GearProfileBar.tsx`,
+  `traininglab/.../screens/SettingsScreen.tsx`, `traininglab/.../lib/i18n.ts`,
+  `tests/training/test_gear_profiles.test.ts`, `.tmp-verify/gear-rename.mjs`,
+  `.tmp-verify/gear-rename-mobile.mjs`, `ROADMAP.md`, capturas y este archivo.
+- **Pendiente:** (a) el chip «Automático» con foco a medida del 2026-10-20 **sigue abierto**: el
+  foco a medida solo entra por `set_day_focus` (canal MCP de escritorio), así que desde el dev
+  server no se puede reproducir para verificarlo; `focusKeyOf` devuelve `auto` también para una
+  lista a medida y el chip miente. Arreglarlo exige `focusKeyOf → "custom"` + un chip «A medida»,
+  y verificarlo en el `.exe` (o con un fixture de estado), no en el navegador; (b) plantillas
+  PPL/Upper-Lower siguen necesitando decisión del dueño; (c) el mapa de fuerza sigue bajo gate.
+- **Siguiente paso seguro:** abrir Configuración → Mi equipamiento en el `.exe` nuevo, pulsar el
+  lápiz del chip «En uso» y renombrar; el perfil aparcado se renombra desde su propio chip.
