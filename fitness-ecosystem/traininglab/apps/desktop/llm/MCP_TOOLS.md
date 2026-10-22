@@ -1,4 +1,4 @@
-# Las 34 herramientas del MCP `fitness` — guía de uso para el coach local
+# Las 35 herramientas del MCP `fitness` — guía de uso para el coach local
 
 Este fichero es para el modelo que actúa como coach (Qwen u otro) cuando habla con
 TrainingLab por el servidor MCP (`scripts/fitness-mcp-server.mjs`). No es
@@ -85,13 +85,14 @@ app contra tu presupuesto.
 su razón (recuperación, patrón, dificultad) y no prometas números que la
 herramienta no ha devuelto.
 
-## 4. Acciones (23) — con acuse y deshacer
+## 4. Acciones (24) — con acuse y deshacer
 
 | Herramienta | Qué hace | Claves |
 |---|---|---|
 | `log_training_set` | Registra UNA serie en la sesión de hoy. | `exercise_id` (obligatorio), `weight_kg`, `reps` **o** `duration_sec`, `effort` (`D` cerca del fallo, `F` al fallo), `warmup`, `notes` (≤280), `idempotency_key` |
 | `set_readiness` | Escribe el parte de hoy: `energy`, `motivation`, `soreness` (1-5, al menos uno). **Ojo con la tercera: `soreness` es *frescura*, y 5 = sin agujetas** — es la escala del motor (`bodylab/core/training/src/session.ts`), la misma que la etiqueta de la app («Frescura (5 = sin agujetas)»). | `idempotency_key` |
 | `configure_training` | Cambia el sobre de planificación: `goal` (`hypertrophy`/`strength`/`recomposition`), `level`, `time_budget_min` (10-300), `inventory` (reemplaza la lista entera). | `idempotency_key` |
+| `set_gear_profile` | Cambia el perfil de equipamiento en uso («Casa», «Gimnasio»): la misma decisión que los chips de Ajustes. El perfil anterior **no se borra**, queda guardado en la estantería con su material. Si el nombre no existe, la app lo rechaza: nunca deja el equipamiento vacío. | `profile` (nombre o id; los guardados los publica `read_current_state` en `gear.savedProfiles`), `idempotency_key` |
 | `swap_exercise` | Cambia una casilla del plan de hoy por otra: mismo patrón, mismo tipo de carga, con material y que no esté ya en la sesión. | `exercise_id`, `replacement_id`, `idempotency_key` |
 | `finish_session` | Cierra la sesión de hoy y la pasa al historial. **Exige `confirm: true`.** | `confirm`, `idempotency_key` |
 | `add_exercise` | Añade un ejercicio al plan de HOY (una casilla más, no un re-plan). | `exercise_id` (obligatorio), `sets` (0-12; 0 = sin prescripción), `position` (`start`/`end`), `idempotency_key` |

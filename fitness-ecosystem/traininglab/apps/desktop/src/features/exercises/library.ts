@@ -115,6 +115,12 @@ export interface LibraryFilters {
   family: MuscleFamily | null;
   /** `null` = every category. */
   category: string | null;
+  /**
+   * Only the exercises the user starred (2026-10-20). A filter like the others,
+   * so it clears with them — an invisible "favourites" mode that survives the
+   * *Limpiar* chip is how a user concludes the library lost 149 exercises.
+   */
+  onlyFavorites?: boolean;
 }
 
 export interface LibraryResult {
@@ -138,11 +144,16 @@ export function queryLibrary(
   rows: ExerciseRowData[],
   filters: LibraryFilters,
   sort: "az" | "level" = "az",
+  /** The starred ids, from `lib/favorites`. Ignored unless `onlyFavorites`. */
+  favorites: readonly string[] = [],
 ): LibraryResult {
   const needle = fold(filters.query.trim());
   const words = needle.split(/\s+/).filter(Boolean);
+  // A Set only when the filter is on: the default path allocates nothing.
+  const starred = filters.onlyFavorites ? new Set(favorites) : null;
 
   const filtered = rows.filter((row) => {
+    if (starred && !starred.has(row.id)) return false;
     if (filters.family && !row.families.includes(filters.family)) return false;
     if (filters.category && row.category !== filters.category) return false;
     if (words.length === 0) return true;

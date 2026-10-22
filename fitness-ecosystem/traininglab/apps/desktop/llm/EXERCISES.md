@@ -1,7 +1,7 @@
 # TrainingLab exercise knowledge (auto-generated)
 
 > Generated from `@fitness/bodylab-exercises` — **do not edit by hand**.
-> 151 exercises · 34 muscle families · 28 movement patterns · 115 with photo/GIF media.
+> 152 exercises · 34 muscle families · 28 movement patterns · 115 with photo/GIF media.
 
 ## Hard rules
 
@@ -117,6 +117,7 @@ vertical_push
 | russian-twist | Russian Twist | Giros Rusos | core_rotation | dumbbell | 3/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
 | plank | Plank | Plancha | core_anti_extension | bodyweight | 2/5 | 1/5 | 2/5 | n/a (isometric) | 1/3 | 1/3 | yes |
 | inverted-row | Inverted Row (Australian Pull-up) | Remo Invertido (Dominada Australiana) | horizontal_pull | bodyweight | 4/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | yes |
+| table-row | Table Row (Inverted Row at Home) | Remo bajo Mesa (Invertido en Casa) | horizontal_pull | bodyweight | 4/5 | 2/5 | 2/5 | 1-2 | 1/3 | 1/3 | - |
 | pike-push-up | Pike Push-up | Flexión Pike (Vertical) | vertical_push | bodyweight | 4/5 | 3/5 | 3/5 | 2-3 | 2/3 | 1/3 | - |
 | diamond-push-up | Diamond Push-up | Flexión Diamante | elbow_extension | bodyweight | 4/5 | 3/5 | 2/5 | 1-2 | 3/3 | 1/3 | - |
 | bench-dip | Bench Dip | Fondos en Banco | elbow_extension | bodyweight | 3/5 | 2/5 | 2/5 | 1-2 | 2/3 | 1/3 | yes |

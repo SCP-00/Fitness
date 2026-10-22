@@ -52,6 +52,51 @@ export const HOME_PUSH_PULL_EXERCISES: Exercise[] = [
     },
   },
   {
+    /**
+     * The zero-equipment horizontal pull (2026-10-20).
+     *
+     * Added because the catalog had no way to train the back in a room with no
+     * bar, no bands and no dumbbells: `inverted-row` needs a bar, dip bars or a
+     * bench, and the only bodyweight "back" entries left were prone raises and
+     * pike push-ups. The owner asked for exactly that week ("no tengo mis
+     * mancuernas, quiero crecer espalda") and the planner could only answer
+     * with one small trap exercise — an honest gap, not a programming bug.
+     *
+     * A sturdy table is domestic furniture, not training gear, so it requires
+     * nothing; the setup cues carry the safety instead of a gear gate.
+     */
+    id: "table-row",
+    name: {
+      en: "Table Row (Inverted Row at Home)",
+      es: "Remo bajo Mesa (Invertido en Casa)",
+    },
+    category: "bodyweight",
+    difficulty: 2,
+    hypertrophy: 4,
+    muscles: [
+      { muscle: "lats_mid", intensity: 3 },
+      { muscle: "lats_upper", intensity: 2 },
+      { muscle: "rhomboids", intensity: 3 },
+      { muscle: "traps_mid", intensity: 2 },
+      { muscle: "posterior_deltoid", intensity: 2 },
+      { muscle: "biceps_long", intensity: 2 },
+      { muscle: "forearm_flexors", intensity: 1 },
+      { muscle: "rectus_abdominis", intensity: 1 },
+    ],
+    equipment: {
+      en: "A sturdy table or desk — no other gear",
+      es: "Una mesa o escritorio firme — sin nada más",
+    },
+    description: {
+      en: "Lie under a sturdy table, grip its edge with straight arms, pull your chest up to the edge and lower slowly without touching the floor",
+      es: "Túmbate bajo una mesa firme, agarra el borde con los brazos estirados, lleva el pecho al borde y baja despacio sin tocar el suelo",
+    },
+    hypertrophyNote: {
+      en: "The only horizontal pull that needs nothing but furniture: it is how the back grows in a room with no bar, no bands and no weights",
+      es: "El único jalón horizontal que no necesita nada más que un mueble: así crece la espalda en una habitación sin barra, sin bandas y sin pesas",
+    },
+  },
+  {
     id: "pike-push-up",
     name: { en: "Pike Push-up", es: "Flexión Pike (Vertical)" },
     category: "bodyweight",

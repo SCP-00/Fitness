@@ -174,3 +174,34 @@ describe("Equipment inventory: the gear gate is real", () => {
     void edited;
   });
 });
+
+describe("traits: the back is trainable with nothing but a body", () => {
+  /**
+   * The owner's week of 2026-10-20: at his partner's home, no dumbbells. With
+   * bodyweight only the catalog had no horizontal pull at all — the planner
+   * could answer "back day" with a prone raise and nothing else, which is not a
+   * back day. `table-row` is that missing movement, and this test keeps the door
+   * from closing again.
+   */
+  const bare = () => [ownedFromPreset("bodyweight", "inv-bw")!];
+
+  it("has a horizontal pull the bodyweight preset can reach", () => {
+    const caps = ownedCapabilities(bare());
+    const pulls = ALL_EXERCISES.filter((ex) => {
+      const traits = getTraits(ex.id);
+      return traits.pattern === "horizontal_pull" && satisfies(traits.requires, caps);
+    });
+    expect(pulls.map((ex) => ex.id)).toContain("table-row");
+  });
+
+  it("table-row needs no gear and loads the back, not the arms", () => {
+    const traits = getTraits("table-row");
+    expect(traits.requires).toEqual([]);
+    expect(traits.loadType).toBe("bodyweight");
+    const ex = ALL_EXERCISES.find((e) => e.id === "table-row")!;
+    const primary = ex.muscles[0]!;
+    expect(["lats_mid", "lats_upper", "rhomboids"]).toContain(primary.muscle);
+    expect(primary.intensity).toBe(3);
+    expect(ex.hypertrophy).toBeGreaterThanOrEqual(4);
+  });
+});

@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Image as ImageIcon, X } from "lucide-react";
 import {
-  PATTERN_DEMOS,
+  demoFor,
   getExerciseTechnique,
   type Cue,
   type DemoJoint,
@@ -269,8 +269,22 @@ function watchPoint(s: Skeleton, joint: DemoJoint): Pt | null {
   }
 }
 
-/** The looping drawn figure — the last step of the media cascade. */
-export function DemoFigure({ demo }: { demo: PatternDemo }) {
+/**
+ * The looping drawn figure — the last step of the media cascade.
+ *
+ * `className` exists because the two callers need opposite sizes (2026-10-21).
+ * The stage gives the figure a 16:9 box; the fact sheet used to let the SVG size
+ * itself from its viewBox, so a standing figure at `w-full` was ~600 px tall and
+ * pushed «Preparación», «Ejecución» and the safety block below the fold — the
+ * dialog opened on a stick figure and no text. The modal now caps the height.
+ */
+export function DemoFigure({
+  demo,
+  className = "w-full h-auto",
+}: {
+  demo: PatternDemo;
+  className?: string;
+}) {
   const [pose, setPose] = useState<FullPose>(() => normalize(demo.frames[0]!));
 
   useEffect(() => {
@@ -311,7 +325,7 @@ export function DemoFigure({ demo }: { demo: PatternDemo }) {
   return (
     <svg
       viewBox={viewBox}
-      className="w-full h-auto"
+      className={className}
       role="img"
       aria-label={t("tech.demoAlt")}
     >
@@ -419,7 +433,7 @@ export function ExerciseMediaFrame({
   variant?: "modal" | "stage";
 }) {
   const media = useExerciseMedia(exerciseId);
-  const demo = PATTERN_DEMOS[pattern];
+  const demo = demoFor(exerciseId, pattern);
   const stillUrl = media?.image ? stillUrlFor(media) : null;
   const altStillUrl = media ? altStillUrlFor(media) : null;
   const hasGif = !!media?.gif;
@@ -543,7 +557,17 @@ export function ExerciseMediaFrame({
           )}
         </div>
       )}
-      {showDrawn && <DemoFigure demo={demo} />}
+      {/*
+        Capped height, like the GIF (2026-10-21). A standing figure's viewBox is
+        tall and narrow, so `w-full` made it the tallest thing in the dialog —
+        taller than the media box the GIFs get in the same slot.
+      */}
+      {showDrawn && (
+        <DemoFigure
+          demo={demo}
+          className="mx-auto block h-[240px] w-full"
+        />
+      )}
     </div>
   );
 }
@@ -564,7 +588,7 @@ export function ExerciseDemoModal({
   onClose: () => void;
 }) {
   const lang = getLanguage();
-  const demo = PATTERN_DEMOS[pattern];
+  const demo = demoFor(exerciseId, pattern);
   const tech = getExerciseTechnique(exerciseId);
   const media = useExerciseMedia(exerciseId);
   // Only what the caption needs: which case of the cascade the frame draws.
@@ -599,14 +623,21 @@ export function ExerciseDemoModal({
       aria-modal="true"
       aria-label={name}
     >
-      /* * Wider when there is a reference GIF to look at (2026-10-11). The
-      owner * studies these frame by frame to correct his technique, and at the
-      old * `sm:max-w-md` the 180×180 animation rendered at 256 px — 16 % of the
-      * width of the session card it belongs to, on the laptop this app is used
-      * on. The animation's own resolution is the ceiling (a 180 px source is *
-      already being upscaled at 448), so the frame is capped rather than made *
-      as wide as the dialog: past ~2.5× the source it stops being readable * and
-      starts being a blur. */
+      {/*
+        Wider when there is a reference GIF to look at (2026-10-11). The owner
+        studies these frame by frame to correct his technique, and at the old
+        `sm:max-w-md` the 180×180 animation rendered at 256 px — 16 % of the
+        width of the session card it belongs to, on the laptop this app is used
+        on. The animation's own resolution is the ceiling (a 180 px source is
+        already being upscaled at 448), so the frame is capped rather than made
+        as wide as the dialog: past ~2.5× the source it stops being readable and
+        starts being a blur.
+
+        Written as a JSX comment on purpose (2026-10-20): this block used to be
+        a bare C-style block comment with no braces around it, which JSX renders
+        as literal text — the whole paragraph appeared printed across the
+        technique dialog.
+      */}
       <div
         className={`w-full ${
           showGif ? "sm:max-w-3xl" : "sm:max-w-md"
@@ -667,6 +698,27 @@ export function ExerciseDemoModal({
             <p className="text-[var(--tl-text-secondary)]">
               {cueText(tech.techniqueWhy, lang)}
             </p>
+
+            {/*
+              Setup before execution (2026-10-21). This modal is the quick
+              tutorial opened from a session row, and it showed the execution
+              and the mistakes but never the position you have to be in for
+              either to mean anything — the full guide had it, this one did not.
+              Capped at three cues, like the execution list, so the dialog still
+              fits above the fold on a phone.
+            */}
+            {tech.setup.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--tl-text-muted)] mb-1">
+                  {t("tech.setup")}
+                </p>
+                <ul className="space-y-0.5 text-[var(--tl-text-secondary)]">
+                  {tech.setup.slice(0, 3).map((c, i) => (
+                    <li key={i}>• {cueText(c, lang)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--tl-text-muted)] mb-1">

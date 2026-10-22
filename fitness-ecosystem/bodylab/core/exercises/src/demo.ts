@@ -95,6 +95,67 @@ const p = (pose: DemoPose): DemoPose => pose;
 /** A neutral standing base other poses are written from. */
 const STANDING = p({ torso: 0, thigh: 0, shin: 0, arm: 6, forearm: 6 });
 
+/**
+ * Per-exercise demos, for the movements a pattern figure cannot show honestly.
+ *
+ * The pattern table is the default because most rows are a hinged standing row,
+ * a pull-up or a press. `table-row` is the first exception: its pattern demo is
+ * a bent-over row anchored at the ankle, so a person watching it would set up
+ * standing over a weight that does not exist. Drawn lying under a table instead,
+ * with the pelvis pinned (`anchor: "hip"`), which is exactly what the movement
+ * is.
+ *
+ * Keep this table small: every entry is a figure someone has to look at and
+ * correct by hand.
+ */
+export const EXERCISE_DEMOS: Record<string, PatternDemo> = {
+  "table-row": {
+    // Under a table, body horizontal, hands on the edge: the chest rises to the
+    // hands and the elbows travel back. Legs stay long (they rest on the floor).
+    view: "side",
+    anchor: "hip",
+    ground: true,
+    watch: ["elbow", "shoulder"],
+    cycleMs: 1400,
+    frames: [
+      p({ torso: 92, thigh: -88, shin: 6, arm: 158, forearm: 172 }),
+      p({ torso: 84, thigh: -82, shin: 10, arm: 132, forearm: 96 }),
+    ],
+  },
+};
+
+/**
+ * Exercises whose figure belongs to a **different** pattern (2026-10-21).
+ *
+ * Cheaper and more honest than copying frames into `EXERCISE_DEMOS`: the trait
+ * table files `diamond-push-up` under `elbow_extension` because the elbow is what
+ * finishes the rep, but that pattern's figure is a standing cable pushdown — the
+ * tutorial drew an upright person for a movement done on the floor. The right
+ * figure already exists under `horizontal_push`; this table says so.
+ *
+ * Only one entry: every other mismatch is close enough that the pattern figure
+ * teaches the right joint moving in the right direction.
+ */
+export const DEMO_PATTERN_OVERRIDES: Record<string, MovementPattern> = {
+  "diamond-push-up": "horizontal_push",
+};
+
+/**
+ * The demo for one exercise: its own when it has one, else the figure of the
+ * pattern in `DEMO_PATTERN_OVERRIDES`, else its pattern's.
+ * Callers should use this instead of indexing `PATTERN_DEMOS` so a future
+ * per-exercise figure reaches every screen at once.
+ */
+export function demoFor(
+  exerciseId: string,
+  pattern: MovementPattern,
+): PatternDemo {
+  return (
+    EXERCISE_DEMOS[exerciseId] ??
+    PATTERN_DEMOS[DEMO_PATTERN_OVERRIDES[exerciseId] ?? pattern]
+  );
+}
+
 export const PATTERN_DEMOS: Record<MovementPattern, PatternDemo> = {
   horizontal_push: {
     // Bench press seen from the side: the arm travels, the pelvis is on the bench.

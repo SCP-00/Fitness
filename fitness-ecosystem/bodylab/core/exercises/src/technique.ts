@@ -24,7 +24,7 @@
 import type { MovementPattern, ProgressionAxis } from "./traits";
 import { EXERCISE_TRAITS } from "./traits";
 import { getExerciseById } from "./catalog";
-import { PATTERN_DEMOS, type PatternDemo } from "./demo";
+import { demoFor, type PatternDemo } from "./demo";
 
 export interface Cue {
   en: string;
@@ -1816,15 +1816,110 @@ export const PATTERN_TECHNIQUE: Record<MovementPattern, PatternTechnique> = {
  * whole pattern belongs here ("feet on a chair raises the shoulders: that is the
  * whole point of the decline push-up").
  */
+export type TechniqueSection = "setup" | "execution" | "mistakes" | "safety";
+
 export interface TechniqueOverride {
   setup?: Cue[];
   execution?: Cue[];
   mistakes?: Cue[];
   safety?: Cue[];
   tempo?: string;
+  /**
+   * Why this exercise is hard, when the pattern's reason would be about a
+   * different movement (2026-10-21).
+   *
+   * `techniqueWhy` is the one line the dialog puts right under the badges, and
+   * for a `diamond-push-up` the pattern (`elbow_extension`) says "the shoulder
+   * must stay quiet while the elbow moves" — true of a cable pushdown, false of
+   * a push-up, where the shoulder is half the exercise. Replacing the cues but
+   * leaving that sentence was the same mistake in a smaller font.
+   */
+  techniqueWhy?: Cue;
+  /** Overrides the pattern's 1–5 skill cost when the pattern's is misleading. */
+  techniqueLevel?: 1 | 2 | 3 | 4 | 5;
+  /**
+   * Sections whose pattern cues do **not** apply to this exercise, so the
+   * override replaces them instead of being appended (2026-10-20).
+   *
+   * Appending is the right default: a variant usually refines the pattern. It is
+   * wrong when the pattern's advice is about equipment the movement does not
+   * have — `horizontal_pull` tells you to support the free hand, which in a
+   * two-handed table row is an instruction about nothing. A section listed here
+   * is used from the override alone (and falls back to the pattern if the
+   * override leaves it empty, so a typo can never blank the coaching).
+   */
+  replace?: TechniqueSection[];
 }
 
 export const TECHNIQUE_OVERRIDES: Record<string, TechniqueOverride> = {
+  /**
+   * The one movement whose safety lives in the furniture (2026-10-20). The
+   * generic `horizontal_pull` cues assume a bar and a bench, so this override
+   * carries the things that actually go wrong under a table: a table that
+   * slides, a folded towel that slips, and a body that sags into a plank.
+   */
+  "table-row": {
+    tempo: "2-1-3",
+    techniqueWhy: c(
+      "Two things fail before the lats do: a table that moves and a body that sags. Check the first, brace the second",
+      "Antes que el dorsal fallan dos cosas: una mesa que se mueve y un cuerpo que se hunde. Revisa la primera, bloquea el segundo",
+    ),
+    // Every section here talks about a bar, a handle or a free hand in the
+    // pattern copy, so none of it survives contact with a bodyweight row.
+    replace: ["setup", "execution", "mistakes", "safety"],
+    setup: [
+      c(
+        "Test the table first: press down hard on the edge with both hands. Glass tops, folding tables and anything on wheels are out",
+        "Prueba la mesa primero: presiona fuerte el borde con las dos manos. Cristal, mesas plegables y cualquier cosa con ruedas quedan fuera",
+      ),
+      c(
+        "Lie underneath with the table edge over your mid-chest, grip it slightly wider than the shoulders",
+        "Túmbate debajo con el borde de la mesa sobre la mitad del pecho, agárralo algo más ancho que los hombros",
+      ),
+      c(
+        "Start with straight arms and heels on the floor, body in one line from head to heel; bend the knees if the hips sag",
+        "Empieza con los brazos estirados y los talones en el suelo, el cuerpo en una línea de la cabeza al talón; dobla las rodillas si la cadera se hunde",
+      ),
+    ],
+    execution: [
+      c(
+        "Pull the chest to the edge leading with the elbows, not with the hands: the elbow drives back, the hand only holds",
+        "Lleva el pecho al borde guiando con los codos, no con las manos: el codo va atrás, la mano solo sujeta",
+      ),
+      c(
+        "Squeeze the shoulder blades together at the top, hold one second, then lower over three seconds to straight arms",
+        "Junta las escápulas arriba, aguanta un segundo y baja en tres segundos hasta estirar los brazos",
+      ),
+      c(
+        "Start every set from fully straight arms: half a rep is not half the stimulus, it is none of the stretch",
+        "Empieza cada serie con los brazos del todo estirados: media repetición no es medio estímulo, es nada del estiramiento",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Bending the arms only: the elbows stay low, the back never squeezes and the set becomes a biceps curl in the air",
+        "Doblar solo los brazos: los codos se quedan abajo, la espalda no aprieta y la serie se vuelve un curl de bíceps en el aire",
+      ),
+      c(
+        "Letting the hips drop, which turns the row into a plank you cannot progress",
+        "Dejar caer la cadera, lo que convierte el remo en una plancha que no puedes progresar",
+      ),
+      c(
+        "Choosing a table that is too high: a quarter of the range trains a quarter of the back",
+        "Elegir una mesa demasiado alta: un cuarto del recorrido entrena un cuarto de la espalda",
+      ),
+    ],
+    safety: [
+      c(
+        "A table that slides or tips is a broken nose, not a workout: wedge it against a wall or pick another one",
+        "Una mesa que se desliza o vuelca es una nariz rota, no un entrenamiento: calzala contra la pared o elige otra",
+      ),
+      c(
+        "Make it harder by elevating the feet on a chair, never by adding weight on your lap without a spotter",
+        "Hazlo más difícil subiendo los pies a una silla, nunca añadiendo peso en el regazo sin quien te ayude",
+      ),
+    ],
+  },
   "pull-ups": {
     setup: [
       c(
@@ -1936,6 +2031,18 @@ export const TECHNIQUE_OVERRIDES: Record<string, TechniqueOverride> = {
         "Pie trasero en el banco con los cordones hacia abajo; pie delantero lo bastante adelante para llegar a fondo",
       ),
     ],
+    execution: [
+      c(
+        "Weight stays on the front foot; the back leg is a kickstand, not a second working leg",
+        "El peso se queda en el pie delantero; la pierna trasera es un apoyo, no una segunda pierna que trabaja",
+      ),
+    ],
+    mistakes: [
+      c(
+        "The front knee collapsing inward on the way up",
+        "La rodilla delantera colapsando hacia dentro al subir",
+      ),
+    ],
   },
   "glute-bridge": {
     execution: [
@@ -1988,6 +2095,907 @@ export const TECHNIQUE_OVERRIDES: Record<string, TechniqueOverride> = {
       ),
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // The exercises with neither a GIF nor a still (2026-10-21).
+  //
+  // These are exactly the rows where the pattern's coaching is the only teaching
+  // material the app can show, so a wrong sentence there has nothing to correct
+  // it. Each entry below either replaces pattern cues that describe a different
+  // setup (`diamond-push-up` inherits `elbow_extension`, which talks about a cable
+  // pushdown) or adds the number the pattern deliberately leaves open.
+  //
+  // Numbers and caveats come from ACE, NASM, ExRx and the PMC studies named in
+  // `docs/EXERCISE_MEDIA_SOURCES_2026-10-21.md`; nothing here is invented.
+  // ---------------------------------------------------------------------------
+
+  "push-up-plus": {
+    // A push-up that must NOT bend the elbows, which is the opposite of what the
+    // horizontal_push pattern teaches.
+    replace: ["setup", "execution", "mistakes"],
+    setup: [
+      c(
+        "Hands under the shoulders with the elbows locked: nothing in this movement bends the elbow",
+        "Manos bajo los hombros con los codos bloqueados: en este ejercicio no se flexiona el codo",
+      ),
+      c(
+        "One line from heels to head, ribs down — the same brace as a plank",
+        "Una línea de talones a cabeza, costillas abajo: el mismo bloqueo que un plancha",
+      ),
+      c(
+        "Feet hip-width with the toes tucked: the plank holds the position, the shoulder blade does the moving",
+        "Pies al ancho de caderas con los dedos flexionados: la plancha sostiene la posición, la escápula hace el movimiento",
+      ),
+    ],
+    execution: [
+      c(
+        "Push the floor away so the shoulder blades spread apart (protraction), then let them come back together",
+        "Empuja el suelo para que las escápulas se separen (protracción) y luego déjalas volver",
+      ),
+      c(
+        "The chest does not lower: the only travel is between the shoulder blades",
+        "El pecho no baja: el único recorrido está entre las escápulas",
+      ),
+      c(
+        "Pause a beat in the spread position — that pause is the rep that counts",
+        "Haz una pausa en la posición separada: esa pausa es la repetición que cuenta",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Bending the elbows, which turns it into half a push-up and takes the serratus out",
+        "Flexionar los codos, que lo convierte en media flexión y saca al serrato del ejercicio",
+      ),
+      c(
+        "Dropping the lower back to get more separation — that is spinal extension, not protraction",
+        "Hundir la lumbar para separar más: eso es extensión de columna, no protracción",
+      ),
+    ],
+    safety: [
+      c(
+        "If the shoulder pinches in the protracted position, do it with the hands on a chair first",
+        "Si el hombro pinza en la posición de protracción, hazlo primero con las manos en una silla",
+      ),
+    ],
+  },
+
+  "diamond-push-up": {
+    // `elbow_extension` is a cable pushdown: upper arm fixed, shoulder quiet.
+    // None of that survives the floor, so the whole section is replaced.
+    replace: ["setup", "execution", "mistakes", "safety"],
+    techniqueLevel: 3,
+    techniqueWhy: c(
+      "It is a push-up, not a pushdown: the chest and shoulders press with the triceps, so the skill is keeping the elbows close while the body stays in one line",
+      "Es una flexión, no un jalón de tríceps: pecho y hombros empujan junto al tríceps, así que la destreza es mantener los codos cerrados con el cuerpo en una línea",
+    ),
+    setup: [
+      c(
+        "Hands under the chest with the index fingers and thumbs touching; if the wrist complains, widen a little instead of forcing the diamond",
+        "Manos bajo el pecho con índices y pulgares juntos; si la muñeca se queja, abre algo las manos en vez de forzar el rombo",
+      ),
+      c(
+        "Body in one line, elbows tracking back at about 45° from the torso, not flared",
+        "Cuerpo en una línea, codos hacia atrás a unos 45° del torso, no abiertos",
+      ),
+      c(
+        "Feet close together so the hips cannot rotate the body out of line",
+        "Pies juntos para que la cadera no pueda rotar el cuerpo fuera de línea",
+      ),
+    ],
+    execution: [
+      c(
+        "Lower until the chest touches the hands, keeping the elbows close to the ribs",
+        "Baja hasta que el pecho toque las manos, con los codos cerca de las costillas",
+      ),
+      c(
+        "Press up without letting the hips sag or pike",
+        "Empuja arriba sin dejar que la cadera caiga ni se eleve",
+      ),
+      c(
+        "Finish with the elbows pointing back, not out: that is what keeps the triceps in charge",
+        "Termina con los codos apuntando atrás, no afuera: eso es lo que mantiene al tríceps al mando",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Flaring the elbows outward, which turns it into a narrow press and unloads the triceps",
+        "Abrir los codos, que lo convierte en un press estrecho y descarga el tríceps",
+      ),
+      c(
+        "Hands too far forward, which shortens the range and loads the wrist",
+        "Manos demasiado adelante, que acorta el recorrido y carga la muñeca",
+      ),
+    ],
+    safety: [
+      c(
+        "Wrist pain is the usual limit here: elevate the hands or widen the grip before adding reps",
+        "El dolor de muñeca es el límite habitual: eleva las manos o abre el agarre antes de sumar repeticiones",
+      ),
+      c(
+        "If the elbow hurts near the bony point, shorten the range or put the hands on a chair — there is no weight to lower",
+        "Si duele el codo cerca del hueso, acorta el recorrido o pon las manos en una silla: no hay peso que bajar",
+      ),
+    ],
+  },
+
+  "pike-push-up": {
+    // `vertical_push` is a standing overhead press. The pike is the same job
+    // upside down, and the hips are what keep it one.
+    replace: ["setup", "execution", "mistakes", "safety"],
+    techniqueWhy: c(
+      "Upside down, the shoulder presses while the hips stay high: the moment the hips drop, the vertical press becomes a floor push-up",
+      "Boca abajo, el hombro empuja mientras la cadera se mantiene alta: en cuanto la cadera cae, el press vertical se convierte en una flexión en el suelo",
+    ),
+    setup: [
+      c(
+        "Hips high in an inverted V, hands slightly wider than the shoulders, heels reaching for the floor",
+        "Cadera alta en V invertida, manos algo más anchas que los hombros, talones buscando el suelo",
+      ),
+      c(
+        "Head between the hands, eyes on the floor just behind them",
+        "Cabeza entre las manos, mirada al suelo justo detrás de ellas",
+      ),
+      c(
+        "Fingers spread and gripping the floor: the hands are the base of the press",
+        "Dedos abiertos agarrando el suelo: las manos son la base del press",
+      ),
+    ],
+    execution: [
+      c(
+        "Bend the elbows to about 45° from the torso and lower the crown of the head toward the floor",
+        "Flexiona los codos a unos 45° del torso y baja la coronilla hacia el suelo",
+      ),
+      c(
+        "Press back up with the hips still high — the hips are what make it a vertical press",
+        "Empuja de vuelta con la cadera todavía alta: la cadera es lo que lo hace un press vertical",
+      ),
+      c(
+        "Stop the descent while the head is still a hand's width from the floor",
+        "Corta el descenso cuando la cabeza esté a un palmo del suelo",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Letting the hips drop, which turns it into a regular push-up",
+        "Dejar caer la cadera, que lo convierte en una flexión normal",
+      ),
+      c(
+        "Dropping the head without control to reach the floor",
+        "Dejar caer la cabeza sin control para llegar al suelo",
+      ),
+    ],
+    safety: [
+      c(
+        "If the shoulders or neck complain, put the hands on a chair first: the angle sets the load",
+        "Si se quejan los hombros o el cuello, pon primero las manos en una silla: el ángulo fija la carga",
+      ),
+      c(
+        "The head never touches the floor: stop the descent a hand's width above it",
+        "La cabeza nunca toca el suelo: corta el descenso a un palmo de distancia",
+      ),
+    ],
+  },
+
+  "prone-y-raise": {
+    // `shoulder_abduction` is a standing lateral raise; the prone Y is the same
+    // muscle trained from the floor, with a much smaller range on purpose.
+    replace: ["setup", "execution", "mistakes"],
+    setup: [
+      c(
+        "Lie face down with the arms overhead in a Y, roughly 135° from the torso, thumbs up",
+        "Túmbate boca abajo con los brazos arriba en Y, unos 135° respecto al torso, pulgares arriba",
+      ),
+      c(
+        "Forehead resting, neck long, ribs on the floor",
+        "Frente apoyada, cuello largo, costillas en el suelo",
+      ),
+      c(
+        "Arms straight and elbows locked — a bent elbow turns this into a row",
+        "Brazos rectos y codos bloqueados: un codo flexionado convierte esto en un remo",
+      ),
+    ],
+    execution: [
+      c(
+        "Lift the arms a few centimetres without bending the elbows; the shoulder blade slides down and back",
+        "Sube los brazos unos centímetros sin doblar los codos: la escápula se desliza abajo y atrás",
+      ),
+      c(
+        "Lower slowly — the range is small on purpose, the effort is not",
+        "Baja despacio: el recorrido es corto a propósito, el esfuerzo no",
+      ),
+      c(
+        "Hold the top for a beat: the pause is where the lower trap does its work",
+        "Aguanta arriba un instante: la pausa es donde trabaja el trapecio inferior",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Arching the lower back to lift higher",
+        "Arquear la lumbar para subir más",
+      ),
+      c(
+        "Shrugging the shoulders toward the ears",
+        "Encoger los hombros hacia las orejas",
+      ),
+    ],
+    safety: [
+      c(
+        "If the front of the shoulder hurts, open the arms toward a T position",
+        "Si duele la parte frontal del hombro, abre los brazos hacia una T",
+      ),
+    ],
+  },
+
+  "lying-hip-abduction": {
+    setup: [
+      c(
+        "Lie on your side with the hips stacked and the top foot neutral — the shin at 90° to the thigh, not turned inward",
+        "Túmbate de lado con las caderas apiladas y el pie de arriba neutro: la tibia a 90° del muslo, sin girarla hacia dentro",
+      ),
+    ],
+    execution: [
+      c(
+        "Lift the top leg to about 45° and stop there: higher is usually the pelvis rolling backwards",
+        "Sube la pierna de arriba unos 45° y detente ahí: más arriba suele ser la pelvis girando hacia atrás",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Rolling the top hip back, which turns abduction into hip-flexor work",
+        "Girar la cadera de arriba hacia atrás, que convierte la abducción en trabajo del flexor de cadera",
+      ),
+    ],
+  },
+
+  "banded-hip-abduction": {
+    setup: [
+      c(
+        "Band around the ankles, not the feet; one hand on a chair or counter for balance",
+        "Banda en los tobillos, no en los pies; una mano en una silla o encimera para equilibrarte",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Leaning the torso the other way, or letting the band pull the leg into hip flexion",
+        "Inclinar el torso al contrario o dejar que la banda lleve la pierna a flexión de cadera",
+      ),
+    ],
+  },
+
+  "clamshells": {
+    // The pattern opens the leg; a clamshell opens the knee with the feet together.
+    replace: ["setup", "execution", "mistakes"],
+    setup: [
+      c(
+        "Lie on your side with the hips and knees bent, feet together, hips stacked — one line from shoulders to ankles",
+        "Túmbate de lado con caderas y rodillas flexionadas, pies juntos y caderas apiladas: una línea de hombros a tobillos",
+      ),
+      c(
+        "Add the band above the knees only when the pelvis stays still without it",
+        "Añade la banda sobre las rodillas solo cuando la pelvis se quede quieta sin ella",
+      ),
+      c(
+        "Rest the head on the bottom arm and keep the ribcage stacked over the pelvis",
+        "Apoya la cabeza en el brazo de abajo y mantén la caja torácica apilada sobre la pelvis",
+      ),
+    ],
+    execution: [
+      c(
+        "Open the top knee without rolling the pelvis back; the feet stay in contact",
+        "Abre la rodilla de arriba sin girar la pelvis atrás; los pies siguen en contacto",
+      ),
+      c(
+        "Close slowly. The range is small and that is the point",
+        "Cierra despacio. El recorrido es corto y eso es justamente el punto",
+      ),
+      c(
+        "Pause at the top of the opening: the glute should be talking, not the lower back",
+        "Haz una pausa arriba al abrir: debería hablar el glúteo, no la lumbar",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Rotating the whole pelvis to open further, which is the movement this exercise exists to prevent",
+        "Rotar toda la pelvis para abrir más, que es justo el movimiento que este ejercicio debe evitar",
+      ),
+      c(
+        "Expecting isolation: measured EMG shows less glute-medius activity than side-lying abduction and more hip-flexor involvement, so it is an add-on, not the whole menu",
+        "Esperar aislamiento: la EMG medida muestra menos actividad de glúteo medio que la abducción tumbado y más participación del flexor de cadera: es un complemento, no el menú entero",
+      ),
+    ],
+  },
+
+  "fire-hydrants": {
+    replace: ["setup", "execution", "mistakes"],
+    setup: [
+      c(
+        "Quadruped: hands under the shoulders, knees under the hips, spine flat",
+        "Cuadrupedia: manos bajo los hombros, rodillas bajo las caderas, espalda plana",
+      ),
+      c(
+        "Brace the abdomen so the spine does not move while the leg does",
+        "Bloquea el abdomen para que la columna no se mueva mientras se mueve la pierna",
+      ),
+      c(
+        "Look at the floor between the hands to keep the neck long",
+        "Mira al suelo entre las manos para mantener el cuello largo",
+      ),
+    ],
+    execution: [
+      c(
+        "Keep the knee bent at 90° and lift the leg out to the side to about 45° — no higher",
+        "Mantén la rodilla a 90° y sube la pierna hacia el lado unos 45°, no más",
+      ),
+      c(
+        "Pause at the top and lower with control: dropping the leg is where the pelvis moves",
+        "Haz una pausa arriba y baja con control: al dejar caer la pierna es cuando se mueve la pelvis",
+      ),
+      c(
+        "Keep the support leg still — no pushing off it to gain height",
+        "Mantén quieta la pierna de apoyo: no empujes con ella para ganar altura",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Shifting the torso or arching the lower back to gain height",
+        "Desplazar el torso o arquear la lumbar para ganar altura",
+      ),
+      c(
+        "Lifting the opposite hip to make room for the working leg",
+        "Levantar la cadera contraria para hacerle sitio a la pierna que trabaja",
+      ),
+    ],
+  },
+
+  "tibialis-raise": {
+    setup: [
+      c(
+        "Heels on a step or a plate so the forefoot can hang free, one hand on the wall for balance",
+        "Talones en un escalón o en un disco para que el antepié quede en el aire, una mano en la pared para equilibrarte",
+      ),
+    ],
+    execution: [
+      c(
+        "Pull the toes up toward the shin through the full range, then lower slowly until the foot points down",
+        "Sube los dedos hacia la tibia por todo el recorrido y baja despacio hasta que el pie apunte hacia abajo",
+      ),
+    ],
+    safety: [
+      c(
+        "Progress from two legs to one, and add load only when the full range is pain-free — the tendon is the limit here, not the muscle",
+        "Pasa de dos piernas a una y añade carga solo cuando el recorrido completo no duela: aquí el límite es el tendón, no el músculo",
+      ),
+    ],
+  },
+
+  "sumo-squat": {
+    setup: [
+      c(
+        "Stance wide enough to feel stable, toes turned out, knees following the same line as the feet",
+        "Postura lo bastante ancha para sentirte estable, puntas hacia fuera, rodillas siguiendo la línea de los pies",
+      ),
+    ],
+    execution: [
+      c(
+        "Sit down between the legs with a neutral spine; do not chase depth the pelvis cannot hold",
+        "Siéntate entre las piernas con la columna neutra; no persigas una profundidad que la pelvis no pueda sostener",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Forcing maximum width or depth, which is where the knee and the lower back start to complain",
+        "Forzar la anchura o la profundidad máxima, que es donde empiezan a quejarse la rodilla y la lumbar",
+      ),
+    ],
+  },
+
+  "nordic-curl": {
+    // `knee_flexion` describes a machine with a pivot and a pad: none of it
+    // exists here, and the descent — not the curl — is the exercise.
+    replace: ["setup", "execution", "mistakes", "safety"],
+    techniqueLevel: 4,
+    techniqueWhy: c(
+      "The hamstring has to brake the whole body, not bend a weight: the skill is resisting the fall with the hips extended and the torso straight",
+      "El isquio tiene que frenar todo el cuerpo, no vencer un peso: la destreza es resistir la caída con la cadera extendida y el torso recto",
+    ),
+    tempo: "3-0-1",
+    setup: [
+      c(
+        "Kneel on something padded with the ankles fixed hard: a strap, a loaded bar or a partner's hands",
+        "Arrodíllate sobre algo acolchado con los tobillos bien fijados: una correa, una barra cargada o las manos de un compañero",
+      ),
+      c(
+        "Torso, hips and thighs in one line: the movement happens at the knee, not at the hip",
+        "Torso, caderas y muslos en una línea: el movimiento ocurre en la rodilla, no en la cadera",
+      ),
+      c(
+        "Squeeze the glutes to keep the hips extended — the moment they flex, this becomes a hip hinge",
+        "Aprieta los glúteos para mantener la cadera extendida: en el momento en que se flexiona, esto pasa a ser un bisagra de cadera",
+      ),
+    ],
+    execution: [
+      c(
+        "Lean forward as slowly as you can control, resisting the whole way; catch yourself with the hands when control ends",
+        "Inclínate al frente tan despacio como puedas controlar, resistiendo todo el camino; frénalo con las manos cuando se acabe el control",
+      ),
+      c(
+        "Return by pushing with the hands, or pull back with the hamstring if you can",
+        "Vuelve empujando con las manos o tirando con el isquio si puedes",
+      ),
+      c(
+        "Slow the last few degrees of the descent deliberately: that is the part that builds the hamstring",
+        "Frena a propósito los últimos grados del descenso: esa es la parte que construye el isquio",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Breaking at the hip so the torso folds instead of the knee",
+        "Romper en la cadera para que el torso se doble en vez de la rodilla",
+      ),
+      c(
+        "Letting go of the descent and dropping: the eccentric is the entire exercise",
+        "Soltar el descenso y caer: la excéntrica es todo el ejercicio",
+      ),
+    ],
+    safety: [
+      c(
+        "Start with a partial range or a band assisting the return, and add range only while the descent stays controlled; cramping is the first sign of too much",
+        "Empieza con recorrido parcial o una banda que asista la vuelta, y amplía solo mientras el descenso siga controlado; los calambres son la primera señal de exceso",
+      ),
+    ],
+  },
+
+  "copenhagen-plank": {
+    // `hip_adduction` is a standing leg close; the Copenhagen is a side plank
+    // whose whole point is the lever length.
+    replace: ["setup", "execution", "mistakes"],
+    techniqueLevel: 3,
+    techniqueWhy: c(
+      "A side plank held up by the adductor: the whole exercise is the top leg stopping the pelvis from dropping, and the lever decides how hard that is",
+      "Una plancha lateral sostenida por el aductor: todo el ejercicio es la pierna de arriba evitando que caiga la pelvis, y la palanca decide cuánto cuesta",
+    ),
+    setup: [
+      c(
+        "Side plank with the top leg on a bench: start with the knee or mid-shin supported (short lever), bottom leg off the floor",
+        "Plancha lateral con la pierna de arriba en un banco: empieza apoyando la rodilla o la espinilla (palanca corta), la pierna de abajo en el aire",
+      ),
+      c(
+        "Elbow under the shoulder, body in one line, pelvis stacked",
+        "Codo bajo el hombro, cuerpo en una línea, pelvis apilada",
+      ),
+      c(
+        "Top hand on the hip; the free arm is not a kickstand",
+        "Mano de arriba en la cadera: el brazo libre no es un puntal",
+      ),
+    ],
+    execution: [
+      c(
+        "Lift the hips and hold: the adductor of the top leg is what stops the pelvis dropping",
+        "Sube la cadera y aguanta: el aductor de la pierna de arriba es lo que evita que la pelvis caiga",
+      ),
+      c(
+        "Progress to the ankle on the bench (long lever) and only then to controlled lifts",
+        "Pasa al tobillo en el banco (palanca larga) y solo después a subidas controladas",
+      ),
+      c(
+        "Stop the set when the pelvis starts to drop, not a second later",
+        "Corta la serie cuando la pelvis empiece a caer, ni un segundo después",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Letting the hip drop toward the floor, which takes the load off the adductor",
+        "Dejar caer la cadera al suelo, que le quita la carga al aductor",
+      ),
+      c(
+        "Starting with the long lever: that is how this exercise gets a bad reputation",
+        "Empezar con la palanca larga: así es como este ejercicio se gana su mala fama",
+      ),
+    ],
+  },
+
+  "hollow-body-hold": {
+    // `core_anti_extension` is a plank: elbows under the shoulders, one line from
+    // heels to head. This is supine, and the contact of the lower back is the cue.
+    replace: ["setup", "execution", "mistakes"],
+    setup: [
+      c(
+        "Lie on your back, press the lower back into the floor, then lift the shoulders, arms and legs",
+        "Túmbate boca arriba, pega la lumbar al suelo y después sube hombros, brazos y piernas",
+      ),
+      c(
+        "Start with the knees bent and the arms by the sides; extend only while the lower back stays down",
+        "Empieza con las rodillas flexionadas y los brazos al lado; extiende solo mientras la lumbar siga apoyada",
+      ),
+      c(
+        "Brace as if someone were about to press on your abdomen: the hollow is a brace, not a crunch",
+        "Bloquea como si alguien fuera a presionarte el abdomen: el hollow es un bloqueo, no una abdominal",
+      ),
+    ],
+    execution: [
+      c(
+        "Hold while the lower back stays in contact: the moment it lifts, the set is over",
+        "Aguanta mientras la lumbar siga en contacto: en el momento en que se despega, la serie terminó",
+      ),
+      c(
+        "Breathe short and shallow; a long exhale is what breaks the contact",
+        "Respira corto y superficial: una exhalación larga es lo que rompe el contacto",
+      ),
+      c(
+        "Come out of the hold by bending the knees first, never by dropping the legs",
+        "Sal del isométrico flexionando primero las rodillas, nunca dejando caer las piernas",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Chasing the shape with an arched lower back",
+        "Perseguir la forma arquear la lumbar",
+      ),
+      c(
+        "Lowering the legs further than the brace allows, which is the same mistake with a nicer view",
+        "Bajar las piernas más de lo que permite el bloqueo, que es el mismo error con mejor vista",
+      ),
+    ],
+  },
+
+  "hollow-rock": {
+    setup: [
+      c(
+        "Build the tuck first: lower back down, ribs pulled toward the pelvis",
+        "Construye primero el hueco: lumbar abajo, costillas llevadas hacia la pelvis",
+      ),
+    ],
+    execution: [
+      c(
+        "Rock from the shoulders to the hips; the body moves as one piece — if the shape changes mid-rock, shorten the lever",
+        "Balancea de los hombros a las caderas; el cuerpo se mueve como una pieza: si la forma cambia a mitad, acorta la palanca",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Rocking with a loose middle, which is a sit-up with extra steps",
+        "Balancearse con el centro suelto, que es una abdominal con pasos extra",
+      ),
+    ],
+  },
+
+  "bird-dog": {
+    setup: [
+      c(
+        "Quadruped: hands under the shoulders, knees under the hips, back flat",
+        "Cuadrupedia: manos bajo los hombros, rodillas bajo las caderas, espalda plana",
+      ),
+    ],
+    execution: [
+      c(
+        "Extend the opposite arm and leg to shoulder and hip height, then return; the pelvis stays level and facing the floor",
+        "Extiende brazo y pierna contrarios a la altura del hombro y de la cadera y vuelve; la pelvis se queda nivelada y mirando al suelo",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Rotating the pelvis, or lifting the leg higher than the trunk can hold",
+        "Rotar la pelvis o subir la pierna más de lo que el tronco puede sostener",
+      ),
+    ],
+  },
+
+  "deficit-push-up": {
+    execution: [
+      c(
+        "Hands on books or handles so the chest drops below the hands: the extra range is the point, and the front of the shoulder is what has to tolerate it",
+        "Manos en libros o agarraderas para que el pecho baje por debajo de las manos: el recorrido extra es el objetivo, y la parte frontal del hombro es la que tiene que tolerarlo",
+      ),
+    ],
+  },
+
+  "archer-push-up": {
+    execution: [
+      c(
+        "One arm bends while the other stays almost straight and slides out sideways; alternate sides every rep or every set",
+        "Un brazo se flexiona mientras el otro se queda casi recto y se desliza hacia el lado; alterna lados cada repetición o cada serie",
+      ),
+    ],
+    safety: [
+      c(
+        "The straight arm carries most of the load: build up to it from regular push-ups, never from nothing",
+        "El brazo recto se lleva casi toda la carga: llega a este ejercicio desde flexiones normales, nunca desde cero",
+      ),
+    ],
+  },
+
+  "pseudo-planche-push-up": {
+    execution: [
+      c(
+        "Lean the shoulders past the hands before the first rep and keep that lean: the further forward, the more it becomes a front-delt press",
+        "Inclina los hombros por delante de las manos antes de la primera repetición y mantén esa inclinación: cuanto más al frente, más se vuelve un press de deltoides frontal",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Letting the shoulders drift back over the hands mid-set, which quietly turns it into a push-up",
+        "Dejar que los hombros vuelvan sobre las manos a mitad de serie, lo que lo convierte en silencio en una flexión",
+      ),
+    ],
+  },
+
+  "dumbbell-squeeze-press": {
+    execution: [
+      c(
+        "Press the dumbbells into each other hard for the whole set: that tension keeps the elbows tucked and the chest loaded",
+        "Aprieta las mancuernas una contra otra durante toda la serie: esa tensión mantiene los codos cerrados y el pecho cargado",
+      ),
+    ],
+  },
+
+  // Band work shares one safety rule that the pattern copy cannot know: the
+  // anchor is the equipment, and it is the part that fails.
+  "band-chest-press": {
+    setup: [
+      c(
+        "Anchor the band behind you at chest height, split stance, hands beside the chest",
+        "Ancla la banda detrás a la altura del pecho, postura escalonada, manos junto al pecho",
+      ),
+    ],
+    safety: [
+      c(
+        "Check the band and the anchor before every set; never let a loaded band snap back",
+        "Revisa la banda y el anclaje en cada serie; nunca dejes que una banda en tensión vuelva de golpe",
+      ),
+    ],
+  },
+
+  "band-row": {
+    setup: [
+      c(
+        "Anchor the band at hip height to something that does not move, feet at hip width, knees soft",
+        "Ancla la banda a la altura de la cadera en algo que no se mueva, pies al ancho de caderas, rodillas suaves",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Pulling with momentum or arching the back to move more band",
+        "Tirar con impulso o arquear la espalda para mover más banda",
+      ),
+    ],
+    safety: [
+      c(
+        "Check the band and the anchor before every set; more distance from the anchor means more tension, not a harder row",
+        "Revisa la banda y el anclaje en cada serie; más distancia al anclaje significa más tensión, no un remo más duro",
+      ),
+    ],
+  },
+
+  "band-curl": {
+    setup: [
+      c(
+        "Stand on the middle of the band with one foot, a handle in each hand, palms forward",
+        "Pisa el centro de la banda con un pie, un extremo en cada mano, palmas al frente",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Swinging the torso or letting the elbows travel forward to finish the rep",
+        "Balancear el torso o dejar que los codos avancen para terminar la repetición",
+      ),
+    ],
+    safety: [
+      c(
+        "Shorten the grip or use a lighter band for more tension; never step off a loaded band",
+        "Acorta el agarre o usa una banda más ligera para más tensión; nunca sueltes el pie de una banda en tensión",
+      ),
+    ],
+  },
+
+  "band-overhead-press": {
+    setup: [
+      c(
+        "Stand on the band or anchor it under the feet, handles at shoulder height, elbows slightly in front",
+        "Pisa la banda o anclala bajo los pies, agarres a la altura del hombro, codos algo por delante",
+      ),
+    ],
+    safety: [
+      c(
+        "Check the band under your feet before you press: a worn spot fails exactly at the top of the rep",
+        "Revisa la banda bajo los pies antes de empujar: un punto gastado falla justo arriba de la repetición",
+      ),
+    ],
+  },
+
+  "band-lat-pulldown": {
+    setup: [
+      c(
+        "Kneel facing an anchor above head height, band in both hands, arms long overhead",
+        "Arrodíllate frente a un anclaje por encima de la cabeza, la banda en las dos manos, brazos largos arriba",
+      ),
+    ],
+    safety: [
+      c(
+        "Check the anchor before every set; pulling a band down toward your face is unforgiving if it lets go",
+        "Revisa el anclaje en cada serie; tirar de una banda hacia la cara no perdona si se suelta",
+      ),
+    ],
+  },
+
+  // Conditioning blocks. The cardio patterns already carry pacing and breathing;
+  // these add the thing each modality gets wrong on its own (rope length, saddle
+  // height, the descent between stair efforts).
+  "mtb-steady-ride": {
+    setup: [
+      c(
+        "Saddle height: the knee is almost straight at the bottom of the stroke, without the hip rocking",
+        "Altura del sillín: la rodilla queda casi recta abajo del pedaleo, sin que la cadera se balancee",
+      ),
+    ],
+    execution: [
+      c(
+        "Aim for 80-90 rpm and an effort you can hold in full sentences — that is Z2, not a number on a watch",
+        "Busca 80-90 rpm y un esfuerzo que te deje hablar en frases completas: eso es Z2, no un número del reloj",
+      ),
+    ],
+  },
+
+  "mtb-hill-intervals": {
+    execution: [
+      c(
+        "Decide before the first climb whether you stand or stay seated, and keep it identical every interval",
+        "Decide antes de la primera subida si vas de pie o sentado, y mantenlo idéntico en todos los intervalos",
+      ),
+    ],
+    safety: [
+      c(
+        "Spin an easy gear on the descent — the downhill is recovery, not a second workout",
+        "Pedalea en un desarrollo fácil al bajar: el descenso es recuperación, no un segundo entrenamiento",
+      ),
+    ],
+  },
+
+  "stair-intervals": {
+    setup: [
+      c(
+        "Whole foot on each step; the handrail is for balance, not for pulling yourself up",
+        "Pie completo en cada escalón; la barandilla es para equilibrarte, no para tirar de ti",
+      ),
+    ],
+    execution: [
+      c(
+        "Walk down slowly between efforts: the descent is the recovery that makes the next interval possible",
+        "Baja caminando despacio entre esfuerzos: el descenso es la recuperación que hace posible el siguiente intervalo",
+      ),
+    ],
+  },
+
+  "jump-rope-intervals": {
+    setup: [
+      c(
+        "Rope length: stand on the middle of the rope and the handles should reach your armpits",
+        "Largo de la cuerda: pisa el centro y los mangos deben llegar a tus axilas",
+      ),
+    ],
+    execution: [
+      c(
+        "Turn the rope from the wrists and jump just high enough to clear it",
+        "Gira la cuerda desde las muñecas y salta justo lo suficiente para pasarla",
+      ),
+    ],
+    safety: [
+      c(
+        "Land on the balls of the feet with soft knees, and stop at the first calf cramp",
+        "Aterriza en la punta del pie con rodillas suaves y para al primer calambre de gemelo",
+      ),
+    ],
+  },
+
+  "jump-rope-steady": {
+    setup: [
+      c(
+        "Rope length: standing on the middle, the handles reach the armpits",
+        "Largo de la cuerda: pisando el centro, los mangos llegan a las axilas",
+      ),
+    ],
+    execution: [
+      c(
+        "Keep a rhythm you could hold for ten minutes; every time you have to reset the rope, you started too fast",
+        "Mantén un ritmo que puedas sostener diez minutos; cada vez que tengas que reiniciar la cuerda, empezaste demasiado rápido",
+      ),
+    ],
+  },
+
+  "burpee-circuit": {
+    setup: [
+      c(
+        "Chest to the floor and feet back under you in one piece: no worm, no half rep",
+        "Pecho al suelo y pies de vuelta bajo el cuerpo en una pieza: sin gusano y sin media repetición",
+      ),
+    ],
+    execution: [
+      c(
+        "Pace the first round by repeatability — the last round is the one that set the pace",
+        "Marca el ritmo de la primera ronda por repetibilidad: la última ronda es la que fija el ritmo",
+      ),
+    ],
+    safety: [
+      c(
+        "Switch to the step-back version the moment the lower back starts to arch",
+        "Pasa a la versión con paso atrás en cuanto la lumbar empiece a arquearse",
+      ),
+    ],
+  },
+
+  "metcon-circuit": {
+    execution: [
+      c(
+        "Write the circuit and the order down before starting: the order is what makes it repeatable",
+        "Apunta el circuito y el orden antes de empezar: el orden es lo que lo hace repetible",
+      ),
+    ],
+    mistakes: [
+      c(
+        "Changing the order mid-circuit to make it easier, and then calling it the same circuit",
+        "Cambiar el orden a mitad del circuito para hacerlo más fácil y llamarlo el mismo circuito",
+      ),
+    ],
+  },
+
+  "shadow-boxing-intervals": {
+    setup: [
+      c(
+        "Wrap or tape the hands and keep the wrist straight: a loose fist on a straight punch is how wrists get hurt",
+        "Venda o fija las manos y mantén la muñeca recta: un puño suelto en un golpe recto es como se lesionan las muñecas",
+      ),
+    ],
+    execution: [
+      c(
+        "Punch from the hips and shoulders, and breathe out on every punch",
+        "Golpea desde la cadera y los hombros, y exhala en cada golpe",
+      ),
+    ],
+  },
+
+  "tabata-bodyweight": {
+    setup: [
+      c(
+        "Pick one movement per block and do not change it mid-block",
+        "Elige un movimiento por bloque y no lo cambies a mitad del bloque",
+      ),
+    ],
+    execution: [
+      c(
+        "20 s on, 10 s off is the format; the last round has to look like the first",
+        "20 s de trabajo y 10 s de descanso es el formato; la última ronda tiene que parecerse a la primera",
+      ),
+    ],
+  },
+
+  "bike-sprint-intervals": {
+    execution: [
+      c(
+        "Sprint seated or standing, but keep it the same every interval so the comparison means something",
+        "Esprinta sentado o de pie, pero mantenlo igual en cada intervalo para que la comparación signifique algo",
+      ),
+    ],
+    safety: [
+      c(
+        "Recover fully between sprints: a sprint that starts tired is a slow sprint with extra fatigue",
+        "Recupera del todo entre sprints: un sprint que empieza cansado es un sprint lento con fatiga extra",
+      ),
+    ],
+  },
+
+  "stair-climb-steady": {
+    setup: [
+      c(
+        "Same step, same pace, hand on the rail only for balance",
+        "Mismo escalón, mismo ritmo, mano en la barandilla solo para equilibrarte",
+      ),
+    ],
+    execution: [
+      c(
+        "Climb at a pace you can hold for the whole block, and turn around before you are out of breath",
+        "Sube a un ritmo que puedas sostener todo el bloque, y da la vuelta antes de quedarte sin aliento",
+      ),
+    ],
+  },
 };
 
 /** Everything the UI (and the local LLM) needs to teach one exercise. */
@@ -2022,17 +3030,31 @@ export function getExerciseTechnique(
   if (!traits) return null;
   const base = PATTERN_TECHNIQUE[traits.pattern];
   const override = TECHNIQUE_OVERRIDES[exerciseId];
+  // The pattern's "why it is hard" is replaced only when the override says so:
+  // most variants refine a pattern without changing what makes it difficult.
+  const techniqueWhy = override?.techniqueWhy ?? base.techniqueWhy;
+  /** Append by default; replace only when asked and when there is something to say. */
+  const merge = (
+    section: TechniqueSection,
+    fallback: Cue[],
+  ): Cue[] => {
+    const extra = override?.[section];
+    if (!extra || extra.length === 0) return fallback;
+    return override?.replace?.includes(section) ? extra : [...fallback, ...extra];
+  };
   return {
     ...base,
+    techniqueWhy,
+    techniqueLevel: override?.techniqueLevel ?? base.techniqueLevel,
     tempo: override?.tempo ?? base.tempo,
-    setup: [...base.setup, ...(override?.setup ?? [])],
-    execution: [...base.execution, ...(override?.execution ?? [])],
-    mistakes: [...base.mistakes, ...(override?.mistakes ?? [])],
-    safety: [...base.safety, ...(override?.safety ?? [])],
+    setup: merge("setup", base.setup),
+    execution: merge("execution", base.execution),
+    mistakes: merge("mistakes", base.mistakes),
+    safety: merge("safety", base.safety),
     exerciseId,
     name: exercise.name,
     pattern: traits.pattern,
-    demo: PATTERN_DEMOS[traits.pattern],
+    demo: demoFor(exerciseId, traits.pattern),
     difficulty: exercise.difficulty,
     hypertrophy: exercise.hypertrophy,
     equipment: exercise.equipment,

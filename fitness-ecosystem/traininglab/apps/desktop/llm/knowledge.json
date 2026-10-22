@@ -2,7 +2,7 @@
   "$schema": "traininglab-llm-knowledge/1.0",
   "generatedFrom": "@fitness/bodylab-exercises",
   "counts": {
-    "exercises": 151,
+    "exercises": 152,
     "families": 34,
     "patterns": 28,
     "withMedia": 115
@@ -4283,6 +4283,79 @@
         ]
       },
       "hasMedia": true
+    },
+    {
+      "id": "table-row",
+      "name": {
+        "en": "Table Row (Inverted Row at Home)",
+        "es": "Remo bajo Mesa (Invertido en Casa)"
+      },
+      "category": "bodyweight",
+      "difficulty": 2,
+      "hypertrophy": 4,
+      "muscles": [
+        {
+          "muscle": "lats_mid",
+          "intensity": 3
+        },
+        {
+          "muscle": "lats_upper",
+          "intensity": 2
+        },
+        {
+          "muscle": "rhomboids",
+          "intensity": 3
+        },
+        {
+          "muscle": "traps_mid",
+          "intensity": 2
+        },
+        {
+          "muscle": "posterior_deltoid",
+          "intensity": 2
+        },
+        {
+          "muscle": "biceps_long",
+          "intensity": 2
+        },
+        {
+          "muscle": "forearm_flexors",
+          "intensity": 1
+        },
+        {
+          "muscle": "rectus_abdominis",
+          "intensity": 1
+        }
+      ],
+      "equipment": {
+        "en": "A sturdy table or desk — no other gear",
+        "es": "Una mesa o escritorio firme — sin nada más"
+      },
+      "pattern": "horizontal_pull",
+      "loadType": "bodyweight",
+      "unilateral": false,
+      "requires": [],
+      "jointStress": 1,
+      "spineLoad": 1,
+      "progression": [
+        "reps",
+        "leverage",
+        "tempo",
+        "volume"
+      ],
+      "setupMin": 1,
+      "techniqueLevel": 2,
+      "tempo": "2-1-1",
+      "rir": "1-2",
+      "demo": {
+        "view": "side",
+        "anchor": "ankle",
+        "watch": [
+          "elbow",
+          "spine"
+        ]
+      },
+      "hasMedia": false
     },
     {
       "id": "pike-push-up",

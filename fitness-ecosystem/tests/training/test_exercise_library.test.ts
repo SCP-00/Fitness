@@ -187,6 +187,44 @@ describe("exercise library filters and sorting", () => {
     }
   });
 
+  it("keeps only the starred rows when the favourites filter is on", () => {
+    // 2026-10-20: the star list is a filter like the others, so it has to
+    // compose with them and it has to be off unless asked for.
+    const starred = ["barbell-bench-press", "goblet-squat"];
+    const favs = queryLibrary(
+      rows,
+      { ...only(null), onlyFavorites: true },
+      "az",
+      starred,
+    );
+    expect(favs.rows.map((r) => r.id).sort()).toEqual([...starred].sort());
+    expect(favs.total).toBe(rows.length);
+
+    // A starred id the catalog does not have is not a row (and not an error).
+    const ghost = queryLibrary(
+      rows,
+      { ...only(null), onlyFavorites: true },
+      "az",
+      ["not-an-exercise", "goblet-squat"],
+    );
+    expect(ghost.rows.map((r) => r.id)).toEqual(["goblet-squat"]);
+
+    // Off by default: the ids are ignored when the filter is not on.
+    expect(queryLibrary(rows, only(null), "az", starred).matching).toBe(
+      rows.length,
+    );
+  });
+
+  it("composes favourites with a family as AND, never as OR", () => {
+    const out = queryLibrary(
+      rows,
+      { ...only("chest"), onlyFavorites: true },
+      "az",
+      ["goblet-squat", "barbell-bench-press"],
+    );
+    expect(out.rows.map((r) => r.id)).toEqual(["barbell-bench-press"]);
+  });
+
   it("resolves a known id and returns null for an unknown one", () => {
     expect(findRow(rows, "barbell-bench-press")?.name).toBeTruthy();
     expect(findRow(rows, "not-an-exercise")).toBeNull();

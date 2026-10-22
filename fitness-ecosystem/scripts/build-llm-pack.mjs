@@ -17,7 +17,34 @@
  */
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
-import { createServer } from "vite";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
+
+/**
+ * Import Vite even when the root has no `node_modules` of its own — the same
+ * trap `scripts/fitness-mcp-server.mjs` documents: a bun-installed checkout has
+ * Vite only inside the apps, so a bare `import "vite"` here dies with
+ * ERR_MODULE_NOT_FOUND and the pack can never be regenerated after a catalog
+ * edit (found 2026-10-20, adding `table-row`).
+ */
+async function createServer(options) {
+  try {
+    return await (await import("vite")).createServer(options);
+  } catch (rootError) {
+    for (const app of ["bodylab/apps/web", "traininglab/apps/desktop"]) {
+      try {
+        const fromApp = createRequire(
+          path.resolve(process.cwd(), app, "package.json"),
+        );
+        const vite = await import(pathToFileURL(fromApp.resolve("vite")).href);
+        return await vite.createServer(options);
+      } catch {
+        // next app that ships Vite
+      }
+    }
+    throw rootError;
+  }
+}
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "traininglab/apps/desktop/llm");

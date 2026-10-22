@@ -15,12 +15,17 @@
  * @module tests/exercises/test_technique
  */
 
+import fs from "node:fs";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
 import {
   ALL_EXERCISES,
+  DEMO_PATTERN_OVERRIDES,
   PATTERN_TECHNIQUE,
   PATTERN_DEMOS,
   TECHNIQUE_OVERRIDES,
+  EXERCISE_DEMOS,
+  demoFor,
   getExerciseTechnique,
   techniqueLevelLabel,
   jointStressLabel,
@@ -155,6 +160,166 @@ describe("technique: variant cues stay honest", () => {
       expect(tech.setup.length).toBeGreaterThanOrEqual(
         PATTERN_TECHNIQUE[tech.pattern].setup.length,
       );
+    }
+  });
+});
+
+describe("technique: a pattern's advice can be replaced when it does not apply", () => {
+  /**
+   * `horizontal_pull` coaches a one-arm dumbbell row: a handle, a free hand on
+   * the bench and a "working side". `table-row` (added 2026-10-20, the owner's
+   * bodyweight week) has none of those, so its override replaces the sections
+   * instead of appending to them — appending is how a correct exercise ends up
+   * teaching an incorrect cue.
+   */
+  it("table-row drops the dumbbell-row cues it cannot honour", () => {
+    const tech = getExerciseTechnique("table-row")!;
+    const text = [...tech.setup, ...tech.execution, ...tech.mistakes, ...tech.safety]
+      .map((cue) => `${cue.en} ${cue.es}`)
+      .join(" ");
+    expect(tech.hasVariantCues).toBe(true);
+    for (const ghost of [
+      "free hand",
+      "hooking the handle",
+      "working side",
+      "mano libre",
+      "enganchar el agarre",
+      "lado que trabaja",
+    ]) {
+      expect(text.toLowerCase()).not.toContain(ghost.toLowerCase());
+    }
+  });
+
+  /**
+   * The exercises whose pattern is a *different movement*, not a variant of
+   * the same one (2026-10-21). Replacing the cues but keeping the pattern's
+   * "why it is hard" was the same lie in a smaller font: the diamond push-up
+   * was still explaining that "the shoulder must stay quiet while the elbow
+   * moves " — true of a cable pushdown, false of a push-up.
+   *
+   * The list is explicit rather than automatic: several exercises replace their
+   * setup and still inherit a perfectly good `techniqueWhy` (the prone Y is a
+   * small-range shoulder abduction, and the pattern says exactly that).
+   */
+  const REPURPOSED_PATTERNS = [
+    "table-row",
+    "diamond-push-up",
+    "pike-push-up",
+    "nordic-curl",
+    "copenhagen-plank",
+  ];
+
+  it("rewrites the difficulty reason when the pattern is a different movement", () => {
+    for (const id of REPURPOSED_PATTERNS) {
+      const tech = getExerciseTechnique(id)!;
+      expect(tech.techniqueWhy, id).not.toEqual(
+        PATTERN_TECHNIQUE[tech.pattern].techniqueWhy,
+      );
+    }
+  });
+
+  it("can correct the pattern's skill cost where it does not apply", () => {
+    // A Nordic curl inherits `knee_flexion` (2/5, a leg-curl machine). Braking
+    // the whole bodyweight on the hamstring is not a 2.
+    expect(getExerciseTechnique("nordic-curl")!.techniqueLevel).toBe(4);
+    expect(getExerciseTechnique("barbell-curl")!.techniqueLevel).toBe(
+      PATTERN_TECHNIQUE.elbow_flexion.techniqueLevel,
+    );
+  });
+
+  it("every exercise still meets the coaching minimums after any replacement", () => {
+    for (const { id, tech } of allResolved) {
+      expect(tech.setup.length, `${id} setup`).toBeGreaterThanOrEqual(3);
+      expect(tech.execution.length, `${id} execution`).toBeGreaterThanOrEqual(3);
+      expect(tech.mistakes.length, `${id} mistakes`).toBeGreaterThanOrEqual(2);
+      expect(tech.safety.length, `${id} safety`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("per-exercise demos exist only for real exercises, and they differ from the pattern's", () => {
+    const ids = new Set(ALL_EXERCISES.map((ex) => ex.id));
+    for (const [id, demo] of Object.entries(EXERCISE_DEMOS)) {
+      expect(ids.has(id), id).toBe(true);
+      expect(demo.frames.length, id).toBeGreaterThan(1);
+      // A distinct demo that copies the pattern frame for frame teaches nothing.
+      const pattern = getExerciseTechnique(id)!.pattern;
+      expect(demo).not.toEqual(PATTERN_DEMOS[pattern]);
+    }
+    // And the resolver hands the exercise its own figure, not the pattern's.
+    expect(demoFor("table-row", "horizontal_pull")).toBe(EXERCISE_DEMOS["table-row"]);
+    expect(demoFor("barbell-row", "horizontal_pull")).toBe(
+      PATTERN_DEMOS["horizontal_pull"],
+    );
+  });
+
+  it("borrows another pattern's figure when the assigned one is a different movement", () => {
+    // `diamond-push-up` is filed under `elbow_extension` (the triceps finish the
+    // rep), but that pattern's figure is a standing cable pushdown. The floor
+    // push-up figure is the honest one, and it already exists (2026-10-21).
+    expect(DEMO_PATTERN_OVERRIDES["diamond-push-up"]).toBe("horizontal_push");
+    expect(demoFor("diamond-push-up", "elbow_extension")).toBe(
+      PATTERN_DEMOS["horizontal_push"],
+    );
+    for (const [id, pattern] of Object.entries(DEMO_PATTERN_OVERRIDES)) {
+      expect(ALL_EXERCISES.some((ex) => ex.id === id), id).toBe(true);
+      // Borrowing a figure only makes sense when it is a different movement.
+      expect(getExerciseTechnique(id)!.pattern, id).not.toBe(pattern);
+    }
+  });
+});
+
+/**
+ * The other half of the teaching material (2026-10-21).
+ *
+ * 36 GIFs and 84 stills reach 115 of the 152 catalog exercises; the safest
+ * redistributable source (free-exercise-db, Unlicense) has no entry for any of
+ * the other 37, which was verified by name. So for those rows the pattern's
+ * coaching is the *only* text the app can show: correct, but generic — it can
+ * describe a squat, not how wide your feet are in a sumo squat.
+ *
+ * This suite pins the promise made when the 37 were reviewed: an exercise with
+ * no reference media carries hand-written cues of its own, and those cues say
+ * something the pattern does not already say.
+ */
+describe("technique: no image never means no specific teaching", () => {
+  const DIR = path.resolve(
+    __dirname,
+    "../../traininglab/apps/desktop/public/exercises",
+  );
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(DIR, "asset-manifest.json"), "utf8"),
+  ) as Record<string, unknown>;
+
+  const withoutMedia = ALL_EXERCISES.filter((ex) => !manifest[ex.id]);
+
+  it("still finds exercises with neither a GIF nor a still on disk", () => {
+    // If this becomes zero the rest of the suite is vacuous, not wrong: the
+    // assertion documents the real state of the media folder.
+    expect(withoutMedia.length).toBeGreaterThan(0);
+  });
+
+  it("gives every media-less exercise its own cues", () => {
+    const bare = withoutMedia
+      .filter((ex) => TECHNIQUE_OVERRIDES[ex.id] === undefined)
+      .map((ex) => ex.id);
+    expect(bare).toEqual([]);
+  });
+
+  it("and those cues add at least one sentence the pattern does not have", () => {
+    for (const { id } of withoutMedia) {
+      const tech = getExerciseTechnique(id)!;
+      const patternText = [
+        ...PATTERN_TECHNIQUE[tech.pattern].setup,
+        ...PATTERN_TECHNIQUE[tech.pattern].execution,
+        ...PATTERN_TECHNIQUE[tech.pattern].mistakes,
+        ...PATTERN_TECHNIQUE[tech.pattern].safety,
+      ]
+        .map((cue) => cue.en)
+        .join(" | ");
+      const added = [...tech.setup, ...tech.execution, ...tech.mistakes, ...tech.safety]
+        .map((cue) => cue.en)
+        .filter((en) => !patternText.includes(en));
+      expect(added.length, id).toBeGreaterThan(0);
     }
   });
 });

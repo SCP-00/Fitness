@@ -752,6 +752,22 @@ const BASE_TRAITS: Record<string, ExerciseTraits> = {
     progression: ["reps", "leverage", "volume"],
     setupMin: 1,
   }),
+  /**
+   * The zero-equipment horizontal pull (2026-10-20). `requires: []` is the
+   * point of it: a table is furniture, not gear. Also the reason it is not a
+   * duplicate of `inverted-row` — that one needs a bar, dip bars or a bench,
+   * which is exactly what a person away from home does not have.
+   */
+  "table-row": t({
+    requires: [],
+    pattern: "horizontal_pull",
+    loadType: "bodyweight",
+    unilateral: false,
+    jointStress: 1,
+    spineLoad: 1,
+    progression: ["reps", "leverage", "tempo", "volume"],
+    setupMin: 1,
+  }),
   "pike-push-up": t({
     requires: [],
     pattern: "vertical_push",

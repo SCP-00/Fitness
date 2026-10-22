@@ -85,11 +85,13 @@ const TRAINING_MUSCLE_IDS: MuscleGroup[] = [
 // ============================================================================
 
 describe('Integration: Exercise DB structure', () => {
-  it('contains exactly 151 exercises: 64 gym + 30 home + 57 technique-expansion entries', () => {
+  it('contains exactly 152 exercises: 64 gym + 30 home + 57 technique-expansion entries + table-row', () => {
     // 64 (full-gym catalog, 2026-09) + 30 added 2026-09-28 (home athlete) +
     // 49 added 2026-09-29 (catalog expansion: home focus, owner equipment) +
-    // 8 added 2026-10-04 (the Symmetry import mapping gaps).
-    expect(ALL_EXERCISES.length).toBe(151);
+    // 8 added 2026-10-04 (the Symmetry import mapping gaps) +
+    // 1 added 2026-10-20 (`table-row`: the zero-equipment horizontal pull the
+    // owner's bodyweight week needed — the catalog had none).
+    expect(ALL_EXERCISES.length).toBe(152);
   });
 
   it('every exercise id is a unique, kebab-case slug', () => {
@@ -247,17 +249,20 @@ describe('Integration: exercise GIF assets (filesystem)', () => {
     const mediaLess = ALL_EXERCISES.filter(e => !gifIds.has(e.id) && !stillIds.has(e.id)).map(e => e.id);
     expect(gifCovered.length).toBe(36);
     expect(stillCovered.length).toBe(79);
-    // 36 remain media-less after the 2026-10-06 public-domain batch took the
-    // count from 51 to 36. They fall back to the drawn stick-figure animation
-    // in the app until we record our own GIFs with OxiHuman (content backlog).
+    // 37 remain media-less after the 2026-10-06 public-domain batch took the
+    // count from 51 to 36, plus `table-row` (2026-10-20): a movement that ships
+    // with its own drawn figure and per-exercise cues, because no cleared GIF or
+    // still of an under-table row exists in either source. It falls back to the
+    // drawn animation exactly like the rest until we record our own GIFs with
+    // OxiHuman (content backlog).
     // The 15 that left this list were all covered from free-exercise-db, the
     // only source NOTICE.md clears for redistribution besides our own art.
-    expect(mediaLess.length).toBe(36);
+    expect(mediaLess.length).toBe(37);
     expect(mediaLess).toEqual(expect.arrayContaining([
       'push-up-plus', 'lying-hip-abduction', 'tibialis-raise', 'sumo-squat',
       'banded-hip-abduction', 'clamshells', 'fire-hydrants',
       'pike-push-up', 'diamond-push-up', 'hollow-body-hold', 'hollow-rock',
-      'nordic-curl', 'copenhagen-plank', 'bird-dog',
+      'nordic-curl', 'copenhagen-plank', 'bird-dog', 'table-row',
     ]));
   });
 });
