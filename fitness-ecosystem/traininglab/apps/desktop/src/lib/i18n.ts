@@ -418,6 +418,70 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "{n} of {total} exercises available",
     es: "{n} de {total} ejercicios disponibles",
   },
+  // ── Gear profiles: one inventory per room (2026-10-20) ───────────────────
+  "gear.profiles.hint": {
+    en: "Home and the gym are different gear. Each profile keeps its own list, and switching never deletes the other one.",
+    es: "Casa y gimnasio son equipos distintos. Cada perfil guarda su propia lista, y cambiar de perfil nunca borra la otra.",
+  },
+  "gear.profiles.active": {
+    en: "In use: {name}",
+    es: "En uso: {name}",
+  },
+  "gear.profiles.none": {
+    en: "No profile yet — this is your only list.",
+    es: "Sin perfil todavía — esta es tu única lista.",
+  },
+  "gear.profiles.save": {
+    en: "Save as profile",
+    es: "Guardar como perfil",
+  },
+  "gear.profiles.new": { en: "New profile", es: "Nuevo perfil" },
+  "gear.profiles.namePlaceholder": {
+    en: "Profile name (e.g. Home)",
+    es: "Nombre del perfil (p. ej. Casa)",
+  },
+  "gear.profiles.defaultName": { en: "Home", es: "Casa" },
+  "gear.profiles.suggestedNew": { en: "Gym", es: "Gimnasio" },
+  "gear.profiles.switchTitle": {
+    en: "Switch to «{name}»? Today’s plan will be recalculated with that gear. Nothing you logged, ordered or authored changes.",
+    es: "¿Cambiar a «{name}»? El plan de hoy se recalculará con ese equipo. Lo que has registrado, ordenado o diseñado no cambia.",
+  },
+  "gear.profiles.switch": { en: "Switch", es: "Cambiar" },
+  // Renaming any setup, live or parked (2026-10-22).
+  "gear.profiles.rename": { en: "Rename", es: "Renombrar" },
+  "gear.profiles.renameActive": {
+    en: "Rename the profile in use",
+    es: "Renombrar el perfil en uso",
+  },
+  "gear.profiles.cancel": { en: "Cancel", es: "Cancelar" },
+  "gear.profiles.delete": {
+    en: "Delete profile",
+    es: "Borrar perfil",
+  },
+  "gear.profiles.deleteTitle": {
+    en: "Delete «{name}» and its {n} items? The profile you are using is not affected.",
+    es: "¿Borrar «{name}» y sus {n} elementos? El perfil que estás usando no se toca.",
+  },
+  "gear.profiles.nameTaken": {
+    en: "That name is already in use.",
+    es: "Ese nombre ya está en uso.",
+  },
+  "gear.profiles.nameEmpty": {
+    en: "A profile needs a name.",
+    es: "Un perfil necesita un nombre.",
+  },
+  "gear.profiles.nameCurrentFirst": {
+    en: "Name the current gear before starting another profile, so it is kept.",
+    es: "Ponle nombre al equipo actual antes de crear otro perfil, para no perderlo.",
+  },
+  "gear.profiles.unknown": {
+    en: "That profile no longer exists.",
+    es: "Ese perfil ya no existe.",
+  },
+  "gear.profiles.deleteActive": {
+    en: "That is the profile in use — switch to another one before deleting it.",
+    es: "Ese es el perfil en uso — cambia a otro antes de borrarlo.",
+  },
 
   // ── Session ───────────────────────────────────────────────────────────────
   "session.title": { en: "Today’s session", es: "Sesión de hoy" },
@@ -488,6 +552,7 @@ const DICT: Record<string, { en: string; es: string }> = {
   "tech.effort": { en: "Effort", es: "Esfuerzo" },
   "tech.joint": { en: "Joint stress", es: "Estrés articular" },
   "tech.tempo": { en: "Tempo", es: "Tempo" },
+  "tech.setup": { en: "Setup", es: "Preparación" },
   "tech.execution": { en: "Execution", es: "Ejecución" },
   "tech.mistakes": { en: "Common mistakes", es: "Errores comunes" },
   "tech.safety": { en: "Safety", es: "Seguridad" },
@@ -526,6 +591,9 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "log.suggested": { en: "Suggested {w} kg", es: "Sugerido {w} kg" },
   "log.removed": { en: "Set deleted", es: "Serie eliminada" },
+  // The same undo bar, for the other way a set is destroyed (2026-10-21).
+  "log.edited": { en: "Set edited", es: "Serie editada" },
+  "log.repsOnly": { en: "{n} reps", es: "{n} reps" },
   "log.untrained": {
     en: "First time — start light",
     es: "Primera vez — empieza ligero",
@@ -1019,8 +1087,8 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "hist.listTitle": { en: "Session by session", es: "Sesión a sesión" },
   "hist.listHint": {
-    en: "Closed sessions are immutable: their sets are never rewritten.",
-    es: "Las sesiones cerradas son inmutables: sus series no se reescriben.",
+    en: "Sets are never rewritten here: rename a session, say where it happened, or delete it whole.",
+    es: "Aquí no se reescriben las series: renombra la sesión, di dónde fue o bórrala entera.",
   },
   "hist.listHintCapped": {
     en: "Showing the {shown} most recent of {total}.",
@@ -1039,6 +1107,41 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "hist.place.gym": { en: "Gym", es: "Gimnasio" },
   "hist.place.home": { en: "Home", es: "Casa" },
+  "hist.place.none": { en: "Not specified", es: "Sin especificar" },
+
+  /* ── Historial: editar y borrar una sesión (2026-10-21) ───────────────── */
+  "hist.edit": { en: "Edit", es: "Editar" },
+  "hist.editName": { en: "Session name", es: "Nombre de la sesión" },
+  "hist.editNamePlaceholder": { en: "No name", es: "Sin nombre" },
+  "hist.editPlace": { en: "Where it happened", es: "Dónde fue" },
+  "hist.save": { en: "Save", es: "Guardar" },
+  "hist.cancel": { en: "Cancel", es: "Cancelar" },
+  "hist.delete": { en: "Delete", es: "Eliminar" },
+  "hist.deleteTitle": {
+    en: "Delete this session?",
+    es: "¿Eliminar esta sesión?",
+  },
+  "hist.deleteBody": {
+    en: "The session and its {n} sets ({kg} of working volume) go with it. Your marks and progress are recalculated without it.",
+    es: "Se borran la sesión y sus {n} series ({kg} de volumen de trabajo). Tus marcas y tu progreso se recalculan sin ella.",
+  },
+  "hist.deleteWarmup": {
+    en: "{n} warm-up sets are included.",
+    es: "Se incluyen {n} series de calentamiento.",
+  },
+  "hist.deleteWarmupOne": {
+    en: "1 warm-up set is included.",
+    es: "Se incluye 1 serie de calentamiento.",
+  },
+  "hist.deleteMissing": {
+    en: "{n} sets were already missing from the log.",
+    es: "{n} series ya no estaban en el registro.",
+  },
+  "hist.deleteConfirm": { en: "Yes, delete", es: "Sí, eliminar" },
+  "hist.deleted": { en: "Session deleted", es: "Sesión eliminada" },
+  "hist.undoSets": { en: "{n} sets", es: "{n} series" },
+  "hist.undoIn": { en: "Undo ({n}s)", es: "Deshacer ({n} s)" },
+  "hist.dismiss": { en: "Dismiss", es: "Descartar" },
   "hist.empty": {
     en: "No closed sessions yet",
     es: "Todavía no hay sesiones cerradas",
@@ -1107,6 +1210,18 @@ const DICT: Record<string, { en: string; es: string }> = {
   "ex.cat.cable": { en: "Cable", es: "Polea" },
   "ex.cat.machine": { en: "Machine", es: "Máquina" },
   "ex.cat.cardio": { en: "Cardio", es: "Cardio" },
+  "ex.fav": { en: "Favourites", es: "Favoritos" },
+  "ex.favAdd": { en: "Add to favourites", es: "Añadir a favoritos" },
+  "ex.favRemove": { en: "Remove from favourites", es: "Quitar de favoritos" },
+  "ex.favNone": { en: "Nothing starred yet", es: "Aún no has marcado nada" },
+  "ex.favNoneHint": {
+    en: "The star on a row keeps the exercises you really use one tap away.",
+    es: "La estrella de cada fila deja a un toque los ejercicios que de verdad usas.",
+  },
+  "ex.favOnly": {
+    en: "Only favourites",
+    es: "Solo favoritos",
+  },
   "ex.sort.az": { en: "A–Z", es: "A–Z" },
   "ex.sort.level": { en: "By level", es: "Por nivel" },
   "ex.tab.guide": { en: "Guide", es: "Guía" },

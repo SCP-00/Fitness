@@ -39,8 +39,11 @@ function payload(result: { content: Array<{ text: string }> }) {
 }
 
 describe("mcp server: the registry a local model sees", () => {
-  it("exposes the whole surface, 34 tools", () => {
-    expect(TOOLS).toHaveLength(34);
+  it("exposes the whole surface, 35 tools", () => {
+    // 34 through the 2026-10-19 parity round; `set_gear_profile` (2026-10-20) is
+    // the gear shelf — the chips in Ajustes, which a human can press and an
+    // agent can now request.
+    expect(TOOLS).toHaveLength(35);
   });
 
   it("exposes the action tools, the parity round included", () => {
@@ -71,15 +74,17 @@ describe("mcp server: the registry a local model sees", () => {
       "set_sound",
       "reset_decision_model",
       "regenerate_week",
+      // 2026-10-20: the gear shelf.
+      "set_gear_profile",
     ]) {
       expect(names).toContain(name);
     }
   });
 
   it("tells the model the truth about deleting a session", () => {
-    const history = (TOOLS as Array<{ name: string; description: string }>).find(
-      (tool) => tool.name === "read_history",
-    );
+    const history = (
+      TOOLS as Array<{ name: string; description: string }>
+    ).find((tool) => tool.name === "read_history");
     // `delete_session` exists now, and a model that reads "nothing can delete"
     // here would either refuse a legal request or invent one.
     expect(String(history?.description)).toContain("delete_session");
@@ -91,7 +96,11 @@ describe("mcp server: the registry a local model sees", () => {
   });
 
   it("describes every tool with an object schema", () => {
-    for (const tool of TOOLS as Array<{ name: string; description: string; inputSchema: unknown }>) {
+    for (const tool of TOOLS as Array<{
+      name: string;
+      description: string;
+      inputSchema: unknown;
+    }>) {
       expect(tool.name).toMatch(/^[a-z_]+$/);
       expect(tool.description.length).toBeGreaterThan(20);
       expect(tool.inputSchema).toMatchObject({ type: "object" });
@@ -144,6 +153,14 @@ describe("mcp server: refusals that never touch the app", () => {
     const out = payload(await handleToolCall("configure_training", {}));
     expect(out.status).toBe("rejected");
     expect(out.rule).toBe("nothing_to_configure");
+  });
+
+  it("will not switch to a gear profile it was not given", async () => {
+    // 2026-10-20: the guard rails on the action channel itself — a model that
+    // sends nothing must not produce an action that empties the inventory.
+    const out = payload(await handleToolCall("set_gear_profile", {}));
+    expect(out.status).toBe("rejected");
+    expect(out.rule).toBe("profile_required");
   });
 
   it("reports an unknown action id as not_found rather than as an empty list", async () => {
@@ -204,13 +221,20 @@ describe("mcp server: the app's mirror, read honestly", () => {
   });
 
   it("refuses a self-report from another day: yesterday's energy is not today's", () => {
-    expect(mirroredReadiness({ mirror: { ...mirror, date: "2026-10-08" } }, today)).toBeNull();
+    expect(
+      mirroredReadiness({ mirror: { ...mirror, date: "2026-10-08" } }, today),
+    ).toBeNull();
   });
 
   it("refuses a half-written or out-of-range self-report", () => {
-    expect(mirroredReadiness({ mirror: { ...mirror, readiness: null } }, today)).toBeNull();
     expect(
-      mirroredReadiness({ mirror: { ...mirror, readiness: { energy: 9 } } }, today),
+      mirroredReadiness({ mirror: { ...mirror, readiness: null } }, today),
+    ).toBeNull();
+    expect(
+      mirroredReadiness(
+        { mirror: { ...mirror, readiness: { energy: 9 } } },
+        today,
+      ),
     ).toBeNull();
   });
 
@@ -226,14 +250,18 @@ describe("mcp server: the app's mirror, read honestly", () => {
     // evening's readiness looked like "not today" (found 2026-10-14).
     const now = new Date("2026-10-10T03:30:00.000Z");
     const local = localDay(now);
-    expect(mirroredReadiness({ mirror: { ...mirror, date: local } }, now)).toEqual({
+    expect(
+      mirroredReadiness({ mirror: { ...mirror, date: local } }, now),
+    ).toEqual({
       energy: 4,
       motivation: 4,
       soreness: 2,
     });
     const utc = now.toISOString().slice(0, 10);
     if (utc !== local) {
-      expect(mirroredReadiness({ mirror: { ...mirror, date: utc } }, now)).toBeNull();
+      expect(
+        mirroredReadiness({ mirror: { ...mirror, date: utc } }, now),
+      ).toBeNull();
     }
   });
 
@@ -241,7 +269,9 @@ describe("mcp server: the app's mirror, read honestly", () => {
     const plan = mirroredPlan({ mirror }, today);
     expect(plan).toHaveLength(1);
     expect(plan![0]!.exerciseId).toBe("goblet-squat");
-    expect(mirroredPlan({ mirror: { ...mirror, date: "2026-10-08" } }, today)).toBeNull();
+    expect(
+      mirroredPlan({ mirror: { ...mirror, date: "2026-10-08" } }, today),
+    ).toBeNull();
   });
 });
 
@@ -353,16 +383,23 @@ function readHistoryInFreshProcess(
   appDataDir: string,
   exerciseId: string,
 ): Record<string, unknown> {
-  const server = new URL("../../scripts/fitness-mcp-server.mjs", import.meta.url).href;
+  const server = new URL(
+    "../../scripts/fitness-mcp-server.mjs",
+    import.meta.url,
+  ).href;
   const script = [
     `const m = await import(${JSON.stringify(server)});`,
     `const out = await m.handleToolCall('read_exercise_history', { exercise_id: ${JSON.stringify(exerciseId)} });`,
     `process.stdout.write(out.content[0].text);`,
   ].join("\n");
-  const stdout = execFileSync(process.execPath, ["--input-type=module", "-e", script], {
-    env: { ...process.env, APPDATA: appDataDir },
-    encoding: "utf8",
-    timeout: 30_000,
-  });
+  const stdout = execFileSync(
+    process.execPath,
+    ["--input-type=module", "-e", script],
+    {
+      env: { ...process.env, APPDATA: appDataDir },
+      encoding: "utf8",
+      timeout: 30_000,
+    },
+  );
   return JSON.parse(stdout) as Record<string, unknown>;
 }

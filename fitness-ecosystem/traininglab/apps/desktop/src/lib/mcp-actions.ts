@@ -52,6 +52,7 @@ import type {
 } from "@fitness/bodylab-training";
 import { localDayKey } from "./day";
 import { focusFamiliesOf, isMuscleFamily } from "./day-focus";
+import { gearShelf, withGearProfileSwitch } from "./gear-profiles";
 import { plannerCatalog } from "./plan";
 import {
   ROUTINE_LIMITS,
@@ -107,6 +108,8 @@ export const MCP_ACTION_TYPES = [
   "set_sound",
   "reset_model",
   "regenerate_week",
+  /* 2026-10-20: the gear shelf — the human's «casa / gimnasio» chips. */
+  "set_gear_profile",
 ] as const;
 
 export type McpActionType = (typeof MCP_ACTION_TYPES)[number];
@@ -270,7 +273,7 @@ export function parseMcpInbox(text: string): {
   const rows = Array.isArray(parsed)
     ? parsed
     : Array.isArray(asRecord(parsed)?.actions)
-      ? ((asRecord(parsed)!.actions as unknown[]))
+      ? (asRecord(parsed)!.actions as unknown[])
       : null;
 
   if (!rows) {
@@ -337,7 +340,10 @@ function plannerEntry(exerciseId: string) {
 
 /** Capability groups the declared gear cannot satisfy, in the catalog's own
  *  vocabulary, so the refusal can say *what* is missing. */
-function missingGear(entry: ReturnType<typeof plannerEntry>, owned: Set<Capability>): string | null {
+function missingGear(
+  entry: ReturnType<typeof plannerEntry>,
+  owned: Set<Capability>,
+): string | null {
   if (!entry) return null;
   const missing = entry.traits.requires.filter(
     (group) => !group.some((cap) => owned.has(cap)),
@@ -347,7 +353,11 @@ function missingGear(entry: ReturnType<typeof plannerEntry>, owned: Set<Capabili
 }
 
 const GOALS: SessionGoal[] = ["hypertrophy", "strength", "recomposition"];
-const LEVELS: TLSettingsData["level"][] = ["beginner", "intermediate", "advanced"];
+const LEVELS: TLSettingsData["level"][] = [
+  "beginner",
+  "intermediate",
+  "advanced",
+];
 const CAPABILITIES: Capability[] = [
   "bodyweight",
   "mat",
@@ -419,7 +429,10 @@ function validateOccurredAt(
  * and the undo operation (or `null` when the store fills it in after applying,
  * because the id only exists once the set is written).
  */
-export function validateMcpAction(action: McpAction, ctx: McpContext): McpValidation {
+export function validateMcpAction(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   if (
     action.requestedAt &&
     Number.isFinite(Date.parse(action.requestedAt)) &&
@@ -475,9 +488,15 @@ export function validateMcpAction(action: McpAction, ctx: McpContext): McpValida
       }
       return {
         ok: true,
-        detail: { en: `Goal set to ${goal}.`, es: `Objetivo puesto en ${goal}.` },
+        detail: {
+          en: `Goal set to ${goal}.`,
+          es: `Objetivo puesto en ${goal}.`,
+        },
         settingsPatch: { goal: goal as SessionGoal },
-        undo: { kind: "settings", before: { goal: ctx.settings?.goal ?? "hypertrophy" } },
+        undo: {
+          kind: "settings",
+          before: { goal: ctx.settings?.goal ?? "hypertrophy" },
+        },
       };
     }
 
@@ -491,15 +510,26 @@ export function validateMcpAction(action: McpAction, ctx: McpContext): McpValida
       }
       return {
         ok: true,
-        detail: { en: `Level set to ${level}.`, es: `Nivel puesto en ${level}.` },
+        detail: {
+          en: `Level set to ${level}.`,
+          es: `Nivel puesto en ${level}.`,
+        },
         settingsPatch: { level: level as TLSettingsData["level"] },
-        undo: { kind: "settings", before: { level: ctx.settings?.level ?? "intermediate" } },
+        undo: {
+          kind: "settings",
+          before: { level: ctx.settings?.level ?? "intermediate" },
+        },
       };
     }
 
     case "set_time_budget": {
       const budget = asNumber(action.params.time_budget_min);
-      if (budget === null || !Number.isInteger(budget) || budget < 10 || budget > 300) {
+      if (
+        budget === null ||
+        !Number.isInteger(budget) ||
+        budget < 10 ||
+        budget > 300
+      ) {
         return failed("time_budget_out_of_range", {
           en: "time_budget_min must be a whole number of minutes between 10 and 300.",
           es: "time_budget_min debe ser un número entero de minutos entre 10 y 300.",
@@ -521,6 +551,9 @@ export function validateMcpAction(action: McpAction, ctx: McpContext): McpValida
 
     case "set_inventory":
       return validateInventory(action, ctx);
+
+    case "set_gear_profile":
+      return validateGearProfile(action, ctx);
 
     case "swap_exercise":
       return validateSwap(action, ctx);
@@ -588,7 +621,7 @@ function validateLogSet(action: McpAction, ctx: McpContext): McpValidation {
   const exerciseId = asString(action.params.exercise_id);
   if (!exerciseId) {
     return failed("exercise_required", {
-      en: "log_set needs `exercise_id` (the catalog id, e.g. \"barbell-bench-press\").",
+      en: 'log_set needs `exercise_id` (the catalog id, e.g. "barbell-bench-press").',
       es: "log_set necesita `exercise_id` (el id del catálogo, p. ej. «barbell-bench-press»).",
     });
   }
@@ -612,7 +645,8 @@ function validateLogSet(action: McpAction, ctx: McpContext): McpValidation {
   }
 
   const rawWeight = action.params.weight_kg;
-  const weight = rawWeight === undefined || rawWeight === null ? null : asNumber(rawWeight);
+  const weight =
+    rawWeight === undefined || rawWeight === null ? null : asNumber(rawWeight);
   if (rawWeight !== undefined && rawWeight !== null && weight === null) {
     return failed("weight_invalid", {
       en: "weight_kg must be a number in kg, or null for bodyweight work.",
@@ -635,9 +669,10 @@ function validateLogSet(action: McpAction, ctx: McpContext): McpValidation {
     }
   }
 
-  const durationSec = action.params.duration_sec === undefined
-    ? null
-    : asNumber(action.params.duration_sec);
+  const durationSec =
+    action.params.duration_sec === undefined
+      ? null
+      : asNumber(action.params.duration_sec);
   if (action.params.duration_sec !== undefined && durationSec === null) {
     return failed("duration_invalid", {
       en: "duration_sec must be a number of seconds.",
@@ -651,7 +686,8 @@ function validateLogSet(action: McpAction, ctx: McpContext): McpValidation {
     });
   }
 
-  const reps = action.params.reps === undefined ? null : asNumber(action.params.reps);
+  const reps =
+    action.params.reps === undefined ? null : asNumber(action.params.reps);
   if (action.params.reps !== undefined && reps === null) {
     return failed("reps_invalid", {
       en: "reps must be a whole number between 1 and 50.",
@@ -677,14 +713,17 @@ function validateLogSet(action: McpAction, ctx: McpContext): McpValidation {
   if (effort !== undefined && effort !== "D" && effort !== "F") {
     return failed("effort_invalid", {
       en: 'effort must be "D" (near failure) or "F" (to failure); warm-ups use warmup: true.',
-      es: 'effort debe ser «D» (cerca del fallo) o «F» (al fallo); las aproximaciones usan warmup: true.',
+      es: "effort debe ser «D» (cerca del fallo) o «F» (al fallo); las aproximaciones usan warmup: true.",
     });
   }
 
   const notes = action.params.notes;
   if (notes !== undefined) {
     if (typeof notes !== "string") {
-      return failed("notes_invalid", { en: "notes must be text.", es: "notes debe ser texto." });
+      return failed("notes_invalid", {
+        en: "notes must be text.",
+        es: "notes debe ser texto.",
+      });
     }
     if (notes.length > 280) {
       return failed("notes_too_long", {
@@ -816,7 +855,10 @@ function validateInventory(action: McpAction, ctx: McpContext): McpValidation {
       }
       const caps: Capability[] = [];
       for (const cap of capabilities) {
-        if (typeof cap !== "string" || !CAPABILITIES.includes(cap as Capability)) {
+        if (
+          typeof cap !== "string" ||
+          !CAPABILITIES.includes(cap as Capability)
+        ) {
           return failed("unknown_capability", {
             en: `Unknown capability ${JSON.stringify(cap)}. Valid: ${CAPABILITIES.join(", ")}.`,
             es: `Capacidad desconocida ${JSON.stringify(cap)}. Válidas: ${CAPABILITIES.join(", ")}.`,
@@ -872,7 +914,113 @@ function validateInventory(action: McpAction, ctx: McpContext): McpValidation {
       es: `Equipamiento puesto en ${built.length} elemento(s): ${built.map((i) => i.label).join(", ")}.`,
     },
     settingsPatch: { inventory: built },
-    undo: { kind: "settings", before: { inventory: ctx.settings?.inventory ?? [] } },
+    undo: {
+      kind: "settings",
+      before: { inventory: ctx.settings?.inventory ?? [] },
+    },
+  };
+}
+
+/**
+ * `set_gear_profile` — switch to one of the setups on the gear shelf (2026-10-20).
+ *
+ * Allowed at all because it is the same class of fact as `set_inventory`: *where I
+ * am training and with what*. A model that is told «hoy estoy en casa» must be
+ * able to act on it without inventing a gym, and the switch never touches a logged
+ * set, today's sequence or the authored week — see `lib/gear-profiles.ts`.
+ *
+ * The honest refusals are the interesting part:
+ *   * a name or id that is not on the shelf is `unknown_profile`, **never** an
+ *     empty inventory (a model that guesses «Gimnasio» and gets an empty room
+ *     would silently plan a bodyweight session at the gym);
+ *   * with no shelf at all it is `no_gear_profiles`, and the detail says how to
+ *     create one — an agent cannot name a room nobody has been in;
+ *   * the live inventory is never destroyed: the switch parks it under its name,
+ *     exactly like the chips in Ajustes, and `undo` puts the previous shelf back.
+ *
+ * The target is matched by id first, then by name, case-insensitive: agents read
+ * names in the published context, and the app's ids are not useful to them.
+ */
+function validateGearProfile(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
+  const settings = ctx.settings;
+  if (!settings) {
+    return failed("settings_unavailable", {
+      en: "The app has not loaded its settings yet; retry in a moment.",
+      es: "La app aún no ha cargado sus ajustes; reinténtalo en un momento.",
+    });
+  }
+  const shelf = gearShelf(settings);
+  const wanted = asString(action.params.profile);
+  if (!wanted) {
+    const names = shelf.parked.map((profile) => `«${profile.name}»`).join(", ");
+    return failed("profile_required", {
+      en: `set_gear_profile needs \`profile\`: a name or id. Saved: ${names || "none"}.`,
+      es: `set_gear_profile necesita \`profile\`: un nombre o un id. Guardados: ${names || "ninguno"}.`,
+    });
+  }
+
+  /** The same chip, by id or by the name the agent read in the context. */
+  const matches = (profile: { id: string; name: string }) =>
+    profile.id === wanted.trim() ||
+    profile.name.toLowerCase() === wanted.trim().toLowerCase();
+
+  // Answered **before** looking for it on the shelf: the live profile is filtered
+  // out of `parked`, so a model that re-sends the switch it already made (a retry
+  // with a new id, say) would otherwise be told «no such profile» about the room
+  // it is standing in.
+  if (shelf.active && matches(shelf.active)) {
+    return failed("already_active", {
+      en: `«${shelf.active.name}» is already the gear in use.`,
+      es: `«${shelf.active.name}» ya es el equipamiento en uso.`,
+    });
+  }
+
+  if (shelf.parked.length === 0) {
+    return failed("no_gear_profiles", {
+      en: `There is no other gear profile saved${shelf.active ? ` (in use: «${shelf.active.name}»)` : ""}. The owner creates them in Ajustes → Mi equipamiento; a profile cannot be invented from here.`,
+      es: `No hay otro perfil de equipamiento guardado${shelf.active ? ` (en uso: «${shelf.active.name}»)` : ""}. El dueño los crea en Ajustes → Mi equipamiento; no se puede inventar uno desde aquí.`,
+    });
+  }
+
+  const target = shelf.parked.find(matches) ?? null;
+  if (!target) {
+    const names = shelf.parked.map((profile) => `«${profile.name}»`).join(", ");
+    return failed("unknown_profile", {
+      en: `There is no profile \`${wanted}\`. Saved: ${names}.`,
+      es: `No hay ningún perfil «${wanted}». Guardados: ${names}.`,
+    });
+  }
+
+  const out = withGearProfileSwitch(settings, target.id);
+  if (!out.ok) {
+    return failed(out.rule, {
+      en: `The switch was refused (${out.rule}).`,
+      es: `El cambio se rechazó (${out.rule}).`,
+    });
+  }
+
+  return {
+    ok: true,
+    detail: {
+      en: `Gear profile «${target.name}» in use: ${target.inventory.length} item(s). The previous one is kept on the shelf.`,
+      es: `Perfil «${target.name}» en uso: ${target.inventory.length} elemento(s). El anterior queda guardado en la estantería.`,
+    },
+    settingsPatch: {
+      inventory: out.settings.inventory,
+      activeGearProfile: out.settings.activeGearProfile,
+      gearProfiles: out.settings.gearProfiles,
+    },
+    undo: {
+      kind: "settings",
+      before: {
+        inventory: settings.inventory,
+        activeGearProfile: shelf.active,
+        gearProfiles: shelf.parked,
+      },
+    },
   };
 }
 
@@ -957,11 +1105,14 @@ function validateSwap(action: McpAction, ctx: McpContext): McpValidation {
  * first one as the completion of three (that is what fires the achievement
  * cue). An agent that *does* prescribe sends the number and owns it.
  */
-function validateAddExercise(action: McpAction, ctx: McpContext): McpValidation {
+function validateAddExercise(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   const exerciseId = asString(action.params.exercise_id);
   if (!exerciseId) {
     return failed("exercise_required", {
-      en: "add_exercise needs `exercise_id` (the catalog id, e.g. \"plank\").",
+      en: 'add_exercise needs `exercise_id` (the catalog id, e.g. "plank").',
       es: "add_exercise necesita `exercise_id` (el id del catálogo, p. ej. «plank»).",
     });
   }
@@ -996,7 +1147,8 @@ function validateAddExercise(action: McpAction, ctx: McpContext): McpValidation 
   }
 
   const rawSets = action.params.sets;
-  const sets = rawSets === undefined || rawSets === null ? 0 : asNumber(rawSets);
+  const sets =
+    rawSets === undefined || rawSets === null ? 0 : asNumber(rawSets);
   if (sets === null || !Number.isInteger(sets) || sets < 0 || sets > 12) {
     return failed("sets_out_of_range", {
       en: `sets must be a whole number between 0 (no prescription) and 12; received ${JSON.stringify(rawSets)}.`,
@@ -1012,7 +1164,7 @@ function validateAddExercise(action: McpAction, ctx: McpContext): McpValidation 
   ) {
     return failed("position_invalid", {
       en: 'position must be "start" or "end" (default "end").',
-      es: 'position debe ser «start» o «end» (por defecto «end»).',
+      es: "position debe ser «start» o «end» (por defecto «end»).",
     });
   }
   const position = rawPosition === "start" ? "start" : "end";
@@ -1067,7 +1219,8 @@ function validateDayFocus(action: McpAction, ctx: McpContext): McpValidation {
     });
   }
 
-  const label = families.length === 0 ? "auto (no focus)" : families.join(" + ");
+  const label =
+    families.length === 0 ? "auto (no focus)" : families.join(" + ");
   return {
     ok: true,
     detail: {
@@ -1089,7 +1242,10 @@ function validateDayFocus(action: McpAction, ctx: McpContext): McpValidation {
  * back to the planner. The generated plan is never rewritten — only his layer
  * is (the rule `applyWeekOverrides` was built on).
  */
-function validateWeekOverride(action: McpAction, ctx: McpContext): McpValidation {
+function validateWeekOverride(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   const weekday = asNumber(action.params.weekday);
   if (
     weekday === null ||
@@ -1189,7 +1345,10 @@ function validateWeekOverride(action: McpAction, ctx: McpContext): McpValidation
  * removed. `delete_sets: true` also drops the logged sets themselves; without
  * it the sets stay in the log, detached, exactly like the screen does it.
  */
-function validateDeleteSession(action: McpAction, ctx: McpContext): McpValidation {
+function validateDeleteSession(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   if (!action.confirm) {
     return failed("confirm_required", {
       en: "delete_session removes a session from the log — call it with confirm: true.",
@@ -1510,7 +1669,10 @@ function validateUndo(action: McpAction, ctx: McpContext): McpValidation {
  * new one is created. Undo restores the whole previous list — a template edit
  * is one write, so one reversal.
  */
-function validateSaveRoutine(action: McpAction, ctx: McpContext): McpValidation {
+function validateSaveRoutine(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   const name = asString(action.params.name);
   if (!name) {
     return failed("routine_name_required", {
@@ -1541,7 +1703,7 @@ function validateSaveRoutine(action: McpAction, ctx: McpContext): McpValidation 
   const current = normalizeRoutines(ctx.settings?.routines);
   const routineId = asString(action.params.routine_id);
   const existing = routineId
-    ? current.find((entry) => entry.id === routineId) ?? null
+    ? (current.find((entry) => entry.id === routineId) ?? null)
     : null;
   if (routineId && !existing) {
     return failed("unknown_routine", {
@@ -1591,7 +1753,9 @@ function validateSaveRoutine(action: McpAction, ctx: McpContext): McpValidation 
 
     // Refuse, never clamp: the number an agent asked for comes back with the
     // rule, exactly like reps_out_of_range does for a logged set.
-    const bounds: Array<[string, number | undefined, readonly [number, number]]> = [
+    const bounds: Array<
+      [string, number | undefined, readonly [number, number]]
+    > = [
       ["sets", row?.sets as number | undefined, ROUTINE_LIMITS.sets],
       ["reps_min", row?.reps_min as number | undefined, ROUTINE_LIMITS.reps],
       ["reps_max", row?.reps_max as number | undefined, ROUTINE_LIMITS.reps],
@@ -1637,7 +1801,12 @@ function validateSaveRoutine(action: McpAction, ctx: McpContext): McpValidation 
         items,
         updatedAt: ctx.now.toISOString(),
       })
-    : makeRoutine(name, items, ctx.now, typeof notes === "string" ? notes : undefined);
+    : makeRoutine(
+        name,
+        items,
+        ctx.now,
+        typeof notes === "string" ? notes : undefined,
+      );
   if (!stored) {
     return failed("routine_invalid", {
       en: "The routine has no name or no usable exercise; nothing was saved.",
@@ -1652,7 +1821,10 @@ function validateSaveRoutine(action: McpAction, ctx: McpContext): McpValidation 
       es: `Rutina «${stored.name}» guardada (${stored.items.length} ejercicio(s), id ${stored.id}).`,
     },
     settingsPatch: { routines: upsertRoutine(current, stored) },
-    undo: { kind: "settings", before: { routines: ctx.settings?.routines ?? [] } },
+    undo: {
+      kind: "settings",
+      before: { routines: ctx.settings?.routines ?? [] },
+    },
   };
 }
 
@@ -1664,7 +1836,10 @@ function validateSaveRoutine(action: McpAction, ctx: McpContext): McpValidation 
  * in today are skipped, not duplicated; if nothing can be added the action is
  * refused instead of reporting a change that did not happen.
  */
-function validateApplyRoutine(action: McpAction, ctx: McpContext): McpValidation {
+function validateApplyRoutine(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   const routineId = asString(action.params.routine_id);
   if (!routineId) {
     return failed("routine_required", {
@@ -1673,7 +1848,9 @@ function validateApplyRoutine(action: McpAction, ctx: McpContext): McpValidation
     });
   }
   const routine =
-    normalizeRoutines(ctx.settings?.routines).find((entry) => entry.id === routineId) ?? null;
+    normalizeRoutines(ctx.settings?.routines).find(
+      (entry) => entry.id === routineId,
+    ) ?? null;
   if (!routine) {
     return failed("unknown_routine", {
       en: `No routine with id "${routineId}" exists.`,
@@ -1707,7 +1884,10 @@ function validateApplyRoutine(action: McpAction, ctx: McpContext): McpValidation
 }
 
 /** `delete_routine` — drop one template. Confirmable, and fully restorable. */
-function validateDeleteRoutine(action: McpAction, ctx: McpContext): McpValidation {
+function validateDeleteRoutine(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   if (!action.confirm) {
     return failed("confirm_required", {
       en: "delete_routine removes one of the owner's templates — call it with confirm: true.",
@@ -1736,7 +1916,10 @@ function validateDeleteRoutine(action: McpAction, ctx: McpContext): McpValidatio
       es: `Rutina «${routine.name}» borrada (${routine.items.length} ejercicio(s)); deshacer la restaura.`,
     },
     settingsPatch: { routines: removeRoutine(current, routineId) },
-    undo: { kind: "settings", before: { routines: ctx.settings?.routines ?? [] } },
+    undo: {
+      kind: "settings",
+      before: { routines: ctx.settings?.routines ?? [] },
+    },
   };
 }
 
@@ -1781,7 +1964,10 @@ function validateSound(action: McpAction, ctx: McpContext): McpValidation {
   }
   if (
     volume !== undefined &&
-    (typeof volume !== "number" || !Number.isFinite(volume) || volume < 0 || volume > 1)
+    (typeof volume !== "number" ||
+      !Number.isFinite(volume) ||
+      volume < 0 ||
+      volume > 1)
   ) {
     return failed("volume_out_of_range", {
       en: `volume must be a number between 0 and 1; received ${JSON.stringify(volume)}.`,
@@ -1833,7 +2019,10 @@ function validateResetModel(action: McpAction, ctx: McpContext): McpValidation {
  * week. The owner's authored layer (`weekOverrides`) is never touched, and the
  * undo restores the seed, so the exact previous week comes back.
  */
-function validateRegenerateWeek(action: McpAction, ctx: McpContext): McpValidation {
+function validateRegenerateWeek(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
   void action;
   return {
     ok: true,
@@ -1879,7 +2068,10 @@ export function runMcpActions(input: {
   malformed?: McpReceipt[];
   ctx: McpContext;
   ledger: readonly McpLedgerEntry[];
-  apply: (action: McpAction, validation: McpValidation) => McpApplyResult | void;
+  apply: (
+    action: McpAction,
+    validation: McpValidation,
+  ) => McpApplyResult | void;
 }): McpRunResult {
   const { ctx, ledger, apply } = input;
   const receipts: McpReceipt[] = [...(input.malformed ?? [])];
@@ -1981,7 +2173,10 @@ export function runMcpActions(input: {
           }
         }
         if (action.type === "reset_order") {
-          ctx.settings = { ...(ctx.settings ?? {}), rowOrder: null } as TLSettingsData;
+          ctx.settings = {
+            ...(ctx.settings ?? {}),
+            rowOrder: null,
+          } as TLSettingsData;
         }
         if (action.type === "swap_week_days") {
           const next = swapWeekOverrides(
@@ -2054,7 +2249,9 @@ export function receiptOf(entry: McpLedgerEntry): McpReceipt {
 }
 
 /** Newest first, for the audit list. */
-export function sortAudit(entries: readonly McpLedgerEntry[]): McpLedgerEntry[] {
+export function sortAudit(
+  entries: readonly McpLedgerEntry[],
+): McpLedgerEntry[] {
   return [...entries].sort((a, b) => {
     const ta = a.appliedAt ?? a.requestedAt ?? "";
     const tb = b.appliedAt ?? b.requestedAt ?? "";
@@ -2064,7 +2261,9 @@ export function sortAudit(entries: readonly McpLedgerEntry[]): McpLedgerEntry[] 
 
 /** Keep the ledger bounded without ever dropping an entry that can still be
  *  undone (those are the ones the owner may still need). */
-export function trimLedger(entries: readonly McpLedgerEntry[]): McpLedgerEntry[] {
+export function trimLedger(
+  entries: readonly McpLedgerEntry[],
+): McpLedgerEntry[] {
   if (entries.length <= MCP_LEDGER_MAX) return [...entries];
   const undoable = entries.filter(canUndo);
   const rest = entries.filter((e) => !canUndo(e));

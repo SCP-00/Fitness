@@ -38,8 +38,19 @@ import { canUndo, sortAudit } from "../lib/mcp-actions";
 import { plannerCatalog } from "../lib/plan";
 import { t, tInterp } from "../lib/i18n";
 import { resolveBodyMapFigure } from "../lib/settings";
+import {
+  freeGearName,
+  gearShelf,
+  withGearProfileDelete,
+  withGearProfileName,
+  withGearProfileRename,
+  withGearProfileSwitch,
+  withNewGearProfile,
+  type GearProfileRule,
+} from "../lib/gear-profiles";
 import { Badge, Button, Chip, SectionCard, Switch } from "../ui/primitives";
 import { GearPanel } from "../features/today/GearPanel";
+import { GearProfileBar } from "../features/today/GearProfileBar";
 import { GoalsPanel } from "../features/today/GoalsPanel";
 import { SettingsPanel } from "../features/today/SettingsPanel";
 import { CoachPanel, CoachResultView } from "../features/today/CoachPanel";
@@ -114,6 +125,34 @@ export default function SettingsScreen() {
    * never disagree.
    */
   const figure = resolveBodyMapFigure(settings, payload);
+
+  /**
+   * The gear shelf (2026-10-20): the live inventory's name plus the parked
+   * rooms. Read through the same sanitiser the store and the MCP validator use,
+   * so the chip that says «En uso: Casa» cannot disagree with what a switch
+   * would load.
+   */
+  const shelf = gearShelf(settings);
+  /** The suggestion for a new profile: «Casa» now, «Gimnasio» once one exists. */
+  const gearDefaultName = freeGearName(
+    t(
+      shelf.active ? "gear.profiles.suggestedNew" : "gear.profiles.defaultName",
+    ),
+    shelf,
+  );
+  /**
+   * One write path for the four profile gestures. Each pure helper returns either
+   * the next settings or the rule that refused it; this maps it onto the store,
+   * and the bar renders the refusal in the owner's language.
+   */
+  const gearWrite = (
+    run: () => ReturnType<typeof withGearProfileSwitch>,
+  ): GearProfileRule | null => {
+    const out = run();
+    if (!out.ok) return out.rule;
+    patch(out.settings);
+    return null;
+  };
 
   /**
    * Download every logged set as CSV. The file is built purely by
@@ -354,6 +393,31 @@ export default function SettingsScreen() {
         icon={<Dumbbell className="w-4 h-4" />}
         defaultOpen={false}
       >
+        <GearProfileBar
+          active={shelf.active}
+          parked={shelf.parked}
+          hasItems={settings.inventory.length > 0}
+          defaultName={gearDefaultName}
+          onName={(name) =>
+            gearWrite(() =>
+              withGearProfileName(settings, name, crypto.randomUUID()),
+            )
+          }
+          onNew={(name) =>
+            gearWrite(() =>
+              withNewGearProfile(settings, name, crypto.randomUUID()),
+            )
+          }
+          onRename={(id, name) =>
+            gearWrite(() => withGearProfileRename(settings, id, name))
+          }
+          onSwitch={(id) =>
+            gearWrite(() => withGearProfileSwitch(settings, id))
+          }
+          onDelete={(id) =>
+            gearWrite(() => withGearProfileDelete(settings, id))
+          }
+        />
         <GearPanel
           inventory={settings.inventory}
           onChange={(inventory) => patch({ inventory })}

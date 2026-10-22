@@ -31,7 +31,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { BellRing, Sparkles, Trophy } from "lucide-react";
+import { BellRing, Sparkles, Trophy, X } from "lucide-react";
 import {
   emptyModel,
   normalizeModel,
@@ -43,6 +43,14 @@ import {
 } from "@fitness/bodylab-training";
 import { isV2Payload, type ImportPayload } from "../lib/adapter";
 import { localDayKey, todayKey } from "../lib/day";
+import {
+  SET_UNDO_MS,
+  setEditDiff,
+  setUndoExerciseId,
+  setUndoLine,
+  type SetUndoEntry,
+} from "../lib/set-undo";
+import { activeGearName } from "../lib/gear-profiles";
 import {
   buildTodayPlan,
   buildWeekPlan,
@@ -305,10 +313,16 @@ export interface TrainingLabStore {
       effort?: EffortMarker | null;
     },
   ) => void;
-  /** The last removed set while the undo window is open, else null. */
-  removedSet: TLSet | null;
-  /** Put the last removed set back (restores it in IndexedDB too). */
-  undoRemoveSet: () => void;
+  /**
+   * The last reversible change to a single set — deleting it or rewriting its
+   * numbers — while its undo window is open, else null (2026-10-21).
+   */
+  setUndo: SetUndoEntry | null;
+  /**
+   * Put the deleted set back, or restore the numbers an edit overwrote. Writes
+   * through to IndexedDB, so the undo survives a reload.
+   */
+  undoSetChange: () => void;
   addHealthRecord: (record: HealthRecord) => void;
   removeHealthRecord: (id: string) => void;
   setReadinessAndPersist: (next: Readiness) => void;
@@ -320,6 +334,12 @@ export interface TrainingLabStore {
   finishSession: (extra?: readonly TLSet[]) => TLSession | null;
   /** Delete a whole completed session and optionally delete all its associated sets. */
   removeSession: (id: string, opts?: { deleteSets?: boolean }) => void;
+  /**
+   * Put a deleted session (and the sets it took) back exactly as they were
+   * (2026-10-21). Same lane the agent's `restore_session` undo uses, so the human
+   * «Deshacer» in Historial and an undo from the MCP cannot restore differently.
+   */
+  restoreSession: (session: TLSession, removedSets?: readonly TLSet[]) => void;
   /** Update a session's metadata (e.g. readiness, time budget, timestamps). */
   editSession: (id: string, patch: Partial<TLSession>) => void;
   swapRow: (from: string, to: string) => void;
@@ -569,7 +589,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [coachBusy, setCoachBusy] = useState(false);
   const [coachRows, setCoachRows] = useState<PlannedRow[] | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
-  const [removedSet, setRemovedSet] = useState<TLSet | null>(null);
+  /** Last reversible change to one set (delete or rewrite), 2026-10-21. */
+  const [setUndo, setSetUndo] = useState<SetUndoEntry | null>(null);
+  /** Clears that entry when its window closes — one timer, never a queue. */
   const undoTimer = useRef<number | null>(null);
   const [sessions, setSessions] = useState<TLSession[]>([]);
   const [health, setHealth] = useState<HealthRecord[]>([]);
@@ -1579,16 +1601,28 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     [addSet],
   );
 
+  /**
+   * Remember one reversible change to a set for its undo window.
+   *
+   * One entry at a time on purpose: a queue of undos would let a single tap
+   * walk back several edits without saying which, and the numbers in the bar
+   * always describe exactly what «Deshacer» will do.
+   */
+  const rememberSetUndo = useCallback((entry: SetUndoEntry) => {
+    if (undoTimer.current) window.clearTimeout(undoTimer.current);
+    setSetUndo(entry);
+    undoTimer.current = window.setTimeout(() => {
+      setSetUndo(null);
+      undoTimer.current = null;
+    }, SET_UNDO_MS);
+  }, []);
+
   const removeSet = useCallback(
     (id: string) => {
       // Keep the removed set around long enough for an undo — a mis-tap on a
       // trash icon must not destroy data silently (2026-09-30, P0 audit).
       const target = sets.find((s) => s.id === id) ?? null;
-      if (target) {
-        setRemovedSet(target);
-        if (undoTimer.current) window.clearTimeout(undoTimer.current);
-        undoTimer.current = window.setTimeout(() => setRemovedSet(null), 8_000);
-      }
+      if (target) rememberSetUndo({ kind: "remove", set: target });
       setSets((prev) => prev.filter((s) => s.id !== id));
       void deleteSet(id);
       // Removing a mistake should also remove it from the household history,
@@ -1601,24 +1635,30 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
           );
       }
     },
-    [sets, settings],
+    [sets, settings, rememberSetUndo],
   );
 
-  const undoRemoveSet = useCallback(() => {
-    const set = removedSet;
-    if (!set) return;
+  const undoSetChange = useCallback(() => {
+    const entry = setUndo;
+    if (!entry) return;
     if (undoTimer.current) {
       window.clearTimeout(undoTimer.current);
       undoTimer.current = null;
     }
-    setRemovedSet(null);
-    // Re-insert in chronological order: the list mirrors the log's timeline.
+    setSetUndo(null);
+    // Both kinds put one version of the set back — the deleted row, or the
+    // numbers the edit overwrote. Filtering first makes it idempotent: undoing
+    // an edit twice cannot leave two copies of the same set.
+    const restore = entry.kind === "remove" ? entry.set : entry.before;
+    // Chronological order, because the list mirrors the log's timeline.
     setSets((prev) =>
-      [...prev, set].sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+      [...prev.filter((s) => s.id !== restore.id), restore].sort((a, b) =>
+        a.timestamp.localeCompare(b.timestamp),
+      ),
     );
-    void saveSet(set);
-    pushSetQuietly(set);
-  }, [removedSet, pushSetQuietly]);
+    void saveSet(restore);
+    pushSetQuietly(restore);
+  }, [setUndo, pushSetQuietly]);
 
   const editSet = useCallback(
     (
@@ -1640,12 +1680,18 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         if (patch.effort) updated.effort = patch.effort;
         else delete updated.effort;
       }
+      // Saving the numbers that are already there is not an edit: it must not
+      // open an undo window that pretends something was overwritten.
+      if (!setEditDiff(target, updated).changed) return;
       setSets((prev) => prev.map((s) => (s.id === id ? updated : s)));
       void saveSet(updated);
       // The household push upserts by set id, so an edit travels like a log.
       pushSetQuietly(updated);
+      // The overwritten numbers get the same net as a deletion (2026-10-21):
+      // a mistyped load saved over the record must be reversible from the bar.
+      rememberSetUndo({ kind: "edit", before: target, after: updated });
     },
-    [sets, pushSetQuietly],
+    [sets, pushSetQuietly, rememberSetUndo],
   );
 
   // ── Health records ──────────────────────────────────────────────────────
@@ -2153,12 +2199,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const swapWeekDays = useCallback(
     (from: number, to: number) => {
       if (!settings || !weekPlan) return false;
-      const next = swapPlanDays(
-        weekPlan,
-        settings.weekOverrides,
-        from,
-        to,
-      );
+      const next = swapPlanDays(weekPlan, settings.weekOverrides, from, to);
       if (!next) return false;
       patch({ weekOverrides: next });
       return true;
@@ -2377,8 +2418,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
                 (settingsNext ?? settings)?.routines,
               );
               const routine = stored.find(
-                (entry) =>
-                  entry.id === String(action.params.routine_id ?? ""),
+                (entry) => entry.id === String(action.params.routine_id ?? ""),
               );
               if (!routine) {
                 return {
@@ -2748,6 +2788,10 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       `goal,${settings.goal}`,
       `level,${settings.level}`,
       `weak_families,${weak || "none"}`,
+      // Which room this gear belongs to (2026-10-20): «casa» and «gimnasio» are
+      // different inventories, and a coach that is told the gear but not the
+      // room cannot explain why the same day looks different in each.
+      `gear_profile,${activeGearName(settings) ?? "unnamed"}`,
       `equipment,${gear || "bodyweight only"}`,
       `weekly_sets,${volume || "none"}`,
       `deterministic_plan,${planned}`,
@@ -3032,6 +3076,14 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  /** The undo bar's detail line, resolved once with the user's language. */
+  const setUndoLabel = setUndo
+    ? setUndoLine(
+        setUndo,
+        exerciseName(setUndoExerciseId(setUndo), getLanguage()),
+      )
+    : null;
+
   const value: TrainingLabStore = {
     settings,
     payload,
@@ -3064,8 +3116,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     addSet,
     removeSet,
     editSet,
-    removedSet,
-    undoRemoveSet,
+    setUndo,
+    undoSetChange,
     addHealthRecord,
     removeHealthRecord,
     setReadinessAndPersist,
@@ -3073,6 +3125,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     setDayFocus,
     finishSession,
     removeSession,
+    restoreSession,
     editSession,
     swapRow,
     moveRow,
@@ -3174,26 +3227,51 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Undo a deleted set — the safety net for a mis-tap on the trash icon.
-          Lives here so it follows the user across destinations, like the rest
-          timer. It is the only confirmation a destructive action gets, which
-          is why the window is generous. */}
-      {removedSet && (
+      {/* Undo for one set — the safety net for a mis-tap on the trash icon and
+          for a typo saved over real numbers (2026-10-21). Lives here so it
+          follows the user across destinations, like the rest timer, and it says
+          *what* comes back: a bare «Deshacer» makes you remember the numbers,
+          which is exactly what a tired person cannot do. */}
+      {setUndo && setUndoLabel && (
         <div
           role="status"
           aria-live="polite"
           className="fixed inset-x-0 bottom-20 z-[55] flex justify-center px-4 pointer-events-none"
         >
-          <div className="tl-card px-4 py-2 flex items-center gap-3 shadow-2xl border-l-4 border-[var(--tl-danger)] pointer-events-auto">
-            <span className="text-sm text-[var(--tl-text-secondary)]">
-              {t("log.removed")}
-            </span>
+          <div className="tl-card px-4 py-2 flex items-center gap-3 shadow-2xl border-l-4 border-[var(--tl-danger)] pointer-events-auto max-w-full">
+            <div className="min-w-0">
+              <span className="block text-sm text-[var(--tl-text-secondary)]">
+                {setUndo.kind === "remove"
+                  ? t("log.removed")
+                  : t("log.edited")}
+              </span>
+              {/* Wraps instead of truncating: on a 390 px phone «75 kg × 10 →
+                  7 kg × 10» was cut exactly at the arrow, which is the one
+                  thing the bar exists to say. */}
+              <span
+                className="block text-xs text-[var(--tl-text-muted)] break-words"
+                data-testid="set-undo-line"
+              >
+                {setUndoLabel}
+              </span>
+            </div>
+            {/* 44 px of thumb, not 20 px of text: this is the only way back
+                from a deletion and it is used one-handed (brief §4). */}
             <button
               type="button"
-              onClick={undoRemoveSet}
-              className="text-sm font-semibold text-[var(--tl-accent)] tl-focusable"
+              onClick={undoSetChange}
+              className="text-sm font-semibold text-[var(--tl-accent)] tl-focusable shrink-0 min-h-11 px-2"
             >
               {t("common.undo")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSetUndo(null)}
+              aria-label={t("common.close")}
+              title={t("common.close")}
+              className="grid place-items-center w-11 h-11 -mr-2 text-[var(--tl-text-muted)] hover:text-[var(--tl-text)] tl-focusable shrink-0"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

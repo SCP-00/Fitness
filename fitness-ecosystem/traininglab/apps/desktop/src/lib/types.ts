@@ -15,6 +15,7 @@ import type {
   Readiness,
   SessionGoal,
 } from "@fitness/bodylab-training";
+import type { GearProfile } from "./gear-profiles";
 import type { Routine } from "./routines";
 import { DEFAULT_SHARED, type SharedSettings } from "./shared";
 
@@ -145,8 +146,31 @@ export interface TLSettingsData {
   daysPerWeek: number;
   /** Display/log unit. Storage stays kg (canonical); this is presentation. */
   unit: "kg" | "lb";
-  /** Gear the user declared, item by item. */
+  /**
+   * Gear the user declared, item by item — **the live inventory**, the one the
+   * plan, the progression advice and every MCP action read. A gear profile is a
+   * name for this array plus the other rooms parked on the shelf below, never a
+   * second copy of it (2026-10-20, `lib/gear-profiles.ts`).
+   */
   inventory: OwnedEquipment[];
+  /**
+   * The other rooms («Casa», «Gimnasio») **not** in use, each with its own items.
+   * The live one is deliberately absent from this list: it is `inventory` itself.
+   * Absent in old records → no shelf, exactly the app before 2026-10-20.
+   */
+  gearProfiles?: GearProfile[];
+  /**
+   * Which profile the live `inventory` belongs to. `null` (and absent in old
+   * records) = the setup has no name yet, which is what a single-inventory user
+   * has always had.
+   */
+  activeGearProfile?: { id: string; name: string } | null;
+  /**
+   * Starred exercise ids from the library (2026-10-20). A preference about the
+   * catalogue, never a record of training; ids the catalogue no longer has are
+   * ignored on read. Absent in old records → nothing starred.
+   */
+  favorites?: string[];
   /** Local decision model settings. */
   useDecisionModel: boolean;
   /** Sound cue preferences. */
@@ -299,4 +323,7 @@ export const DEFAULT_SETTINGS: TLSettingsData = {
   bodyMapFigure: "auto",
   weekOverrides: {},
   routines: [],
+  gearProfiles: [],
+  activeGearProfile: null,
+  favorites: [],
 };

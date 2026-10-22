@@ -1,9 +1,9 @@
 # MCP tool surface — how every local model talks to the apps (design, 2026-10-09)
 
-Status: **implemented; 34 tools since 2026-10-19 (second round)** (§10 added the five plan
+Status: **implemented; 35 tools since 2026-10-20** (§10 added the five plan
 actions the owner asked for, §11 the four the drag work introduced, and §12 the eight that
 close the parity list §11 left open — `undo`, the three routine actions, language, sound,
-the model reset and the week regeneration; §9's sweep exercised the 17 that existed then,
+the model reset and the week regeneration, plus §13's gear-profile switch; §9's sweep exercised the 17 that existed then,
 one by one from his chat, after he approved the connector in Freebuff; agent `buffy`).
 The read channels (HISTORY +
 STATE) and the write channel (ACTIONS over files) are both live: the app polls
@@ -415,4 +415,38 @@ replayed inside the same batch (`undo_token_unknown`), an `apply_routine` adds i
 Verified in the root suite: `tests/training/test_mcp_actions.test.ts` (the parity block:
 own-token guard, HISTORY guard, double-undo in one batch, routine bounds/duplicates,
 apply/undo of a routine, language/sound patches, model reset, seed restore) and
-`tests/training/test_mcp_server.test.ts` (34 tools, names and schemas).
+`tests/training/test_mcp_server.test.ts` (35 tools, names and schemas).
+
+## 13. 2026-10-20 — the gear shelf, for an agent (`set_gear_profile`)
+
+The owner asked for **one inventory per room** (home / gym) and then asked an agent to
+configure his week from a place with no equipment. Those two requests meet in the same
+place: the gear is what the planner prescribes from, so it has to be something a model can
+read and switch — or the agent would have to rewrite the inventory and lose what he owns.
+
+| Tool | Interface action it mirrors | Why it is safe |
+|---|---|---|
+| `set_gear_profile` | the chips above *Mi equipamiento* in Ajustes (2026-10-20) | the target must already exist on the shelf (`unknown_profile` otherwise — **never** an empty inventory, which would silently plan bodyweight work at the gym); the switch **parks** the live inventory under its name instead of discarding it; nothing logged, sequenced or authored is touched; undo restores items **and** shelf |
+
+The shape this rests on is worth stating because it is what makes it small:
+`settings.inventory` stays *the* live inventory — every existing consumer keeps reading it —
+and a profile is only **a name for it plus the other setups parked on a shelf**
+(`settings.gearProfiles`, with the live one deliberately *not* stored there). The pure model
+is `traininglab/apps/desktop/src/lib/gear-profiles.ts`; the same sanitising read is mirrored
+in the server (`gearShelfOf`) because the `.mjs` cannot import TypeScript.
+
+Three refusals are the honest part, and all three are pinned by tests:
+
+- `unknown_profile` — the model guessed a room nobody has been in;
+- `no_gear_profiles` — there is only one setup; the detail says it is created in Ajustes, not
+  here (an agent cannot name a room);
+- `already_active` — re-sending the switch it already made gets *that* answer, not «no such
+  profile» about the room it is standing in (found when the second action of a file was
+  rejected with the wrong rule, 2026-10-20).
+
+`read_current_state` gained `gear: { activeProfile, savedProfiles[] }` next to the inventory,
+so the agent can say out loud which room it is planning for. Verified in
+`tests/training/test_mcp_actions.test.ts` (switch by name and by id, undo of the whole shelf,
+`rowOrder` untouched, the three refusals, context advancing inside one batch) and
+`tests/training/test_gear_profiles.test.ts` (20 cases: the shelf invariant, round trip,
+no-op on the active id, nothing lost when creating or switching).

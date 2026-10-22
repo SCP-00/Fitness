@@ -17,6 +17,11 @@ import {
   DEFAULT_SETTINGS,
   DEFAULT_SOUND,
 } from "./types";
+import { normalizeFavorites } from "./favorites";
+import {
+  normalizeActiveGearProfile,
+  normalizeGearProfiles,
+} from "./gear-profiles";
 import { normalizeRoutines } from "./routines";
 import { DEFAULT_SHARED, type HealthRecord } from "./shared";
 
@@ -203,8 +208,6 @@ export async function deleteSetsMany(ids: string[]): Promise<void> {
   });
 }
 
-
-
 // ── Settings (single JSON doc in the meta store) ────────────────────────────
 
 /**
@@ -234,6 +237,12 @@ export function normalizeSettings(
     // hand-edited backup can never put an unknown exercise or a 99-rep row on
     // screen, and a malformed entry simply drops instead of blanking the list.
     routines: normalizeRoutines(partial.routines),
+    // The gear shelf and the star list are sanitised for the same reason: a
+    // restored backup must not be able to show two chips that switch to the same
+    // items, or a profile named with whitespace only (2026-10-20).
+    gearProfiles: normalizeGearProfiles(partial.gearProfiles),
+    activeGearProfile: normalizeActiveGearProfile(partial.activeGearProfile),
+    favorites: normalizeFavorites(partial.favorites),
   };
 }
 

@@ -124,15 +124,21 @@ function verdict(a: McpAction, ctx: McpContext = makeCtx()): string {
 
 describe("MCP inbox parsing", () => {
   it("accepts a bare array and the { actions } envelope", () => {
-    const one = JSON.stringify([action("log_set", { exercise_id: "push-ups", reps: 8 })]);
-    const two = JSON.stringify({ actions: [action("set_goal", { goal: "strength" })] });
+    const one = JSON.stringify([
+      action("log_set", { exercise_id: "push-ups", reps: 8 }),
+    ]);
+    const two = JSON.stringify({
+      actions: [action("set_goal", { goal: "strength" })],
+    });
     expect(parseMcpInbox(one).actions).toHaveLength(1);
     expect(parseMcpInbox(two).actions[0].type).toBe("set_goal");
   });
 
   it("refuses an entry without an id instead of dropping it silently", () => {
     const { actions, receipts } = parseMcpInbox(
-      JSON.stringify([{ type: "log_set", params: { exercise_id: "push-ups" } }]),
+      JSON.stringify([
+        { type: "log_set", params: { exercise_id: "push-ups" } },
+      ]),
     );
     expect(actions).toHaveLength(0);
     expect(receipts[0].status).toBe("rejected");
@@ -148,7 +154,12 @@ describe("MCP inbox parsing", () => {
 
   it("defaults origin and confirm, and keeps requestedAt", () => {
     const raw = JSON.stringify([
-      { id: "x1", type: "finish_session", requestedAt: NOW.toISOString(), params: {} },
+      {
+        id: "x1",
+        type: "finish_session",
+        requestedAt: NOW.toISOString(),
+        params: {},
+      },
     ]);
     const parsed = parseMcpInbox(raw).actions[0];
     expect(parsed.origin).toBe("mcp:unknown");
@@ -159,13 +170,15 @@ describe("MCP inbox parsing", () => {
 
 describe("log_set is gated by the app's own rules", () => {
   it("accepts bodyweight work with no gear at all", () => {
-    expect(verdict(action("log_set", { exercise_id: "push-ups", reps: 8 }))).toBe("ok");
+    expect(
+      verdict(action("log_set", { exercise_id: "push-ups", reps: 8 })),
+    ).toBe("ok");
   });
 
   it("rejects an id that is not in the catalog", () => {
-    expect(verdict(action("log_set", { exercise_id: "telekinesis", reps: 8 }))).toBe(
-      "unknown_exercise",
-    );
+    expect(
+      verdict(action("log_set", { exercise_id: "telekinesis", reps: 8 })),
+    ).toBe("unknown_exercise");
     expect(verdict(action("log_set", { reps: 8 }))).toBe("exercise_required");
   });
 
@@ -174,7 +187,10 @@ describe("log_set is gated by the app's own rules", () => {
       settings: { ...DEFAULT_SETTINGS, inventory: gear("bench") }, // no barbell
     });
     expect(
-      verdict(action("log_set", { exercise_id: "barbell-bench-press", reps: 8 }), ctx),
+      verdict(
+        action("log_set", { exercise_id: "barbell-bench-press", reps: 8 }),
+        ctx,
+      ),
     ).toBe("gear_mismatch");
   });
 
@@ -186,7 +202,10 @@ describe("log_set is gated by the app's own rules", () => {
       },
     });
     expect(
-      verdict(action("log_set", { exercise_id: "barbell-bench-press", reps: 8 }), ctx),
+      verdict(
+        action("log_set", { exercise_id: "barbell-bench-press", reps: 8 }),
+        ctx,
+      ),
     ).toBe("ok");
   });
 
@@ -199,49 +218,73 @@ describe("log_set is gated by the app's own rules", () => {
     });
     expect(
       verdict(
-        action("log_set", { exercise_id: "barbell-bench-press", reps: 5, weight_kg: 60 }),
+        action("log_set", {
+          exercise_id: "barbell-bench-press",
+          reps: 5,
+          weight_kg: 60,
+        }),
         ctx,
       ),
     ).toBe("ok");
     expect(
       verdict(
-        action("log_set", { exercise_id: "barbell-bench-press", reps: 5, weight_kg: 80 }),
+        action("log_set", {
+          exercise_id: "barbell-bench-press",
+          reps: 5,
+          weight_kg: 80,
+        }),
         ctx,
       ),
     ).toBe("weight_exceeds_inventory");
   });
 
   it("bounds reps, weight and duration", () => {
-    expect(verdict(action("log_set", { exercise_id: "push-ups", reps: 0 }))).toBe(
-      "reps_out_of_range",
+    expect(
+      verdict(action("log_set", { exercise_id: "push-ups", reps: 0 })),
+    ).toBe("reps_out_of_range");
+    expect(
+      verdict(action("log_set", { exercise_id: "push-ups", reps: 51 })),
+    ).toBe("reps_out_of_range");
+    expect(verdict(action("log_set", { exercise_id: "push-ups" }))).toBe(
+      "reps_required",
     );
-    expect(verdict(action("log_set", { exercise_id: "push-ups", reps: 51 }))).toBe(
-      "reps_out_of_range",
-    );
-    expect(verdict(action("log_set", { exercise_id: "push-ups" }))).toBe("reps_required");
-    expect(verdict(action("log_set", { exercise_id: "push-ups", reps: 8, weight_kg: -3 }))).toBe(
-      "weight_out_of_range",
-    );
+    expect(
+      verdict(
+        action("log_set", { exercise_id: "push-ups", reps: 8, weight_kg: -3 }),
+      ),
+    ).toBe("weight_out_of_range");
     expect(
       verdict(
         action("log_set", { exercise_id: "push-ups", duration_sec: 10000 }),
       ),
     ).toBe("duration_out_of_range");
     // 0 kg means bodyweight: it validates, and the store stores null.
-    expect(verdict(action("log_set", { exercise_id: "push-ups", reps: 8, weight_kg: 0 }))).toBe(
-      "ok",
-    );
+    expect(
+      verdict(
+        action("log_set", { exercise_id: "push-ups", reps: 8, weight_kg: 0 }),
+      ),
+    ).toBe("ok");
   });
 
   it("accepts only the structured D/F marks, and bounds the note", () => {
-    expect(verdict(action("log_set", { exercise_id: "push-ups", reps: 8, effort: "D" }))).toBe(
-      "ok",
-    );
-    expect(verdict(action("log_set", { exercise_id: "push-ups", reps: 8, effort: "W" }))).toBe(
-      "effort_invalid",
-    );
     expect(
-      verdict(action("log_set", { exercise_id: "push-ups", reps: 8, notes: "x".repeat(281) })),
+      verdict(
+        action("log_set", { exercise_id: "push-ups", reps: 8, effort: "D" }),
+      ),
+    ).toBe("ok");
+    expect(
+      verdict(
+        action("log_set", { exercise_id: "push-ups", reps: 8, effort: "W" }),
+      ),
+    ).toBe("effort_invalid");
+    expect(
+      verdict(
+        action("log_set", {
+          exercise_id: "push-ups",
+          reps: 8,
+          notes: "x".repeat(281),
+        }),
+      ),
     ).toBe("notes_too_long");
   });
 
@@ -249,7 +292,11 @@ describe("log_set is gated by the app's own rules", () => {
     const stale = action(
       "log_set",
       { exercise_id: "push-ups", reps: 8 },
-      { requestedAt: new Date(NOW.getTime() - MCP_ACTION_TTL_MS - 1000).toISOString() },
+      {
+        requestedAt: new Date(
+          NOW.getTime() - MCP_ACTION_TTL_MS - 1000,
+        ).toISOString(),
+      },
     );
     expect(verdict(stale)).toBe("expired");
   });
@@ -268,10 +315,16 @@ describe("log_set is gated by the app's own rules", () => {
 describe("settings actions validate and carry their own undo", () => {
   it("bounds the goal, level and time budget to enumerated values", () => {
     expect(verdict(action("set_goal", { goal: "strength" }))).toBe("ok");
-    expect(verdict(action("set_goal", { goal: "cardio" }))).toBe("goal_invalid");
+    expect(verdict(action("set_goal", { goal: "cardio" }))).toBe(
+      "goal_invalid",
+    );
     expect(verdict(action("set_level", { level: "advanced" }))).toBe("ok");
-    expect(verdict(action("set_level", { level: "pro" }))).toBe("level_invalid");
-    expect(verdict(action("set_time_budget", { time_budget_min: 60 }))).toBe("ok");
+    expect(verdict(action("set_level", { level: "pro" }))).toBe(
+      "level_invalid",
+    );
+    expect(verdict(action("set_time_budget", { time_budget_min: 60 }))).toBe(
+      "ok",
+    );
     expect(verdict(action("set_time_budget", { time_budget_min: 5 }))).toBe(
       "time_budget_out_of_range",
     );
@@ -282,15 +335,25 @@ describe("settings actions validate and carry their own undo", () => {
 
   it("captures the previous value so the change can be undone", () => {
     const ctx = makeCtx({
-      settings: { ...DEFAULT_SETTINGS, goal: "recomposition", timeBudgetMin: 90 },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        goal: "recomposition",
+        timeBudgetMin: 90,
+      },
     });
-    const goal = validateMcpAction(action("set_goal", { goal: "strength" }), ctx);
+    const goal = validateMcpAction(
+      action("set_goal", { goal: "strength" }),
+      ctx,
+    );
     expect(goal.ok && goal.settingsPatch).toEqual({ goal: "strength" });
     expect(goal.ok && goal.undo).toEqual({
       kind: "settings",
       before: { goal: "recomposition" },
     });
-    const budget = validateMcpAction(action("set_time_budget", { time_budget_min: 45 }), ctx);
+    const budget = validateMcpAction(
+      action("set_time_budget", { time_budget_min: 45 }),
+      ctx,
+    );
     expect(budget.ok && budget.undo).toEqual({
       kind: "settings",
       before: { timeBudgetMin: 90 },
@@ -298,19 +361,31 @@ describe("settings actions validate and carry their own undo", () => {
   });
 
   it("validates inventory rows: preset, capability vocabulary and bounds", () => {
-    expect(verdict(action("set_inventory", { items: [{ presetId: "barbell-plates" }] }))).toBe(
-      "ok",
-    );
-    expect(verdict(action("set_inventory", { items: [{ presetId: "flux-capacitor" }] }))).toBe(
-      "unknown_preset",
-    );
     expect(
-      verdict(action("set_inventory", { items: [{ label: "Mi cosas", capabilities: ["jetpack"] }] })),
+      verdict(
+        action("set_inventory", { items: [{ presetId: "barbell-plates" }] }),
+      ),
+    ).toBe("ok");
+    expect(
+      verdict(
+        action("set_inventory", { items: [{ presetId: "flux-capacitor" }] }),
+      ),
+    ).toBe("unknown_preset");
+    expect(
+      verdict(
+        action("set_inventory", {
+          items: [{ label: "Mi cosas", capabilities: ["jetpack"] }],
+        }),
+      ),
     ).toBe("unknown_capability");
     expect(
-      verdict(action("set_inventory", { items: [{ capabilities: ["dumbbell"] }] })),
+      verdict(
+        action("set_inventory", { items: [{ capabilities: ["dumbbell"] }] }),
+      ),
     ).toBe("label_required");
-    expect(verdict(action("set_inventory", { items: [] }))).toBe("inventory_required");
+    expect(verdict(action("set_inventory", { items: [] }))).toBe(
+      "inventory_required",
+    );
     expect(
       verdict(
         action("set_inventory", {
@@ -323,7 +398,9 @@ describe("settings actions validate and carry their own undo", () => {
   it("requires a readiness field and bounds every one to 1-5", () => {
     expect(verdict(action("set_readiness", {}))).toBe("readiness_required");
     expect(verdict(action("set_readiness", { energy: 5 }))).toBe("ok");
-    expect(verdict(action("set_readiness", { energy: 0 }))).toBe("readiness_out_of_range");
+    expect(verdict(action("set_readiness", { energy: 0 }))).toBe(
+      "readiness_out_of_range",
+    );
     expect(verdict(action("set_readiness", { soreness: 4.5 }))).toBe(
       "readiness_out_of_range",
     );
@@ -331,7 +408,11 @@ describe("settings actions validate and carry their own undo", () => {
       action("set_readiness", { energy: 5 }),
       makeCtx({ readiness: { energy: 2, motivation: 4, soreness: 1 } }),
     );
-    expect(result.ok && result.readiness).toEqual({ energy: 5, motivation: 4, soreness: 1 });
+    expect(result.ok && result.readiness).toEqual({
+      energy: 5,
+      motivation: 4,
+      soreness: 1,
+    });
     expect(result.ok && result.undo).toEqual({
       kind: "readiness",
       before: { energy: 2, motivation: 4, soreness: 1 },
@@ -343,11 +424,17 @@ describe("destructive and plan-changing actions", () => {
   it("will not close a session without an explicit confirm", () => {
     expect(verdict(action("finish_session"))).toBe("confirm_required");
     expect(verdict(action("finish_session", {}, { confirm: true }))).toBe("ok");
-    expect(verdict(action("finish_session", {}, { confirm: true }), makeCtx({ todaySetCount: 0 }))).toBe(
-      "nothing_to_finish",
-    );
     expect(
-      verdict(action("finish_session", {}, { confirm: true }), makeCtx({ finishedToday: true })),
+      verdict(
+        action("finish_session", {}, { confirm: true }),
+        makeCtx({ todaySetCount: 0 }),
+      ),
+    ).toBe("nothing_to_finish");
+    expect(
+      verdict(
+        action("finish_session", {}, { confirm: true }),
+        makeCtx({ finishedToday: true }),
+      ),
     ).toBe("already_finished");
   });
 
@@ -434,7 +521,11 @@ describe("add_exercise puts one row in today's session", () => {
 
   it("takes a prescription and a position when the caller gives them", () => {
     const result = validateMcpAction(
-      action("add_exercise", { exercise_id: "push-ups", sets: 3, position: "start" }),
+      action("add_exercise", {
+        exercise_id: "push-ups",
+        sets: 3,
+        position: "start",
+      }),
       makeCtx(),
     );
     expect(result.ok && result.detail.en).toContain("first");
@@ -443,27 +534,27 @@ describe("add_exercise puts one row in today's session", () => {
 
   it("refuses a missing id, an unknown id and an exercise already in the session", () => {
     expect(verdict(action("add_exercise", {}))).toBe("exercise_required");
-    expect(verdict(action("add_exercise", { exercise_id: "telekinesis" }))).toBe(
-      "unknown_exercise",
-    );
-    expect(verdict(action("add_exercise", { exercise_id: "goblet-squat" }))).toBe(
-      "already_in_session",
-    );
+    expect(
+      verdict(action("add_exercise", { exercise_id: "telekinesis" })),
+    ).toBe("unknown_exercise");
+    expect(
+      verdict(action("add_exercise", { exercise_id: "goblet-squat" })),
+    ).toBe("already_in_session");
   });
 
   it("refuses what the declared gear cannot load", () => {
-    expect(verdict(action("add_exercise", { exercise_id: "barbell-row" }))).toBe(
-      "gear_mismatch",
-    );
+    expect(
+      verdict(action("add_exercise", { exercise_id: "barbell-row" })),
+    ).toBe("gear_mismatch");
     const kitted = makeCtx({
       settings: {
         ...DEFAULT_SETTINGS,
         inventory: gear("barbell-plates"),
       },
     });
-    expect(verdict(action("add_exercise", { exercise_id: "barbell-row" }), kitted)).toBe(
-      "ok",
-    );
+    expect(
+      verdict(action("add_exercise", { exercise_id: "barbell-row" }), kitted),
+    ).toBe("ok");
   });
 
   it("bounds the prescription, the position, and an already-closed day", () => {
@@ -474,10 +565,15 @@ describe("add_exercise puts one row in today's session", () => {
       verdict(action("add_exercise", { exercise_id: "plank", sets: -1 })),
     ).toBe("sets_out_of_range");
     expect(
-      verdict(action("add_exercise", { exercise_id: "plank", position: "middle" })),
+      verdict(
+        action("add_exercise", { exercise_id: "plank", position: "middle" }),
+      ),
     ).toBe("position_invalid");
     expect(
-      verdict(action("add_exercise", { exercise_id: "plank" }), makeCtx({ finishedToday: true })),
+      verdict(
+        action("add_exercise", { exercise_id: "plank" }),
+        makeCtx({ finishedToday: true }),
+      ),
     ).toBe("already_finished");
   });
 });
@@ -491,9 +587,10 @@ describe("set_day_focus speaks the app's own focus vocabulary", () => {
     expect(result.ok && result.dayFocus).toEqual(["core"]);
     // Undo restores the focus the day had before: [] = automatic.
     expect(result.ok && result.undo).toEqual({ kind: "day_focus", before: [] });
-    expect(validateMcpAction(action("set_day_focus", { focus: "auto" }), makeCtx()).ok).toBe(
-      true,
-    );
+    expect(
+      validateMcpAction(action("set_day_focus", { focus: "auto" }), makeCtx())
+        .ok,
+    ).toBe(true);
   });
 
   it("accepts an explicit list of families, deduplicated", () => {
@@ -505,10 +602,12 @@ describe("set_day_focus speaks the app's own focus vocabulary", () => {
   });
 
   it("refuses an invented focus and an invented family", () => {
-    expect(verdict(action("set_day_focus", { focus: "abdomen" }))).toBe("unknown_focus");
-    expect(verdict(action("set_day_focus", { focus: ["core", "telekinesis"] }))).toBe(
-      "unknown_family",
+    expect(verdict(action("set_day_focus", { focus: "abdomen" }))).toBe(
+      "unknown_focus",
     );
+    expect(
+      verdict(action("set_day_focus", { focus: ["core", "telekinesis"] })),
+    ).toBe("unknown_family");
     expect(verdict(action("set_day_focus", {}))).toBe("focus_required");
   });
 
@@ -524,7 +623,10 @@ describe("set_day_focus speaks the app's own focus vocabulary", () => {
       apply: () => ({ ok: true }),
     });
     // The second action's undo points at what the first one produced.
-    expect(fresh[0].undo).toEqual({ kind: "day_focus", before: ["quadriceps"] });
+    expect(fresh[0].undo).toEqual({
+      kind: "day_focus",
+      before: ["quadriceps"],
+    });
     expect(fresh[1].undo).toEqual({ kind: "day_focus", before: ["core"] });
     expect(ctx.dayFocus).toEqual(["chest", "shoulders", "triceps"]);
   });
@@ -577,12 +679,12 @@ describe("set_week_override authors one day, Monday-first", () => {
   });
 
   it("refuses a weekday outside 0-6 and a shape that says nothing", () => {
-    expect(verdict(action("set_week_override", { weekday: 7, rest: true }))).toBe(
-      "weekday_out_of_range",
-    );
-    expect(verdict(action("set_week_override", { weekday: 1.5, rest: true }))).toBe(
-      "weekday_out_of_range",
-    );
+    expect(
+      verdict(action("set_week_override", { weekday: 7, rest: true })),
+    ).toBe("weekday_out_of_range");
+    expect(
+      verdict(action("set_week_override", { weekday: 1.5, rest: true })),
+    ).toBe("weekday_out_of_range");
     expect(verdict(action("set_week_override", { weekday: 3 }))).toBe(
       "week_override_params_required",
     );
@@ -597,17 +699,23 @@ describe("delete_session is the one destructive door, and it is reversible", () 
     makeCtx({ sessions: [closedSession("sess-1", ["set-a", "set-b"])] });
 
   it("demands confirm, like every other destructive action", () => {
-    expect(verdict(action("delete_session", { session_id: "sess-1" }), withHistory())).toBe(
-      "confirm_required",
-    );
+    expect(
+      verdict(
+        action("delete_session", { session_id: "sess-1" }),
+        withHistory(),
+      ),
+    ).toBe("confirm_required");
   });
 
   it("needs a session id that is really in the log", () => {
-    expect(verdict(action("delete_session", {}, { confirm: true }), withHistory())).toBe(
-      "session_required",
-    );
     expect(
-      verdict(action("delete_session", { session_id: "ghost" }, { confirm: true }), withHistory()),
+      verdict(action("delete_session", {}, { confirm: true }), withHistory()),
+    ).toBe("session_required");
+    expect(
+      verdict(
+        action("delete_session", { session_id: "ghost" }, { confirm: true }),
+        withHistory(),
+      ),
     ).toBe("unknown_session");
   });
 
@@ -634,7 +742,11 @@ describe("delete_session is the one destructive door, and it is reversible", () 
     expect(result.ok && result.detail.en).toContain("sets deleted too");
     expect(
       verdict(
-        action("delete_session", { session_id: "sess-1", delete_sets: "yes" }, { confirm: true }),
+        action(
+          "delete_session",
+          { session_id: "sess-1", delete_sets: "yes" },
+          { confirm: true },
+        ),
         withHistory(),
       ),
     ).toBe("delete_sets_invalid");
@@ -649,7 +761,10 @@ describe("delete_session is the one destructive door, and it is reversible", () 
       ],
       ctx,
       ledger: [],
-      apply: () => ({ ok: true, undo: { kind: "remove_row", exerciseId: "x" } }),
+      apply: () => ({
+        ok: true,
+        undo: { kind: "remove_row", exerciseId: "x" },
+      }),
     });
     expect(fresh.map((e) => e.status)).toEqual(["applied", "rejected"]);
     expect(fresh[1].rule).toBe("unknown_session");
@@ -679,11 +794,17 @@ describe("set_set_time corrects one set's own hour, within today", () => {
   });
 
   it("needs the set and the instant", () => {
-    expect(verdict(action("set_set_time", { occurred_at: NOW.toISOString() }))).toBe(
-      "set_required",
-    );
     expect(
-      verdict(action("set_set_time", { set_id: "ghost", occurred_at: NOW.toISOString() }), today()),
+      verdict(action("set_set_time", { occurred_at: NOW.toISOString() })),
+    ).toBe("set_required");
+    expect(
+      verdict(
+        action("set_set_time", {
+          set_id: "ghost",
+          occurred_at: NOW.toISOString(),
+        }),
+        today(),
+      ),
     ).toBe("set_not_found");
     expect(verdict(action("set_set_time", { set_id: "set-a" }), today())).toBe(
       "occurred_at_required",
@@ -691,13 +812,21 @@ describe("set_set_time corrects one set's own hour, within today", () => {
   });
 
   it("refuses another day and an unparseable instant", () => {
-    const yesterday = new Date(NOW.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const yesterday = new Date(
+      NOW.getTime() - 24 * 60 * 60 * 1000,
+    ).toISOString();
     expect(
-      verdict(action("set_set_time", { set_id: "set-a", occurred_at: yesterday }), today()),
+      verdict(
+        action("set_set_time", { set_id: "set-a", occurred_at: yesterday }),
+        today(),
+      ),
     ).toBe("occurred_at_not_today");
     expect(
       verdict(
-        action("set_set_time", { set_id: "set-a", occurred_at: "ayer por la tarde" }),
+        action("set_set_time", {
+          set_id: "set-a",
+          occurred_at: "ayer por la tarde",
+        }),
         today(),
       ),
     ).toBe("occurred_at_invalid");
@@ -709,7 +838,13 @@ describe("set_set_time corrects one set's own hour, within today", () => {
       sessions: [closedSession("sess-1", ["set-viejo"])],
     });
     expect(
-      verdict(action("set_set_time", { set_id: "set-viejo", occurred_at: NOW.toISOString() }), ctx),
+      verdict(
+        action("set_set_time", {
+          set_id: "set-viejo",
+          occurred_at: NOW.toISOString(),
+        }),
+        ctx,
+      ),
     ).toBe("set_not_found");
   });
 });
@@ -731,13 +866,19 @@ describe("log_set rides an occurred_at when an agent says when", () => {
         action("log_set", {
           exercise_id: "push-ups",
           reps: 8,
-          occurred_at: new Date(NOW.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+          occurred_at: new Date(
+            NOW.getTime() - 24 * 60 * 60 * 1000,
+          ).toISOString(),
         }),
       ),
     ).toBe("occurred_at_not_today");
     expect(
       verdict(
-        action("log_set", { exercise_id: "push-ups", reps: 8, occurred_at: "mañana" }),
+        action("log_set", {
+          exercise_id: "push-ups",
+          reps: 8,
+          occurred_at: "mañana",
+        }),
       ),
     ).toBe("occurred_at_invalid");
   });
@@ -885,7 +1026,9 @@ describe("the ledger itself", () => {
       undo: { kind: "remove_set", setId: "s1" },
     };
     expect(canUndo(base)).toBe(true);
-    expect(canUndo({ ...base, status: "rejected", undo: undefined })).toBe(false);
+    expect(canUndo({ ...base, status: "rejected", undo: undefined })).toBe(
+      false,
+    );
     expect(canUndo({ ...base, undoneAt: NOW.toISOString() })).toBe(false);
     expect(canUndo({ ...base, undo: undefined })).toBe(false);
   });
@@ -901,7 +1044,9 @@ describe("the ledger itself", () => {
       ...(undoable ? { undo: { kind: "remove_set", setId: `s${i}` } } : {}),
     });
     const undoable = [1, 2, 3, 4, 5].map((i) => entry(i, true));
-    const stale = Array.from({ length: MCP_LEDGER_MAX + 50 }, (_, i) => entry(i + 100, false));
+    const stale = Array.from({ length: MCP_LEDGER_MAX + 50 }, (_, i) =>
+      entry(i + 100, false),
+    );
     const trimmed = trimLedger([...stale, ...undoable]);
 
     expect(trimmed.length).toBeLessThanOrEqual(MCP_LEDGER_MAX);
@@ -954,23 +1099,35 @@ describe("MCP actions: the queue and the week drag", () => {
       ),
     ).toBe("position_out_of_range");
     expect(
-      verdict(action("reorder_row", { exercise_id: "goblet-squat", position: 0 })),
+      verdict(
+        action("reorder_row", { exercise_id: "goblet-squat", position: 0 }),
+      ),
     ).toBe("position_out_of_range");
   });
 
   it("accepts the three marks and refuses an invented one", () => {
     for (const state of ["active", "skipped", "postponed"]) {
       expect(
-        verdict(action("set_exercise_state", { exercise_id: "goblet-squat", state })),
+        verdict(
+          action("set_exercise_state", { exercise_id: "goblet-squat", state }),
+        ),
       ).toBe("ok");
     }
     expect(
       verdict(
-        action("set_exercise_state", { exercise_id: "goblet-squat", state: "done" }),
+        action("set_exercise_state", {
+          exercise_id: "goblet-squat",
+          state: "done",
+        }),
       ),
     ).toBe("state_invalid");
     expect(
-      verdict(action("set_exercise_state", { exercise_id: "push-ups", state: "active" })),
+      verdict(
+        action("set_exercise_state", {
+          exercise_id: "push-ups",
+          state: "active",
+        }),
+      ),
     ).toBe("not_in_today");
   });
 
@@ -981,14 +1138,22 @@ describe("MCP actions: the queue and the week drag", () => {
     const ctx = makeCtx({
       settings: {
         ...DEFAULT_SETTINGS,
-        rowOrder: { date: localDayKey(NOW), ids: ["goblet-squat", "barbell-bench-press"] },
+        rowOrder: {
+          date: localDayKey(NOW),
+          ids: ["goblet-squat", "barbell-bench-press"],
+        },
       },
     });
     const out = validateMcpAction(action("reset_order"), ctx);
     expect(out.ok).toBe(true);
     expect(out.ok && out.undo).toEqual({
       kind: "settings",
-      before: { rowOrder: { date: localDayKey(NOW), ids: ["goblet-squat", "barbell-bench-press"] } },
+      before: {
+        rowOrder: {
+          date: localDayKey(NOW),
+          ids: ["goblet-squat", "barbell-bench-press"],
+        },
+      },
     });
   });
 
@@ -1011,10 +1176,16 @@ describe("MCP actions: the queue and the week drag", () => {
     ).toBe("weekday_out_of_range");
 
     const identical = makeCtx({
-      weekDays: Array.from({ length: 7 }, () => ({ isRest: true, assigned: [] })),
+      weekDays: Array.from({ length: 7 }, () => ({
+        isRest: true,
+        assigned: [],
+      })),
     });
     expect(
-      verdict(action("swap_week_days", { from_weekday: 0, to_weekday: 3 }), identical),
+      verdict(
+        action("swap_week_days", { from_weekday: 0, to_weekday: 3 }),
+        identical,
+      ),
     ).toBe("week_days_unchanged");
   });
 });
@@ -1031,7 +1202,10 @@ describe("MCP actions: parity with the rest of the interface", () => {
         { id: "other-2", origin: "mcp:another-agent", type: "log_set" },
       ],
     });
-    const out = validateMcpAction(action("undo", { undo_token: "swap-1" }), ctx);
+    const out = validateMcpAction(
+      action("undo", { undo_token: "swap-1" }),
+      ctx,
+    );
     expect(out.ok).toBe(true);
 
     // Another agent's token is not mine to unwind…
@@ -1069,7 +1243,11 @@ describe("MCP actions: parity with the rest of the interface", () => {
         status: "applied",
         detail: { en: "swapped", es: "cambiado" },
         undoToken: "swap-1",
-        undo: { kind: "swap_row", from: "barbell-bench-press", to: "incline-bench-press" },
+        undo: {
+          kind: "swap_row",
+          from: "barbell-bench-press",
+          to: "incline-bench-press",
+        },
       },
     ];
     const performed: string[] = [];
@@ -1102,7 +1280,9 @@ describe("MCP actions: parity with the rest of the interface", () => {
     const items = [
       { exercise_id: "push-ups", sets: 3, reps_min: 8, reps_max: 12 },
     ];
-    expect(verdict(action("save_routine", { name: "Push day", items }))).toBe("ok");
+    expect(verdict(action("save_routine", { name: "Push day", items }))).toBe(
+      "ok",
+    );
     expect(verdict(action("save_routine", { name: "", items }))).toBe(
       "routine_name_required",
     );
@@ -1135,7 +1315,9 @@ describe("MCP actions: parity with the rest of the interface", () => {
     ).toBe("routine_value_out_of_range");
     // Rewriting requires the routine to exist; creating never does.
     expect(
-      verdict(action("save_routine", { name: "X", items, routine_id: "ghost" })),
+      verdict(
+        action("save_routine", { name: "X", items, routine_id: "ghost" }),
+      ),
     ).toBe("unknown_routine");
   });
 
@@ -1146,7 +1328,16 @@ describe("MCP actions: parity with the rest of the interface", () => {
         name: "Vieja",
         createdAt: NOW.toISOString(),
         updatedAt: NOW.toISOString(),
-        items: [{ exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 }],
+        items: [
+          {
+            exerciseId: "push-ups",
+            sets: 3,
+            repsMin: 8,
+            repsMax: 12,
+            restSec: 90,
+            rir: 2,
+          },
+        ],
       },
     ];
     const ctx = makeCtx({
@@ -1174,15 +1365,32 @@ describe("MCP actions: parity with the rest of the interface", () => {
       createdAt: NOW.toISOString(),
       updatedAt: NOW.toISOString(),
       items: [
-        { exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 },
+        {
+          exerciseId: "push-ups",
+          sets: 3,
+          repsMin: 8,
+          repsMax: 12,
+          restSec: 90,
+          rir: 2,
+        },
         // goblet-squat is already in the default plan: it must be skipped.
-        { exerciseId: "plank", sets: 2, repsMin: 10, repsMax: 10, restSec: 60, rir: 2 },
+        {
+          exerciseId: "plank",
+          sets: 2,
+          repsMin: 10,
+          repsMax: 10,
+          restSec: 60,
+          rir: 2,
+        },
       ],
     };
     const ctx = makeCtx({
       settings: { ...DEFAULT_SETTINGS, routines: [routine] },
     });
-    const out = validateMcpAction(action("apply_routine", { routine_id: "routine-1" }), ctx);
+    const out = validateMcpAction(
+      action("apply_routine", { routine_id: "routine-1" }),
+      ctx,
+    );
     expect(out.ok).toBe(true);
     // Only the row that is not already there: the undo removes what was added.
     expect(out.ok && out.undo).toEqual({
@@ -1191,13 +1399,16 @@ describe("MCP actions: parity with the rest of the interface", () => {
     });
 
     expect(verdict(action("apply_routine", {}), ctx)).toBe("routine_required");
-    expect(
-      verdict(action("apply_routine", { routine_id: "ghost" }), ctx),
-    ).toBe("unknown_routine");
+    expect(verdict(action("apply_routine", { routine_id: "ghost" }), ctx)).toBe(
+      "unknown_routine",
+    );
     expect(
       verdict(
         action("apply_routine", { routine_id: "routine-1" }),
-        makeCtx({ finishedToday: true, settings: { ...DEFAULT_SETTINGS, routines: [routine] } }),
+        makeCtx({
+          finishedToday: true,
+          settings: { ...DEFAULT_SETTINGS, routines: [routine] },
+        }),
       ),
     ).toBe("already_finished");
 
@@ -1210,15 +1421,32 @@ describe("MCP actions: parity with the rest of the interface", () => {
           {
             ...routine,
             items: [
-              { exerciseId: "goblet-squat", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 },
-              { exerciseId: "barbell-bench-press", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 },
+              {
+                exerciseId: "goblet-squat",
+                sets: 3,
+                repsMin: 8,
+                repsMax: 12,
+                restSec: 90,
+                rir: 2,
+              },
+              {
+                exerciseId: "barbell-bench-press",
+                sets: 3,
+                repsMin: 8,
+                repsMax: 12,
+                restSec: 90,
+                rir: 2,
+              },
             ],
           },
         ],
       },
     });
     expect(
-      verdict(action("apply_routine", { routine_id: "routine-1" }), allInSession),
+      verdict(
+        action("apply_routine", { routine_id: "routine-1" }),
+        allInSession,
+      ),
     ).toBe("already_in_session");
   });
 
@@ -1229,15 +1457,29 @@ describe("MCP actions: parity with the rest of the interface", () => {
         name: "Para borrar",
         createdAt: NOW.toISOString(),
         updatedAt: NOW.toISOString(),
-        items: [{ exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90, rir: 2 }],
+        items: [
+          {
+            exerciseId: "push-ups",
+            sets: 3,
+            repsMin: 8,
+            repsMax: 12,
+            restSec: 90,
+            rir: 2,
+          },
+        ],
       },
     ];
-    const ctx = makeCtx({ settings: { ...DEFAULT_SETTINGS, routines: before } });
-    expect(verdict(action("delete_routine", { routine_id: "routine-1" }), ctx)).toBe(
-      "confirm_required",
-    );
+    const ctx = makeCtx({
+      settings: { ...DEFAULT_SETTINGS, routines: before },
+    });
     expect(
-      verdict(action("delete_routine", { routine_id: "ghost" }, { confirm: true }), ctx),
+      verdict(action("delete_routine", { routine_id: "routine-1" }), ctx),
+    ).toBe("confirm_required");
+    expect(
+      verdict(
+        action("delete_routine", { routine_id: "ghost" }, { confirm: true }),
+        ctx,
+      ),
     ).toBe("unknown_routine");
     const out = validateMcpAction(
       action("delete_routine", { routine_id: "routine-1" }, { confirm: true }),
@@ -1268,11 +1510,20 @@ describe("MCP actions: parity with the rest of the interface", () => {
 
     expect(verdict(action("set_sound", {}))).toBe("sound_params_required");
     expect(verdict(action("set_sound", { enabled: false }))).toBe("ok");
-    expect(verdict(action("set_sound", { volume: 1.5 }))).toBe("volume_out_of_range");
-    expect(verdict(action("set_sound", { enabled: "yes" }))).toBe("enabled_invalid");
+    expect(verdict(action("set_sound", { volume: 1.5 }))).toBe(
+      "volume_out_of_range",
+    );
+    expect(verdict(action("set_sound", { enabled: "yes" }))).toBe(
+      "enabled_invalid",
+    );
     const sound = validateMcpAction(
       action("set_sound", { volume: 0.8 }),
-      makeCtx({ settings: { ...DEFAULT_SETTINGS, sound: { enabled: true, volume: 0.5 } } }),
+      makeCtx({
+        settings: {
+          ...DEFAULT_SETTINGS,
+          sound: { enabled: true, volume: 0.5 },
+        },
+      }),
     );
     expect(sound.ok && sound.settingsPatch).toEqual({
       sound: { enabled: true, volume: 0.8 },
@@ -1292,12 +1543,140 @@ describe("MCP actions: parity with the rest of the interface", () => {
     expect(out.ok).toBe(true);
     // The default ctx has no model; the undo still names the kind, so the
     // store restores whatever existed (an empty model when there was none).
-    expect(out.ok && out.undo).toEqual({ kind: "decision_model", before: null });
+    expect(out.ok && out.undo).toEqual({
+      kind: "decision_model",
+      before: null,
+    });
   });
 
   it("regenerates the week and restores the exact previous seed", () => {
-    const out = validateMcpAction(action("regenerate_week"), makeCtx({ weekSeed: 7 }));
+    const out = validateMcpAction(
+      action("regenerate_week"),
+      makeCtx({ weekSeed: 7 }),
+    );
     expect(out.ok).toBe(true);
     expect(out.ok && out.undo).toEqual({ kind: "week_seed", before: 7 });
+  });
+});
+
+/**
+ * `set_gear_profile` (2026-10-20) — the gear shelf, for an agent.
+ *
+ * The chips in Ajustes let the owner say «estoy en el gimnasio»; this action is
+ * the same sentence from a model. What must never happen is the failure mode a
+ * guessed name would produce: a profile that does not exist must be a refusal,
+ * never an empty inventory that quietly turns the session into bodyweight work.
+ */
+describe("MCP actions: switching the gear profile", () => {
+  const home = gear("dumbbells-adjustable", "bench");
+  const gymItems = gear("barbell-plates", "rack", "pullup-bar");
+
+  const shelfCtx = (over: Partial<McpContext> = {}) =>
+    makeCtx({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        inventory: home,
+        activeGearProfile: { id: "home", name: "Casa" },
+        gearProfiles: [{ id: "gym", name: "Gimnasio", inventory: gymItems }],
+        rowOrder: { date: localDayKey(NOW), ids: ["goblet-squat", "push-ups"] },
+      },
+      ...over,
+    });
+
+  it("switches by name and carries the undo of the whole shelf", () => {
+    const ctx = shelfCtx();
+    const out = validateMcpAction(
+      action("set_gear_profile", { profile: "Gimnasio" }),
+      ctx,
+    );
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.settingsPatch?.inventory).toEqual(gymItems);
+    expect(out.settingsPatch?.activeGearProfile).toEqual({
+      id: "gym",
+      name: "Gimnasio",
+    });
+    expect(
+      (out.settingsPatch?.gearProfiles as Array<{ id: string }>).map(
+        (p) => p.id,
+      ),
+    ).toEqual(["home"]);
+    // The undo restores the previous items and the previous shelf, not just a name.
+    expect(out.undo).toEqual({
+      kind: "settings",
+      before: {
+        inventory: home,
+        activeGearProfile: { id: "home", name: "Casa" },
+        gearProfiles: [{ id: "gym", name: "Gimnasio", inventory: gymItems }],
+      },
+    });
+  });
+
+  it("accepts the id, and the name in any case", () => {
+    expect(
+      verdict(action("set_gear_profile", { profile: "gym" }), shelfCtx()),
+    ).toBe("ok");
+    expect(
+      verdict(
+        action("set_gear_profile", { profile: "  gImNaSiO " }),
+        shelfCtx(),
+      ),
+    ).toBe("ok");
+  });
+
+  it("does not touch today's sequence", () => {
+    const ctx = shelfCtx();
+    const out = validateMcpAction(
+      action("set_gear_profile", { profile: "gym" }),
+      ctx,
+    );
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.settingsPatch?.rowOrder).toBeUndefined();
+  });
+
+  it("refuses an invented profile instead of emptying the gym", () => {
+    expect(
+      verdict(action("set_gear_profile", { profile: "Playa" }), shelfCtx()),
+    ).toBe("unknown_profile");
+  });
+
+  it("refuses when there is no shelf, and says what to do", () => {
+    const ctx = makeCtx({ settings: { ...DEFAULT_SETTINGS, inventory: home } });
+    const out = validateMcpAction(
+      action("set_gear_profile", { profile: "Gimnasio" }),
+      ctx,
+    );
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.rule).toBe("no_gear_profiles");
+    expect(out.detail.es).toContain("Ajustes");
+  });
+
+  it("refuses a missing profile argument", () => {
+    expect(verdict(action("set_gear_profile", {}), shelfCtx())).toBe(
+      "profile_required",
+    );
+    expect(
+      verdict(action("set_gear_profile", { profile: "   " }), shelfCtx()),
+    ).toBe("profile_required");
+  });
+
+  it("advances the context, so two switches in one file see the first one", () => {
+    const ctx = shelfCtx();
+    const run = runMcpActions({
+      actions: [
+        action("set_gear_profile", { profile: "gym" }),
+        action("set_gear_profile", { profile: "gym" }),
+      ],
+      ctx,
+      ledger: [],
+      apply: () => ({}),
+    });
+    expect(run.receipts[0]!.status).toBe("applied");
+    // The second one cannot be applied: «Gimnasio» is now the live profile, and
+    // the receipt says exactly that instead of «no such profile».
+    expect(run.receipts[1]!.status).toBe("rejected");
+    expect(run.receipts[1]!.rule).toBe("already_active");
   });
 });

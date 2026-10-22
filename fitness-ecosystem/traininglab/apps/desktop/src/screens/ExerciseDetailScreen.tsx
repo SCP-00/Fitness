@@ -39,6 +39,7 @@ import {
   type EffortMarker,
 } from "../lib/effort";
 import { categoryLabel, familyLabel, muscleLabel } from "../lib/format";
+import { parseNumberInput } from "../lib/parse-num";
 import { ExerciseThumbLarge } from "../features/exercises/ExerciseThumb";
 import {
   Badge,
@@ -616,14 +617,15 @@ function HistoryDayCard({
   };
 
   const saveEdit = (set: HistoryDay["sets"][number]) => {
-    const w =
-      editWeight.trim() === ""
-        ? null
-        : parseFloat(editWeight.replace(",", "."));
-    const r = editReps.trim() === "" ? null : parseInt(editReps, 10);
+    // `parseNumberInput` (project rule, `lib/parse-num`): `"62,5"` is the
+    // Spanish way to write 62.5 and a bare parseFloat would store 62. An empty
+    // field means "no load" / "no reps"; an unreadable one keeps the stored
+    // number instead of writing a NaN over the record.
+    const w = parseNumberInput(editWeight);
+    const r = parseNumberInput(editReps);
     onEditSet(set.id, {
-      weight: Number.isNaN(w) ? set.weight : w,
-      reps: Number.isNaN(r) ? set.reps : r,
+      weight: editWeight.trim() === "" ? null : (w ?? set.weight),
+      reps: editReps.trim() === "" ? null : r === null ? set.reps : Math.round(r),
       effort: editEffort,
     });
     setEditingId(null);
