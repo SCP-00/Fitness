@@ -3116,3 +3116,46 @@ leyéndose en vez de multiplicar su alpha por el id.
   teléfono ni mostrar un mapa de fuerza: lo que falta para «nacer» es el onboarding de
   primera sesión (importar BodyLab o crear rutina) y el primer uso real registrado
   end-to-end.
+
+## 2026-10-24 — Push de las cinco rondas, plantillas semanales y auditoría de desbordes
+
+- **Resultado:** (1) Las cinco rondas pendientes (3D eliminado, campo del mapa 2D,
+  auditoría visual, docs) están **commiteadas y subidas**: `729c729..c4c2ba4`, cuatro
+  commits (`8fe6446` 3D, `aff30bf` mapa, `d7a712d` layout, `c4c2ba4` docs). Antes se
+  replicó el CI local: typecheck 0, **1 336 tests / 92 archivos**, 129 web tests,
+  lint 0/0, css audit 0 y **Playwright 17/17**. (2) **Plantillas semanales
+  implementadas** (PPL, Torso/Pierna, Cuerpo completo A/B) con previsualización y
+  confirmación; crean rutinas editables desde el catálogo filtrado por el equipo real
+  del usuario y **nunca** modifican una rutina existente. (3) **Auditoría de desbordes
+  de texto** en las dos apps a 13 anchos (320→1920): 7 defectos reales encontrados y
+  corregidos, **0 hallazgos** en la repetición.
+- **Cambios:** nuevos `traininglab/apps/desktop/src/lib/routine-templates.ts` y
+  `tests/training/test_routine_templates.test.ts` (10 tests); `screens/RoutinesScreen.tsx`
+  (botón Plantillas, hoja de dos pasos, recibo); `app/store.tsx` (`saveRoutines`: una
+  sola escritura; el bucle de `saveRoutine` guardaba solo la última rutina porque leía
+  la misma lista del render); `lib/i18n.ts` (25 claves EN/ES). Correcciones de layout:
+  `index.css` (semana con `.tl-week` para ganar la cascada, nownext hasta 1100 px),
+  `mockup.css` (fila de cola sin miniatura bajo 360 px), `ZenSession.tsx` (fila de
+  acciones con wrap), `SettingsScreen.tsx` (badge corto del coach), `GoalsPanel.tsx`
+  (ratio con wrap, sin truncar). `CHANGELOG.md`.
+- **Verificación real:** `pnpm typecheck` 0 · `npx vitest run` **1 346 tests / 93
+  archivos, exit 0** · web **129/129** · `pnpm lint` 0/0 · `css-class-audit` 0 ·
+  Playwright BodyLab 17/17. Instalador **reconstruido desde este estado**: `pnpm tauri
+  build` exit 0, `TrainingLab_0.2.0_x64-setup.exe` **00:35**, **17 625 329 B**, sha256
+  `6216eb61…`; copiado a `C:\Users\andyh\Desktop` como `TrainingLab-setup.exe` y
+  versionado (mismo sha256). El bundle contiene `Plantillas`/`Crear {n} rutinas` y las
+  reglas nuevas (`.tl-week .tl-day`, `.exrow .exrow-thumb`).
+- **Plantillas, probadas en navegador real:** `node .tmp-verify/templates-overflow.mjs
+  templates` → 0 → 3 rutinas en desktop y en teléfono, 3 días en el preview, recibo
+  visible, 0 errores de consola. Capturas en `docs/screenshots/2026-10-24/`.
+- **Desbordes, matriz completa:** `… templates-overflow.mjs tl` y `bl` → 13 anchos × 10
+  pantallas de TrainingLab y 13 × 8 de BodyLab, **0 hallazgos** tras los arreglos
+  (informe en `docs/screenshots/2026-10-24/overflow-report.json`). El detector mide
+  rects de texto contra su propia caja, clipping silencioso y scroll horizontal de
+  página; la elipsis deliberada no se reporta.
+- **Pendiente / decisión del dueño:** (a) el mapa de fuerza sigue bajo gate; (b) el
+  instalador no está firmado (SmartScreen); (c) las plantillas no se han probado en
+  un iPhone físico, solo en emulación de 390×844.
+- **Siguiente paso seguro:** abrir el instalador nuevo, Rutinas → Plantillas →
+  previsualizar PPL → crear, y editar una de las tres rutinas para confirmar que el
+  editor existente la trata como cualquier otra.

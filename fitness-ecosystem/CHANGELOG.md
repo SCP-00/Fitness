@@ -5,6 +5,49 @@ All notable changes to BodyLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-24 (TrainingLab: weekly templates + text-overflow audit at 13 widths)
+
+### Added — weekly templates (PPL · Upper/Lower · Full body)
+
+- **`lib/routine-templates.ts`** turns three splits into **editable routines** built
+  from the user's own gear-filtered catalogue (`plan.usable`), never from the whole
+  catalog: a PPL for a home gym with dumbbells is a real PPL, not a barbell program
+  with rows nobody can perform. Anchor slots (4+ sets) prefer a loadable movement over
+  a bodyweight variation; a slot the gear cannot fill is **reported** (day · muscle),
+  never invented.
+- **Rutinas** gets a *Plantillas* button (header and empty state) with a two-step sheet:
+  the three splits, then a preview of every day, exercise and prescription, plus the
+  gaps. The confirm button creates the routines in **one** settings write through the
+  new `saveRoutines` store action — calling `saveRoutine` in a loop kept only the last
+  one, because each call read the same render-close list. Existing routines are only
+  read (for name collisions, which get `· 2`); nothing is overwritten or deleted.
+- `tests/training/test_routine_templates.test.ts` (10 tests): every day builds, all
+  items are known and clamped, determinism, anchor is loadable, name collision, gear
+  gaps, empty catalogue without throwing.
+- EN/ES strings for the shelf, the preview, the seven day names and the gap line.
+
+### Fixed — text that escaped its box at some width (both apps)
+
+- **Semana, ≤520 px:** the compact-tile media rules were defined *before* the base
+  `.tl-day` rules, so the cascade gave them back the 13 px/9 px desktop padding and at
+  320 px only 13 px remained for «Lun». Selectors now carry `.tl-week` (two classes win
+  by specificity, not order).
+- **Sesión, ≤1100 px:** «Ahora:» / «Siguiente:» clipped both exercise names mid-word at
+  1024 px; the stack rule now covers the whole range where the rail still takes 245 px.
+- **Sesión, 320 px:** the media pill «GIF de referencia» pushed the page 38 px sideways;
+  the action row wraps and the pill drops to its own line.
+- **Hoy, ≤360 px:** the queue row's 53 px name column bled 5 px into the sets cell;
+  the 40 px thumbnail is dropped below 360 px (the family colour stays in the muscle
+  line) and the name gets the width.
+- **Configuración:** the coach status was a full sentence inside a nowrap badge, 325 px
+  wide at a 320 px viewport; it now prints «Apagado»/«Listo» like every other section,
+  and the goal rows wrap the published ratio instead of truncating it mid-formula.
+- Evidence: `docs/screenshots/2026-10-24/` — templates picker/preview/created on desktop
+  and phone, plus `overflow-report.json`. The audit walks 320·360·390·414·480·540·640·
+  768·900·1024·1280·1440·1920 across the 10 TrainingLab destinations and the 8 BodyLab
+  routes, checking text rects against their own box, silent clipping, and page-level
+  horizontal scroll: **0 findings** after the fixes.
+
 ## [Unreleased] - 2026-10-23 (TrainingLab: visual audit of every screen, seven layout defects fixed)
 
 ### Fixed — screens that read as broken at real widths
