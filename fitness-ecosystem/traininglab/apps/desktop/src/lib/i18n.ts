@@ -2545,6 +2545,67 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Buscar por nombre, ejercicio o músculo…",
   },
   "ru.create": { en: "Create routine", es: "Crear rutina" },
+  /* Weekly templates (2026-10-23): PPL, Upper/Lower and full body. */
+  "ru.tpl.button": { en: "Templates", es: "Plantillas" },
+  "ru.tpl.empty": {
+    en: "Start from a template",
+    es: "Empezar desde una plantilla",
+  },
+  "ru.tpl.title": {
+    en: "Start from a template",
+    es: "Empezar desde una plantilla",
+  },
+  "ru.tpl.sub": {
+    en: "Each template becomes editable routines built from the gear you own. Nothing you already have is touched.",
+    es: "Cada plantilla se convierte en rutinas editables, montadas con tu equipamiento. Nada de lo que ya tienes se toca.",
+  },
+  "ru.tpl.pick": { en: "Preview", es: "Ver" },
+  "ru.tpl.preview.title": { en: "What it would create", es: "Lo que se crearía" },
+  "ru.tpl.keep": {
+    en: "Your current routines are not modified: this only adds new ones, and every one stays editable.",
+    es: "Tus rutinas actuales no se modifican: esto solo añade nuevas, y todas quedan editables.",
+  },
+  "ru.tpl.gaps": {
+    en: "{n} slots with no compatible gear (left out, not invented)",
+    es: "{n} huecos sin equipo compatible (se omiten, no se inventan)",
+  },
+  "ru.tpl.back": { en: "Back", es: "Volver" },
+  "ru.tpl.create": { en: "Create {n} routines", es: "Crear {n} rutinas" },
+  "ru.tpl.created": {
+    en: "{n} routines created: {names}",
+    es: "{n} rutinas creadas: {names}",
+  },
+  "ru.tpl.ppl.name": {
+    en: "Push · Pull · Legs",
+    es: "Empuje · Tirón · Pierna",
+  },
+  "ru.tpl.ppl.blurb": {
+    en: "3 sessions · chest, shoulders and triceps / back and biceps / legs",
+    es: "3 sesiones · pecho, hombro y tríceps / espalda y bíceps / pierna",
+  },
+  "ru.tpl.upper_lower.name": {
+    en: "Upper · Lower",
+    es: "Torso · Pierna",
+  },
+  "ru.tpl.upper_lower.blurb": {
+    en: "2 sessions · everything above the waist, then everything below",
+    es: "2 sesiones · todo lo de arriba de la cintura, luego todo lo de abajo",
+  },
+  "ru.tpl.full.name": {
+    en: "Full body A / B",
+    es: "Cuerpo completo A / B",
+  },
+  "ru.tpl.full.blurb": {
+    en: "2 sessions · the whole body twice a week, with a different emphasis",
+    es: "2 sesiones · todo el cuerpo dos veces por semana, con otro énfasis",
+  },
+  "ru.tpl.day.push": { en: "Push", es: "Empuje" },
+  "ru.tpl.day.pull": { en: "Pull", es: "Tirón" },
+  "ru.tpl.day.legs": { en: "Legs", es: "Pierna" },
+  "ru.tpl.day.upper": { en: "Upper", es: "Torso" },
+  "ru.tpl.day.lower": { en: "Lower", es: "Pierna" },
+  "ru.tpl.day.fullA": { en: "Full body A", es: "Cuerpo completo A" },
+  "ru.tpl.day.fullB": { en: "Full body B", es: "Cuerpo completo B" },
   "ru.count": { en: "{n} routines", es: "{n} rutinas" },
   "ru.countOne": { en: "1 routine", es: "1 rutina" },
   "ru.search.empty": {

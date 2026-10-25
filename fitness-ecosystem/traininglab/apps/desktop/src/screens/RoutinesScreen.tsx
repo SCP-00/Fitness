@@ -41,6 +41,12 @@ import {
   type Routine,
   type RoutineItem,
 } from "../lib/routines";
+import {
+  ROUTINE_TEMPLATES,
+  buildTemplateRoutines,
+  type RoutineTemplate,
+  type TemplateBuild,
+} from "../lib/routine-templates";
 import { MIcons } from "../ui/mockup-icons";
 
 /** The page's own rep presets, identical to the queue screen's. */
@@ -74,6 +80,7 @@ export default function RoutinesScreen() {
     loading,
     plan,
     saveRoutine,
+    saveRoutines,
     deleteRoutine,
     applyRoutineToday,
   } = useStore();
@@ -84,6 +91,13 @@ export default function RoutinesScreen() {
   /** The routine a "Usar hoy" was just applied to, for the sheet's receipt. */
   const [applied, setApplied] = useState<{ id: string; n: number } | null>(null);
   const [duplicated, setDuplicated] = useState<string | null>(null);
+  /** The template shelf, and the preview of the one being confirmed. */
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [preview, setPreview] = useState<{
+    template: RoutineTemplate;
+    build: TemplateBuild;
+  } | null>(null);
+  const [created, setCreated] = useState<string[] | null>(null);
 
   const query = search.trim().toLocaleLowerCase();
   const visible = useMemo(() => {
@@ -168,6 +182,44 @@ export default function RoutinesScreen() {
     setApplied(null);
   };
 
+  /**
+   * Build the preview against the user's **usable** catalogue, not the whole
+   * one: a template offered for gear the user does not own would be a promise
+   * the app cannot keep. Nothing is written until the confirm button.
+   */
+  const openPreview = (template: RoutineTemplate) => {
+    setPreview({
+      template,
+      build: buildTemplateRoutines(
+        template,
+        plan.usable,
+        (key) => t(key),
+        routines.map((routine) => routine.name),
+      ),
+    });
+  };
+
+  /**
+   * The only write of the whole flow: each routine goes through the store's own
+   * `saveRoutine`, so a template can never bypass validation. Existing routines
+   * are only read (for their names) — no routine is edited or replaced.
+   */
+  const confirmTemplate = () => {
+    if (!preview) return;
+    // One write, not N: `saveRoutine` reads `routines` from this render, so a
+    // loop would keep the last routine only.
+    const stored = saveRoutines(
+      preview.build.routines.map((routine) => ({
+        name: routine.name,
+        notes: routine.notes,
+        items: routine.items,
+      })),
+    );
+    setCreated(stored.map((routine) => routine.name));
+    setPreview(null);
+    setTemplatesOpen(false);
+  };
+
   return (
     <>
       <header className="topbar">
@@ -178,6 +230,14 @@ export default function RoutinesScreen() {
             : tInterp("ru.count", { n: routines.length })}
         </span>
         <div className="spacer" />
+        <button
+          type="button"
+          className="btn btn-lg tl-focusable"
+          onClick={() => setTemplatesOpen(true)}
+        >
+          <MIcons.layers />
+          {t("ru.tpl.button")}
+        </button>
         <button type="button" className="btn btn-lg tl-focusable" onClick={openNew}>
           <MIcons.plus />
           {t("ru.create")}
@@ -227,6 +287,14 @@ export default function RoutinesScreen() {
               <button
                 type="button"
                 className="btn btn-primary tl-focusable"
+                onClick={() => setTemplatesOpen(true)}
+              >
+                <MIcons.layers />
+                {t("ru.tpl.empty")}
+              </button>
+              <button
+                type="button"
+                className="btn tl-focusable"
                 onClick={openFromToday}
                 disabled={rows.length === 0}
               >
@@ -306,6 +374,15 @@ export default function RoutinesScreen() {
             {tInterp("ru.detail.duplicated", { name: duplicated })}
           </p>
         )}
+
+        {created && created.length > 0 && (
+          <p className="small muted" role="status" style={{ margin: 0 }}>
+            {tInterp("ru.tpl.created", {
+              n: created.length,
+              names: created.join(" · "),
+            })}
+          </p>
+        )}
       </div>
 
       {selected && (
@@ -326,6 +403,19 @@ export default function RoutinesScreen() {
         />
       )}
 
+      {templatesOpen && (
+        <TemplateSheet
+          preview={preview}
+          onPick={openPreview}
+          onBack={() => setPreview(null)}
+          onConfirm={confirmTemplate}
+          onClose={() => {
+            setTemplatesOpen(false);
+            setPreview(null);
+          }}
+        />
+      )}
+
       {draft && (
         <RoutineEditor
           draft={draft}
@@ -339,6 +429,160 @@ export default function RoutinesScreen() {
           }))}
         />
       )}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The template shelf — pick a split, read what it would create, confirm
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Two steps in one modal: the three splits, then the preview of the chosen
+ * one with its days, prescriptions and any slot the user's gear cannot fill.
+ * The confirm button is the only writer, and it only **adds** routines.
+ */
+function TemplateSheet({
+  preview,
+  onPick,
+  onBack,
+  onConfirm,
+  onClose,
+}: {
+  preview: { template: RoutineTemplate; build: TemplateBuild } | null;
+  onPick: (template: RoutineTemplate) => void;
+  onBack: () => void;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  useEscape(preview ? onBack : onClose);
+
+  return (
+    <>
+      <div className="overlay" onClick={onClose} />
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("ru.tpl.title")}
+        data-testid="template-sheet"
+      >
+        <div className="card-head">
+          <span className="card-title">
+            <MIcons.layers />
+            {preview ? t("ru.tpl.preview.title") : t("ru.tpl.title")}
+          </span>
+          <div className="spacer" />
+          <button
+            type="button"
+            className="icon-btn tl-focusable"
+            aria-label={t("common.close")}
+            onClick={onClose}
+          >
+            <MIcons.x />
+          </button>
+        </div>
+
+        <div className="card-body" style={{ paddingTop: 14 }}>
+          {preview === null ? (
+            <>
+              <p className="small muted" style={{ margin: 0 }}>
+                {t("ru.tpl.sub")}
+              </p>
+              {ROUTINE_TEMPLATES.map((template) => (
+                <div
+                  key={template.id}
+                  className="card"
+                  data-testid={`template-${template.id}`}
+                  style={{
+                    marginTop: 10,
+                    padding: 12,
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <div className="grow" style={{ minWidth: 0 }}>
+                    <div className="ru-name">{t(template.nameKey)}</div>
+                    <div className="ru-meta">{t(template.blurbKey)}</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary tl-focusable"
+                    onClick={() => onPick(template)}
+                  >
+                    {t("ru.tpl.pick")}
+                  </button>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className="ru-name" style={{ fontSize: 17 }}>
+                {t(preview.template.nameKey)}
+              </div>
+              <p className="small muted" style={{ margin: "4px 0 0" }}>
+                {t("ru.tpl.keep")}
+              </p>
+
+              {preview.build.routines.map((routine) => {
+                const totals = routineTotals(routine);
+                return (
+                  <div key={routine.id} style={{ marginTop: 12 }}>
+                    <div className="small bold secondary">
+                      {routine.name} · {metaLabel(totals)}
+                    </div>
+                    {routine.items.map((item) => (
+                      <div
+                        key={item.exerciseId}
+                        className="tiny muted"
+                        style={{ marginTop: 3 }}
+                      >
+                        {exerciseName(item.exerciseId, getLanguage())} —{" "}
+                        {item.sets} × {item.repsMin}–{item.repsMax} · RIR{" "}
+                        {item.rir ?? 2}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+
+              {preview.build.gaps.length > 0 && (
+                <p className="tiny muted" style={{ margin: "12px 0 0" }}>
+                  {tInterp("ru.tpl.gaps", { n: preview.build.gaps.length })}:{" "}
+                  {preview.build.gaps
+                    .map(
+                      (gap) =>
+                        `${t(gap.dayNameKey)} · ${familyLabel(gap.family)}`,
+                    )
+                    .join(" / ")}
+                </p>
+              )}
+
+              <div className="row-wrap" style={{ marginTop: 16 }}>
+                <button
+                  type="button"
+                  className="btn btn-lg tl-focusable"
+                  onClick={onBack}
+                >
+                  {t("ru.tpl.back")}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg grow tl-focusable"
+                  onClick={onConfirm}
+                  disabled={preview.build.routines.length === 0}
+                >
+                  <MIcons.layers />
+                  {tInterp("ru.tpl.create", {
+                    n: preview.build.routines.length,
+                  })}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </>
   );
 }

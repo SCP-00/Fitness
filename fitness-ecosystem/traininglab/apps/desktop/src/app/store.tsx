@@ -403,6 +403,15 @@ export interface TrainingLabStore {
     notes?: string;
     items: RoutineItem[];
   }) => Routine | null;
+  /**
+   * Create several routines in **one** settings write. Needed by the weekly
+   * templates: calling `saveRoutine` in a loop reads the same render-close
+   * `routines` each time, so only the last routine would survive. Returns the
+   * routines actually stored (a routine with no name or no items is skipped).
+   */
+  saveRoutines: (
+    inputs: { name: string; notes?: string; items: RoutineItem[] }[],
+  ) => Routine[];
   /** Delete one template by id. */
   deleteRoutine: (id: string) => void;
   /**
@@ -1975,6 +1984,24 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     [settings, routines, patch],
   );
 
+  const saveRoutines = useCallback(
+    (inputs: { name: string; notes?: string; items: RoutineItem[] }[]): Routine[] => {
+      if (!settings || inputs.length === 0) return [];
+      const now = new Date();
+      let list = routines;
+      const stored: Routine[] = [];
+      for (const input of inputs) {
+        const routine = makeRoutine(input.name, input.items, now, input.notes);
+        if (!routine) continue;
+        list = upsertRoutine(list, routine);
+        stored.push(routine);
+      }
+      if (stored.length > 0) patch({ routines: list });
+      return stored;
+    },
+    [settings, routines, patch],
+  );
+
   const deleteRoutine = useCallback(
     (id: string) => {
       if (!settings) return;
@@ -3142,6 +3169,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     addExerciseToToday,
     routines,
     saveRoutine,
+    saveRoutines,
     deleteRoutine,
     applyRoutineToday,
     clearCoach,
