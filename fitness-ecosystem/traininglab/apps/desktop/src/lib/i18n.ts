@@ -1739,9 +1739,34 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Tú vs el promedio publicado y la franja atlética",
   },
   "condition.mean": { en: "Mean", es: "Media" },
-  "condition.noData": {
-    en: "No data — see how to measure it in BodyLab",
-    es: "Sin dato — mira cómo medirlo en BodyLab",
+  "condition.noData": { en: "No data", es: "Sin dato" },
+  "condition.measured": {
+    en: "{n} of 4 measured",
+    es: "{n} de 4 con dato",
+  },
+  "condition.empty.lead": {
+    en: "None of these four indicators is measured yet. Each one is a published band applied to a value you own — no estimate, no guess.",
+    es: "Ninguno de estos cuatro indicadores está medido todavía. Cada uno es una banda publicada aplicada a un valor tuyo: nada estimado, nada supuesto.",
+  },
+  "condition.empty.route": {
+    en: "They come from your BodyLab profile and measures — weight, height, body fat, waist, the Cooper 12-minute test and the biological sex the bands are published by. Ajustes → Conecta tus datos de BodyLab imports them; the ones you can type (waist) also live in Ajustes.",
+    es: "Salen de tu perfil y tus medidas de BodyLab: peso, estatura, grasa corporal, cintura, el test de Cooper de 12 minutos y el sexo biológico con el que se publican las bandas. Ajustes → Conecta tus datos de BodyLab los importa; la cintura también se puede declarar a mano en Ajustes.",
+  },
+  "condition.need.cardio": {
+    en: "Needs the Cooper 12 min test, age and sex",
+    es: "Faltan el test de Cooper (12 min), la edad y el sexo",
+  },
+  "condition.need.composition": {
+    en: "Needs measured body fat and sex",
+    es: "Faltan el % de grasa medido y el sexo",
+  },
+  "condition.need.proportion": {
+    en: "Needs waist and height",
+    es: "Faltan la cintura y la estatura",
+  },
+  "condition.need.muscle": {
+    en: "Needs weight, height, body fat and sex",
+    es: "Faltan el peso, la estatura, el % de grasa y el sexo",
   },
   "condition.axis.cardio": {
     en: "Cardio (Cooper 12 min)",

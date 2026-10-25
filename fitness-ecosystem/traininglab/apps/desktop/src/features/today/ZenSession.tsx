@@ -571,14 +571,18 @@ export function ZenSession({
           {isPostponed && (
             <span className="badge badge-info">{t("zen.postponed")}</span>
           )}
+          {/* `tl-zen-next` (2026-10-23): `display:contents` on desktop, its own
+              line on a phone. Before, both names shared one nowrap row and
+              «Ahora:» and «Siguiente:» were each cut to two words at 390 px —
+              the exercise you are on was unreadable exactly when it matters. */}
           {nextRow && (
-            <>
+            <span className="tl-zen-next">
               <MIcons.chevronRight
                 style={{ width: 15, height: 15, color: "var(--tl-text-muted)" }}
               />
               <span className="small muted">{t("zen.nextUp")}</span>
               <b className="secondary">{nextRow.name[lang]}</b>
-            </>
+            </span>
           )}
         </span>
         <div className="spacer" />
@@ -632,8 +636,13 @@ export function ZenSession({
           {/* ══ LEFT: the movement, the set in your hands, the log ══════════ */}
           <div className="stack">
             {/* Media first: there is always a GIF, a still or an honest empty
-                state, and the technique sheet is one tap away from it. */}
-            <section className="card">
+                state, and the technique sheet is one tap away from it.
+
+                `tl-zen-current` (2026-10-23): the card is what the orange marker
+                points at, and the queue's orange row was the only thing saying
+                which exercise you are on — while the card the set entry belongs
+                to had no marker at all. */}
+            <section className="card tl-zen-current">
               <div className="card-head" style={{ paddingBottom: 8 }}>
                 <span className="card-title" style={{ fontSize: 22 }}>
                   <MIcons.target />

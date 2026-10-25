@@ -1,0 +1,1173 @@
+[
+  {
+    "screen": "01-hoy",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 413
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Automático",
+        "w": 92,
+        "h": 36
+      },
+      {
+        "text": "Empuje",
+        "w": 68,
+        "h": 36
+      },
+      {
+        "text": "Tracción",
+        "w": 73,
+        "h": 36
+      },
+      {
+        "text": "Pierna",
+        "w": 62,
+        "h": 36
+      },
+      {
+        "text": "Core",
+        "w": 52,
+        "h": 36
+      },
+      {
+        "text": "+1 notas del plan",
+        "w": 89,
+        "h": 17
+      },
+      {
+        "text": "Energía −1",
+        "w": 42,
+        "h": 42
+      },
+      {
+        "text": "Energía +1",
+        "w": 42,
+        "h": 42
+      }
+    ],
+    "smallTargetCount": 19,
+    "unnamed": [],
+    "tinyTextCount": 21,
+    "tinyText": [
+      {
+        "text": "pecho · hombros · tríceps",
+        "fontSize": 11.5
+      },
+      {
+        "text": "0/4",
+        "fontSize": 11
+      },
+      {
+        "text": "RIR 2",
+        "fontSize": 11
+      },
+      {
+        "text": "120 s",
+        "fontSize": 11
+      },
+      {
+        "text": "hombros · trapecios",
+        "fontSize": 11.5
+      }
+    ],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nvie, 23 oct\nEmpezar\nTu última sesión fue hace 16 días\nCrunch Oblicuo · Dominadas Pronadas · 22 series\nHoy toca\nCore + Pecho + Hombros\n60 min\n·\n5 ejercicios\n·\npecho · hombros · tríceps · trapecios · core · glúteos · isquios · dorsales · antebrazos\nEquipo necesario\nBarra + disc"
+  },
+  {
+    "screen": "02-entrenamiento",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 329
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Mi orden",
+        "w": 105,
+        "h": 32
+      },
+      {
+        "text": "Por equipamiento",
+        "w": 156,
+        "h": 32
+      },
+      {
+        "text": "Por músculo",
+        "w": 124,
+        "h": 32
+      },
+      {
+        "text": "Arrastrar para ordenar",
+        "w": 30,
+        "h": 40
+      },
+      {
+        "text": "Subir",
+        "w": 32,
+        "h": 32
+      },
+      {
+        "text": "Bajar",
+        "w": 32,
+        "h": 32
+      },
+      {
+        "text": "Cambiar",
+        "w": 91,
+        "h": 30
+      },
+      {
+        "text": "Quitar de hoy",
+        "w": 32,
+        "h": 32
+      }
+    ],
+    "smallTargetCount": 29,
+    "unnamed": [],
+    "tinyTextCount": 0,
+    "tinyText": [],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nvie, 23 oct\nEmpezar\nEntrenamiento del día\n\npecho · hombros · tríceps · 60 min · 5 ejercicios · 19 series\n\nArrastra el asa, o enfócala y usa ↑ / ↓.\n\nMi orden\nPor equipamiento\nPor músculo\n1\nPress Inclinado\n4 × 8–12 · RIR 2 · 120 s de descanso\npecho\nhombros\nEmpezar\nCambiar\n2\nApe"
+  },
+  {
+    "screen": "03-sesion",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 657
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Saltar",
+        "w": 88,
+        "h": 36
+      },
+      {
+        "text": "Posponer",
+        "w": 109,
+        "h": 36
+      },
+      {
+        "text": "Cambiar",
+        "w": 103,
+        "h": 36
+      },
+      {
+        "text": "Salir de ZEN",
+        "w": 126,
+        "h": 36
+      },
+      {
+        "text": "Técnica completa",
+        "w": 32,
+        "h": 32
+      },
+      {
+        "text": "Técnica",
+        "w": 97,
+        "h": 36
+      },
+      {
+        "text": "Usar los números de la serie a",
+        "w": 32,
+        "h": 32
+      },
+      {
+        "text": "Press Inclinadopecho · hombros",
+        "w": 174,
+        "h": 33
+      }
+    ],
+    "smallTargetCount": 22,
+    "unnamed": [],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "pecho · hombros · 4 × 8–12 · e",
+        "fontSize": 10.5
+      },
+      {
+        "text": "hombros · trapecios · 4 × 8–12",
+        "fontSize": 10.5
+      },
+      {
+        "text": "core · glúteos · 4 × 8–12",
+        "fontSize": 10.5
+      },
+      {
+        "text": "core · 3 × 10–15",
+        "fontSize": 10.5
+      },
+      {
+        "text": "tríceps · pecho · 4 × 8–12",
+        "fontSize": 10.5
+      }
+    ],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nAhora:\nPress Inclinado\nSiguiente:\nAperturas Inversas\nSaltar\nPosponer\nCambiar\nSalir de ZEN\nPress Inclinado\npecho · hombros · tríceps\nTécnica\nMúsculos\nGIF de referencia\n\nReferencia de técnica · compárala con tus posiciones\n\nCalentamiento · 1/4\nRampa de calentamiento: no cuenta "
+  },
+  {
+    "screen": "04-semana",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 751
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Arrastra para mover este día",
+        "w": 30,
+        "h": 40
+      },
+      {
+        "text": "Editar",
+        "w": 81,
+        "h": 34
+      },
+      {
+        "text": "Arrastra para mover este día",
+        "w": 30,
+        "h": 40
+      },
+      {
+        "text": "Editar",
+        "w": 81,
+        "h": 34
+      },
+      {
+        "text": "Arrastra para mover este día",
+        "w": 30,
+        "h": 40
+      },
+      {
+        "text": "Editar",
+        "w": 81,
+        "h": 34
+      },
+      {
+        "text": "Arrastra para mover este día",
+        "w": 30,
+        "h": 40
+      },
+      {
+        "text": "Editar",
+        "w": 81,
+        "h": 34
+      }
+    ],
+    "smallTargetCount": 18,
+    "unnamed": [],
+    "tinyTextCount": 0,
+    "tinyText": [],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nLa semana\n\nCómo se reparten 4 días de entrenamiento y por qué.\n\nEstrés semanal 5.9/10 · moderado\n60 min por día\nResumen de la semana\n77 series · 230 min/semana\n○\nLun\nPendiente\n·\nMar\nDescanso\n○\nMié\nPendiente\n·\nJue\nDescanso\n▶\nVie\nHoy\n○\nSáb\nPendiente\n·\nDom\nDescanso\n\nVolumen repa"
+  },
+  {
+    "screen": "05-ejercicios",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 10352
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Favoritos",
+        "w": 91,
+        "h": 28
+      },
+      {
+        "text": "pecho",
+        "w": 58,
+        "h": 28
+      },
+      {
+        "text": "hombros",
+        "w": 75,
+        "h": 28
+      },
+      {
+        "text": "tríceps",
+        "w": 61,
+        "h": 28
+      },
+      {
+        "text": "core",
+        "w": 47,
+        "h": 28
+      },
+      {
+        "text": "dorsales",
+        "w": 71,
+        "h": 28
+      },
+      {
+        "text": "trapecios",
+        "w": 76,
+        "h": 28
+      },
+      {
+        "text": "bíceps",
+        "w": 60,
+        "h": 28
+      }
+    ],
+    "smallTargetCount": 22,
+    "unnamed": [],
+    "tinyTextCount": 60,
+    "tinyText": [
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      }
+    ],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nEjercicios\n\n152 ejercicios · 48 con indicaciones propias de variante\n\nFavoritos\npecho\nhombros\ntríceps\ncore\ndorsales\ntrapecios\nbíceps\nglúteos\nisquios\nantebrazos\ncuádriceps\nromboides\npantorrillas\nCompuesto\nAislamiento\nPeso corporal\nPolea\nMáquina\nCardio\nA–Z\nPor nivel\n\nNivel — ex"
+  },
+  {
+    "screen": "06-ejercicio-detalle",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 565
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Volver a la biblioteca",
+        "w": 158,
+        "h": 28
+      },
+      {
+        "text": "Guía",
+        "w": 187,
+        "h": 36
+      },
+      {
+        "text": "Resumen",
+        "w": 187,
+        "h": 36
+      },
+      {
+        "text": "Rango",
+        "w": 187,
+        "h": 36
+      },
+      {
+        "text": "Historial",
+        "w": 187,
+        "h": 36
+      }
+    ],
+    "smallTargetCount": 5,
+    "unnamed": [],
+    "tinyTextCount": 0,
+    "tinyText": [],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nVolver a la biblioteca\nSentadilla con Barra\n\ncuádriceps · glúteos · isquios · core\n\nCompuesto\nBarra + Rack de Sentadilla\nNivel 4/5\nGuía\nResumen\nRango\nHistorial\n\nPASOS RÁPIDOS\n\n1\nPies a la anchura de los hombros, puntas algo abiertas, pie completo en el suelo\n2\nBloquea el abdo"
+  },
+  {
+    "screen": "07-progreso",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 1653
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "7 d",
+        "w": 40,
+        "h": 28
+      },
+      {
+        "text": "30 d",
+        "w": 47,
+        "h": 28
+      },
+      {
+        "text": "90 d",
+        "w": 47,
+        "h": 28
+      },
+      {
+        "text": "Entrenamiento",
+        "w": 111,
+        "h": 28
+      },
+      {
+        "text": "Objetivos",
+        "w": 78,
+        "h": 28
+      }
+    ],
+    "smallTargetCount": 5,
+    "unnamed": [],
+    "tinyTextCount": 0,
+    "tinyText": [],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nProgreso\n\nÚltimos 30 días\n\n7 d\n30 d\n90 d\nSeries de trabajo\n210\nEn los últimos 30 días\nVolumen\n63,358 kg\nKilos movidos: peso × repeticiones\nkg por serie\n302 kg\nMedia por serie de trabajo\nDías entrenados\n9\n0 % del plan de esta semana\nCondición física\nTú vs el promedio publicado"
+  },
+  {
+    "screen": "08-historial",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 2685
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "+2 más",
+        "w": 46,
+        "h": 20
+      },
+      {
+        "text": "Editar",
+        "w": 93,
+        "h": 38
+      },
+      {
+        "text": "Eliminar",
+        "w": 108,
+        "h": 38
+      },
+      {
+        "text": "Editar",
+        "w": 93,
+        "h": 38
+      },
+      {
+        "text": "Eliminar",
+        "w": 108,
+        "h": 38
+      },
+      {
+        "text": "+3 más",
+        "w": 46,
+        "h": 20
+      },
+      {
+        "text": "Editar",
+        "w": 93,
+        "h": 38
+      },
+      {
+        "text": "Eliminar",
+        "w": 108,
+        "h": 38
+      }
+    ],
+    "smallTargetCount": 51,
+    "unnamed": [],
+    "tinyTextCount": 0,
+    "tinyText": [],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nHistorial\n\n19 sesiones cerradas, la más reciente primero.\n\n422 series de trabajo\n149.107 kg movidos\nSesión a sesión\n\nAquí no se reescriben las series: renombra la sesión, di dónde fue o bórrala entera.\n\n▾\nmié, 7 oct 2026\nowner-log\n22 series\n6 ejercicios\n1716 kg movidos\nDomina"
+  },
+  {
+    "screen": "09-rutinas",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 0
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Guardar el entrenamiento de ho",
+        "w": 257,
+        "h": 36
+      },
+      {
+        "text": "Crear desde cero",
+        "w": 153,
+        "h": 36
+      }
+    ],
+    "smallTargetCount": 2,
+    "unnamed": [],
+    "tinyTextCount": 0,
+    "tinyText": [],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\n0 rutinas\nCrear rutina\nRutinas\n\nPlantillas tuyas, editables: guarda el entrenamiento de hoy o crea una desde cero.\n\nTodavía no tienes rutinas\n\nUna rutina es una plantilla tuya: los ejercicios, sus series y su descanso, listos para volcar en cualquier día.\n\nGuardar el entrenam"
+  },
+  {
+    "screen": "10-configuracion",
+    "viewport": "desktop",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 665
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Automática",
+        "w": 91,
+        "h": 28
+      },
+      {
+        "text": "Masculina",
+        "w": 82,
+        "h": 28
+      },
+      {
+        "text": "Femenina",
+        "w": 80,
+        "h": 28
+      },
+      {
+        "text": "Hipertrofia",
+        "w": 93,
+        "h": 32
+      },
+      {
+        "text": "Fuerza",
+        "w": 64,
+        "h": 32
+      },
+      {
+        "text": "Recomposición",
+        "w": 118,
+        "h": 32
+      },
+      {
+        "text": "Principiante",
+        "w": 97,
+        "h": 32
+      },
+      {
+        "text": "Intermedio",
+        "w": 94,
+        "h": 32
+      }
+    ],
+    "smallTargetCount": 48,
+    "unnamed": [
+      {
+        "tag": "input",
+        "cls": "tl-input flex-1 min-w-[220px] px-3 py-2 "
+      }
+    ],
+    "tinyTextCount": 0,
+    "tinyText": [],
+    "bodyText": "TrainingLab\nHoy\nEntrenamiento\nHistorial\nProgreso\nEjercicios\nSemana\nRutinas\nConfiguración\nDisciplina hoy, resultados mañana.\nConfiguración\n\nObjetivo, equipo, asistente, datos y red de casa — todo opcional.\n\nPerfil\n\nDe dónde vienen tus datos y qué cuerpo dibuja.\n\n▾\nB\n\nPerfil conectado desde BodyLab\n\nAltura, peso y composición vienen del último export.\n\nCargado\nFigura del mapa\nMasculina\nAutomática\nMa"
+  },
+  {
+    "screen": "01-hoy",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 1081
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "Energía −1",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "Energía +1",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "Motivación −1",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "Motivación +1",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "Frescura (5 = sin agujetas) −1",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "Frescura (5 = sin agujetas) +1",
+        "w": 42,
+        "h": 44
+      }
+    ],
+    "smallTargetCount": 6,
+    "unnamed": [],
+    "tinyTextCount": 31,
+    "tinyText": [
+      {
+        "text": "pecho · hombros · tríceps",
+        "fontSize": 11.5
+      },
+      {
+        "text": "4 series",
+        "fontSize": 11.5
+      },
+      {
+        "text": "0/4",
+        "fontSize": 10
+      },
+      {
+        "text": "8–12 reps",
+        "fontSize": 11.5
+      },
+      {
+        "text": "RIR 2",
+        "fontSize": 10
+      }
+    ],
+    "bodyText": "vie, 23 oct\nEmpezar\nTu última sesión fue hace 16 días\nCrunch Oblicuo · Dominadas Pronadas · 22 series\nHoy toca\nCore + Pecho + Hombros\n60 min\n·\n5 ejercicios\n·\npecho · hombros · tríceps · trapecios · core · glúteos · isquios · dorsales · antebrazos\nEquipo necesario\nBarra + discos\nBanco\nMancuernas fijas\nEjercicios de la sesión\nRegistrar series\n1\nPress Inclinado\npecho · hombros · tríceps\n4 series\n0/4\n"
+  },
+  {
+    "screen": "02-entrenamiento",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 1480
+    },
+    "clipped": [],
+    "smallTargets": [],
+    "smallTargetCount": 0,
+    "unnamed": [],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "Hoy",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Entrenamiento",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Historial",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Progreso",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Más",
+        "fontSize": 9.5
+      }
+    ],
+    "bodyText": "vie, 23 oct\nEmpezar\nEntrenamiento del día\n\npecho · hombros · tríceps · 60 min · 5 ejercicios · 19 series\n\nArrastra el asa, o enfócala y usa ↑ / ↓.\n\nMi orden\nPor equipamiento\nPor músculo\nPress Inclinado\n4 × 8–12 · RIR 2 · 120 s de descanso\npecho\nhombros\nEmpezar\nCambiar\nAperturas Inversas\n4 × 8–12 · RIR 2 · 120 s de descanso\nhombros\ntrapecios\nEmpezar\nCambiar\nPeso Muerto\n4 × 8–12 · RIR 2 · 180 s de d"
+  },
+  {
+    "screen": "03-sesion",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 1898
+    },
+    "clipped": [
+      {
+        "selector": "table",
+        "left": 15,
+        "right": 575
+      },
+      {
+        "selector": "THEAD",
+        "left": 15,
+        "right": 575
+      },
+      {
+        "selector": "TR",
+        "left": 15,
+        "right": 575
+      },
+      {
+        "selector": "TH",
+        "left": 343,
+        "right": 507
+      },
+      {
+        "selector": "TH",
+        "left": 507,
+        "right": 575
+      },
+      {
+        "selector": "TBODY",
+        "left": 15,
+        "right": 575
+      }
+    ],
+    "smallTargets": [
+      {
+        "text": "Técnica completa",
+        "w": 36,
+        "h": 44
+      },
+      {
+        "text": "Subir",
+        "w": 39,
+        "h": 44
+      },
+      {
+        "text": "Bajar",
+        "w": 39,
+        "h": 44
+      }
+    ],
+    "smallTargetCount": 3,
+    "unnamed": [],
+    "tinyTextCount": 10,
+    "tinyText": [
+      {
+        "text": "pecho · hombros · 4 × 8–12 · e",
+        "fontSize": 10.5
+      },
+      {
+        "text": "hombros · trapecios · 4 × 8–12",
+        "fontSize": 10.5
+      },
+      {
+        "text": "core · glúteos · 4 × 8–12",
+        "fontSize": 10.5
+      },
+      {
+        "text": "core · 3 × 10–15",
+        "fontSize": 10.5
+      },
+      {
+        "text": "tríceps · pecho · 4 × 8–12",
+        "fontSize": 10.5
+      }
+    ],
+    "bodyText": "Ahora:\nPress Inclinado\nSiguiente:\nAperturas Inversas\nSaltar\nPosponer\nCambiar\nSalir de ZEN\nPress Inclinado\npecho · hombros · tríceps\nTécnica\nMúsculos\nGIF de referencia\n\nReferencia de técnica · compárala con tus posiciones\n\nCalentamiento · 1/4\nRampa de calentamiento: no cuenta como serie de trabajo\nCalentamiento\nBarra vacía\n8 reps · 0.0 kg\nCalentamiento hecho\nRegistro de hoy\n· Press Inclinado\n0 / 4 "
+  },
+  {
+    "screen": "04-semana",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 1992
+    },
+    "clipped": [
+      {
+        "selector": "tl-pill",
+        "left": 263,
+        "right": 395
+      },
+      {
+        "selector": "tl-day",
+        "left": 322,
+        "right": 410
+      },
+      {
+        "selector": "tl-day-name",
+        "left": 332,
+        "right": 400
+      },
+      {
+        "selector": "tl-day-status",
+        "left": 332,
+        "right": 400
+      },
+      {
+        "selector": "tl-day is-today",
+        "left": 419,
+        "right": 507
+      },
+      {
+        "selector": "tl-day-icon",
+        "left": 450,
+        "right": 477
+      }
+    ],
+    "smallTargets": [],
+    "smallTargetCount": 0,
+    "unnamed": [],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "Hoy",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Entrenamiento",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Historial",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Progreso",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Semana",
+        "fontSize": 9.5
+      }
+    ],
+    "bodyText": "La semana\n\nCómo se reparten 4 días de entrenamiento y por qué.\n\nEstrés semanal 5.9/10 · moderado\n60 min por día\nResumen de la semana\n77 series · 230 min/semana\n○\nLun\nPendiente\n·\nMar\nDescanso\n○\nMié\nPendiente\n·\nJue\nDescanso\n▶\nVie\nHoy\n○\nSáb\nPendiente\n·\nDom\nDescanso\n\nVolumen repartido en 4 días — débiles primero, 48 h entre golpes.\n\nRegenerar semana\n\nTu día, por encima del plan: regenerar la semana nu"
+  },
+  {
+    "screen": "05-ejercicios",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 10469
+    },
+    "clipped": [
+      {
+        "selector": "px-2.5 py-1 rounded-lg text-[11px] border tl-focusable white",
+        "left": 391,
+        "right": 462
+      },
+      {
+        "selector": "px-2.5 py-1 rounded-lg text-[11px] border tl-focusable white",
+        "left": 468,
+        "right": 544
+      },
+      {
+        "selector": "px-2.5 py-1 rounded-lg text-[11px] border tl-focusable white",
+        "left": 550,
+        "right": 610
+      },
+      {
+        "selector": "px-2.5 py-1 rounded-lg text-[11px] border tl-focusable white",
+        "left": 616,
+        "right": 682
+      },
+      {
+        "selector": "px-2.5 py-1 rounded-lg text-[11px] border tl-focusable white",
+        "left": 688,
+        "right": 751
+      },
+      {
+        "selector": "px-2.5 py-1 rounded-lg text-[11px] border tl-focusable white",
+        "left": 757,
+        "right": 845
+      }
+    ],
+    "smallTargets": [],
+    "smallTargetCount": 0,
+    "unnamed": [],
+    "tinyTextCount": 65,
+    "tinyText": [
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      },
+      {
+        "text": "Variante",
+        "fontSize": 11
+      }
+    ],
+    "bodyText": "Ejercicios\n\n152 ejercicios · 48 con indicaciones propias de variante\n\nFavoritos\npecho\nhombros\ntríceps\ncore\ndorsales\ntrapecios\nbíceps\nglúteos\nisquios\nantebrazos\ncuádriceps\nromboides\npantorrillas\nCompuesto\nAislamiento\nPeso corporal\nPolea\nMáquina\nCardio\nA–Z\nPor nivel\n\nNivel — exigencia técnica, de 1 a 5: 1 es una máquina donde te sientas, 5 un movimiento que castiga el error más pequeño\n\nPECHO\n17 eje"
+  },
+  {
+    "screen": "06-ejercicio-detalle",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 626
+    },
+    "clipped": [],
+    "smallTargets": [],
+    "smallTargetCount": 0,
+    "unnamed": [],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "Hoy",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Entrenamiento",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Historial",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Progreso",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Ejercicios",
+        "fontSize": 9.5
+      }
+    ],
+    "bodyText": "Volver a la biblioteca\nSentadilla con Barra\n\ncuádriceps · glúteos · isquios · core\n\nCompuesto\nBarra + Rack de Sentadilla\nNivel 4/5\nGuía\nResumen\nRango\nHistorial\n\nPASOS RÁPIDOS\n\n1\nPies a la anchura de los hombros, puntas algo abiertas, pie completo en el suelo\n2\nBloquea el abdomen antes de moverte un centímetro\n3\nPecho alto, mirada al frente-abajo; el cuello sigue a la columna\nPreparación\n▾\nEjecució"
+  },
+  {
+    "screen": "07-progreso",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 4136
+    },
+    "clipped": [
+      {
+        "selector": "tl-metric",
+        "left": 274,
+        "right": 524
+      },
+      {
+        "selector": "tl-metric-label",
+        "left": 338,
+        "right": 510
+      },
+      {
+        "selector": "tl-metric-value",
+        "left": 338,
+        "right": 510
+      },
+      {
+        "selector": "tl-metric-info",
+        "left": 338,
+        "right": 510
+      },
+      {
+        "selector": "SPAN",
+        "left": 338,
+        "right": 507
+      },
+      {
+        "selector": "tl-metric-icon",
+        "left": 548,
+        "right": 586
+      }
+    ],
+    "smallTargets": [
+      {
+        "text": "7 d",
+        "w": 40,
+        "h": 44
+      }
+    ],
+    "smallTargetCount": 1,
+    "unnamed": [],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "Hoy",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Entrenamiento",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Historial",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Progreso",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Más",
+        "fontSize": 9.5
+      }
+    ],
+    "bodyText": "Progreso\n\nÚltimos 30 días\n\n7 d\n30 d\n90 d\nSeries de trabajo\n210\nEn los últimos 30 días\nVolumen\n63,358 kg\nKilos movidos: peso × repeticiones\nkg por serie\n302 kg\nMedia por serie de trabajo\nDías entrenados\n9\n0 % del plan de esta semana\nCondición física\nTú vs el promedio publicado y la franja atlética\n0 de 4 con dato\n\nNinguno de estos cuatro indicadores está medido todavía. Cada uno es una banda public"
+  },
+  {
+    "screen": "08-historial",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 4642
+    },
+    "clipped": [],
+    "smallTargets": [],
+    "smallTargetCount": 0,
+    "unnamed": [],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "Hoy",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Entrenamiento",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Historial",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Progreso",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Más",
+        "fontSize": 9.5
+      }
+    ],
+    "bodyText": "Historial\n\n19 sesiones cerradas, la más reciente primero.\n\n422 series de trabajo\n149.107 kg movidos\nSesión a sesión\n\nAquí no se reescriben las series: renombra la sesión, di dónde fue o bórrala entera.\n\n▾\nmié, 7 oct 2026\nowner-log\n22 series\n6 ejercicios\n1716 kg movidos\nDominadas Supinas ×4\nCrunch Clásico ×4\nFondos ×4\nCrunch Oblicuo ×4\n+2 más\nEditar\nEliminar\nlun, 5 oct 2026\nowner-log\n10 series\n3 ej"
+  },
+  {
+    "screen": "09-rutinas",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 0
+    },
+    "clipped": [],
+    "smallTargets": [],
+    "smallTargetCount": 0,
+    "unnamed": [],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "Hoy",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Entrenamiento",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Historial",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Progreso",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Rutinas",
+        "fontSize": 9.5
+      }
+    ],
+    "bodyText": "0 rutinas\nCrear rutina\nRutinas\n\nPlantillas tuyas, editables: guarda el entrenamiento de hoy o crea una desde cero.\n\nTodavía no tienes rutinas\n\nUna rutina es una plantilla tuya: los ejercicios, sus series y su descanso, listos para volcar en cualquier día.\n\nGuardar el entrenamiento de hoy\nCrear desde cero\nHoy\nEntrenamiento\nHistorial\nProgreso\nRutinas"
+  },
+  {
+    "screen": "10-configuracion",
+    "viewport": "phone",
+    "errors": [],
+    "overflow": {
+      "x": 0,
+      "y": 1385
+    },
+    "clipped": [],
+    "smallTargets": [
+      {
+        "text": "30′",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "45′",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "60′",
+        "w": 43,
+        "h": 44
+      },
+      {
+        "text": "90′",
+        "w": 42,
+        "h": 44
+      },
+      {
+        "text": "Eliminar",
+        "w": 26,
+        "h": 44
+      },
+      {
+        "text": "Eliminar",
+        "w": 26,
+        "h": 44
+      },
+      {
+        "text": "Eliminar",
+        "w": 26,
+        "h": 44
+      },
+      {
+        "text": "Eliminar",
+        "w": 26,
+        "h": 44
+      }
+    ],
+    "smallTargetCount": 13,
+    "unnamed": [
+      {
+        "tag": "input",
+        "cls": "tl-input flex-1 min-w-[220px] px-3 py-2 "
+      }
+    ],
+    "tinyTextCount": 5,
+    "tinyText": [
+      {
+        "text": "Hoy",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Entrenamiento",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Historial",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Progreso",
+        "fontSize": 9.5
+      },
+      {
+        "text": "Configuración",
+        "fontSize": 9.5
+      }
+    ],
+    "bodyText": "Configuración\n\nObjetivo, equipo, asistente, datos y red de casa — todo opcional.\n\nPerfil\n\nDe dónde vienen tus datos y qué cuerpo dibuja.\n\n▾\nB\n\nPerfil conectado desde BodyLab\n\nAltura, peso y composición vienen del último export.\n\nCargado\nFigura del mapa\nMasculina\nAutomática\nMasculina\nFemenina\n\nAutomática: tomada del sexo del perfil de BodyLab importado.\n\nObjetivo y preferencias\n\nNivel, días por sem"
+  }
+]

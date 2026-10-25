@@ -153,10 +153,14 @@ export default function ExercisesScreen({
       {/* ── Filters ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">
         {/* Horizontal strips rather than a wrapping block: on a phone 13 family
-            chips would eat a third of the screen. `tl-hscroll` hides the bar. */}
+            chips would eat a third of the screen. `tl-hscroll` hides the bar.
+            From `sm` up they wrap instead (2026-10-23): the 13 family chips are
+            1110 px wide against a 768 px row, so `romboides` and `pantorrillas`
+            sat outside the row with no scrollbar to hint at them and no way to
+            filter by them on a desktop. Two rows of chips cost 30 px. */}
         {/* `-mx-3.5` = the 14 px `.content` gutter on a phone; `-mx-4` (16 px)
             stuck out 2 px and widened the page (audited 2026-10-18). */}
-        <div className="tl-hscroll -mx-3.5 px-3.5 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto">
+        <div className="tl-hscroll -mx-3.5 px-3.5 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto sm:flex-wrap sm:overflow-x-visible">
           <Chip
             active={filters.onlyFavorites === true}
             title={t("ex.favOnly")}
@@ -188,7 +192,7 @@ export default function ExercisesScreen({
             </Chip>
           ))}
         </div>
-        <div className="tl-hscroll -mx-3.5 px-3.5 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto items-center">
+        <div className="tl-hscroll -mx-3.5 px-3.5 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto sm:flex-wrap sm:overflow-x-visible items-center">
           {CATEGORIES.map((category) => (
             <Chip
               key={category}

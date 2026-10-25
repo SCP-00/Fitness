@@ -146,12 +146,20 @@ export function ExerciseThumbLarge({
           : "photo";
   return (
     <div className="tl-card overflow-hidden">
-      <div className="relative w-full aspect-[16/10] bg-[var(--tl-surface-3)] tl-media-wash flex items-center justify-center">
+      <div className="relative w-full aspect-[16/10] bg-[var(--tl-surface-3)] tl-media-wash flex items-center justify-center p-3">
         {filled !== "monogram" && image ? (
+          /*
+           * Sized to its own aspect, not stretched to the box. `object-contain`
+           * on a full-bleed <img> keeps the square drawing whole but leaves the
+           * element itself at 16:10, so the artwork's white background stayed a
+           * hard-edged letterboxed rectangle on the dark stage. Letting the
+           * element shrink to the artwork lets the same white read as a framed
+           * card: rounded, ringed, lifted off the surface.
+           */
           <img
             src={image}
             alt={alt}
-            className="absolute inset-0 w-full h-full object-contain"
+            className="h-full w-auto max-w-full object-contain rounded-xl shadow-[0_18px_36px_-16px_rgba(0,0,0,0.85)] ring-1 ring-white/10"
           />
         ) : (
           <span

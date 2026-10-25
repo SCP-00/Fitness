@@ -572,8 +572,13 @@ textarea {
 }
 
 @media (max-width: 540px) {
+  /* 2×2, never a strip (2026-10-23). The old phone rule stacked the four KPIs
+     into a 1 038 px horizontal scroller that no scrollbar announced: at 390 px
+     the second tile was cut mid-word ("Volumen" / "63,3" / "Kilos mo…"), which
+     on a first run reads as a rendering bug rather than as "swipe me". Four
+     KPIs fit in a 2×2 grid at 182 px each, so all four stay on screen. */
   .tl-metrics {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -692,11 +697,46 @@ textarea {
 
 @media (max-width: 850px) {
   .tl-week {
-    /* Seven tiles cannot fit a phone: they scroll, and the whole row stays one
+    /* Seven tiles cannot fit a tablet: they scroll, and the whole row stays one
        gesture wide. */
     grid-template-columns: repeat(7, 88px);
     overflow-x: auto;
     padding-bottom: 2px;
+  }
+}
+
+@media (max-width: 520px) {
+  /* A phone fits seven columns — it cannot fit seven *88 px* tiles, so between
+     520 px and 850 px the strip scrolled and hid four days of the week behind
+     an invisible gesture (3.5 of 7 visible at 390 px, audited 2026-10-23).
+     Below 520 px the tiles go compact instead: 7 equal columns at ~44 px, the
+     state word dropped (the glyph already carries it: ▶ hoy · ✓ hecho ·
+     · descanso · ○ pendiente) and the state kept in the tile's `title`. A week
+     is a shape you read at a glance, so all seven days have to be on screen. */
+  .tl-week {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+    overflow-x: visible;
+  }
+
+  .tl-day {
+    padding: 9px 2px;
+  }
+
+  .tl-day-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 5px;
+    font-size: 11px;
+  }
+
+  .tl-day-name {
+    font-size: 11px;
+    margin-bottom: 0;
+  }
+
+  .tl-day-status {
+    display: none;
   }
 }
 
@@ -1180,11 +1220,16 @@ textarea {
   min-width: 0;
 }
 
+/*
+ * The map's caption. It used to be absolutely positioned at the top-left of the
+ * panel, which the figure (`.tl-body-figure`, opaque, first in a flex column
+ * with no reserved row) painted over: only "MA" of «MAPA 2D» survived, clipped
+ * mid-word (audited 2026-10-23). As a real flex item it takes its own row above
+ * the figure and cannot be covered.
+ */
 .tl-body-map::before {
   content: attr(data-label);
-  position: absolute;
-  top: 15px;
-  left: 15px;
+  align-self: flex-start;
   color: var(--tl-text-muted);
   font-size: 11px;
   letter-spacing: 0.12em;
@@ -1484,6 +1529,79 @@ textarea {
   line-height: 1.45;
 }
 
+/* A missing value is a small muted word, not a 22px headline (2026-10-23): the
+   old card set "Sin dato — mira cómo medirlo en BodyLab" at value size, four
+   times, which is what made the empty Progreso read as a broken page. */
+.tl-condition-value.is-empty {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tl-text-muted);
+}
+
+/*
+ * The "nothing measured yet" block. It replaces four full-height cards with
+ * one paragraph, four one-line input lists and the route to fill them: the
+ * screen still tells the truth about what it does not know, in about 90 px
+ * instead of 1 700.
+ */
+.tl-condition-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.tl-condition-empty > p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--tl-text-secondary);
+  max-width: 78ch;
+}
+
+.tl-condition-needs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 18px;
+}
+
+@media (max-width: 640px) {
+  .tl-condition-needs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tl-condition-need {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--tl-text-muted);
+}
+
+.tl-condition-need svg {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  color: var(--tl-accent-strong);
+}
+
+.tl-condition-need-axis {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: var(--tl-text-secondary);
+}
+
+.tl-condition-need-what {
+  min-width: 0;
+}
+
+.tl-condition-empty .tl-condition-route {
+  font-size: 11px;
+  color: var(--tl-text-muted);
+}
+
 .tl-muscle-row {
   padding: 10px 11px;
   border: 1px solid var(--tl-border);
@@ -1639,41 +1757,46 @@ textarea {
     font-size: 25px;
   }
 
+  /* Wrap, do not scroll (2026-10-23). Two chips are 381 px against 362 px of
+     phone width, so the second pill («60 min por día») was cut at the viewport
+     edge with no scrollbar to hint at it. These are 2–3 chips per screen; a
+     second line costs 34 px and loses nothing. */
   .tl-topbar > div:last-child {
     width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .tl-topbar > div:last-child::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    row-gap: 6px;
   }
 
   .tl-context-tags {
     margin-top: -4px;
   }
 
+  /* 2×2 grid, never a horizontal strip (2026-10-23): see the ≤540 px rule
+     above. The old phone rule made the KPI row a 1 038 px scroller with a hidden
+     scrollbar, so at 390 px the second tile was cut mid-word and looked broken.
+     Tiles go compact so all four fit 2-up without the value wrapping. */
   .tl-metrics {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    overflow-x: auto;
-    margin-inline: -4px;
-    padding-inline: 4px;
-    scrollbar-width: none;
-  }
-
-  .tl-metrics::-webkit-scrollbar {
-    display: none;
   }
 
   .tl-metric {
-    flex: 0 0 min(82vw, 250px);
-    min-height: 92px;
-    padding: 13px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 2px 9px;
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .tl-metric-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
   }
 
   .tl-metric-value {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .tl-card-head {
@@ -2130,3 +2253,43 @@ textarea {
 /* ══════════════════════════════════════════════════════════════════════════
    Session stage — ported from the owner's mockup `mockup/03-sesion.html`
    ══════════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ZEN — which exercise you are on (2026-10-23)
+   ══════════════════════════════════════════════════════════════════════════
+   The session screen marks "now" twice: the orange row of the queue, and the
+   target icon in the sticky bar. The card that actually holds the set entry —
+   the thing you are filling in — had no mark at all, so the eye landed on the
+   queue row instead of on the card in front of it. The card gets the mark now.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tl-zen-current {
+  /* Wins over `.card` in mockup.css by specificity, not by order — that sheet
+     is imported after this one, so an equal-specificity rule here would be
+     silently dropped (learned 2026-10-18). */
+  position: relative;
+  border-color: color-mix(in oklab, var(--tl-accent) 46%, transparent);
+  box-shadow:
+    inset 3px 0 0 0 var(--tl-accent),
+    0 18px 40px -26px color-mix(in oklab, var(--tl-accent) 70%, transparent);
+}
+
+.tl-zen-next {
+  display: contents;
+}
+
+@media (max-width: 640px) {
+  /* One name per line: the pair no longer shares a 362 px nowrap row. */
+  .topbar .nownext {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .tl-zen-next {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+}
