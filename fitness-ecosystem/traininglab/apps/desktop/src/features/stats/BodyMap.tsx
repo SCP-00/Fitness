@@ -1,7 +1,21 @@
 /**
- * A real line-art map with a generated pixel mask. The PNG is the anatomy; the
- * grey-scale mask only identifies muscle regions. React colours those pixels
- * from the selected period's real, family-weighted training stimulus.
+ * A real line-art map with a generated region field. The PNG is the anatomy;
+ * the region field names each muscle and carries the two numbers that make the
+ * colour layer read as muscle rather than as a sticker:
+ *
+ *   - **R = family id** (1–13) — the contract with `BODY_MAP_FAMILIES`.
+ *   - **G = rim** — distance to the drawn contour, normalised. The paint is
+ *     darkened a little where it meets the line, so each muscle reads as a
+ *     volume under the artist's ink instead of a flat patch.
+ *   - **B = coverage** — the anti-aliased membership of the boundary from the
+ *     builder's signed-distance model (see `scripts/build-body-map-regions.mjs`).
+ *     Painting the edge with partial alpha is what removes the staircase: the
+ *     canvas is at source resolution and the browser downsamples it, so a
+ *     sub-pixel ramp reads as a smooth curve.
+ *
+ * Assets written before the field existed repeat the family id in all three
+ * channels — no rim, no coverage. They are detected on load and painted flat,
+ * so a stale asset stays readable instead of multiplying its alpha by the id.
  *
  * **Two figures since 2026-09-30 (f).** The owner supplied `Modelo2D_Woman.png`
  * for the female profile, and its mask was derived from the male one instead of
@@ -105,6 +119,20 @@ const FIGURES: Record<
   },
 };
 
+/** v1 region masks repeat the family id in R, G and B; v2 stores rim + coverage. */
+function isLegacyMask(pixels: Uint8ClampedArray): boolean {
+  let painted = 0;
+  for (let offset = 0; offset < pixels.length; offset += 4 * 37) {
+    const family = pixels[offset]!;
+    if (!family) continue;
+    if (pixels[offset + 1] !== family || pixels[offset + 2] !== family) {
+      return false;
+    }
+    painted += 1;
+  }
+  return painted > 20;
+}
+
 function bandFor(index: number): Band {
   return BANDS.find((band) => index >= band.min) ?? BANDS[BANDS.length - 1]!;
 }
@@ -136,6 +164,7 @@ export function BodyMap({
   const fig = FIGURES[figure];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const maskPixels = useRef<Uint8ClampedArray | null>(null);
+  const maskIsLegacy = useRef(false);
   const indexRef = useRef(new Map<string, number>());
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedFocus, setSelectedFocus] = useState("");
@@ -180,12 +209,9 @@ export function BodyMap({
       const context = layer.getContext("2d", { willReadFrequently: true });
       if (!context) return;
       context.drawImage(mask, 0, 0);
-      maskPixels.current = context.getImageData(
-        0,
-        0,
-        layer.width,
-        layer.height,
-      ).data;
+      const data = context.getImageData(0, 0, layer.width, layer.height).data;
+      maskPixels.current = data;
+      maskIsLegacy.current = isLegacyMask(data);
       paint();
     };
     mask.onerror = () => {
@@ -212,19 +238,24 @@ export function BodyMap({
     const image = context.createImageData(fig.width, fig.height);
     const familyColors = BODY_MAP_FAMILIES.map((family) => {
       const band = bandOf(family);
-      if (!band) return [214, 220, 225, 165] as const;
-      return [...rgb(band.color), 218] as const;
+      if (!band) return { rgb: rgb("#d6dce1"), alpha: 165 };
+      return { rgb: rgb(band.color), alpha: 218 };
     });
 
     for (let pixel = 0; pixel < fig.width * fig.height; pixel += 1) {
-      const region = pixels[pixel * 4]!;
-      if (region < 1 || region > familyColors.length) continue;
-      const color = familyColors[region - 1]!;
       const offset = pixel * 4;
-      image.data[offset] = color[0]!;
-      image.data[offset + 1] = color[1]!;
-      image.data[offset + 2] = color[2]!;
-      image.data[offset + 3] = color[3]!;
+      const region = pixels[offset]!;
+      if (region < 1 || region > familyColors.length) continue;
+      const family = familyColors[region - 1]!;
+      const legacy = maskIsLegacy.current;
+      const coverage = legacy ? 1 : pixels[offset + 2]! / 255;
+      // 0.8 at the drawn contour → 1 in the belly of the muscle. Subtle on
+      // purpose: the ink already delimits the shape, this only seats it.
+      const shade = legacy ? 1 : 0.8 + 0.2 * (pixels[offset + 1]! / 255);
+      image.data[offset] = family.rgb[0] * shade;
+      image.data[offset + 1] = family.rgb[1] * shade;
+      image.data[offset + 2] = family.rgb[2] * shade;
+      image.data[offset + 3] = family.alpha * coverage;
     }
     context.putImageData(image, 0, 0);
   }
@@ -247,10 +278,7 @@ export function BodyMap({
     // build) shifted every click toward the centre and picked the wrong family.
     const x = Math.min(
       fig.width - 1,
-      Math.max(
-        0,
-        Math.floor(((clientX - rect.left) / rect.width) * fig.width),
-      ),
+      Math.max(0, Math.floor(((clientX - rect.left) / rect.width) * fig.width)),
     );
     const y = Math.min(
       fig.height - 1,

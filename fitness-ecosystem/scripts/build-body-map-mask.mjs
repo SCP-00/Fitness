@@ -1,6 +1,13 @@
 /**
  * Derive a body-map region mask for a second figure from an existing one.
  *
+ * **Superseded on 2026-10-23.** The mask the app paints is now a *region field*
+ * built by `scripts/build-body-map-regions.mjs` (ink partition → signed
+ * distance → scale-space boundary → coverage + rim). This script is kept because
+ * it created the female seed that the new builder consumes
+ * (`scripts/body-map-seeds/female-regions.png`), and its landmark mapping is the
+ * documented provenance of those pixels. Do not point it at the app assets.
+ *
  * Why this exists: TrainingLab's anatomical map colours the owner's line art
  * through a pixel-ID mask (`traininglab-body-map-regions.png`, the red channel
  * of each pixel = muscle family, 1–13). When the owner added
