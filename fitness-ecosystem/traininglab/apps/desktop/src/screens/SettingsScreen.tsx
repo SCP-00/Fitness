@@ -448,8 +448,12 @@ export default function SettingsScreen() {
         icon={<Bot className="w-4 h-4" />}
         defaultOpen={false}
         actions={
+          /* Short status word, like every other SectionCard: the full sentence
+             («El coach local está apagado — se usa el plan determinista.») is
+             rendered inside the panel and, as a nowrap badge, pushed the
+             settings page 40 px sideways at 320 px (audited 2026-10-24). */
           <Badge tone={settings.llm.enabled ? "success" : "neutral"}>
-            {settings.llm.enabled ? t("settings.lanOn") : t("coach.off")}
+            {settings.llm.enabled ? t("coach.onBadge") : t("coach.offBadge")}
           </Badge>
         }
       >

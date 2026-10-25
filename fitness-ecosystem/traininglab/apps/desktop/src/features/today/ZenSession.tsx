@@ -664,7 +664,10 @@ export function ZenSession({
               </div>
 
               <div className="card-body" style={{ paddingTop: 0 }}>
-                <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+                {/* `row-wrap`: at 320 px the two buttons plus the media pill are
+                    311 px against 290 px of card, and the pill used to push the
+                    page 38 px sideways (audited 2026-10-24). */}
+                <div className="row row-wrap" style={{ gap: 8, marginBottom: 12 }}>
                   <button
                     type="button"
                     className="btn tl-focusable"

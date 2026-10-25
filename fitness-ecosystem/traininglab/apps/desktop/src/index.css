@@ -719,23 +719,30 @@ textarea {
     overflow-x: visible;
   }
 
-  .tl-day {
+  /*
+   * `.tl-week` in front of every selector, not decoration: the base `.tl-day`
+   * rules are defined *after* this block in the file, so an equal-specificity
+   * media rule loses the cascade and the tile kept its 13px/9px desktop padding.
+   * At 320 px that left 13 px for a 3-letter day name — «Lun» spilled 5 px out
+   * of its cell (audited 2026-10-24). Two classes win by specificity, not order.
+   */
+  .tl-week .tl-day {
     padding: 9px 2px;
   }
 
-  .tl-day-icon {
+  .tl-week .tl-day-icon {
     width: 22px;
     height: 22px;
     margin-bottom: 5px;
     font-size: 11px;
   }
 
-  .tl-day-name {
+  .tl-week .tl-day-name {
     font-size: 11px;
     margin-bottom: 0;
   }
 
-  .tl-day-status {
+  .tl-week .tl-day-status {
     display: none;
   }
 }
@@ -2278,8 +2285,13 @@ textarea {
   display: contents;
 }
 
-@media (max-width: 640px) {
-  /* One name per line: the pair no longer shares a 362 px nowrap row. */
+@media (max-width: 1100px) {
+  /*
+   * One name per line, not two ellipses. The pair is the single most important
+   * label of the session, and from 1024 px down (the rail still takes 245 px)
+   * the nowrap row clipped both names mid-word: «Press Incl…» / «Aperturas In…».
+   * Wrapping costs one 16 px line and keeps the names whole.
+   */
   .topbar .nownext {
     flex-wrap: wrap;
     row-gap: 4px;

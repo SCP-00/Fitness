@@ -2423,6 +2423,23 @@ svg {
   }
 }
 
+/*
+ * At 320 px the name column of the queue row is 53 px wide: «Inclinado» does
+ * not fit and bled 5 px into the sets cell (audited 2026-10-24). The 40 px
+ * thumbnail is the cheapest thing to give up — the family colour also lives in
+ * the muscle line right under the name. Placed after the 640 block on purpose:
+ * equal specificity, so order decides which grid wins.
+ */
+@media (max-width: 360px) {
+  .exrow {
+    grid-template-columns: 20px minmax(0, 1fr) auto auto 16px;
+  }
+
+  .exrow .exrow-thumb {
+    display: none;
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    Phone navigation + drag (2026-10-19)
    --------------------------------------------------------------------------

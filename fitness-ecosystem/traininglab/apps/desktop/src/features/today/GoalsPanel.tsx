@@ -187,7 +187,10 @@ export function GoalsPanel({
                       key={family}
                       className="flex items-center justify-between gap-3 bg-[var(--tl-surface-2)] rounded-xl px-3 py-2"
                     >
-                      <span className="text-sm truncate flex items-baseline gap-1.5">
+                      {/* Wraps instead of truncating: the published ratio is the
+                          point of this row, and at 320 px `truncate` cut it to
+                          «hombros× 1,618 de la cint…» (audited 2026-10-24). */}
+                      <span className="text-sm min-w-0 flex flex-wrap items-baseline gap-1.5">
                         {familyLabel(family)}
                         {ratioText && (
                           <span className="text-[10px] text-[var(--tl-text-muted)] tabular-nums">
