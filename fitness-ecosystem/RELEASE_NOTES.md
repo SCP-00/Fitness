@@ -40,12 +40,8 @@ BodyLab is an open-source, local-first application for tracking, analyzing, and 
 - Hover shows name, score, status, training volume
 - Color legend always visible
 
-### 🎮 3D Body Visualization
-- Parametric body generation (OxiHuman + Three.js)
-- Camera presets (Front/Back/Side)
-- Graceful failure state with retry
-- Interaction hints on first use
-- Lazy loading (doesn't load on unrelated routes)
+> **The 3D body view was removed on 2026-10-23** (viewer, WASM engine, model pack,
+> anatomy atlas and `three`). What it was and why it went: `docs/REMOVED_3D_MODEL.md`.
 
 ### 📈 Progress Tracking
 - Timeline visualization with Recharts
@@ -120,7 +116,6 @@ BodyLab
 │   └── Analytics (body age, health, prediction, correlation)
 ├── Integrations
 │   ├── body-muscles (2D muscle map)
-│   ├── OxiHuman (3D parametric body)
 │   └── clad-body (ISO 8559-1 validation)
 ├── Web App (React 19 + Vite 8 + Tailwind 4)
 │   ├── Design System (in-app tokens + components)
@@ -134,8 +129,6 @@ BodyLab
 | Component | License | Purpose |
 |---|---|---|
 | body-muscles | MIT | 2D muscle visualization |
-| OxiHuman | Apache-2.0 | 3D parametric body |
-| Three.js | MIT | 3D rendering |
 | Recharts | MIT | Charts and graphs |
 | Tailwind CSS | MIT | Styling |
 | exercises-dataset | MIT + Gym Visual | Exercise GIFs |
@@ -147,10 +140,8 @@ Apache-2.0 — See [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- OxiHuman by cool-japan (Apache-2.0)
 - body-muscles (MIT)
 - exercises-dataset by hasaneyldrm (MIT)
-- MakeHuman Community (CC0 assets)
 - All contributors and open-source projects
 
 ---

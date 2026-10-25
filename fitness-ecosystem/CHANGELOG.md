@@ -5,6 +5,99 @@ All notable changes to BodyLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-23 (TrainingLab: visual audit of every screen, seven layout defects fixed)
+
+### Fixed — screens that read as broken at real widths
+
+- **Phone KPIs were a 1 038 px horizontal scroller with a hidden scrollbar.** At 390 px
+  the second tile was cut mid-word («Volumen» / «63,3» / «Kilos mo…»), which on a first
+  run reads as a rendering bug. `.tl-metrics` is a 2×2 grid below 540 px now: four tiles
+  of ~182 px, compact, all four on screen (`index.css`).
+- **The week strip hid four of seven days between 520 px and 850 px.** Seven 88 px tiles
+  cannot fit a phone, and the strip scrolled with no affordance saying so. Below 520 px
+  the tiles go compact — 7 equal columns at ~44 px, state word dropped (the glyph already
+  carries it: ▶ hoy · ✓ hecho · · descanso · ○ pendiente) and kept in `title` — so the
+  whole week is one glance again.
+- **«MAPA 2D» was clipped to «MA» by the figure.** The caption was absolutely positioned
+  at the panel's top-left and the opaque `.tl-body-figure` painted over it. It is a real
+  flex item above the figure now and cannot be covered.
+- **Progreso's condition card printed «Sin dato — mira cómo medirlo en BodyLab» at 22 px,
+  once per axis,** about three phone screens of the same sentence naming no missing input.
+  It now has two states: nothing measured → one block (~90 px vs ~1 700) saying what the
+  four indicators are, which inputs each needs and where they come from; anything measured
+  → the grid, with every still-missing axis showing `—` plus the exact input it waits for,
+  and a «{n} de 4 con dato» pill in the head.
+- **The ZEN session card had no «you are here» mark.** The queue row and the sticky bar's
+  target icon both said «now»; the card holding the set entry — the thing being filled
+  in — did not. `.tl-zen-current` gives it the accent border and an inset marker. On a
+  phone «Ahora:» and «Siguiente:» shared one nowrap row and both names were cut to two
+  words; they stack one per line now (`ZenSession.tsx`, `index.css`).
+- **Exercises' 13 family chips overflowed at 768 px** — «romboides» and «pantorrillas» sat
+  outside the row with no scrollbar and no way to filter by them on a desktop. From `sm`
+  up the strips wrap instead of scrolling; two rows of chips cost 30 px.
+- **Exercise art was a hard white rectangle on the dark stage.** `object-contain` on a
+  full-bleed `<img>` keeps a square drawing whole but leaves the element at 16:10, so the
+  art's white background read as a letterboxed rectangle — the same defect in the detail
+  hero and the thumbnail. Both size the element to the artwork's own aspect and lift it
+  off the surface (rounded, ringed, shadowed), so the same white reads as a framed
+  reference instead of a broken image (`ExerciseThumb.tsx`, `mockup.css`).
+- `i18n.ts`: `condition.noData` shortened to «Sin dato» / «No data», plus
+  `condition.measured`, `condition.empty.lead`, `condition.empty.route` and
+  `condition.need.{cardio,composition,proportion,muscle}` in EN/ES.
+- Evidence: `docs/screenshots/2026-10-23-audit/` — every destination at 1280 px and 390 px,
+  cold start (empty DB) and seeded, before and after.
+
+## [Unreleased] - 2026-10-23 (TrainingLab: the 2D muscle map's colour layer is a generated field)
+
+### Changed — anatomical map colours (both figures)
+
+- **The region PNG is now a field, not a hand-painted index.** R keeps the family id
+  1–13; G carries a *rim* (distance to the drawn contour, so the colour is shaded a
+  little where it meets the ink and each muscle reads as a volume); B carries an
+  anti-aliased *coverage* (the app paints partial alpha at the edge instead of a
+  one-pixel staircase).
+- **Both figures are generated from the line art** by `scripts/build-body-map-regions.mjs`:
+  Otsu ink separation, the drawing's own closed compartments as the partition, seed
+  votes from `scripts/body-map-seeds/` plus a reviewed anatomy/veto table, geodesic
+  naming of the compartments the mask never reached, signed-distance fields blurred in
+  scale space (mean-curvature relaxation) and the fill extended 2 px under the line so
+  no dark gutter is left between colour and contour.
+- **Fixed by construction**: colours that stopped short of the ink; the uneven
+  compartment coverage that left the middle head of a hamstring unpainted; mirrored
+  compartments labelled with different families (the builder now reports mirror
+  mismatches and the suite fails on any); the head, hair, hands, feet, patella,
+  popliteal fossa, pubic region and adductor group painted as muscles; and the stray
+  paint outside the silhouette.
+- **New tests** (`tests/training/test_body_map_regions.test.ts`): the field mathematics
+  (Otsu, chamfer, signed distance, blur, spreading, mirror check) plus the shipped
+  assets' contract — every family present, symmetric, coverage and rim channels
+  non-trivial, and the committed PNGs identical to a fresh build from the seeds.
+- `src/features/stats/BodyMap.tsx` consumes G/B and still paints a legacy mask (family
+  id repeated in all three channels) flat, so an old asset stays readable.
+
+## [Unreleased] - 2026-10-23 (BodyLab: the 3D model is gone)
+
+### Removed — 3D parametric body (owner decision: remove it, do not disable it)
+
+- **The whole 3D stack is deleted**, not hidden behind a flag: the viewer
+  (`components/BodyViewer3D.tsx`), the WASM loader (`lib/oxihuman-loader.ts`), the
+  measurement→parameter mapper and fit solver (`lib/morph-mapper.ts`), the OXIM mesh
+  parser (`lib/oxim-parser.ts`), the anatomy x-ray loader and muscle-group classifier
+  (`lib/anatomy-loader.ts`, `lib/muscle-groups.ts`), the integration adapter
+  (`bodylab/integrations/oxihuman/`) and the 2D/3D toggle in `BodyToolbar`.
+- **Assets**: `public/wasm/` (OxiHuman 0.2.1 glue + wasm + types, 820 KB),
+  `public/oxihuman-core-v1.ohpk` (2.0 MB), `public/anatomy/` (Z-Anatomy muscles +
+  skeleton GLBs, 7.9 MB) and `public/anatomy-preview.html` — ~11 MB of shipped media.
+- **Dependencies**: `three` and `@types/three`. The production CSP (web + Tauri) no
+  longer allows `'wasm-unsafe-eval'` or a `data:` script source.
+- **Tests**: the OXIM parser suites (root + adversarial), the oxihuman adapter test, the
+  muscle-group GLB scan, the anatomy-x-ray Playwright flow, both 3D cases of
+  `e2e/product.spec.ts` and the two 3D sections of `integration-total.test.ts`.
+- **Attribution**: OxiHuman, MakeHuman, Z-Anatomy and Three.js entries left `NOTICE` and
+  `THIRD_PARTY_NOTICES.md`; their `resources/manifests/*.json` records are gone too.
+- `/body` is now the 2D muscle map only. The reason for the removal, what it used to
+  cover and how to find the old code in git history: `docs/REMOVED_3D_MODEL.md`.
+
 ## [0.2.0-training] - 2026-09-29 (TrainingLab UI redesign: modular app, mockup shell, 2D map, Tauri 0.2.0)
 
 ### TrainingLab — the app is five screens behind a real shell now

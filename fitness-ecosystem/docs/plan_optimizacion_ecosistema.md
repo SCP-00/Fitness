@@ -10,7 +10,7 @@
 ## 1. Resumen Ejecutivo y Diagnóstico Global
 
 El **Fitness Ecosystem** consta de dos aplicaciones con principios complementarios:
-1. **BodyLab:** La mitad científica y analítica (antropometría, somatotipo, modelado 2D/3D, guías de medición y educación).
+1. **BodyLab:** La mitad científica y analítica (antropometría, somatotipo, modelado 2D, guías de medición y educación).
 2. **TrainingLab:** La mitad ejecutiva y de registro (sesión rápida con presupuesto de tiempo, registro teclado-primero, modelo de decisión local, descansos y mapas de progreso).
 
 Tras una auditoría minuciosa de la base de código, la configuración del monorepo, los árboles de compilación y los recursos estáticos, se han identificado **graves ineficiencias estructurales, de peso y de organización** fruto del crecimiento acelerado en fases F1 y F2:
@@ -188,7 +188,7 @@ Actualmente existe una dicotomía arquitectónica entre las dos aplicaciones:
 
 * **BodyLab:**
   Utiliza `react-router-dom` v7 con `HashRouter` (`src/App.tsx`).
-  *Rutas:* `/` (Resumen), `/measure` (Medir), `/history` (Historial), `/body` (Cuerpo 2D/3D), `/progress` (Progreso), `/references` (Referencias), `/data` (Export/Import), `/settings` (Ajustes).
+  *Rutas:* `/` (Resumen), `/measure` (Medir), `/history` (Historial), `/body` (Cuerpo 2D), `/progress` (Progreso), `/references` (Referencias), `/data` (Export/Import), `/settings` (Ajustes).
   *Puntos fuertes:* Soporta redirecciones declarativas (`<Navigate to="..." replace />`), división de código con `lazy()`.
   *Fricciones:* Carga la dependencia completa de `react-router-dom` (~15 KB gzipped), y los nombres de las rutas están en inglés mientras que la interfaz está en español.
 
@@ -218,7 +218,7 @@ sequenceDiagram
 * **¿Por qué?**
   Tener consistencia entre ambas aplicaciones permite que compartan convenciones, que los scripts de prueba E2E (Playwright) y auditoría funcionen con las mismas primitivas, y que la experiencia en iPhone sobre el servidor LAN sea fluida e indistinguible de una app nativa.
 * **¿Para qué?**
-  Asegurar que cualquier pantalla pesada (el visor 3D de BodyLab o el catálogo de 94 ejercicios de TrainingLab) solo consuma memoria y CPU cuando el usuario decida ingresar en ella.
+  Asegurar que cualquier pantalla pesada (el mapa muscular 2D de BodyLab o el catálogo de 94 ejercicios de TrainingLab) solo consuma memoria y CPU cuando el usuario decida ingresar en ella.
 * **¿Cómo?**
   1. **En TrainingLab:** Mantener el router nativo de 114 líneas (por su ligereza y ausencia de dependencias), pero actualizar `Screen` en `App.tsx` para envolver la resolución con `Suspense` y `lazy()`, implementando un skeleton de carga ember-charcoal a juego con el diseño:
   ```tsx
@@ -259,7 +259,7 @@ Al inspeccionar `pnpm-workspace.yaml` y el árbol de directorios, se revelan ano
 
 2. **Carpetas Huérfanas y Vacías:**
    En `resources/`:
-   * `resources/cache/`, `resources/clad-body/`, `resources/makehuman/`, `resources/manifests/`, `resources/musclemapjs/`, `resources/oxihuman/`, `resources/scripts/`, `resources/z-anatomy/` son directorios con 0 bytes de contenido.
+   * `resources/cache/`, `resources/clad-body/`, `resources/makehuman/`, `resources/manifests/`, `resources/musclemapjs/`, `resources/scripts/`, `resources/z-anatomy/` son directorios con 0 bytes de contenido.
    * `bodylab/integrations/z-anatomy/`: completamente vacío.
 
 3. **Incoherencia en la Pertenencia de los Paquetes Core:**
@@ -297,7 +297,7 @@ fitness-ecosystem/
 │   │   └── export/                  <-- Serialización y contratos de migración
 │   │
 │   ├── contracts/                   <-- Schemas JSON y contratos entre módulos
-│   └── integrations/                <-- Adaptadores externos (oxihuman WASM, musclemapjs)
+│   └── integrations/                <-- Adaptadores externos (musclemapjs)
 │
 ├── resources/                       <-- Activos estáticos no modificables en runtime
 │   ├── brand/                       <-- Iconos maestros, favicons, logos

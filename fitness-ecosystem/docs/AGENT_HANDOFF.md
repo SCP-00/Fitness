@@ -2905,3 +2905,214 @@ un perfil aparcado no se podía reetiquetar nunca: una errata se quedaba en la e
   PPL/Upper-Lower siguen necesitando decisión del dueño; (c) el mapa de fuerza sigue bajo gate.
 - **Siguiente paso seguro:** abrir Configuración → Mi equipamiento en el `.exe` nuevo, pulsar el
   lápiz del chip «En uso» y renombrar; el perfil aparcado se renombra desde su propio chip.
+
+## 2026-10-23 (d) — BodyLab: el modelo 3D se eliminó por completo (no deshabilitado)
+
+**Contexto.** Orden del dueño: «Elimina por completo todo lo relacionado al modelo 3D de
+BodyLAB, pero deja en el histórico que alguna vez se intentó, no quiero que solo lo
+deshabilites». El visor seguía en `/body` detrás de un conmutador 2D · 3D aunque el roadmap
+ya lo daba por sin valor de uso (BL-3D-005, «no es útil»).
+
+**Cambios**
+- **Borrado real, sin flag ni código muerto.** Fuera: `components/BodyViewer3D.tsx`,
+  `lib/oxihuman-loader.ts`, `lib/morph-mapper.ts`, `lib/oxim-parser.ts`,
+  `lib/anatomy-loader.ts`, `lib/muscle-groups.ts`, `bodylab/integrations/oxihuman/` y
+  `public/anatomy-preview.html`.
+- **Activos:** `public/wasm/` (820 KB), `public/oxihuman-core-v1.ohpk` (2,0 MB) y
+  `public/anatomy/` (7,9 MB). `three` y `@types/three` salieron de `package.json`; lockfile
+  regenerado (sin rastro de `three`). CSP de producción (web + `tauri.conf.json`) perdió
+  `'wasm-unsafe-eval'` y el `data:` de `script-src`.
+- **UI:** `BodyView` es solo el mapa 2D; `BodyToolbar` perdió el conmutador 2D/3D y el atajo
+  de teclado `2`. Se eliminó el estado muerto `bodyViewMode` / `SET_BODY_VIEW_MODE`.
+- **Tests eliminados:** `test_oxim_parser`, `test_oxihuman_adapter`,
+  `test_parser_adversarial`, `muscle-groups.test.ts`, `e2e/anatomy-xray.spec.ts`, los dos
+  casos 3D de `e2e/product.spec.ts` y las dos secciones 3D de `integration-total.test.ts`
+  (30 → 20 tests). `mkMeasurement` se reubicó junto a la sección de anatomía, que lo usaba.
+- **Test nuevo:** el E2E del explorador 2D ahora afirma `0` botones «3D» y `0` `<canvas>`
+  en `/body`, para que el visor no pueda reaparecer sin romper la suite.
+- **Histórico:** `docs/REMOVED_3D_MODEL.md` (qué existía, tamaños, por qué se fue, qué se
+  borró, qué sobrevive, cómo recuperarlo del historial de git) + entrada en `CHANGELOG.md`
+  + ROADMAP BL-3D-005 cerrado como ELIMINADO + avisos en `BodyLab_Web_UI_Design_Specification.md`
+  y en los informes IEEE (que se conservan como instantáneas). Atribuciones de OxiHuman,
+  MakeHuman, Z-Anatomy y Three.js fuera de `NOTICE` y `THIRD_PARTY_NOTICES.md`; fuera
+  también `resources/manifests/{oxihuman,makehuman,z-anatomy}.json` y el `package-lock.json`
+  huérfano del app web.
+
+**Verificación real (2026-10-23)**
+- `pnpm typecheck` → exit 0 · `pnpm lint` → **0 warnings / 0 errores** · `pnpm audit:css` → exit 0.
+- `pnpm test` → **1 317 tests / 91 archivos, exit 0**. `cd bodylab/apps/web && npx vitest run`
+  → **129 tests / 11 archivos, exit 0**. `npx playwright test` → **17/17** (antes 21: −2 x-ray,
+  −2 3D), incluida la aserción nueva de ausencia del 3D.
+- `npx vite build` → exit 0; `dist/` ya no contiene `wasm/`, `anatomy/`, `.ohpk` ni chunks
+  `three|OrbitControls|RoomEnvironment|BodyViewer3D|oxihuman` y el `<meta>` CSP dice
+  `script-src 'self' 'unsafe-inline'`. `dist/` pasó de ~25 MB a **16 MB** con el mismo contenido 2D.
+- `pnpm --filter traininglab-desktop build` → exit 0 (sin cambios funcionales).
+- **Instaladores (regla de cierre):** `BodyLab_1.0.0-beta.8_x64-setup.exe` **16:24**,
+  **17 087 939 B** (antes 25 459 020 B: −8,4 MB de motor + activos 3D), `tauri build` sale
+  con **código 1** por `TAURI_SIGNING_PRIVATE_KEY` ausente, installer válido.
+  `TrainingLab_0.2.0_x64-setup.exe` **16:27**, **17 489 869 B**, exit 0. Ambos copiados a
+  `C:\Users\andyh\Desktop\{BodyLab,TrainingLab}-setup.exe` a las 16:29; sha256 del BodyLab
+  copiado == `c8cf526779406a8c57af6587ff4d423e6c57a46f29dd69f13abef6c62ba1a802`.
+
+**Estado Git y pendientes**
+- **Sin commits.** Cambios: los borrados/ediciones de arriba + `docs/REMOVED_3D_MODEL.md`
+  (nuevo) + docs sincronizados (`ARCHITECTURE`, `PRODUCT_SPEC`, `TESTING`, `RESOURCE_MATRIX`,
+  `NOTICE`, `THIRD_PARTY_NOTICES`, `RELEASE_NOTES`, `PLAN`, `CONTRIBUTING`, READMEs, ROADMAP,
+  `knowledge.md`, `AGENTS.md`) + este archivo.
+- **Intactos a propósito:** `Modelo2D_Woman.png`, `Symmetry_Corregido.xlsx` y
+  `fitness-ecosystem/bun.lock` siguen sin commitear (material del dueño / lockfile ajeno).
+- **Siguiente paso seguro:** abrir el `BodyLab-setup.exe` nuevo del escritorio, entrar en
+  Cuerpo y comprobar que no hay pestaña 3D (solo mapa 2D + simetría). Si algún día se
+  quisiera recuperar el visor, la puerta es `docs/REMOVED_3D_MODEL.md` §5 y una decisión
+  nueva del dueño, no una nota de agente.
+
+## 2026-10-23 (e) — TrainingLab: la capa de color del mapa 2D (macho y hembra) pasa a ser un campo generado
+
+**Contexto.** Orden del dueño: «En Training LAB los modelos 2D Masculinos y Femeninos aun
+pueden recibir una mejora en las capas de color de los musculos, dedica esfuerzo maximo en
+esa tarea y capacidades de vision reales, usa un modelo matematico para trazar las curvas
+con suavidad y delimitar los musculos». No es la puerta de Fase 3 de
+`BUFFY_IMPLEMENTATION_BRIEF.md` —esa es el prototipo independiente
+`docs/prototypes/muscle-map-2d.html`, que sigue cerrado—: aquí no se copió nada de ningún
+prototipo, no se añadió lente nueva ni pantalla nueva y no se tocó el motor de puntuación. Es
+la reparación de la máscara que la app ya pinta, con los criterios que ese documento exige
+para una máscara (IDs, simetría, zonas sin asignar y prueba visual de overlay).
+
+**Diagnóstico visual (antes), con el PNG real y el log real del dueño.**
+- El color **no llegaba a la tinta**: quedaba una franja oscura entre el relleno y el trazo en
+  pectorales, abdomen, cuádriceps y pantorrillas.
+- **Compartimentos enteros sin pintar** aunque la máscara los conocía: la cabeza media del
+  isquiosural, cabezas distales del cuádriceps, mitad de las pantorrillas.
+- La hembra (máscara derivada por deformación de la masculina) tenía **astillas de color
+  cruzando compartimentos**: cuñas verdes dentro de la pantorrilla, triángulos que atravesaban
+  el trazo en la zona lumbar, y el **pie pintado como pantorrilla**.
+- Un **trazo de color fuera de la silueta** a la altura de la cadera.
+- **Asimetrías reales**: el mismo escalón oblicuo salía `chest` en un lado y `core` en el otro;
+  la tibial anterior de la hembra salía `quadriceps` a la izquierda y `calves` a la derecha.
+- Y el mapa de la hembra pintaba la **cara**, el **pelo** y las **manos** (heredados por
+  vecindad de la máscara).
+
+**Modelo matemático (nuevo).**
+- `scripts/lib/body-map-field.mjs` (puro, sin DOM): umbral de Otsu, transformada de distancia
+  chamfer 3–4, distancia con signo, desenfoque gaussiano separable, `smoothstep`, etiquetado de
+  componentes, propagación de etiquetas con cota y comprobación de simetría por espejo.
+- `scripts/build-body-map-regions.mjs`: (1) tinta por Otsu con polaridad leída de las esquinas;
+  (2) **los compartimentos cerrados del propio dibujo** como partición (componentes conexas de
+  lo que no es tinta) — la segmentación la puso el artista, no un polígono; (3) **nombrado**:
+  votos de la máscara semilla por compartimento, propagación geodésica con cota `INK_REACH = 5`
+  para nombrar los compartimentos que la máscara nunca tocó (el mismo músculo partido en
+  cabezas por el trazo), y una **tabla de revisión** con lo que no es músculo (cabeza, cara,
+  pelo, orejas, cuello, manos, pies, rótula, hueco poplíteo, pubis, grupo aductor, escápula);
+  (4) el color **se extiende 2,2 px bajo el trazo** para que llegue a la línea; (5) **campo de
+  distancia con signo por familia → desenfoque gaussiano σ = 1,2 px → `smoothstep` → partición
+  de unidad**: difuminar un SDF y quedarse con el nivel cero es flujo de curvatura media, así
+  que la curva conserva su sitio donde es recta y se relaja donde está en escalera; (6) canales
+  horneados: R = familia, G = borde (distancia a la tinta), B = cobertura antialias.
+- La semilla es un fichero **inmutable y separado** (`scripts/body-map-seeds/`): macho con el
+  trazo hecho a mano del dueño, hembra con la derivación por hitos que produjo
+  `scripts/build-body-map-mask.mjs`. Ese script queda como procedencia del seed y ya no apunta
+  a los activos de la app. Sin esta separación el generador se alimentaba de su salida anterior
+  y cada veto repintaba otra zona (pasó en el primer intento, está documentado en el módulo).
+
+**App.** `src/features/stats/BodyMap.tsx` lee los tres canales: alpha = `218 · cobertura` y un
+sombreado `0.8 + 0.2 · borde` (0,8 en el trazo → 1 en el vientre del músculo). Una máscara
+antigua (id repetido en R=G=B) se detecta y se pinta plana, así que un activo viejo sigue
+leyéndose en vez de multiplicar su alpha por el id.
+
+**Verificación real (2026-10-23)**
+- `node scripts/build-body-map-regions.mjs` → macho 1044×1024, 93 compartimentos con familia,
+  censo 13/13 (`1:23633 … 13:52044`), **simetría 0 desajustes** en frente y espalda, ~0,5 s;
+  hembra 1536×1024, 107 compartimentos, censo 13/13, **simetría 0**, 131 KB + 134 KB con
+  R/G/B. Cuatro vistas (macho/hembra × frente/espalda) con **0 familias espejadas distintas**.
+- **Antes/después en la app real** (Vite `:5199`, Edge, deviceScaleFactor 2, log real del dueño
+  sembrado en IndexedDB). Capturas guardadas en
+  `docs/screenshots/2026-10-23-bodymap/{male,female}-{before,after}.png` y el zoom 4× de un
+  borde en `edge-{before,after}.png`: el activo viejo deja franjas oscuras entre color y trazo,
+  astillas, asimetrías y el pie pintado; el nuevo rellena el compartimento hasta la línea, con
+  borde suavizado y sin pintar cara, pelo, manos ni pies.
+- `npx vitest run` → **1 336 tests / 92 archivos, exit 0** (incluye
+  `tests/training/test_body_map_regions.test.ts`, 19 tests: matemática del campo + contrato de
+  los activos, con «el PNG commiteado == una construcción nueva desde el seed», 13 familias,
+  simetría, cobertura y borde). `cd bodylab/apps/web && npx vitest run` → **129 tests, exit 0**.
+- `pnpm typecheck` → exit 0 · `cd traininglab/apps/desktop && npx tsc -b` → exit 0 ·
+  `pnpm lint` → **0 warnings / 0 errores** · `node scripts/css-class-audit.mjs` → exit 0.
+- **Instalador (regla de cierre):** `pnpm tauri build` en `traininglab/apps/desktop` → **exit 0**,
+  `TrainingLab_0.2.0_x64-setup.exe` **18:05**, **17 621 687 B** (16,81 MiB). Sin firmar
+  (solo el workflow de release tiene la clave). Contenido comprobado: el PNG del bundle
+  (`dist/traininglab-body-map-regions.png`) tiene el mismo sha256 que el de `public/`
+  (`ab282ed9…`) y el chunk `ProgressScreen-C4H5IYvC.js` contiene el sombreado nuevo (`0.8+0.2*`).
+  Copiado al escritorio real **`C:\Users\andyh\Desktop`** (esta máquina no tiene OneDrive
+  redirigiendo el escritorio) como `TrainingLab_0.2.0_x64-setup.exe` y `TrainingLab-setup.exe`,
+  sha256 `746fa78d…`. **BodyLab no se tocó en esta ronda**: su instalador de las 16:24 sigue
+  siendo el de este árbol y ya está en el escritorio (`c8cf5267…`, el mismo de la entrada
+  anterior).
+
+**Estado Git y pendientes**
+- **Sin commits.** Nuevos: `scripts/lib/body-map-field.mjs`, `scripts/build-body-map-regions.mjs`,
+  `scripts/body-map-seeds/{male,female}-regions.png`,
+  `tests/training/test_body_map_regions.test.ts`. Modificados: los dos PNG de
+  `traininglab/apps/desktop/public/`, `BodyMap.tsx`, `build-body-map-mask.mjs` (aviso),
+  `CHANGELOG.md`, `AGENTS.md` y este archivo. Los cambios de la entrada (d) siguen sin commitear.
+- **Zonas que quedan en neutro a propósito** (documentadas en la tabla del generador): cabeza,
+  cara, pelo, cuello, manos, pies, rótula, hueco poplíteo, pubis, aductores y fosa escapular.
+  Si el dueño quiere alguno pintado, se añade una fila a `NAMING_OVERRIDES` con su nota, nunca
+  un rectángulo a mano.
+- **Siguiente paso seguro:** abrir el `TrainingLab-setup.exe` nuevo del escritorio, entrar en
+  Progreso con la figura masculina y femenina y comprobar a ojo el borde del músculo contra la
+  tinta. Cualquier ajuste de suavidad es `--sigma` (1,2 px por defecto) y de borde
+  `--rim-depth` (4,6 px), sin tocar código.
+
+## 2026-10-23 (h) — Auditoría visual de las siete pantallas: siete defectos de layout corregidos
+
+- **Resultado:** Se abrieron las siete pantallas de TrainingLab en Vite (`:5199`) a 1280 px y
+  390 px, con base de datos vacía (primer arranque) y con el log real del dueño, y se
+  fotografiaron todas (`docs/screenshots/2026-10-23-audit/`: `cold-*`, `desktop-*`,
+  `phone-*`, y los pares `before/after`). Siete defectos que se leían como «la app está
+  rota» quedaron corregidos y verificados en captura: KPIs del teléfono en una tira de
+  1 038 px con la segunda tarjeta cortada a media palabra → rejilla 2×2; Semana ocultaba
+  cuatro de siete días entre 520 y 850 px → siete columnas compactas bajo 520 px; el
+  rótulo «MAPA 2D» quedaba tapado por la figura (solo se veía «MA») → fila propia de flex;
+  la tarjeta de Condición imprimía «Sin dato — mira cómo medirlo en BodyLab» a 22 px
+  cuatro veces → estado vacío de ~90 px con los cuatro inputs que faltan, y `—` + input
+  concreto cuando hay algún dato; la tarjeta de la sesión ZEN no tenía marca de «estás
+  aquí» → `.tl-zen-current`, y «Ahora/Siguiente» ya no comparten fila nowrap en el
+  teléfono; los 13 chips de familia se salían de la fila a 768 px → wrap desde `sm`; y la
+  ilustración del ejercicio era un rectángulo blanco duro sobre el fondo oscuro → el
+  `<img>` toma su propio aspecto y se eleva como lámina enmarcada (detalle y miniatura).
+- **Cambios:** `traininglab/apps/desktop/src/index.css` (rejilla 2×2 de KPIs, semana
+  compacta ≤520 px, rótulo del mapa como flex item, estado vacío de condición,
+  `.tl-zen-current`/`.tl-zen-next`); `src/mockup.css` (marco del `hero-media`);
+  `src/features/today/ConditionCard.tsx` (dos estados + input que falta por eje);
+  `src/features/today/ZenSession.tsx` (marca de la tarjeta actual, siguiente en línea
+  propia); `src/features/exercises/ExerciseThumb.tsx` (lámina enmarcada);
+  `src/screens/ExercisesScreen.tsx` (chips con wrap en escritorio);
+  `src/lib/i18n.ts` (`condition.noData` acortado + `condition.measured`,
+  `condition.empty.*`, `condition.need.*` EN/ES). `CHANGELOG.md` con la entrada de la
+  ronda. No se tocó lógica de sesión, plan ni datos.
+- **Verificación (re-ejecutada al cerrar esta sesión):** `pnpm typecheck` → exit 0 ·
+  `npx vitest run` → **1 336 tests / 92 archivos, exit 0** ·
+  `cd bodylab/apps/web && npx vitest run` → **129 tests / 11 archivos, exit 0** ·
+  `pnpm lint` → **0 warnings / 0 errores** · `node scripts/css-class-audit.mjs` → exit 0.
+  Instalador: `pnpm tauri build` → `TrainingLab_0.2.0_x64-setup.exe`, **17 622 514 B**,
+  20:00, sha256 `ec644619…`; ninguna fuente es más nueva que el binario; el bundle contiene
+  las cadenas nuevas (`Ninguno de estos cuatro indicadores` en `index-D5UIohpj.js`;
+  `tl-condition-empty`, `tl-zen-current`, `tl-condition-needs` en `index-BmmoLF8M.css`).
+  Copia en el escritorio real `C:\Users\andyh\Desktop` (`TrainingLab-setup.exe` y
+  `TrainingLab_0.2.0_x64-setup.exe`) con el mismo sha256. **BodyLab no se tocó**; su
+  instalador del 23-oct 16:29 (`BodyLab-setup.exe`) sigue siendo válido.
+- **Preview cerrado:** no hay pestañas de preview abiertas ni procesos escuchando en
+  5199/5173/5174/8090 (comprobado con `netstat`). El servidor de la auditoría era de usar
+  y tirar.
+- **Pendiente / decisión del dueño:** (a) nada de esta ronda está commiteado; el árbol
+  arrastra además los cambios de las entradas (d)–(g) (3D eliminado, campo del mapa 2D,
+  docs). (b) Los cuatro ejes de Condición siguen dependiendo de medidas que el dueño aún
+  no ha importado; el estado vacío lo explica, no lo resuelve. (c) La puerta del mapa de
+  fuerza (`BUFFY_IMPLEMENTATION_BRIEF.md`) permanece cerrada.
+- **Siguiente paso seguro:** abrir `TrainingLab-setup.exe` del escritorio en el PC y en un
+  teléfono por LAN, recorrer las siete pantallas y confirmar a ojo que la Semana cabe
+  entera y que el marco de la ilustración se lee como lámina; si algo chirría, es CSS de
+  `index.css`/`mockup.css`, sin tocar lógica. **Siguiente paso de producto:** la app ya no
+  se rompe en ninguna pantalla, pero sigue sin poder recibir su propio historial desde el
+  teléfono ni mostrar un mapa de fuerza: lo que falta para «nacer» es el onboarding de
+  primera sesión (importar BodyLab o crear rutina) y el primer uso real registrado
+  end-to-end.

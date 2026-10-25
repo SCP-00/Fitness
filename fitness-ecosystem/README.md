@@ -11,7 +11,7 @@
 
 Dos aplicaciones independientes pero compatibles:
 
-- **BodyLab** — Antropometría, modelado corporal 2D/3D, anatomía, ejercicio y progreso
+- **BodyLab** — Antropometría, modelado corporal 2D, anatomía, ejercicio y progreso
 - **TrainingLab** — Rutinas, registro, equipamiento, progresión y asistente LLM
 
 ## 🏗️ Arquitectura
@@ -29,7 +29,6 @@ fitness-ecosystem/
 │   │   ├── export/              # CSV, JSON, Fitness Bundle
 │   │   └── analytics/           # Body Age, Health Risk, Prediction, Correlation
 │   ├── integrations/            # Adaptadores externos
-│   │   ├── oxihuman/            # 3D paramétrico
 │   │   ├── musclemapjs/         # 2D mapas musculares
 │   │   └── clad-body/           # Validación ISO 8559-1
 │   ├── packages/
@@ -131,7 +130,7 @@ node scripts/render-brand-icons.mjs   # favicons + apple-touch + 512 + .ico (16�
 - **Dark mode** con bajo contraste
 - **Design System** in-app — tokens Tailwind (`index.css`) + componentes propios
 - **Measurement Sessions** guiadas
-- **Body Explorer** 2D/3D interactivo
+- **Body Explorer** 2D interactivo
 - **A/B Comparison** de snapshots
 - **Data Vault** con export/import
 - **Responsive** (desktop, tablet, mobile)

@@ -17,7 +17,7 @@ Windows 10/11 · instalador NSIS · ~4–18 MB · sin dependencias, sin cuenta, 
 
 | Aplicación | Descarga directa | Qué es |
 | --- | --- | --- |
-| **BodyLab** | **[⬇ BodyLab-setup.exe](https://github.com/SCP-00/Fitness/releases/latest/download/BodyLab-setup.exe)** | Antropometría, análisis corporal, modelo 3D, educación de ejercicios |
+| **BodyLab** | **[⬇ BodyLab-setup.exe](https://github.com/SCP-00/Fitness/releases/latest/download/BodyLab-setup.exe)** | Antropometría, análisis corporal, mapa muscular 2D, educación de ejercicios |
 | **TrainingLab** | **[⬇ TrainingLab-setup.exe](https://github.com/SCP-00/Fitness/releases/latest/download/TrainingLab-setup.exe)** | La sesión de hoy: tiempo, equipamiento, registro de series, descansos |
 
 Los dos enlaces apuntan siempre a la **última versión publicada**: no hay que buscar el archivo con el número de versión en su nombre. Historial completo en [Releases](https://github.com/SCP-00/Fitness/releases).
@@ -55,7 +55,7 @@ Funcionan igual que el escritorio: todo ocurre en tu navegador y tus datos viven
 
 - **Antropometría** con protocolos explicados: perímetros, pliegues cutáneos (Jackson-Pollock 3), cintas Navy, Cooper de 12 min, frecuencia cardíaca en reposo.
 - **Análisis matemático** del estado corporal para hombres y mujeres: McCallum, Venus, Adonis, somatotipo, WHtR, índice de simetría, composición estimada con su error declarado (SEE).
-- **Modelado 2D/3D** del cuerpo a partir de tus medidas, con mapas musculares y anatomía.
+- **Mapa muscular 2D** del cuerpo a partir de tus medidas, con scores por grupo y panel de simetría.
 - **Educación**: mecánica del ejercicio, tipo de movimiento, qué músculo trabaja, cómo progresar cada ejercicio y qué medición lo mide.
 - **Progreso**: evolución temporal, comparación de instantáneas, edad corporal, riesgo de salud y correlaciones.
 - **Tu edad se deriva de tu fecha de nacimiento** cada vez que se muestra; nunca se guarda un número de edad que envejezca mal.
@@ -130,7 +130,7 @@ fitness-ecosystem/
 │   ├── core/            # motor puro en TypeScript, cero UI/DOM (antropometría,
 │   │                    # composición, referencias, progreso, validación, export,
 │   │                    # analytics, conditioning, training, exercises, database)
-│   ├── integrations/    # oxihuman (3D WASM), musclemapjs, clad-body (ISO 8559-1)
+│   ├── integrations/    # musclemapjs (mapa 2D), clad-body (ISO 8559-1)
 │   ├── packages/contracts
 │   └── apps/{web,desktop}
 ├── traininglab/apps/desktop   # app propia (Vite + React + Tauri 2)

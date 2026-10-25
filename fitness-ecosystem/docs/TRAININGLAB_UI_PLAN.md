@@ -367,7 +367,7 @@ and refuses to ship a number it cannot defend.
 | Exercise catalog, technique, traits, rig              | shared `core/exercises`         | works fully                                |
 | Estimated 1RM, records, trends                        | TrainingLab                     | works fully                                |
 | **Body composition** (weight, %fat, muscle mass, BMI) | **BodyLab**                     | hidden, with a link and an import CTA      |
-| Anthropometric muscle score (2D/3D)                   | BodyLab                         | optional second layer on the map, labelled |
+| Anthropometric muscle score (2D)                   | BodyLab                         | optional second layer on the map, labelled |
 
 TrainingLab never requires BodyLab to be installed, reachable, or up to date. Where it
 shows BodyLab-derived data, it says so and it says when it was imported.

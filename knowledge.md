@@ -12,7 +12,7 @@
 Two **local, account-free** apps sharing one data contract; everything is offline and
 data lives in IndexedDB inside the browser/WebView — there is no backend.
 
-- **BodyLab** — anthropometry, 2D/3D body modeling, exercise education, progress
+- **BodyLab** — anthropometry, 2D body mapping, exercise education, progress
   tracking (web app + Tauri desktop shell). The "science half".
 - **TrainingLab** — the gym logger: today's time-budgeted session, readiness,
   gear inventory, keyboard-first set logging, rest timer, records/sounds, optional
@@ -34,11 +34,13 @@ TrainingLab's planner; measuring → training → re-measuring recalculates the 
   exercises + equipment/movement traits in `catalog.ts` + `catalog-additions.ts` +
   `catalog-expansion.ts`, `traits.ts` + `traits-expansion.ts`, `equipment.ts`;
   `demo.ts` draws the movement, `technique.ts` coaches it).
-- `bodylab/integrations/` — external adapters: `oxihuman` (3D WASM), `musclemapjs`
-  (2D maps), `clad-body` (ISO 8559-1), `z-anatomy` (empty).
+- `bodylab/integrations/` — external adapters: `musclemapjs` (2D maps) and
+  `clad-body` (ISO 8559-1). The 3D stack (`oxihuman`, `three`, the OHPK pack and the
+  Z-Anatomy x-ray atlas) was deleted on 2026-10-23; history and rationale in
+  `fitness-ecosystem/docs/REMOVED_3D_MODEL.md`.
 - `bodylab/packages/contracts` — JSON schemas. The design system is **in-app**
   (Tailwind tokens in `apps/web/src/index.css`); no `packages/ui` exists.
-- `bodylab/apps/web` — React 19 + Vite + Tailwind v4 + three.js. Pages in
+- `bodylab/apps/web` — React 19 + Vite + Tailwind v4 (no 3D renderer). Pages in
   `src/pages/`, domain logic in `src/lib/` (`store.tsx` Context+useReducer, `db.ts`
   IndexedDB, `queries.ts`, `age.ts` — birthDate stored, age derived at the UI edge).
 - `bodylab/apps/desktop` — canonical BodyLab Tauri 2 shell (`src-tauri/`, NSIS).

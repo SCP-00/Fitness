@@ -207,7 +207,7 @@ convención de respiración en el campo `notes`, no en un tipo nuevo.
 | «Este usuario tiene X % de grasa» (por pliegues) | ❌ como afirmación individual | F2: error individual grande, válido a nivel de grupo. |
 | «Este es su esqueleto» (anchuras) | ✅ | Las anchuras óseas no cambian con la grasa; es el dato más estable. |
 | «Este es su volumen corporal» (estimado desde perímetros) | ⚠️ con margen visible | F6: el error de predicción de parámetros segmentarios desde antropometría puede llegar al **40 %**; hay que mostrarlo como estimación con su rango, no como cifra. |
-| «Su forma 3D es esta» | ❌ sin escáner | El modelo 3D será una **aproximación paramétrica**; los perímetros la constriñen, no la determinan. |
+| «Su forma 3D es esta» | ❌ sin escáner | Un modelo paramétrico sería una **aproximación**; los perímetros la constriñen, no la determinan. BodyLab ya no ofrece visor 3D (eliminado el 2026-10-23, ver `REMOVED_3D_MODEL.md`). |
 | «Su riesgo metabólico» (cintura/altura) | ✅ con la fuente | La relación cintura/altura tiene respaldo publicado y es de las pocas cosas que la cinta sí sostiene bien. |
 
 ---
@@ -241,8 +241,8 @@ tendencias inventadas. F1 trata esto con TEM explícito por medida; aquí se tra
 2. ~~¿Abrir el **Grupo D** y su categoría nueva?~~ — **hecho 2026-10-05.**
 3. ¿Exigir **nº de réplicas** y **TEM por medida** en el registro, en vez de una
    única cifra? **Sin decidir** (§3 lo recomienda; el registro hoy guarda un solo valor).
-4. ¿Marcar en la UI qué datos del modelo 3D son **medidos** vs **estimados por
-   proporción de estatura** (F5)? **Sin decidir.**
+4. ~~¿Marcar en la UI qué datos del modelo 3D son medidos vs estimados?~~ — **moot:**
+   el visor 3D se eliminó el 2026-10-23.
 5. ¿Comprar **plicómetro** y añadir los 3 pliegues que faltan (Grupo C)?
 6. ¿Corregir el origen de «shoes size 26 cm» (registrado como `foot_length` 26 con aviso
    de verificación) midiendo el pie de verdad?

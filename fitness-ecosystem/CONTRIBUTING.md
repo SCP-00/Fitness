@@ -81,7 +81,7 @@ fitness-ecosystem/
 │   ├── core/                   # Motor puro (sin UI): anthropometry, measurements,
 │   │                           #   composition, references, progress, validation,
 │   │                           #   export, analytics, database
-│   ├── integrations/           # Adaptadores externos (oxihuman, musclemapjs, clad-body)
+│   ├── integrations/           # Adaptadores externos (musclemapjs, clad-body)
 │   ├── packages/contracts/     # JSON Schemas
 │   └── apps/
 │       ├── web/                # React 19 + Vite 8 + Tailwind 4
@@ -156,8 +156,8 @@ Todo código nuevo debe incluir:
 Reglas completas en [ARCHITECTURE.md](docs/ARCHITECTURE.md). Resumen:
 
 - [ ] Dependencias nuevas: medir y declarar el impacto gzip en el PR
-- [ ] Librerías pesadas (charts, 3D, zip, WASM) → import dinámico o chunk por ruta
-- [ ] No prefetchear recursos lazy (GIFs, three, WASM, `.ohpk`)
+- [ ] Librerías pesadas (charts, zip, WASM) → import dinámico o chunk por ruta
+- [ ] No prefetchear recursos lazy (GIFs, WASM, fuentes)
 - [ ] Core sin efectos secundarios ni estado global (tree-shaking y tests rápidos)
 - [ ] Si el PR cambia el bundle: `cd bodylab/apps/web && pnpm build` y pegar el top-5 de assets
 - [ ] Datos por `store.tsx`/`queries.ts` (nunca IndexedDB directo en componentes)

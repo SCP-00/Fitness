@@ -48,7 +48,7 @@ Dos aplicaciones independientes conectadas por un contrato de datos compartido:
 | M1 — Anthropometric Core | ✅ DONE | McCallum, Venus, Adonis, WHtR, Frame Size |
 | M2 — Persistence | ✅ DONE | IndexedDB con migrations |
 | M3 — 2D Visualization | ✅ DONE | body-muscles interactive, 24 muscle groups |
-| M4 — 3D Visualization | ✅ DONE | OxiHuman + Three.js, camera presets |
+| M4 — 3D Visualization | 🗑 REMOVED 2026-10-23 | OxiHuman + Three.js se eliminaron por completo; ver `docs/REMOVED_3D_MODEL.md` |
 | M5 — Progress & Comparison | ✅ DONE | A/B comparison, timeline, "What Changed?" |
 | M6 — Export / Import | ✅ DONE | JSON, CSV, .bodylab (ZIP) |
 | M7 — Web Release | ✅ DONE | React + Vite + Tailwind |
@@ -146,7 +146,7 @@ fitness-ecosystem/
 │   │   ├── analytics/               # Body Age, Health, Prediction
 │   │   └── database/                # Schema + repositorios (consumido por tests/)
 │   ├── integrations/
-│   │   ├── oxihuman/                # 3D parametric
+
 │   │   ├── musclemapjs/             # 2D muscle map
 │   │   └── clad-body/               # ISO 8559-1 validation
 │   ├── packages/
@@ -180,14 +180,14 @@ fitness-ecosystem/
 [x] 453/453 root-suite tests: 100% PASS (24 files)
 [x] Web tests 36/36: PASS (6 contrato + 30 integración)
 [x] Adversarial 39/39: PASS (analytics + parser; 2 known defects pinned)
-[x] Browser E2E 21/21: PASS (14 producto + 5 adversariales + 2 x-ray; real 3D render + fit solver + atlas)
+[x] Browser E2E: PASS (producto + adversariales; los 2 flujos x-ray se eliminaron con el visor 3D el 2026-10-23)
 [x] Golden dataset: PASS
 [x] Export/restore roundtrip: PASS
 ```
 
 ### Gate D — Bug Status
 ```
-[x] P0 bugs: 0   (3D blocker resolved 2026-09-04: engine 0.2.1 vendored, pack SHA-verified)
+[x] P0 bugs: 0   (the 3D blocker was resolved 2026-09-04 and the whole feature was removed 2026-10-23)
 [ ] P1 bugs: 0
 ```
 

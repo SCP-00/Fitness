@@ -199,11 +199,11 @@ matemática y las reglas duras disponen; el usuario decide.
 - [x] BL-PROF-004 (multi-perfil) — diferido a V1.1 por decisión del owner.
 - [ ] **BL-REF-003** — perfiles de referencia personalizados (crear/editar/
       borrar además de los built-in). Medium. **Es el último MUST de producto.**
-- [ ] **BL-3D-005** — export GLB del modelo 3D (medium; puede ir a V1.1).
-      **Activo (2026-10-08):** el modelo anatómico por capas que el dueño pidió ya está
-      en disco y verificado en Blender 5.2 (Z-Anatomy CC BY-SA 4.0 →
-      `fitness-ecosystem/resources/anatomy/README.md`); el cuello de botella del 3D ya
-      no es el asset sino el flujo/valor de `BodyViewer3D` (queja «no es útil»).
+- [x] ~~**BL-3D-005** — export GLB del modelo 3D~~ — **cerrado como ELIMINADO
+      (2026-10-23):** el dueño ordenó borrar el modelo 3D por completo, no
+deshabilitarlo. El visor (`BodyViewer3D`), el motor WASM, el pack OHPK, el atlas
+      de anatomía, la dependencia `three` y sus ~11 MB de activos salieron del repo.
+      Registro histórico del intento y motivo: `fitness-ecosystem/docs/REMOVED_3D_MODEL.md`.
 
 **A.2 Gates restantes**
 
@@ -420,9 +420,9 @@ matemática y las reglas duras disponen; el usuario decide.
 ## 3. Deuda conocida de calidad (TESTING.md open-findings)
 
 - [ ] #2: 7 ejercicios legacy sin media + **30 nuevos sin GIF** (los nuevos son
-      media-less por diseño: grabar GIFs propios con OxiHuman es proyecto de contenido)
-- [ ] #3: cobertura de componentes React ≈ 0 (BodyMap, BodyViewer3D, Onboarding,
-      store reducer, migraciones de db) — test-setup listo
+      media-less por diseño: grabar GIFs propios es proyecto de contenido)
+- [ ] #3: cobertura de componentes React ≈ 0 (BodyMap, Onboarding, store reducer,
+      migraciones de db) — test-setup listo
 - [ ] #4: acciones del store (happy/error) solo indirectas
 - [ ] #5: UI de export/import sin test de página (roundtrip de core cubierto)
 - [ ] #6: migración IndexedDB v1→v2 sin test
@@ -504,7 +504,7 @@ que se guarde de verdad entre actualizaciones y sesiones**. (1) se atacó en est
     offline actual) o hay servidor. **No implementado: tocarlo cambia el backend.**
 12. **Assets de calidad — requiere pipeline de assets (pendiente).** Los GIFs de
     ejercicio y la máscara corporal son el cuello de botella de la percepción de calidad.
-    Queda: GIFs propios con OxiHuman para los ejercicios legacy + los 30 nuevos
+    Queda: GIFs/renders propios para los ejercicios legacy + los 30 nuevos
     (ver backlog §6), y mantener el manifiesto auditado
     (`scripts/audit-exercise-coverage.mjs`). Es trabajo de **core/asset pipeline**, no de
     frontend, por eso no entró en esta pasada.
@@ -684,14 +684,15 @@ atlas** ya presente en `apps/web/public/anatomy/` (gitignored, compilado localme
       mide, dónde vive (IndexedDB versionado vs `node:sqlite` local vía Tauri) y si
       alguna vez sale de la máquina? Es requisito explícito del dueño y **no se puede
       construir en el frontend**; ver hallazgo 11 de §4.1.
-- [ ] **[BACKEND] Assets de calidad (2026-10-07)** — pipeline de GIFs propios
-      (OxiHuman) para los ejercicios que aún no tienen; ver hallazgo 12 de §4.1 y §6.
+- [ ] **[BACKEND] Assets de calidad (2026-10-07)** — pipeline de GIFs/renders propios
+      para los ejercicios que aún no tienen; ver hallazgo 12 de §4.1 y §6. (La grabación
+      vía OxiHuman ya no es una opción: el motor se eliminó el 2026-10-23.)
 
 ---
 
 ## 6. Backlog de contenido
 
-- [ ] GIFs propios con OxiHuman: 7 legacy + 30 nuevos (incluye bici/escaleras,
+- [ ] GIFs/renders propios: 7 legacy + 30 nuevos (incluye bici/escaleras,
       que quizá se resuelven con un icono/ilustración en vez de GIF).
 - [ ] Guía de medición: tutoriales por zona (hoy texto + SVG).
 - [ ] Fichas educativas nuevas para los 30 ejercicios (por qué, error común,
