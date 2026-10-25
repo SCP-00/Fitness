@@ -15,16 +15,6 @@ Los siguientes componentes externos son utilizados en este proyecto:
 
 ---
 
-## OxiHuman
-
-- **URL:** https://github.com/cool-japan/oxihuman
-- **Autor:** cool-japan
-- **Licencia:** Apache-2.0
-- **Assets corporales:** CC0-1.0 (derivados de MakeHuman)
-- **Uso en el proyecto:** Motor 3D paramétrico para generación de cuerpos humanos
-
----
-
 ## body-muscles
 
 - **URL:** npm package `body-muscles`
@@ -52,15 +42,6 @@ Los siguientes componentes externos son utilizados en este proyecto:
 - **URL:** https://github.com/yuhonas/free-exercise-db
 - **Licencia:** Public Domain (datos) + MIT (código)
 - **Uso en el proyecto:** Referencia para estructura de datos de ejercicios (no integrado directamente)
-
----
-
-## Three.js
-
-- **URL:** https://github.com/mrdoob/three.js
-- **Autor:** mrdoob and contributors
-- **Licencia:** MIT
-- **Uso en el proyecto:** Motor de renderizado 3D
 
 ---
 
@@ -134,25 +115,6 @@ Los siguientes componentes externos son utilizados en este proyecto:
 - **Licencia:** Apache-2.0
 - **Uso en el proyecto:** Validación de mediciones antropométricas ISO 8559-1
 - **Estado:** EVALUATING
-
----
-
-## MakeHuman Community
-
-- **URL:** https://github.com/makehumancommunity/makehuman
-- **Licencia del código fuente:** AGPL-3.0 (no utilizado directamente)
-- **Licencia de assets:** CC0-1.0 (Dominio Público)
-- **Uso en el proyecto:** Base mesh, targets y texturas (a través de OxiHuman)
-- **Nota:** Solo se utilizan los assets, no el código fuente de MakeHuman
-
----
-
-## Z-Anatomy
-
-- **URL:** https://github.com/Z-Anatomy/Models-of-human-anatomy
-- **Licencia:** CC BY-SA 4.0
-- **Uso en el proyecto:** Modelos anatómicos 3D (Fase 4+, DEFERRED)
-- **Restricciones:** Las adaptaciones deben compartirse bajo CC BY-SA 4.0
 
 ---
 

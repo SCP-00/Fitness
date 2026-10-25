@@ -10,6 +10,8 @@
 
 **Status note (2026-09-11):** the `bodylab/packages/ui` package referenced throughout this spec was **removed** — the web app never imported it, and the design system is the in-app Tailwind token layer (`apps/web/src/index.css`) plus components in `src/components/` and `src/features/`. Read any "packages/ui" guidance below as "in-app `src/components/`".
 
+**Status note (2026-10-23):** every reference to `BodyViewer3D`, the 2D/3D toggle and the parametric body in this spec is **historical**. The 3D model, its WASM engine, the anatomy atlas and the `three` dependency were deleted from the product by owner decision; `/body` is the 2D muscle map only. Details: `fitness-ecosystem/docs/REMOVED_3D_MODEL.md`.
+
 ---
 
 # 0. Executive directive to the implementation agent

@@ -1,6 +1,6 @@
 # BodyLab
 
-> Aplicación de antropometría, modelado corporal 2D/3D, anatomía, ejercicio y progreso.
+> Aplicación de antropometría, modelado corporal 2D, anatomía, ejercicio y progreso.
 > Local-first · Open-source · Sin cuentas · Sin cloud.
 
 ## 🎯 Función
@@ -23,7 +23,6 @@ bodylab/
 │   └── database/            # Schema + repositorios
 │
 ├── integrations/            # Adaptadores externos
-│   ├── oxihuman/            # 3D paramétrico (Apache-2.0)
 │   ├── musclemapjs/         # 2D mapas musculares (MIT)
 │   └── clad-body/           # Validación ISO 8559-1 (Apache-2.0)
 │
@@ -46,7 +45,6 @@ bodylab/
 | Build | Vite | 8.x |
 | Styling | Tailwind CSS | 4.x |
 | Charts | Recharts | 3.x |
-| 3D | Three.js + OxiHuman | — |
 | 2D | body-muscles | — |
 | State | React Context | — |
 | Persistence | IndexedDB (web) | — |
@@ -102,7 +100,6 @@ cd bodylab/apps/desktop && pnpm build    # → src-tauri/target/release/bundle/n
 - ✅ Overview con analytics dashboard
 - ✅ Measurement Sessions guiadas
 - ✅ Body Explorer 2D interactivo
-- ✅ Body Explorer 3D (OxiHuman + Three.js)
 - ✅ Exercise tracking (64 ejercicios, 36 GIFs animados + 21 stills)
 - ✅ Progress con A/B comparison
 - ✅ Data Vault (export/import .bodylab)
@@ -113,7 +110,7 @@ cd bodylab/apps/desktop && pnpm build    # → src-tauri/target/release/bundle/n
 - ✅ Design System in-app (tokens en `index.css` + componentes propios)
 
 ### Testing
-- ✅ 453 tests en la suite raíz (core + 6 contrato + 39 adversariales) + 36 tests web (6 contrato + 30 integración) + 21 E2E navegador (14 producto + 5 adversariales + 2 x-ray, render 3D real + atlas de anatomía)
+- ✅ Suite raíz + tests web + E2E de navegador (ver `docs/TESTING.md` para el inventario vivo)
 - ✅ Suites adversariales (confianza cero): analytics + parser binario + import hostil en navegador
 - ✅ Golden dataset (10 tests)
 - ✅ Roundtrip data integrity

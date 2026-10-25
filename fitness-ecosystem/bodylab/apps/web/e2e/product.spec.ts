@@ -4,7 +4,6 @@
  * Covers the full user journey surface that headless tests cannot reach:
  *   1. Every route boots without runtime errors
  *   2. 2D body explorer → muscle inspection → real GIF asset decodes (naturalWidth > 0)
- *   3. 3D parametric model: WebGL context + WASM engine + .ohpk model pack actually render
  *
  * @module e2e/product
  */
@@ -112,6 +111,11 @@ test.describe('2D body explorer + exercise GIF', () => {
 
     await expect(page.getByRole('heading', { level: 1 }).filter({ hasText: /^Body$|^Cuerpo$/ })).toBeVisible();
 
+    // The 3D model was removed on 2026-10-23 (docs/REMOVED_3D_MODEL.md): the body
+    // view must not offer a 3D tab, a canvas or a WASM loader any more.
+    await expect(page.getByRole('button', { name: '3D', exact: true })).toHaveCount(0);
+    await expect(page.locator('canvas')).toHaveCount(0);
+
     // Sidebar muscle list → open Chest (Pectoralis Major)
     await page.getByRole('button', { name: /Chest|Pecho/ }).first().click();
     await expect(page.getByRole('heading', { level: 3 }).filter({ hasText: /Chest|Pecho/ }).first()).toBeVisible();
@@ -141,113 +145,7 @@ test.describe('2D body explorer + exercise GIF', () => {
 });
 
 // ============================================================================
-// 3. 3D PARAMETRIC MODEL — WebGL + WASM + .ohpk
-// ============================================================================
-
-test.describe('3D model generation', () => {
-  // RESOLVED (2026-09-04): the P0 was a pack/engine format mismatch — the OHPK v1
-  // pack (SHA 09c4bb…, canonical v0.2.1 release) requires the 0.2.1 engine
-  // (`from_core_pack_bytes`), but the app shipped the 0.2.0 wasm (ZIP-pack API),
-  // which trapped with `RuntimeError: unreachable`. The 0.2.1 engine build is
-  // vendored from the vendor's hosted release demo (cooljapan.tech/bodylab),
-  // byte-for-byte, under public/wasm/. This test now runs for real.
-  test('loads the WASM engine and renders the parametric body on a WebGL canvas', async ({ page }) => {
-    const errors = collectErrors(page);
-    await skipOnboarding(page);
-      await gotoRoute(page, '/body');
-
-    // Switch 2D → 3D (toolbar segmented control)
-    await page.getByRole('button', { name: '3D', exact: true }).click();
-    await expect(page.getByRole('heading', { level: 2 }).filter({ hasText: /Parametric 3D Model|Modelo 3D Paramétrico/ })).toBeVisible();
-
-    // First dev-server hit compiles the three.js graph on the fly — allow generous time.
-    // The engine must finish loading: the graceful error state is now a hard failure.
-    const errorState = page.getByText(/3D model unavailable|Modelo 3D no disponible/);
-    const canvas = page.locator('canvas');
-    await expect
-      .poll(async () => (await canvas.count()) > 0 || (await errorState.count()) > 0, { timeout: 90_000 })
-      .toBe(true);
-    if ((await errorState.count()) > 0) {
-      throw new Error('3D engine failed to initialize: ' + (errors.join(' | ') || 'no console errors recorded'));
-    }
-
-    // Real WebGL context was created and the viewer painted into the DOM
-    await expect(canvas).toHaveCount(1);
-    const glOk = await canvas.evaluate((el: HTMLCanvasElement) => {
-      return !!(el.getContext('webgl2') || el.getContext('webgl') || el.getContext('experimental-webgl'));
-    });
-    expect(glOk).toBe(true);
-    const dims = await canvas.evaluate((el: HTMLCanvasElement) => ({ w: el.width, h: el.height }));
-    expect(dims.w).toBeGreaterThan(0);
-    expect(dims.h).toBeGreaterThan(0);
-
-    // Loading overlay is gone and the camera preset controls rendered → viewer is live
-    // (the 2D view toggle also has a Front button — the 3D preset row is the last one)
-    await expect(page.getByText(/Preparing 3D model…|Preparando modelo 3D…/)).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /^Front$|^Frontal$/ }).last()).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Front$|^Frontal$/ }).last()).toBeEnabled();
-
-    // No failures in the WASM/asset/WebGL init path
-    expect(errors).toEqual([]);
-  });
-
-  test('fits the 3D body to the profile\'s real measurements (fit solver)', async ({ page }) => {
-    const errors = collectErrors(page);
-    await skipOnboarding(page);
-
-    // Seed a full profile + measurements through the app's own localStorage
-    // migration path (store.tsx migrates bodylab-* keys into IndexedDB on mount)
-    await page.addInitScript(() => {
-      const profile = {
-        id: 'p-e2e-fit', name: 'E2E Fit', height: 1.78, weight: 82, age: 30,
-        biologicalSex: 'male', units: 'metric',
-        createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
-      };
-      const measurements = [
-        { id: 'm-chest', profileId: 'p-e2e-fit', type: 'chest', value: 101, unit: 'cm', timestamp: '2026-01-01T00:00:00.000Z', method: 'manual', confidence: 'high' },
-        { id: 'm-waist', profileId: 'p-e2e-fit', type: 'waist', value: 78, unit: 'cm', timestamp: '2026-01-01T00:00:00.000Z', method: 'manual', confidence: 'high' },
-        { id: 'm-hips', profileId: 'p-e2e-fit', type: 'hips', value: 95, unit: 'cm', timestamp: '2026-01-01T00:00:00.000Z', method: 'manual', confidence: 'high' },
-      ];
-      window.localStorage.setItem('bodylab-profile', JSON.stringify(profile));
-      window.localStorage.setItem('bodylab-measurements', JSON.stringify(measurements));
-    });
-      await gotoRoute(page, '/body');
-    await page.getByRole('button', { name: '3D', exact: true }).click();
-
-    // Viewer must be live before the Fit action can run
-    const errorState = page.getByText(/3D model unavailable|Modelo 3D no disponible/);
-    const canvas = page.locator('canvas');
-    await expect
-      .poll(async () => (await canvas.count()) > 0 || (await errorState.count()) > 0, { timeout: 90_000 })
-      .toBe(true);
-    if ((await errorState.count()) > 0) {
-      throw new Error('3D engine failed to initialize: ' + (errors.join(' | ') || 'no console errors recorded'));
-    }
-    await expect(page.getByText(/Preparing 3D model…|Preparando modelo 3D…/)).toHaveCount(0);
-
-    // The Fit action is enabled (profile + measurements present) → run it
-    const fitButton = page.getByRole('button', { name: /Fit body|Ajustar cuerpo/ });
-    await expect(fitButton).toBeEnabled();
-    await fitButton.click();
-
-    // Solver report: fitted badge + one delta chip per target segment
-    // (engine reports the hip segment as "hip" — the chip label normalizes to "hips")
-    await expect(page.getByText(/Body fitted|Cuerpo ajustado/), { timeout: 60_000 }).toBeVisible();
-    for (const seg of ['chest', 'waist', 'hips']) {
-      await expect(page.getByText(new RegExp(`${seg}: [+-]?[0-9]+([.][0-9]+)? cm`))).toBeVisible();
-    }
-
-    // Model measurements panel still live after the rebuild
-    await expect(page.getByText(/Model Measurements|Medidas del Modelo/)).toBeVisible();
-
-    // The fit must not have failed (fit errors are surfaced both in-state and console)
-    expect(await page.getByText(/Fit failed|Error al ajustar/).count()).toBe(0);
-    expect(errors.filter(e => e.startsWith('pageerror'))).toEqual([]);
-  });
-});
-
-// ============================================================================
-// 4. MEASURE FLOW — guided session, ghost previous value, delta, save
+// 3. MEASURE FLOW — guided session, ghost previous value, delta, save
 // ============================================================================
 
 test.describe('Measure flow (guided session)', () => {
@@ -308,7 +206,7 @@ test.describe('Measure flow (guided session)', () => {
 });
 
 // ============================================================================
-// 6. DESIGN-SYSTEM REGRESSION — chips/pills must contain their own text
+// 4. DESIGN-SYSTEM REGRESSION — chips/pills must contain their own text
 //    (guards the @layer-base reset contract: an unlayered `* { padding: 0 }`
 //    once beat Tailwind's @layer utilities and crushed every chip app-wide)
 // ============================================================================
@@ -395,7 +293,7 @@ test.describe('Export / import roundtrip', () => {
 });
 
 // ============================================================================
-// 7. EXERCISE LOG PERSISTENCE — store → IndexedDB roundtrip + Epley 1RM
+// 6. EXERCISE LOG PERSISTENCE — store → IndexedDB roundtrip + Epley 1RM
 // ============================================================================
 
 test.describe('Exercise log persistence', () => {

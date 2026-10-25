@@ -6,18 +6,18 @@
  *
  *   1. Exercise DB  ↔  GIF assets  ↔  asset manifest  (real files in public/)
  *   2. Anatomy registry  ↔  measurement types  ↔  muscle anatomy DB
- *   3. 3D model pipeline: profile → core params → preset → morph adjustments
- *      → engine application → mesh bytes → parser → validator
- *   4. Bundled 3D runtime assets (.ohpk + wasm) exist and are non-trivial
  *
- * Runs headless (node-safe: no WebGL, no DOM rendering). The real WebGL/WASM
- * render path still needs a browser E2E — see docs/TESTING.md.
+ * Runs headless (node-safe: no DOM rendering).
+ *
+ * The 3D-model half of this suite (morph pipeline, OXIM mesh parsing, bundled
+ * .ohpk/wasm assets) was removed together with the viewer on 2026-10-23 — see
+ * docs/REMOVED_3D_MODEL.md for what it used to cover.
  *
  * @module __tests__/integration-total
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 
@@ -29,25 +29,13 @@ import {
   type MuscleGroup,
 } from '../lib/exercises';
 import { MUSCLE_DATABASE } from '../lib/muscle-info';
+import type { Measurement } from '../lib/types';
 import {
   MEASUREMENT_TYPES,
   MUSCLE_GROUPS,
   SYMMETRY_PAIRS,
   computeProxyMetrics,
 } from '../lib/constants';
-import {
-  profileToCoreParams,
-  choosePreset,
-  computeMorphAdjustments,
-  calculateFit,
-  applyToEngine,
-  collectFitTargets,
-  fitToMeasurements,
-  type OxiHumanEngine,
-  type Profile,
-  type Measurement,
-} from '../lib/morph-mapper';
-import { parseOximBinary, validateMesh, createTestMesh } from '../lib/oxim-parser';
 
 // Resolve the real public/ directory regardless of the vitest working directory
 // (vitest runs from apps/web in the web suite and from the monorepo root in the root suite)
@@ -60,6 +48,20 @@ function resolvePublicDir(): string {
   const found = candidates.find(c => existsSync(path.join(c, 'exercises', 'gifs')));
   if (!found) throw new Error('Could not locate apps/web/public from cwd ' + process.cwd());
   return found;
+}
+
+/** Measurement fixture — one cm value per anthropometric type. */
+function mkMeasurement(type: string, value: number): Measurement {
+  return {
+    id: `m-${type}-${value}`,
+    profileId: 'p1',
+    type: type as Measurement['type'],
+    value,
+    unit: 'cm',
+    timestamp: '2026-01-01T00:00:00.000Z',
+    method: 'manual',
+    confidence: 'high',
+  };
 }
 
 const publicDir = resolvePublicDir();
@@ -329,203 +331,5 @@ describe('Integration: anatomy registry consistency', () => {
       expect(m.value).toBeGreaterThan(0);
       expect(['good', 'average', 'needs_work', 'unknown']).toContain(m.status);
     }
-  });
-});
-
-// ============================================================================
-// 4. 3D MODEL PIPELINE (headless — up to the WASM/WebGL boundary)
-// ============================================================================
-
-function mkProfile(overrides: Partial<Profile>): Profile {
-  return {
-    id: 'test-profile',
-    name: 'Test',
-    height: 1.78,   // meters
-    weight: 82,     // kg
-    // Kept as the deprecated legacy field so these cases keep exercising the
-    // "no birth date recorded yet" fallback in lib/age.ts.
-    birthDate: null,
-    age: 30,
-    biologicalSex: 'male',
-    units: 'metric',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-    ...overrides,
-  };
-}
-
-function mkMeasurement(type: string, value: number): Measurement {
-  return {
-    id: `m-${type}-${value}`, profileId: 'p1', type: type as Measurement['type'],
-    value, unit: 'cm', timestamp: '2026-01-01T00:00:00.000Z',
-    method: 'manual', confidence: 'high',
-  };
-}
-
-/** Recording engine — implements the OxiHumanEngine surface used by morph-mapper. */
-class FakeEngine implements OxiHumanEngine {
-  presets: string[] = [];
-  params: Record<string, number> = {};
-  refreshed = 0;
-  built = 0;
-  freed = 0;
-
-  apply_preset(name: string) { this.presets.push(name); }
-  set_param(name: string, value: number) { this.params[name] = value; }
-  refresh_geometry() { this.refreshed++; }
-  build_mesh_bytes(): Uint8Array { this.built++; return createTestMesh({ vertexCount: 24, indexCount: 36 }); }
-  get_measurements() {
-    return {
-      height_cm: () => 178, chest_cm: () => 110, waist_cm: () => 82,
-      hip_cm: () => 100, weight_kg: () => 82,
-    };
-  }
-  /** Record the raw JSON; reply with a deterministic fit report. */
-  fitCalls: string[] = [];
-  fit_to_measurements(options_json: string): string {
-    this.fitCalls.push(options_json);
-    const targets = JSON.parse(options_json) as Record<string, number>;
-    const results = Object.entries(targets)
-      .filter(([k]) => k.endsWith('_cm'))
-      .map(([k, v]) => ({ name: k.replace('_cm', ''), target_cm: v, measured_cm: v, delta_cm: 0 }));
-    return JSON.stringify({ params: { height: 0.55, weight: 0.5, muscle: 0.5, gender: 0.5 }, results, iterations: 12, converged: true });
-  }
-  free() { this.freed++; }
-}
-
-describe('Integration: 3D pipeline (measurements → morph params)', () => {
-  const measurements: Measurement[] = [
-    mkMeasurement('chest', 110), mkMeasurement('waist', 82),
-    mkMeasurement('hips', 100), mkMeasurement('biceps', 38),
-    mkMeasurement('thigh', 60), mkMeasurement('calf', 38),
-  ];
-
-  it('profile → core params stays in [0,1] across body types', () => {
-    const profiles = [
-      mkProfile({ height: 1.5, weight: 40, age: 18 }),
-      mkProfile({ height: 1.78, weight: 82, age: 30 }),
-      mkProfile({ height: 2.0, weight: 150, age: 80 }),
-      mkProfile({ height: 1.65, weight: 60, age: 45, biologicalSex: 'female' }),
-    ];
-    for (const p of profiles) {
-      const core = profileToCoreParams(p);
-      for (const [k, v] of Object.entries(core)) {
-        expect(Number.isFinite(v)).toBe(true);
-        expect(v).toBeGreaterThanOrEqual(0);
-        expect(v).toBeLessThanOrEqual(1);
-        expect(k).toBeTruthy();
-      }
-    }
-  });
-
-  it('preset selection matches BMI bands', () => {
-    expect(choosePreset(mkProfile({ height: 1.5, weight: 40 }))).toBe('slender');   // BMI ≈ 17.8
-    expect(choosePreset(mkProfile({ height: 1.78, weight: 82 }))).toBe('athletic'); // BMI ≈ 25.9
-    expect(choosePreset(mkProfile({ height: 2.0, weight: 150 }))).toBe('average');  // BMI ≈ 37.5
-  });
-
-  it('morph adjustments are finite, clamped to [0,1], deterministic', () => {
-    const model = { heightCm: 178, chestCm: 110, waistCm: 82, hipCm: 100, weightKg: 82 };
-    const a1 = computeMorphAdjustments(measurements, model);
-    const a2 = computeMorphAdjustments(measurements, model);
-    expect(a1).toEqual(a2);
-    expect(Object.keys(a1).length).toBeGreaterThan(0);
-    for (const v of Object.values(a1)) {
-      expect(Number.isFinite(v)).toBe(true);
-      expect(v).toBeGreaterThanOrEqual(0);
-      expect(v).toBeLessThanOrEqual(1);
-    }
-    // No model → no adjustments (graceful)
-    expect(computeMorphAdjustments(measurements, null)).toEqual({});
-  });
-
-  it('calculateFit reports differences for measurable segments only', () => {
-    const fits = calculateFit(measurements, { heightCm: 178, chestCm: 110, waistCm: 82, hipCm: 100, weightKg: 82 });
-    expect(fits.length).toBe(3); // chest, waist, hips — biceps/thigh/calf have no model equivalent
-    for (const f of fits) {
-      expect(f.userValue).toBeGreaterThan(0);
-      expect(f.percentDiff).toBeGreaterThanOrEqual(0);
-    }
-  });
-
-  it('applyToEngine drives the full profile+measurements → engine sequence', () => {
-    const engine = new FakeEngine();
-    const profile = mkProfile({});
-    applyToEngine(engine, profile, measurements);
-
-    // Phase 1: preset applied first
-    expect(engine.presets).toEqual(['athletic']);
-    // Phase 2: the four core params always set, in [0,1]
-    for (const name of ['height', 'weight', 'muscle', 'age']) {
-      expect(engine.params[name]).toBeDefined();
-      expect(engine.params[name]).toBeGreaterThanOrEqual(0);
-      expect(engine.params[name]).toBeLessThanOrEqual(1);
-    }
-    // Phase 3: proportion adjustments derived from chest/waist/hips
-    const adjustmentKeys = Object.keys(engine.params).filter(k => !['height', 'weight', 'muscle', 'age'].includes(k));
-    expect(adjustmentKeys.length).toBeGreaterThan(0);
-    for (const k of adjustmentKeys) {
-      expect(engine.params[k]).toBeGreaterThanOrEqual(0);
-      expect(engine.params[k]).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it('fitToMeasurements sends only available targets and parses the report', () => {
-    const engine = new FakeEngine();
-    const profile = mkProfile({}); // height 1.78 → 178 cm
-    const targets = collectFitTargets(profile, measurements);
-    expect(targets).toEqual({ heightCm: 178, chestCm: 110, waistCm: 82, hipCm: 100 });
-
-    const report = fitToMeasurements(engine, targets);
-    expect(engine.fitCalls).toHaveLength(1);
-    const sent = JSON.parse(engine.fitCalls[0]);
-    // Wire names use the engine's snake_case contract
-    expect(sent).toEqual({ height_cm: 178, chest_cm: 110, waist_cm: 82, hip_cm: 100 });
-    expect(report.converged).toBe(true);
-    expect(report.iterations).toBe(12);
-    expect(report.results).toHaveLength(4);
-    expect(report.results[0]).toMatchObject({ name: 'height', delta_cm: 0 });
-  });
-
-  it('collectFitTargets is empty without a profile or measurable types; fit without targets throws', () => {
-    expect(collectFitTargets(null, [])).toEqual({});
-    expect(collectFitTargets(null, [mkMeasurement('biceps', 38)])).toEqual({});
-    expect(collectFitTargets(mkProfile({}), [])).toEqual({ heightCm: 178 });
-    expect(() => fitToMeasurements(new FakeEngine(), {})).toThrow('No valid fit target');
-  });
-
-  it('engine mesh bytes round-trip through the OXIM parser and validate clean', () => {
-    const engine = new FakeEngine();
-    const mesh = parseOximBinary(engine.build_mesh_bytes());
-    expect(mesh.version).toBe(1);
-    expect(mesh.vertexCount).toBe(24);
-    expect(mesh.indexCount).toBe(36);
-    expect(mesh.positions.length).toBe(24 * 3);
-    expect(mesh.normals.length).toBe(24 * 3);
-    expect(mesh.uvs.length).toBe(24 * 2);
-    expect(mesh.indices.length).toBe(36);
-    expect(mesh.indices.every(i => i < mesh.vertexCount)).toBe(true);
-    expect(validateMesh(mesh)).toEqual([]);
-  });
-});
-
-// ============================================================================
-// 5. BUNDLED 3D RUNTIME ASSETS (.ohpk + wasm) — what BodyViewer3D loads
-// ============================================================================
-
-describe('Integration: bundled 3D runtime assets', () => {
-  it('oxihuman model pack exists and is non-trivial', async () => {
-    const info = await stat(path.join(publicDir, 'oxihuman-core-v1.ohpk'));
-    expect(info.size).toBeGreaterThan(1_000_000);
-  });
-
-  it('wasm directory ships the vendor 0.2.1 engine (glue + binary + types)', async () => {
-    const wasmFiles = await readdir(path.join(publicDir, 'wasm'));
-    // 0.2.1 web-target set: the glue self-locates the wasm via import.meta.url
-    expect(wasmFiles).toContain('oxihuman_wasm.js');
-    expect(wasmFiles).toContain('oxihuman_wasm_bg.wasm');
-    expect(wasmFiles).toContain('oxihuman_wasm.d.ts');
-    const wasmStat = await stat(path.join(publicDir, 'wasm', 'oxihuman_wasm_bg.wasm'));
-    expect(wasmStat.size).toBeGreaterThan(500_000);
   });
 });

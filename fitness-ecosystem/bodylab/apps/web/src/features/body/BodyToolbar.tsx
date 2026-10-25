@@ -1,13 +1,10 @@
-import { Layers, Box, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useApp } from '../../lib/store';
 import { t } from '../../i18n';
 
-type ViewMode = '2d' | '3d';
 type View = 'front' | 'back';
 
 interface BodyToolbarProps {
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
   view: View;
   onViewChange: (view: View) => void;
   showSymmetry: boolean;
@@ -43,7 +40,6 @@ function SegButton({
 }
 
 export default function BodyToolbar({
-  viewMode, onViewModeChange,
   view, onViewChange,
   showSymmetry, onToggleSymmetry,
 }: BodyToolbarProps) {
@@ -65,23 +61,6 @@ export default function BodyToolbar({
         <RefreshCw className="w-4 h-4" />
         {lang === 'es' ? 'Simetría' : 'Symmetry'}
       </button>
-
-      <Segmented>
-        <SegButton
-          active={viewMode === '2d'}
-          onClick={() => onViewModeChange('2d')}
-          title={lang === 'es' ? 'Vista 2D (1)' : '2D view (1)'}
-        >
-          <Layers className="w-4 h-4" /> 2D
-        </SegButton>
-        <SegButton
-          active={viewMode === '3d'}
-          onClick={() => onViewModeChange('3d')}
-          title={lang === 'es' ? 'Vista 3D (2)' : '3D view (2)'}
-        >
-          <Box className="w-4 h-4" /> 3D
-        </SegButton>
-      </Segmented>
 
       <Segmented>
         <SegButton

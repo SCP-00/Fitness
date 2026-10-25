@@ -46,9 +46,7 @@ export const bodylabVersionDefine = {
 const CSP = [
   "default-src 'self'",
   // 'unsafe-inline': the inline theme-bootstrap script + React style props.
-  // 'wasm-unsafe-eval': the OxiHuman engine compiles WASM at runtime.
-  // data:: the vendor glue is imported as a data-URL module (oxihuman-loader.ts).
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' data:",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
@@ -73,8 +71,6 @@ function cspMeta(): import('vite').Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  // NOTE: no WASM plugin. The OxiHuman 0.2.1 engine is vendored under public/wasm/
-  // and loaded at runtime (oxihuman-loader.ts) — the bundler never sees the .wasm.
   plugins: [react(), tailwindcss(), cspMeta()],
   define: bodylabVersionDefine,
   resolve: {

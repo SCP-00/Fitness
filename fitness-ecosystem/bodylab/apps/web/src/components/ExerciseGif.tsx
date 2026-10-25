@@ -46,7 +46,7 @@ function getManifest(): Promise<Record<string, ManifestEntry>> {
   // BASE_URL and never a root-absolute path: the Pages demo serves BodyLab from
   // `/<repo>/bodylab/`, where `/exercises/...` resolves to nothing. Vite rewrites
   // `<img src>` inside index.html but never a URL built at runtime, so this one
-  // has to be joined by hand — same as anatomy-loader / oxihuman-loader.
+  // has to be joined by hand.
   const base = import.meta.env.BASE_URL || '/';
   manifestPromise ??= fetch(`${base}exercises/asset-manifest.json`)
     .then(r => (r.ok ? r.json() : {}))

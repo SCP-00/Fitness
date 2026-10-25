@@ -1,47 +1,24 @@
-import { useState, useEffect, type ComponentType } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../lib/store';
 import { t } from '../i18n';
 import { SCORE_COLORS } from '../lib/constants';
 import BodyMap from '../components/BodyMap';
 import { BodyToolbar, MuscleDetailPanel, MuscleList, SymmetryPanel } from '../features/body';
 
-// Lazy-load 3D viewer
-let Lazy3DComponent: ComponentType<{ width?: number; height?: number }> | null = null;
-function BodyViewer3D(props: { width?: number; height?: number }) {
-  // NOTE: Lazy3DComponent holds a *component function* once the chunk loads.
-  // Passing it bare to useState would make React treat it as a lazy initializer
-  // and call it with `undefined` props (→ "Cannot read properties of undefined
-  // (reading 'width')" crash under StrictMode double-mount). Always wrap it.
-  const [Component, setComponent] = useState<ComponentType<{ width?: number; height?: number }> | null>(() => Lazy3DComponent);
-  useEffect(() => {
-    // If the chunk is already loaded, useState's initializer picked it up —
-    // only the async path needs a setState (inside the promise, not here).
-    if (!Lazy3DComponent) {
-      import('../components/BodyViewer3D').then(m => { Lazy3DComponent = m.default; setComponent(() => m.default); });
-    }
-  }, []);
-  if (!Component) return (
-    <div className="flex items-center justify-center h-full bg-[var(--color-surface-sunken)] rounded-2xl">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-sm text-slate-500 dark:text-[var(--color-text-muted)]">Loading 3D engine...</p>
-      </div>
-    </div>
-  );
-  return <Component {...props} />;
-}
-
 /**
  * BodyView — Thin orchestrator using feature components.
  *
  * Responsibility: layout + state management only.
  * All panels, details, lists are in features/body/.
+ *
+ * The 3D parametric viewer that used to live behind a 2D/3D toggle was removed
+ * on 2026-10-23 (see docs/REMOVED_3D_MODEL.md); the 2D muscle map is the only
+ * body view and it is always on screen.
  */
 export default function BodyView() {
   const { state, dispatch } = useApp();
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
   const [view, setView] = useState<'front' | 'back'>('front');
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [showSymmetryPanel, setShowSymmetryPanel] = useState(false);
   const lang = state.language;
   const { profile, measurements } = state;
@@ -51,7 +28,7 @@ export default function BodyView() {
     dispatch({ type: 'CALCULATE_ASSESSMENT' });
   }, [measurements, profile, state.selectedReference, dispatch]);
 
-  // Page shortcuts (§104): F/B → front/back, 1/2 → 2D/3D, Esc → close panel.
+  // Page shortcuts (§104): F/B → front/back, Esc → close panel.
   // Never fire while typing (the exercise log has inputs).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -61,8 +38,6 @@ export default function BodyView() {
       switch (e.key.toLowerCase()) {
         case 'f': setView('front'); break;
         case 'b': setView('back'); break;
-        case '1': setViewMode('2d'); break;
-        case '2': setViewMode('3d'); break;
         case 'escape':
           if (selectedMuscle) setSelectedMuscle(null);
           else if (showSymmetryPanel) setShowSymmetryPanel(false);
@@ -85,8 +60,6 @@ export default function BodyView() {
           <p className="text-sm text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">{t('body.subtitle')}</p>
         </div>
         <BodyToolbar
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
           view={view}
           onViewChange={setView}
           showSymmetry={showSymmetryPanel}
@@ -99,27 +72,14 @@ export default function BodyView() {
         <div className="lg:col-span-2 bl-card p-6 ">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-[var(--color-text)]">
-              {viewMode === '2d'
-                ? (view === 'front' ? t('body.frontView') : t('body.backView'))
-                : (lang === 'es' ? 'Modelo 3D Paramétrico' : 'Parametric 3D Model')}
+              {view === 'front' ? t('body.frontView') : t('body.backView')}
             </h2>
-            {viewMode === '3d' && profile && (
-              <span className="text-xs text-slate-400 dark:text-[var(--color-text-muted)] bg-[var(--color-input-bg)] px-2 py-1 rounded-lg">
-                {profile.height}m · {profile.weight}kg · {profile.biologicalSex === 'male' ? '♂' : '♀'}
-              </span>
-            )}
           </div>
-          {viewMode === '2d' ? (
-            <div className="flex justify-center">
-              <div className="w-full max-w-md" style={{ height: '600px' }}>
-                <BodyMap view={view} selectedMuscle={selectedMuscle} onMuscleSelect={setSelectedMuscle} />
-              </div>
+          <div className="flex justify-center">
+            <div className="w-full max-w-md" style={{ height: '600px' }}>
+              <BodyMap view={view} selectedMuscle={selectedMuscle} onMuscleSelect={setSelectedMuscle} />
             </div>
-          ) : (
-            <div className="flex justify-center" style={{ height: '600px' }}>
-              <BodyViewer3D width={Math.min(600, 800)} height={600} />
-            </div>
-          )}
+          </div>
           <p className="text-center text-sm text-slate-400 dark:text-[var(--color-text-muted)] mt-4">{t('body.clickToInspect')}</p>
         </div>
 

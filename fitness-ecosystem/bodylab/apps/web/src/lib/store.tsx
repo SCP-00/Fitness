@@ -11,7 +11,7 @@
 import { createContext, useContext, useReducer, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import type {
   Profile, Measurement, BodySnapshot, ReferenceProfile,
-  AnthropometricAssessment, Language, ViewMode, BodyViewMode,
+  AnthropometricAssessment, Language, ViewMode,
   MeasurementCreate, ProfileCreate, ExerciseSet, MaxEffort, UnitSystem,
   AllMeasurementType
 } from './types';
@@ -34,7 +34,6 @@ interface AppState {
   selectedReference: ReferenceProfile;
   language: Language;
   viewMode: ViewMode;
-  bodyViewMode: BodyViewMode;
   selectedMuscle: string | null;
   /** Live units preference (BL-MEAS-005) — undefined until loaded; metric default. */
   unitsLive: UnitSystem | undefined;
@@ -55,7 +54,6 @@ function createInitialState(): AppState {
     selectedReference: BUILT_IN_REFERENCES[0],
     language: 'en',
     viewMode: 'front',
-    bodyViewMode: '2d',
     selectedMuscle: null,
     unitsLive: undefined,
     assessment: [],
@@ -73,7 +71,6 @@ type Action =
   | { type: 'SET_LANGUAGE'; payload: Language }
   | { type: 'SET_UNITS'; payload: UnitSystem }
   | { type: 'SET_VIEW_MODE'; payload: ViewMode }
-  | { type: 'SET_BODY_VIEW_MODE'; payload: BodyViewMode }
   | { type: 'SET_SELECTED_MUSCLE'; payload: string | null }
   | { type: 'SET_REFERENCE'; payload: ReferenceProfile }
   | { type: 'CREATE_PROFILE'; payload: Profile }
@@ -131,9 +128,6 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'SET_VIEW_MODE':
       return { ...state, viewMode: action.payload };
-
-    case 'SET_BODY_VIEW_MODE':
-      return { ...state, bodyViewMode: action.payload };
 
     case 'SET_SELECTED_MUSCLE':
       return { ...state, selectedMuscle: action.payload };

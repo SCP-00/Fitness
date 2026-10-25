@@ -272,7 +272,6 @@ export interface ReferenceProfile {
 // ============================================================================
 
 export type ViewMode = "front" | "back";
-export type BodyViewMode = "2d" | "3d";
 
 export interface AppState {
   // Profile
@@ -292,7 +291,6 @@ export interface AppState {
   // UI
   language: Language;
   viewMode: ViewMode;
-  bodyViewMode: BodyViewMode;
   selectedMuscle: string | null;
 
   // Assessment

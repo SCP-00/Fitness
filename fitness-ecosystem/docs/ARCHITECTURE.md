@@ -1,7 +1,11 @@
 # BodyLab — Architecture Reference
 
 > Single source of truth for how the code is organized and how data flows.
-> Verified against the repository on 2026-09-11. If a README or guide contradicts this file, this file wins — and the other file should be fixed.
+> Verified against the repository on 2026-10-23. If a README or guide contradicts this file, this file wins — and the other file should be fixed.
+>
+> **The 3D parametric body was removed on 2026-10-23** (engine, pack, viewer, atlas and
+> `three`). BodyLab models the body in 2D only. What it was and why it went:
+> `docs/REMOVED_3D_MODEL.md`.
 
 ## 1. Monorepo Layout
 
@@ -21,10 +25,8 @@ fitness-ecosystem/
 │   │   ├── analytics/           #   Body Age, Health Risk, Prediction, Correlation
 │   │   └── database/            #   schema + repository pattern
 │   ├── integrations/            # External adapters (each owns its bridge code)
-│   │   ├── oxihuman/            #   3D parametric body (WASM)
 │   │   ├── musclemapjs/         #   2D muscle map
-│   │   ├── clad-body/           #   ISO 8559-1 validation
-│   │   └── z-anatomy/           #   empty placeholder (no code yet)
+│   │   └── clad-body/           #   ISO 8559-1 validation
 │   ├── packages/
 │   │   └── contracts/           # JSON Schemas (shared data contracts)
 │   └── apps/
@@ -83,7 +85,7 @@ Adding/renaming a core package means updating all three. As of 2026-09-11 the ro
 |------|------|---------|
 | `/` | `pages/Overview.tsx` | Dashboard + `AnalyticsDashboard` |
 | `/measure` | `pages/Measure.tsx` | Guided measurement sessions |
-| `/body` | `pages/BodyView.tsx` | 2D map + lazy 3D explorer, exercise log |
+| `/body` | `pages/BodyView.tsx` | 2D muscle map + exercise log |
 | `/progress` | `pages/Progress.tsx` | Timeline + A/B snapshot comparison |
 | `/references` | `pages/References.tsx` | Reference profiles |
 | `/data` | `pages/ExportImport.tsx` | Data Vault (.bodylab export/import) |
@@ -112,7 +114,7 @@ src/
 ├── App.tsx / main.tsx / i18n.ts / index.css / test-setup.ts
 ├── pages/            Overview, Measure, Measurements (history, /history),
 │                     BodyView, Progress, References, ExportImport, Settings
-├── components/       AnalyticsDashboard, BodyMap, BodyViewer3D, ExerciseGif,
+├── components/       AnalyticsDashboard, BodyMap, ExerciseGif,
 │                     Onboarding, ThemeToggle
 │   └── layout/       Layout, Sidebar, BottomNav
 │   (subdirs body/, charts/, forms/, ui/ exist but are EMPTY)
@@ -121,9 +123,8 @@ src/
 │   └── progress/     CurrentValues, ProgressTimeline, SnapshotComparison,
 │                     timeline-config.ts (METRIC_CONFIG/COMPOSITION_CONFIG)
 ├── lib/              store.tsx, db.ts, queries.ts, constants.ts (re-exports core),
-│                     anthropometry.ts, exercises.ts, muscle-info.ts, morph-mapper.ts,
-│                     oxihuman-loader.ts, oxim-parser.ts, shortcuts.ts,
-│                     traininglab-export.ts, types.ts, theme-context.tsx
+│                     anthropometry.ts, exercises.ts, muscle-info.ts, shortcuts.ts,
+│                     parse-num.ts, age.ts, traininglab-export.ts, types.ts, theme-context.tsx
 ├── hooks/, utils/    EMPTY placeholders
 └── __tests__/        contract.test.ts (6 core↔web contract tests) +
                       integration-total.test.ts (30 cross-module/asset tests)
@@ -134,8 +135,7 @@ Empty dirs (`components/body|charts|forms|ui`, `hooks/`, `utils/`) are scaffoldi
 
 ### Visualization
 
-- **2D**: `components/BodyMap.tsx` + `body-muscles` (via integration adapter) — muscle heatmap from scores.
-- **3D**: `pages/BodyView.tsx` **dynamically imports** `components/BodyViewer3D.tsx`, which in turn dynamically imports `three`, `OrbitControls`, and `lib/oxihuman-loader.ts` (WASM) only when the 3D tab is opened. Model data: `public/oxihuman-core-v1.ohpk`; helpers `oxim-parser.ts` / `morph-mapper.ts` map measurements to the parametric mesh.
+- **2D only**: `components/BodyMap.tsx` + `body-muscles` (via integration adapter) — muscle heatmap from scores. There is no 3D view: the parametric viewer, its WASM engine and the anatomy atlas were removed on 2026-10-23 (`docs/REMOVED_3D_MODEL.md`).
 - **Exercise GIFs**: `components/ExerciseGif.tsx` lazy-loads via `IntersectionObserver` (rootMargin 200px) and pauses by toggling `src`. Assets in `public/exercises/gifs/` (36 files, manifest in `asset-manifest.json`).
 
 ## 4. Design System

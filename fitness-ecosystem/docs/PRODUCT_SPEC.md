@@ -9,7 +9,6 @@ It provides:
 - Anthropometric calculations based on established formulas
 - Configurable reference profiles (not "ideal body" — reference-based)
 - 2D interactive body visualization with color-coded status
-- 3D parametric body model
 - Exercise tracking with animated GIF guides
 - Advanced analytics (body age, health risk, prediction, correlation)
 - Temporal progress comparison with A/B snapshots
@@ -24,6 +23,7 @@ BodyLab is NOT:
 - A body rating or attractiveness scoring system
 - An AI-powered fitness advisor
 - A photo-based body scanner
+- A 3D body model (a parametric viewer shipped until 2026-10-23; it was removed, see `docs/REMOVED_3D_MODEL.md`)
 - A cloud service
 - A social network
 - A workout planner (TrainingLab handles this)
@@ -49,7 +49,6 @@ The application communicates **data**, not **opinions**.
 - Anthropometric calculations (McCallum, Venus, Adonis, WHtR)
 - Configurable reference profiles (health, anthropometric, user-defined)
 - 2D body visualization (front/back) with interactive regions
-- 3D parametric body model (OxiHuman + Three.js)
 - Temporal progress comparison between snapshots
 - Body composition records
 - JSON export

@@ -38,7 +38,7 @@ src/
 │   ├── Overview.tsx          # Dashboard principal + AnalyticsDashboard
 │   ├── Measure.tsx           # Measurement sessions guiadas
 │   ├── Measurements.tsx      # Historial (/history) + tab Condición (Navy, J-P, tutoriales)
-│   ├── BodyView.tsx          # Body explorer (2D + 3D lazy)
+│   ├── BodyView.tsx          # Body explorer 2D (mapa muscular)
 │   ├── Progress.tsx          # Timeline + A/B comparison
 │   ├── References.tsx        # Perfiles de referencia
 │   ├── ExportImport.tsx      # Data Vault (.bodylab)
@@ -47,7 +47,6 @@ src/
 │   ├── layout/               # Layout, Sidebar, BottomNav
 │   ├── AnalyticsDashboard.tsx
 │   ├── BodyMap.tsx           # Mapa muscular 2D (body-muscles)
-│   ├── BodyViewer3D.tsx      # Visor 3D (three + OxiHuman) — import dinámico
 │   ├── ExerciseGif.tsx       # GIF lazy-loading (IntersectionObserver)
 │   ├── Onboarding.tsx        # Primera experiencia
 │   └── ThemeToggle.tsx       # Dark/light mode
@@ -65,15 +64,12 @@ src/
 │   ├── types.ts              # Tipos del dominio
 │   ├── exercises.ts          # 64 ejercicios, ratings musculares
 │   ├── muscle-info.ts        # Info de grupos musculares
-│   ├── morph-mapper.ts       # Medidas → mesh paramétrico
-│   ├── oxim-parser.ts        # Parser del modelo OxiHuman
-│   ├── oxihuman-loader.ts    # Carga WASM de OxiHuman (bajo demanda)
 │   ├── shortcuts.ts          # Atajos de teclado de la página
 │   ├── traininglab-export.ts # Puente de datos hacia TrainingLab
 │   └── theme-context.tsx     # Tema (persistido en localStorage)
 └── __tests__/
     ├── contract.test.ts              # 6 tests de contrato core↔web (ids, unidades, derivados)
-    └── integration-total.test.ts     # 30 tests de integración total (assets, GIFs, pipeline 3D)
+    └── integration-total.test.ts     # tests de integración total (assets, GIFs, anatomía)
 ```
 
 > `e2e-critical-flows.test.ts` (39 tests) se **eliminó** el 2026-09-11 en la pasada adversarial: reimplementaba las fórmulas dentro del propio test y las comparaba consigo mismas (sin señal real). La cobertura de esos flujos ahora sale del código real (core + `contract.test.ts` + `tests/adversarial/`).
@@ -145,7 +141,7 @@ npx vitest run
 # Solo contrato core↔web
 npx vitest run __tests__/contract
 
-# Solo integración total (ejercicios ↔ GIFs ↔ manifest, anatomía, pipeline 3D)
+# Solo integración total (ejercicios ↔ GIFs ↔ manifest, anatomía)
 npx vitest run __tests__/integration-total
 
 # Cobertura web
@@ -155,10 +151,10 @@ npx vitest run --coverage
 pnpm test:e2e
 ```
 
-### Estado E2E navegador (2026-09-11)
-- **21/21 tests PASS** (14 producto + 5 adversariales + 2 x-ray): arranque de las 7 rutas + decodificación real de GIF + **render 3D real** (WASM engine 0.2.1 + pack OHPK v1 sobre canvas WebGL) + **fit solver** contra las medidas reales del perfil + sesión de medición guiada + guard de chips del design system + roundtrip `.bodylab` + persistencia del registro de ejercicio (IndexedDB).
+### Estado E2E navegador
+- Arranque de las rutas + decodificación real de GIF + mapa muscular 2D + sesión de medición guiada + guard de chips del design system + roundtrip `.bodylab` + persistencia del registro de ejercicio (IndexedDB).
 - **5 adversariales** (`e2e/adversarial.spec.ts`): import de `.bodylab` corrupto/malformado sin crash, payload XSS almacenado inerte, entrada de texto hostil, integridad de navegación.
-- El **P0 3D quedó resuelto**: era un desajuste de *formato* pack/engine — el pack OHPK v1 exige el engine 0.2.1 (`from_core_pack_bytes`), pero se enviaba el wasm npm 0.2.0 (solo ZIP). Se vendió el build 0.2.1 (glue + wasm + d.ts, byte a byte del demo oficial de release, cooljapan.tech/bodylab) en `public/wasm/` y se verificó el SHA-256 del pack contra upstream (`09c4bb1f…`). Detalles: `docs/TESTING.md`.
+- El **visor 3D y su atlas anatómico se eliminaron el 2026-10-23** (junto con sus dos flujos E2E `product.spec.ts` y `anatomy-xray.spec.ts`). Registro histórico: `docs/REMOVED_3D_MODEL.md`.
 
 > `vitest.config.ts` debe mantener los mismos aliases `@fitness/*` que `vite.config.ts`/`tsconfig.app.json` — sin ellos los tests que importan core fallan al ejecutarse desde esta carpeta.
 
@@ -173,7 +169,6 @@ Añadida el 2026-09-11 con filosofía de **confianza cero**. Ataca fronteras y e
 | Suite | Tests | Qué ataca |
 |-------|-------|-----------|
 | `tests/adversarial/test_analytics_adversarial.test.ts` | — | NaN/±Infinity, series vacías/de 1 punto, varianza cero, valores enormes/negativos; detectó el bug de unidades cm/m |
-| `tests/adversarial/test_parser_adversarial.test.ts` | — | Buffers truncados/desalineados, byte-soup tipo fuzz; detectó el `RangeError` no controlado |
 | `e2e/adversarial.spec.ts` | 5 | `.bodylab` corrupto/malformado, XSS almacenado, entrada hostil; detectó el crash al importar |
 
 3 defectos menores quedan **fijados con `it.fails`** como tripwire: pasarán a fallar cuando el comportamiento cambie.
@@ -187,7 +182,7 @@ pnpm build                # = tsc -b && vite build
 # Output: dist/
 ```
 
-Tamaño actual (verificado 2026-09-11): `dist/` ≈ 9 MB total incluyendo medios offline (GIFs 3.6 MB, modelo 3D 2.0 MB, wasm 0.2.1 724 KB + glue 64 KB). Entrada JS principal: **291 KB (91 KB gzip)** tras el route-splitting; el 3D, wasm y los GIFs cargan bajo demanda. El presupuesto de tamaño se comprueba en cada build (`pnpm build` imprime el top-5 de assets).
+Los medios offline (GIFs, stills, fuentes) son la mayor parte del bundle. Los chunks de ruta se cargan bajo demanda. El presupuesto de tamaño se comprueba en cada build (`pnpm build` imprime el top-5 de assets). El visor 3D y sus ~11 MB de activos (OHPK, wasm, atlas) se eliminaron el 2026-10-23 (`docs/REMOVED_3D_MODEL.md`).
 
 ## 📄 Licencia
 
