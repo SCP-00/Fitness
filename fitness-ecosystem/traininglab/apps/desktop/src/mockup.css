@@ -346,7 +346,7 @@ svg {
   color: var(--tl-text-secondary);
 }
 .tiny {
-  font-size: 11.5px;
+  font-size: 12px;
 }
 .small {
   font-size: 12.5px;
@@ -508,7 +508,7 @@ svg {
   gap: 5px;
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2px;
   background: var(--tl-surface-3);
@@ -550,7 +550,7 @@ svg {
   gap: 5px;
   padding: 3px 9px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   background: var(--tl-surface-3);
   color: var(--tl-text-secondary);
@@ -711,7 +711,7 @@ svg {
   line-height: 1;
 }
 .ring-value small {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
   font-weight: 600;
 }
@@ -821,7 +821,7 @@ svg {
 }
 .exrow-sub {
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
   margin-top: 1px;
 }
 .exrow-cell {
@@ -834,7 +834,7 @@ svg {
 }
 .exrow-cell span {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 .exrow-go {
@@ -866,7 +866,7 @@ svg {
 }
 .table th {
   text-align: left;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--tl-text-muted);
   text-transform: none;
@@ -979,7 +979,7 @@ svg {
   border-bottom-color: var(--tl-accent-strong);
 }
 .stepper-unit {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
   text-align: center;
   margin-top: 3px;
@@ -1038,7 +1038,7 @@ svg {
 }
 .daycol-head span {
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 .daycard {
   border: 1px solid var(--tl-border);
@@ -1070,7 +1070,7 @@ svg {
   align-items: center;
   gap: 6px;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .daycard-art {
   height: 62px;
@@ -1089,7 +1089,7 @@ svg {
   gap: 5px;
 }
 .done-line {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--tl-success);
   display: flex;
   align-items: center;
@@ -1105,7 +1105,7 @@ svg {
   padding: 14px;
   text-align: center;
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 .dropzone.is-over {
   border-color: var(--tl-accent);
@@ -1160,7 +1160,7 @@ svg {
   border-radius: 6px;
   background: rgba(8, 11, 14, 0.78);
   color: var(--tl-text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.3px;
   backdrop-filter: blur(4px);
@@ -1190,7 +1190,7 @@ svg {
 }
 .gcard-muscles {
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
   margin-top: -6px;
 }
 .gcard-tags {
@@ -1209,7 +1209,7 @@ svg {
   align-items: center;
   gap: 5px;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 4px 7px;
   border-radius: 7px;
@@ -1223,7 +1223,7 @@ svg {
   height: 13px;
 }
 .media-note {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--tl-text-muted);
   text-align: center;
   padding: 3px 0;
@@ -1234,7 +1234,7 @@ svg {
   place-items: center;
   height: 100%;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   gap: 6px;
   text-align: center;
 }
@@ -1482,7 +1482,7 @@ svg {
 .exercise-picker-meta {
   overflow: hidden;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1614,7 +1614,7 @@ svg {
   /* «8 × 47.4» is one datum and must not break across two lines. */
   .zen-sets td:nth-child(5) {
     white-space: nowrap;
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 
@@ -1636,14 +1636,14 @@ svg {
   /* The headers are labels, not data: 10 px buys the number columns the 8 px
      that «Peso (kg)» and «Anterior» were taking. */
   .zen-sets th {
-    font-size: 10px;
+    font-size: 12px;
     padding-inline: 4px;
   }
   .zen-sets th:nth-child(5) {
     width: 74px;
   }
   .zen-sets td:nth-child(5) {
-    font-size: 10.5px;
+    font-size: 12px;
   }
 }
 
@@ -1803,7 +1803,7 @@ svg {
 }
 .chart-axis {
   fill: var(--tl-text-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .chart-line {
   fill: none;
@@ -1819,7 +1819,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--tl-text-secondary);
 }
 .legend i {
@@ -1846,7 +1846,7 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 .bodymap-legend div {
   display: flex;
@@ -1930,7 +1930,7 @@ svg {
 .media-toggle button {
   padding: 5px 10px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--tl-text-muted);
 }
@@ -1967,7 +1967,7 @@ svg {
   color: var(--tl-on-accent);
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 .cue p {
@@ -1993,7 +1993,7 @@ svg {
   font-size: 12.5px;
 }
 .coach-row span {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 
@@ -2039,7 +2039,7 @@ svg {
   font-size: 15px;
 }
 .summary-cell span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 .summary-cell .icon {
@@ -2085,7 +2085,7 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 .phone-title {
@@ -2206,7 +2206,7 @@ svg {
   display: grid;
   place-items: center;
   background: var(--tl-surface-3);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--tl-text-secondary);
 }
@@ -2220,7 +2220,7 @@ svg {
 }
 .upnext-item small {
   display: block;
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 .upnext-item .upnext-move {
@@ -2255,7 +2255,7 @@ svg {
 }
 .hub-num {
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -2419,7 +2419,7 @@ svg {
   font-size: 12.5px;
 }
 .ent-why span span {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 
@@ -2581,19 +2581,19 @@ svg {
   background: var(--tl-surface);
 }
 .day-mini b {
-  font-size: 11.5px;
+  font-size: 12px;
 }
 .day-mini span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 .day-mini em {
-  font-size: 10.5px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 700;
 }
 .day-mini small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 .day-mini.done em {
@@ -2673,7 +2673,7 @@ svg {
 }
 .ru-meta {
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
   margin-top: 2px;
 }
 .ru-notes {
@@ -2742,7 +2742,7 @@ svg {
 }
 .detail-rx {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
   margin-top: 2px;
 }
@@ -2769,7 +2769,7 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 .ru-mini .stepper-input {
@@ -2828,10 +2828,10 @@ svg {
     display: none;
   }
   .exrow-cell b {
-    font-size: 11.5px;
+    font-size: 12px;
   }
   .exrow-cell span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .exrow-thumb {
     width: 40px;
@@ -3251,7 +3251,7 @@ body.tl-dragging {
 .summary-kpi span {
   display: block;
   margin-top: 2px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--tl-text-muted);
@@ -3294,7 +3294,7 @@ body.tl-dragging {
   display: block;
 }
 .summary-ex-vol span {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--tl-text-muted);
@@ -3320,7 +3320,7 @@ body.tl-dragging {
 .summary-sets thead th {
   background: var(--tl-surface-2);
   color: var(--tl-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -3352,7 +3352,7 @@ body.tl-dragging {
   border-radius: 5px;
   background: var(--tl-accent-wash);
   color: var(--tl-accent-strong);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 .summary-sets thead th:last-child,
@@ -3371,7 +3371,7 @@ body.tl-dragging {
   border-radius: 8px;
   background: transparent;
   color: var(--tl-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.03em;
 }

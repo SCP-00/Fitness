@@ -194,7 +194,7 @@ export default function CoachScreen() {
                         width: "100%",
                         marginTop: 8,
                         fontFamily: "ui-monospace, monospace",
-                        fontSize: 11.5,
+                        fontSize: 12,
                         lineHeight: 1.5,
                         resize: "vertical",
                       }}
@@ -229,7 +229,7 @@ export default function CoachScreen() {
                     style={{
                       width: "100%",
                       fontFamily: "ui-monospace, monospace",
-                      fontSize: 11.5,
+                      fontSize: 12,
                       lineHeight: 1.5,
                       resize: "vertical",
                     }}

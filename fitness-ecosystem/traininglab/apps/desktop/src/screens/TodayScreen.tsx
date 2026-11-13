@@ -260,7 +260,7 @@ export default function TodayScreen() {
                     {hiddenFamilies > 0 && (
                       <span
                         className="muted"
-                        style={{ whiteSpace: "nowrap", fontSize: 11 }}
+                        style={{ whiteSpace: "nowrap", fontSize: 12 }}
                       >
                         {tInterp("hoy.familiesMore", { n: hiddenFamilies })}
                       </span>
