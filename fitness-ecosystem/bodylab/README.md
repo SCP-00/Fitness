@@ -124,4 +124,4 @@ Apache-2.0 — Ver [LICENSE](../LICENSE)
 
 - [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) — Arquitectura verificada (fuente de verdad)
 - [docs/TESTING.md](../docs/TESTING.md) — Estrategia de testing y comandos
-- [docs/REDESIGN_STORM.md](../docs/REDESIGN_STORM.md) — Contrato de interfaz de TrainingLab (personas, invariantes, pantallas)
+- [docs/DESIGN_DECISIONS_2026-11-07.md](../docs/DESIGN_DECISIONS_2026-11-07.md) — Decisiones de diseño y UX de TrainingLab (benchmark, invariantes, pantallas, roadmap)

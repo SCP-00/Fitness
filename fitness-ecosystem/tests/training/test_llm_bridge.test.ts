@@ -14,8 +14,10 @@ import { describe, it, expect } from "vitest";
 import {
   chatEndpoint,
   chatWithTools,
+  detectLocalServer,
   validateProposal,
   TOOL_SPECS,
+  LOCAL_SERVER_CANDIDATES,
   type ChatMessage,
 } from "../../traininglab/apps/desktop/src/lib/llm";
 import type { LlmSettings } from "../../traininglab/apps/desktop/src/lib/types";
@@ -201,7 +203,17 @@ describe("Local LLM bridge: bounded and honest failures", () => {
     expect(calls.length).toBe(4); // initial + 3 retries, then it gives up
   });
 
-  it("survives a malformed tool-call argument blob", async () => {
+  /**
+   * Contract changed on purpose (2026-10-30).
+   *
+   * The bridge used to treat an un-parseable argument blob as `{}` and run the
+   * tool anyway, so a 4B model whose answer was truncated at the token cap made
+   * `propose_session` fail with "slots_required" — a validator message about a
+   * transport bug. The model now gets the error back once (it can resend the
+   * call) and the tool is never invoked with invented parameters; if it keeps
+   * failing, the loop ends without a session and the deterministic plan stands.
+   */
+  it("never runs a tool whose arguments did not parse, and gives the model one retry", async () => {
     const { impl } = fakeFetch([
       {
         choices: [
@@ -234,7 +246,72 @@ describe("Local LLM bridge: bounded and honest failures", () => {
       fetchImpl: impl,
     });
     expect(result.ok).toBe(true);
-    expect(seen[0]).toEqual({});
+    // The retry answered in prose after the tool error, so nothing was executed.
+    expect(seen).toEqual([]);
+    expect(result.content).toBe("ok");
+  });
+
+  it("reports a truncated answer (finish_reason=length) instead of using half a JSON", async () => {
+    const { impl } = fakeFetch([
+      {
+        choices: [
+          {
+            finish_reason: "length",
+            message: {
+              role: "assistant",
+              content: "",
+              tool_calls: [
+                {
+                  id: "x",
+                  type: "function",
+                  function: {
+                    name: "propose_session",
+                    arguments: '{"slots":[{"exerciseId":"pull-ups","set',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ]);
+    let executed = 0;
+    const result = await chatWithTools({
+      settings: { ...SETTINGS, maxTokens: 128 },
+      messages: MESSAGES,
+      tools: TOOL_SPECS,
+      execute: () => {
+        executed += 1;
+        return null;
+      },
+      fetchImpl: impl,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("ran out of tokens");
+    expect(executed).toBe(0);
+  });
+
+  it("sends the token cap it was given, so a reasoning model cannot run forever", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const impl = (async (_url: string, init: { body: string }) => {
+      bodies.push(JSON.parse(init.body));
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        json: async () => ({
+          choices: [{ message: { role: "assistant", content: "listo" } }],
+        }),
+      };
+    }) as unknown as typeof fetch;
+    await chatWithTools({
+      settings: { ...SETTINGS, maxTokens: 1536 },
+      messages: MESSAGES,
+      tools: TOOL_SPECS,
+      execute: () => null,
+      fetchImpl: impl,
+    });
+    expect(bodies[0]!.max_tokens).toBe(1536);
   });
 });
 
@@ -343,9 +420,125 @@ describe("Local LLM bridge: the hard rules dispose", () => {
     expect(tooLong.errors.some((e) => e.includes("budget"))).toBe(true);
   });
 
+  /*
+   * A focused family may take two slots (2026-10-30). The context is the only
+   * thing that changed: the rule itself, and every other guard, still applies.
+   */
+  it("allows a second slot of the focused family, with a different pattern", () => {
+    const two = validateProposal(
+      {
+        slots: [
+          { exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90 },
+          { exerciseId: "pull-ups", sets: 3, repsMin: 6, repsMax: 10, restSec: 120 },
+        ],
+      },
+      {
+        ...ctx,
+        primaryFamilyOf: (id: string) => (id === "push-ups" ? "chest" : "chest"),
+        patternOf: (id: string) => (id === "push-ups" ? "horizontal_push" : "vertical_pull"),
+        focusFamilies: ["chest"],
+      },
+    );
+    expect(two.ok).toBe(true);
+  });
+
   it("never returns an empty accepted proposal", () => {
     const check = validateProposal({ slots: [] }, ctx);
     expect(check.ok).toBe(false);
     expect(check.errors.length).toBeGreaterThan(0);
+  });
+
+  /*
+   * The two halves of the app used to disagree here (2026-10-30): the day's
+   * pain report vetoed pressing, and an agent proposal still walked through
+   * because `validateProposal` had no way to see the veto.
+   */
+  it("refuses a pattern the day's pain report vetoed", () => {
+    const vetoed = validateProposal(
+      { slots: [{ exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90 }] },
+      {
+        ...ctx,
+        vetoedPatterns: ["horizontal_push"],
+        patternOf: (id: string) =>
+          id === "push-ups" ? "horizontal_push" : "squat",
+      },
+    );
+    expect(vetoed.ok).toBe(false);
+    expect(vetoed.errors[0]).toContain("horizontal_push");
+    expect(vetoed.errors[0]).toContain("vetoed");
+  });
+
+  it("leaves a legal pattern alone when the veto names another one", () => {
+    const ok = validateProposal(
+      { slots: [{ exerciseId: "goblet-squat", sets: 3, repsMin: 8, repsMax: 12, restSec: 90 }] },
+      {
+        ...ctx,
+        vetoedPatterns: ["horizontal_push"],
+        patternOf: () => "squat",
+      },
+    );
+    expect(ok.ok).toBe(true);
+  });
+});
+
+describe("Local LLM bridge: finding the server without asking", () => {
+  /** Only the endpoints in `alive` answer GET /models; the rest refuse. */
+  function fakeServers(alive: Record<string, string[]>) {
+    const hits: string[] = [];
+    const impl = (async (url: string | URL | Request) => {
+      const href = String(url);
+      hits.push(href);
+      const base = href.replace(/\/models$/, "");
+      const models = alive[base];
+      if (!models) throw new Error("Failed to fetch");
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        json: async () => ({ data: models.map((id) => ({ id })) }),
+      } as unknown as Response;
+    }) as unknown as typeof fetch;
+    return { impl, hits };
+  }
+
+  it("fills the URL and the model id from the first server that answers", async () => {
+    const { impl } = fakeServers({
+      "http://127.0.0.1:9931/v1": ["unsloth/Qwen3.5-4B-MTP-GGUF:Q4_K_M"],
+    });
+    const found = await detectLocalServer(impl);
+    expect(found.ok).toBe(true);
+    expect(found.baseUrl).toBe("http://127.0.0.1:9931/v1");
+    expect(found.model).toBe("unsloth/Qwen3.5-4B-MTP-GGUF:Q4_K_M");
+    expect(found.tried).toEqual(LOCAL_SERVER_CANDIDATES);
+  });
+
+  it("prefers the earlier candidate when several answer", async () => {
+    const { impl } = fakeServers({
+      "http://127.0.0.1:8080/v1": ["llama-local"],
+      "http://127.0.0.1:1234/v1": ["lmstudio-model"],
+    });
+    const found = await detectLocalServer(impl);
+    expect(found.baseUrl).toBe(LOCAL_SERVER_CANDIDATES[0]);
+    expect(found.model).toBe("llama-local");
+  });
+
+  it("probes every candidate in ONE batch, not one after another", async () => {
+    const { impl, hits } = fakeServers({});
+    const found = await detectLocalServer(impl);
+    expect(hits.length).toBe(LOCAL_SERVER_CANDIDATES.length);
+    expect(found.ok).toBe(false);
+    expect(found.baseUrl).toBeNull();
+    expect(found.model).toBeNull();
+    // A miss says WHERE it looked, so the owner can tell a closed port from a
+    // server that answers on an unusual one.
+    expect(found.tried.length).toBeGreaterThan(1);
+  });
+
+  it("reports a server that answers with no model loaded", async () => {
+    const { impl } = fakeServers({ "http://127.0.0.1:11434/v1": [] });
+    const found = await detectLocalServer(impl);
+    expect(found.ok).toBe(true);
+    expect(found.baseUrl).toBe("http://127.0.0.1:11434/v1");
+    expect(found.model).toBeNull();
   });
 });

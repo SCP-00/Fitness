@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "androidbuild": {
+      "command": "npx",
+      "args": ["-y", "@asjackson/androidbuild-mcp"],
+      "env": {
+        "ANDROID_HOME": "C:/Users/andyh/AppData/Local/Android/Sdk",
+        "ANDROID_SDK_ROOT": "C:/Users/andyh/AppData/Local/Android/Sdk"
+      }
+    }
+  }
+}

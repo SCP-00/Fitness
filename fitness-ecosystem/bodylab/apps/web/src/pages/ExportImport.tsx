@@ -319,8 +319,8 @@ export default function ExportImport() {
               </p>
               <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">
                 {lang === 'es'
-                  ? 'Medidas + scores musculares + volumen de entrenamiento + PRs + catálogo de 64 ejercicios — el paquete que la app de planificación (IA local) necesita para crear rutinas.'
-                  : 'Measurements + muscle scores + training volume + PRs + 64-exercise catalog — the bundle the (local-AI) planning app needs to build routines.'}
+                  ? 'Descarga bodylab-traininglab-AAAA-MM-DD.json con medidas, scores musculares, volumen y PRs. Luego, en TrainingLab: Ajustes → Datos: BodyLab → «Cargar bodylab-traininglab.json».'
+                  : 'Downloads bodylab-traininglab-YYYY-MM-DD.json with measurements, muscle scores, volume and PRs. Then, in TrainingLab: Settings → BodyLab data → “Load bodylab-traininglab.json”.'}
               </p>
             </div>
           </button>

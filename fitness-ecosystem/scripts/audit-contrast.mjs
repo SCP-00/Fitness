@@ -14,7 +14,7 @@
  * muted on surface-3 at 4.57:1"). A comment is a claim about a pair of hex
  * values; it is not a measurement of what the browser actually paints, where
  * the background can be a gradient, a translucent overlay or a blend. The plan
- * (`docs/plan_evaluacion_qa_ui_ux.md`) says to re-measure on every real
+ * (`docs/DESIGN_DECISIONS_2026-11-07.md`) says to re-measure on every real
  * surface rather than infer approval from an isolated value, so this walks the
  * live DOM instead.
  *
@@ -412,11 +412,44 @@ const MEASURE = () => {
    * Walks ancestors until an opaque layer is found, compositing translucent
    * ones (and every gradient stop) into the running result.
    */
+  /**
+   * An opaque `::before`/`::after` that paints over `node`'s own box.
+   *
+   * This is what the Progress ring is: a conic gradient with an inner disc drawn
+   * by `::before`, so the number is read against the disc, not against the
+   * gradient. Measuring the stops reported a failure the eye never sees.
+   * A small decorative pseudo (a dot, a corner badge) is ignored: it does not
+   * cover the text, so it must not replace the backdrop.
+   */
+  const pseudoCover = (node) => {
+    const box = node.getBoundingClientRect();
+    if (!box.width || !box.height) return null;
+    for (const name of ["::before", "::after"]) {
+      const pseudo = getComputedStyle(node, name);
+      if (!pseudo || pseudo.content === "none" || pseudo.display === "none") continue;
+      const colour = parseColor(pseudo.backgroundColor);
+      if (!colour || colour.a < 0.999) continue;
+      const width = parseFloat(pseudo.width) || 0;
+      const height = parseFloat(pseudo.height) || 0;
+      if ((width * height) / (box.width * box.height) < 0.5) continue;
+      return colour;
+    }
+    return null;
+  };
+
   const backdrops = (element) => {
     const layers = [];
     let node = element;
     let opaqueFound = false;
     while (node && node !== document.documentElement.parentNode) {
+      // Pseudo-elements paint above their host's own background, so they are
+      // the closer layer to the text and end the walk when opaque.
+      const cover = pseudoCover(node);
+      if (cover) {
+        layers.push(cover);
+        opaqueFound = true;
+        break;
+      }
       const style = getComputedStyle(node);
       const base = parseColor(style.backgroundColor);
       const stops = stopsOf(style.backgroundImage);
@@ -430,9 +463,12 @@ const MEASURE = () => {
       if (opaqueFound) break;
       node = node.parentElement;
     }
-    // Nothing opaque anywhere: the page root, which the stylesheet fills with
-    // `--tl-bg`. Using it as the floor is honest, not a guess.
-    layers.push({ r: 8, g: 11, b: 14, a: 1 });
+    // Only when nothing opaque was found does the page root become the floor,
+    // which the stylesheet fills with `--tl-bg`. Pushing it unconditionally
+    // used to add it as an extra *candidate* under a button that already had an
+    // opaque gradient, so the worst-case minimum was text against the page and
+    // every accent CTA reported a false 1:1.
+    if (!opaqueFound) layers.push({ r: 8, g: 11, b: 14, a: 1 });
 
     const results = [];
     for (let index = 0; index < layers.length; index += 1) {
@@ -485,6 +521,11 @@ const MEASURE = () => {
     samples.push({
       selector: label(element),
       text: ownText.slice(0, 42),
+      // Kept in the JSON so a failure can be re-read without re-running: the
+      // computed painted layers and the markup are what explain a wrong
+      // backdrop (a gradient on the element, a pseudo-element, a blend).
+      bgImage: style.backgroundImage.slice(0, 160),
+      html: element.outerHTML.slice(0, 180),
       color: `${foreground.r},${foreground.g},${foreground.b}`,
       background: worstBackground
         ? `${Math.round(worstBackground.r)},${Math.round(worstBackground.g)},${Math.round(worstBackground.b)}`
@@ -578,7 +619,8 @@ async function auditContrast(browser) {
 /**
  * The primary action must be inside the first viewport: on a phone in a gym,
  * an action that needs a scroll before you know it exists is not a primary
- * action. `.tl-btn-primary` is the app's accent-filled button.
+ * action. The accent-filled button is `.tl-btn-primary` in the shell and
+ * `.btn-primary` in the shared button primitive; both count.
  */
 async function auditFirstViewportCta(browser) {
   for (const viewport of CTA_VIEWPORTS) {
@@ -594,7 +636,7 @@ async function auditFirstViewportCta(browser) {
 
     const result = await page.evaluate(() => {
       const buttons = Array.from(
-        document.querySelectorAll(".tl-btn-primary"),
+        document.querySelectorAll(".tl-btn-primary, .btn-primary"),
       ).filter((element) => {
         const style = getComputedStyle(element);
         return style.display !== "none" && style.visibility !== "hidden";
@@ -625,7 +667,7 @@ async function auditFirstViewportCta(browser) {
         `CTA · ${name}`,
         "acción primaria visible sin desplazar",
         "FAIL",
-        "no hay ningún .tl-btn-primary en Inicio",
+        "no hay ningún botón primario en Inicio",
       );
     } else {
       record(

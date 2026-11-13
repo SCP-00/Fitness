@@ -35,7 +35,11 @@ export type RouteId =
   | "week"
   | "routines"
   | "settings"
-  | "session";
+  | "session"
+  /** The coach (2026-10-24): opened from Hoy and Ajustes, like the session. */
+  | "coach"
+  /** The close of the loop (2026-11-06): the numbers of a finished session. */
+  | "summary";
 
 export interface Route {
   id: RouteId;
@@ -73,6 +77,12 @@ const SEGMENTS: Record<string, RouteId> = {
   sesion: "session",
   session: "session",
   entrenar: "session",
+  coach: "coach",
+  // A URL a human might type. Spanish-first, like the rest.
+  entrenador: "coach",
+  plan: "coach",
+  resumen: "summary",
+  summary: "summary",
 };
 
 /** The canonical hash for a destination (what `href` and `navigate` write). */
@@ -86,6 +96,8 @@ export const HASH: Record<RouteId, string> = {
   routines: "#/rutinas",
   settings: "#/ajustes",
   session: "#/sesion",
+  coach: "#/coach",
+  summary: "#/resumen",
 };
 
 /** Route segment per destination — one source for every plain `<a href>`. */
@@ -99,6 +111,8 @@ export const SEGMENT: Record<RouteId, string> = {
   routines: "rutinas",
   settings: "ajustes",
   session: "sesion",
+  coach: "coach",
+  summary: "resumen",
 };
 
 /** Parse a `location.hash` (with or without the leading `#`) into a route. */

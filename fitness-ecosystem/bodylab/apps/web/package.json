@@ -10,7 +10,8 @@
     "test": "vitest run",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:traininglab": "playwright test -c playwright.traininglab.config.ts"
   },
   "dependencies": {
     "@tauri-apps/plugin-process": "^2.4.0",

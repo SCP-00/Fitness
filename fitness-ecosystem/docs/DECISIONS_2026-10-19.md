@@ -1,7 +1,7 @@
 # Decisiones de la ronda — 2026-10-19
 
 Este documento fija las decisiones que la implementación de hoy aplica. No sustituye a
-`REDESIGN_STORM.md` (autoridad de diseño) ni a `MCP_TOOL_SURFACE.md` (autoridad de la
+`DESIGN_DECISIONS_2026-11-07.md` (autoridad de diseño y UX) ni a `MCP_TOOL_SURFACE.md` (autoridad de la
 superficie de agentes); las actualiza donde la evidencia cambió.
 
 ## 1. Navegación móvil
@@ -99,8 +99,8 @@ de nuevo):
    viajan sin pedirlos).
 2. **100 % local, siempre.** Un worker WASM con `Proxyquire`/fetch del modelo desde
    `asset://` o un comando Rust estrecho tipo `read_model`; ningún `fetch` a internet en
-   el camino. El gate de privacidad de `REDESIGN_STORM.md` §8 se cumple por
-   construcción.
+   el camino. El gate de privacidad del producto (nada de audio fuera del dispositivo)
+   se cumple por construcción.
 3. **El STT escribe *hechos*, no decisiones.** Lo transcrito entra como `notes` de una
    serie vía `log_training_set` (o como feedback del día en readiness), nunca como
    cambio de plan: el modelo propone, la app dispone — también con la voz.

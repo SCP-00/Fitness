@@ -160,7 +160,19 @@ export function buildAction(type, params, args = {}) {
 }
 
 /** Append to the inbox atomically (never a half-written file) and wait. */
-async function submitActions(actions, { waitMs = 8000 } = {}) {
+/**
+ * How long to wait for the app's receipts before answering "queued".
+ *
+ * `TL_MCP_WAIT_MS` exists for the root suite, read at call time: a test that
+ * only checks what was written to the queue has nothing to wait for, and two
+ * 8 s waits made `test_mcp_server` the slowest file in the suite for no
+ * evidence gained. The default is unchanged, so a real agent sees exactly the
+ * same behaviour.
+ */
+async function submitActions(
+  actions,
+  { waitMs = Number(process.env.TL_MCP_WAIT_MS) || 8000 } = {},
+) {
   const dir = getMcpDir();
   if (!dir) {
     return {
@@ -718,6 +730,53 @@ export const TOOLS = [
             'Familia muscular prioritaria (ej. "chest", "lats", "quadriceps")',
         },
       },
+    },
+  },
+  {
+    name: "propose_session",
+    description:
+      "ACCIÓN (2026-10-24): envía TU sesión para hoy y la app la adopta como plan del día — el hueco de escritura que faltaba. Es la misma puerta que usa su modelo local: la app valida contra tu equipamiento real, tu presupuesto de tiempo, una sola familia principal y la ventana de recuperación; si algo falla, te devuelve el motivo con números y el plan determinista se queda intacto. La propuesta es reversible por el dueño con un toque (Ajustes → auditoría de agentes). Usa ids del catálogo que devuelve `propose_training_session`, no inventes ejercicios. Si tu contexto no permite una propuesta honesta, responde con `slots: []` y explícalo en `summary`: la app lo registra y no cambia nada.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        summary: {
+          type: "string",
+          description:
+            "Una o dos frases: por qué esta sesión y con qué criterio (lo lee el dueño en el plan de hoy).",
+        },
+        slots: {
+          type: "array",
+          description:
+            "Los ejercicios, en orden. Cada uno con su prescripción: la app los valida en conjunto, no de uno en uno.",
+          items: {
+            type: "object",
+            properties: {
+              exercise_id: {
+                type: "string",
+                description: "Id del catálogo (el que devuelve el contexto).",
+              },
+              sets: { type: "number", description: "Series de trabajo (1-10)." },
+              reps_min: { type: "number", description: "Repeticiones mínimas." },
+              reps_max: { type: "number", description: "Repeticiones máximas." },
+              rest_sec: {
+                type: "number",
+                description: "Descanso entre series en segundos.",
+              },
+              note: {
+                type: "string",
+                description:
+                  "Por qué este ejercicio en esta sesión (se muestra en la fila).",
+              },
+            },
+            required: ["exercise_id", "sets"],
+          },
+        },
+        idempotency_key: {
+          type: "string",
+          description: "Clave para reintentar sin duplicar.",
+        },
+      },
+      required: ["slots"],
     },
   },
   {
@@ -1596,6 +1655,57 @@ export async function handleToolCall(name, args = {}) {
         args,
       );
       return renderOutcome(await submitActions([action]));
+    }
+
+    case "propose_session": {
+      // `slots` has to be *present*. An empty array is a legitimate answer ("my
+      // context does not allow an honest proposal" — the app records it and keeps
+      // the deterministic plan), but a call that forgot the key entirely would
+      // otherwise queue the same thing while looking like a session.
+      if (!Array.isArray(args.slots)) {
+        return toolText({
+          status: "rejected",
+          rule: "slots_required",
+          message:
+            "Envía `slots` (array). Si no puedes proponer una sesión honesta con el contexto, manda `slots: []` y explícalo en `summary`.",
+        });
+      }
+      // The agent's answer, mapped to the shape `validateProposal` reads. A
+      // numeric field the agent left out is "no preference", never 0: the app's
+      // own defaults fill it, exactly as when the local model omits it.
+      // Both spellings, deliberately. The brief on `#/coach` prints the app's
+      // own contract (`exerciseId`, `repsMin`, …) and the MCP schema advertises
+      // snake_case; an agent that copies the brief verbatim used to have every
+      // slot mapped to an empty id and refused as "not available". The boundary
+      // forgives the spelling, the rules still judge the content.
+      const pick = (slot, snake, camel) => slot?.[snake] ?? slot?.[camel];
+      const rawSlots = args.slots;
+      const slots = rawSlots.map((slot) => {
+        const out = {
+          exerciseId: String(pick(slot, "exercise_id", "exerciseId") ?? ""),
+          sets: Number(slot?.sets),
+        };
+        const repsMin = pick(slot, "reps_min", "repsMin");
+        const repsMax = pick(slot, "reps_max", "repsMax");
+        const restSec = pick(slot, "rest_sec", "restSec");
+        if (Number.isFinite(Number(repsMin))) out.repsMin = Number(repsMin);
+        if (Number.isFinite(Number(repsMax))) out.repsMax = Number(repsMax);
+        if (Number.isFinite(Number(restSec))) out.restSec = Number(restSec);
+        if (typeof slot?.note === "string" && slot.note.trim()) out.note = slot.note.trim();
+        return out;
+      });
+      return renderOutcome(
+        await submitActions([
+          buildAction(
+            "propose_plan",
+            {
+              summary: typeof args.summary === "string" ? args.summary : "",
+              slots,
+            },
+            args,
+          ),
+        ]),
+      );
     }
 
     case "reorder_today": {

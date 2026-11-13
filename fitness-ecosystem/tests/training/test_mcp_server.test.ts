@@ -18,7 +18,13 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -39,11 +45,13 @@ function payload(result: { content: Array<{ text: string }> }) {
 }
 
 describe("mcp server: the registry a local model sees", () => {
-  it("exposes the whole surface, 35 tools", () => {
+  it("exposes the whole surface, 36 tools", () => {
     // 34 through the 2026-10-19 parity round; `set_gear_profile` (2026-10-20) is
     // the gear shelf — the chips in Ajustes, which a human can press and an
-    // agent can now request.
-    expect(TOOLS).toHaveLength(35);
+    // agent can now request; `propose_session` (2026-10-24) is the write half of
+    // "MCP as the model": the app already accepted the `propose_plan` action, and
+    // this is the tool that puts one in the queue.
+    expect(TOOLS).toHaveLength(36);
   });
 
   it("exposes the action tools, the parity round included", () => {
@@ -76,6 +84,8 @@ describe("mcp server: the registry a local model sees", () => {
       "regenerate_week",
       // 2026-10-20: the gear shelf.
       "set_gear_profile",
+      // 2026-10-24: an agent proposing today's session.
+      "propose_session",
     ]) {
       expect(names).toContain(name);
     }
@@ -163,12 +173,99 @@ describe("mcp server: refusals that never touch the app", () => {
     expect(out.rule).toBe("profile_required");
   });
 
+  it("will not queue a proposal that forgot its `slots`", async () => {
+    // 2026-10-24: an empty array is a real answer (a refusal) and goes through;
+    // a *missing* key would queue the same thing while looking like a session.
+    const out = payload(await handleToolCall("propose_session", {}));
+    expect(out.status).toBe("rejected");
+    expect(out.rule).toBe("slots_required");
+  });
+
   it("reports an unknown action id as not_found rather than as an empty list", async () => {
     const out = payload(
       await handleToolCall("read_receipts", { id: "id-que-no-existe-jamas" }),
     );
     expect(out.status).toBe("not_found");
   });
+});
+
+/**
+ * The brief on `#/coach` prints the **app's** contract (`exerciseId`, `repsMin`)
+ * while the MCP schema advertises snake_case. A model that answers the brief
+ * verbatim used to have every slot mapped to `exerciseId: ""` and then refused
+ * as an exercise it does not own — a trap made of two spellings of one field.
+ * These two tests queue an action in a sandbox `APPDATA` (never the real inbox)
+ * and read back what the app would have received.
+ */
+describe("mcp server: one slot, two spellings", () => {
+  let sandbox = "";
+  let previousAppData: string | undefined;
+
+  const inboxFile = () =>
+    path.join(sandbox, "com.traininglab.desktop", "mcp", "mcp-actions.json");
+
+  /** What the mapping actually put in the queue, once the call settles. */
+  const queued = (): Record<string, unknown>[] => {
+    try {
+      const raw = JSON.parse(readFileSync(inboxFile(), "utf8"));
+      return Array.isArray(raw) ? raw : (raw.actions ?? []);
+    } catch {
+      return [];
+    }
+  };
+
+  beforeEach(() => {
+    sandbox = mkdtempSync(path.join(tmpdir(), "tl-mcp-spelling-"));
+    previousAppData = process.env.APPDATA;
+    process.env.APPDATA = sandbox;
+    // No app is polling this sandbox, so waiting 8 s for a receipt would buy no
+    // evidence: the assertion is about what was *queued*.
+    process.env.TL_MCP_WAIT_MS = "50";
+  });
+
+  afterEach(() => {
+    if (previousAppData === undefined) delete process.env.APPDATA;
+    else process.env.APPDATA = previousAppData;
+    delete process.env.TL_MCP_WAIT_MS;
+    rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  it("reads the brief's camelCase slots", async () => {
+    await handleToolCall("propose_session", {
+      summary: "Copiado del encargo",
+      slots: [
+        { exerciseId: "push-ups", sets: 3, repsMin: 8, repsMax: 12, restSec: 90 },
+      ],
+    });
+    const action = queued()[0] as
+      | { type: string; params: { slots: Record<string, unknown>[] } }
+      | undefined;
+    expect(action?.type).toBe("propose_plan");
+    expect(action?.params.slots[0]).toMatchObject({
+      exerciseId: "push-ups",
+      sets: 3,
+      repsMin: 8,
+      repsMax: 12,
+      restSec: 90,
+    });
+  }, 20000);
+
+  it("still reads the schema's snake_case slots", async () => {
+    await handleToolCall("propose_session", {
+      slots: [
+        { exercise_id: "pull-ups", sets: 4, reps_min: 6, reps_max: 10, rest_sec: 120 },
+      ],
+    });
+    const action = queued()[0] as
+      | { params: { slots: Record<string, unknown>[] } }
+      | undefined;
+    expect(action?.params.slots[0]).toMatchObject({
+      exerciseId: "pull-ups",
+      repsMin: 6,
+      repsMax: 10,
+      restSec: 120,
+    });
+  }, 20000);
 });
 
 describe("mcp server: the action envelope", () => {

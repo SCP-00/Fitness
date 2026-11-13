@@ -82,14 +82,24 @@ export function focusFamiliesOf(key: string): MuscleFamily[] | null {
 }
 
 /**
- * The preset a family list corresponds to, or `auto` when it is a bespoke
- * combination (which the chips cannot show as active but the engine honours).
+ * The preset a family list corresponds to.
+ *
+ * Three answers, not two, because the chips are a claim about the plan:
+ *
+ *   * `"auto"` — no focus at all, the engine's own decision;
+ *   * a preset key — one of the chips below;
+ *   * `null` — a **bespoke** combination, which is what an agent's
+ *     `set_day_focus` can produce (it accepts any families, not just our five
+ *     presets). Before 2026-10-24 this returned `"auto"`, so a day focused on
+ *     pecho + espalda drew *Automático* as pressed: the chip said the opposite
+ *     of what the planner was doing. The bar now renders a «A medida» chip
+ *     instead, with the families it actually holds.
  */
-export function focusKeyOf(families: readonly MuscleFamily[]): string {
+export function focusKeyOf(families: readonly MuscleFamily[]): string | null {
   const match = DAY_FOCUS_PRESETS.find(
     (option) =>
       option.families.length === families.length &&
       option.families.every((family) => families.includes(family)),
   );
-  return match?.key ?? "auto";
+  return match?.key ?? null;
 }

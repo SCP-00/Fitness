@@ -63,7 +63,7 @@ export function SectionCard({
   defaultOpen?: boolean;
 }) {
   return (
-    <details open={defaultOpen} className="tl-card overflow-hidden group">
+    <details open={defaultOpen} className="card overflow-hidden group">
       <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none">
         {/* flex-1 + min-w-0 so the title truncates instead of pushing the
             header actions off-screen on a phone. */}
@@ -409,6 +409,7 @@ export function NavRow({
   leading,
   onClick,
   className = "",
+  titleLines = 1,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -416,12 +417,25 @@ export function NavRow({
   leading?: ReactNode;
   onClick?: () => void;
   className?: string;
+  /**
+   * Lines the title may use. One (`truncate`) is right for a settings row whose
+   * name is short; the exercise list needs two, because at 320 px the badges and
+   * the level meter left ~6 characters and "Flexiones diamante" came out as
+   * "Flexi…" (audited 2026-10-29).
+   */
+  titleLines?: 1 | 2;
 }) {
   const inner = (
     <>
       {leading && <div className="shrink-0">{leading}</div>}
       <div className="min-w-0 flex-1 text-left">
-        <div className="font-semibold leading-tight truncate">{title}</div>
+        <div
+          className={`font-semibold leading-tight ${
+            titleLines === 2 ? "line-clamp-2" : "truncate"
+          }`}
+        >
+          {title}
+        </div>
         {subtitle && (
           <div className="text-xs text-[var(--tl-text-muted)] mt-0.5 truncate">
             {subtitle}
@@ -614,7 +628,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="tl-card px-6 py-10 text-center">
+    <div className="card px-6 py-10 text-center">
       {icon && (
         <div className="mx-auto mb-3 text-[var(--tl-text-muted)]">{icon}</div>
       )}

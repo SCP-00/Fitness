@@ -5,7 +5,9 @@
  *
  * What it does
  *   1. (optional) builds both web apps with `vite build --base=./` so the
- *      bundles are relocatable under a subpath;
+ *      bundles are relocatable under a subpath — a `dist/` that links from the
+ *      origin root (a desktop build) is rebuilt too, since it cannot be served
+ *      here at all;
  *   2. starts a single dependency-free HTTP server on 0.0.0.0 that serves
  *        /              → a hub page with both links + the LAN URL
  *        /bodylab/      → bodylab/apps/web/dist
@@ -26,7 +28,8 @@
  *   node scripts/serve-lan.mjs                 # build if needed, then serve
  *   node scripts/serve-lan.mjs --port 8090
  *   node scripts/serve-lan.mjs --build         # force a rebuild first
- *   node scripts/serve-lan.mjs --no-build      # fail instead of building
+ *   node scripts/serve-lan.mjs --no-build      # fail instead of building from scratch
+ *                                              # (an unservable desktop dist is still rebuilt)
  *   node scripts/serve-lan.mjs --open          # also open the hub in a browser
  *   node scripts/serve-lan.mjs --open traininglab   # …or jump straight to one app
  *   node scripts/serve-lan.mjs --shared        # also run the shared SQLite store
@@ -106,6 +109,19 @@ const APPS = [
 
 // ── Build ─────────────────────────────────────────────────────────────────
 /**
+ * A root-absolute link in the built page: `src="/…"` or `href="/…"`, but not
+ * protocol-relative `//host/…`.
+ *
+ * `vite build` without `--base=./` — every desktop (Tauri) build — writes
+ * `/assets/index-….js`, and under `/traininglab/` the browser then asks the
+ * origin root, gets a 404 and paints a blank page with no script at all. Any
+ * root-absolute path breaks the same way, whatever the base happens to be.
+ */
+function hasRootAbsoluteLinks(html) {
+  return /(?:src|href)="\/(?!\/)/.test(html);
+}
+
+/**
  * Build one app with a relative base. `pnpm exec` keeps us inside that
  * package's dependency graph, which is where vite is installed.
  */
@@ -131,7 +147,9 @@ for (const app of APPS) {
   const distIndex = path.join(ROOT, app.dir, "dist", "index.html");
   if (FORCE_BUILD) {
     build(app, "forced with --build");
-  } else if (!fs.existsSync(distIndex)) {
+    continue;
+  }
+  if (!fs.existsSync(distIndex)) {
     if (NO_BUILD) {
       console.error(
         `✖ ${app.dir}/dist/index.html is missing and --no-build was given.`,
@@ -139,6 +157,21 @@ for (const app of APPS) {
       process.exit(1);
     }
     build(app, "no bundle yet");
+    continue;
+  }
+
+  // A bundle that links from the origin root is not stale, it is unservable
+  // here: `--no-build` spares a rebuild for a bundle that already works, not
+  // the blank page this check exists to prevent.
+  if (!hasRootAbsoluteLinks(await fsp.readFile(distIndex, "utf8"))) continue;
+  build(app, "index.html links from the origin root (a desktop build)");
+  if (hasRootAbsoluteLinks(await fsp.readFile(distIndex, "utf8"))) {
+    console.error(
+      `\n✖ ${app.label}: the rebuild still links from the origin root.`,
+    );
+    console.error("  Run it by hand to see why:");
+    console.error(`    cd ${app.dir} && pnpm exec vite build --base=./`);
+    process.exit(1);
   }
 }
 

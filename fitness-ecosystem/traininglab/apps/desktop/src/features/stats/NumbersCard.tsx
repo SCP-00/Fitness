@@ -48,11 +48,11 @@ export function NumbersCard() {
   ];
 
   return (
-    <section className="tl-card">
-      <div className="tl-card-head">
+    <section className="card">
+      <div className="card-head">
         <h2>{t("progress.numbers.title")}</h2>
       </div>
-      <div className="tl-card-body">
+      <div className="card-body">
         <div className="tl-badges">
           {tiles.map((tile) => (
             <div key={tile.label} className="tl-badge-tile">

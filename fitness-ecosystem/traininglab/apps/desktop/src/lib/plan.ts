@@ -43,6 +43,7 @@ import {
 } from "@fitness/bodylab-training";
 import { fuseWeakness, type ImportPayload } from "./adapter";
 import { deriveFatigue, type FatigueReport } from "./recovery";
+import { inferStartingLoad } from "./cross-progression";
 import {
   progressionFor,
   summariseExerciseDays,
@@ -447,26 +448,39 @@ export function buildTodayPlan(input: TodayPlanInput): TodayPlan {
   };
 }
 
-/** Same-pattern, gear-legal swaps for the "change exercise" action. */
+/** Same-pattern, gear-legal swaps for the "change exercise" action, ranked by SFR & hypertrophy. */
 export function swapOptions(
   plan: TodayPlan,
   exerciseId: string,
 ): PlannerExercise[] {
   const current = plan.rows.find((r) => r.exerciseId === exerciseId);
   if (!current) return [];
+  const currentEntry = plan.usable.find((u) => u.exercise.id === exerciseId);
+  const currentLoadType = currentEntry?.traits.loadType ?? current.loadType;
   const inSession = new Set(plan.rows.map((r) => r.exerciseId));
-  return plan.usable
-    .filter(
-      (entry) =>
-        entry.traits.pattern === current.pattern &&
-        !inSession.has(entry.exercise.id) &&
-        // Interchangeable only when the loading style matches (you cannot swap
-        // a band press for a machine press and keep the same prescription).
-        entry.traits.loadType ===
-          plan.usable.find((u) => u.exercise.id === exerciseId)?.traits
-            .loadType,
-    )
-    .sort((a, b) => b.exercise.hypertrophy - a.exercise.hypertrophy);
+
+  const candidates = plan.usable.filter(
+    (entry) =>
+      entry.traits.pattern === current.pattern &&
+      !inSession.has(entry.exercise.id),
+  );
+
+  return candidates.sort((a, b) => {
+    // 1. Same load type preferred first (e.g. barbell -> barbell, dumbbell -> dumbbell)
+    const aSame = a.traits.loadType === currentLoadType;
+    const bSame = b.traits.loadType === currentLoadType;
+    if (aSame !== bSame) return aSame ? -1 : 1;
+
+    // 2. Stimulus-to-Fatigue Ratio (SFR): (hypertrophy * 2.5) / (jointStress + spineLoad)
+    const aCost = Math.max(2, a.traits.jointStress + a.traits.spineLoad);
+    const bCost = Math.max(2, b.traits.jointStress + b.traits.spineLoad);
+    const aSfr = (a.exercise.hypertrophy * 2.5) / aCost;
+    const bSfr = (b.exercise.hypertrophy * 2.5) / bCost;
+    if (Math.abs(bSfr - aSfr) > 0.3) return bSfr - aSfr;
+
+    // 3. Higher hypertrophy
+    return b.exercise.hypertrophy - a.exercise.hypertrophy;
+  });
 }
 
 // ── Load suggestion: grounded in the log, PRs and the gear you own ──────────
@@ -492,11 +506,15 @@ export interface LoadSuggestionInput {
   pr?: { bestWeight: number | null; bestEst1RM: number | null } | null;
   inventory: OwnedEquipment[];
   readiness: Readiness;
+  /** Optional: all logged sets for cross-exercise load inference */
+  allSets?: readonly TLSet[];
+  exerciseId?: string;
+  lang?: "es" | "en";
 }
 
 /**
  * Deterministic, explainable load suggestion:
- *   1. no history and no PR  → no weight (bodyweight or "start light")
+ *   1. no history and no PR  → infer from brother exercises or no weight ("start light")
  *   2. a PR with no history  → 70 % of the e1RM projected to the target reps
  *   3. hit the top of range  → +1 increment
  *   4. missed the bottom     → −1 increment (honest reset)
@@ -538,6 +556,21 @@ export function suggestLoadFor(input: LoadSuggestionInput): LoadSuggestion {
       w: Math.round(projected * 0.9 * 10) / 10,
       reps: targetReps,
     });
+  } else if (!last && input.exerciseId && input.allSets && input.allSets.length > 0) {
+    const inferred = inferStartingLoad({
+      targetExerciseId: input.exerciseId,
+      allSets: input.allSets,
+      targetReps: Math.round((input.repsMin + input.repsMax) / 2),
+      stepKg,
+      capKg,
+      lang: input.lang ?? "es",
+    });
+    if (inferred && inferred.weightKg !== null) {
+      weight = inferred.weightKg;
+      reason = inferred.reason;
+    } else {
+      return { weight: null, reason: t("load.first"), stepKg, capKg };
+    }
   } else if (last) {
     const lastWeight = last.weight as number;
     const reps = last.reps ?? 0;

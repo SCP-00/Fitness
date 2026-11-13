@@ -38,6 +38,7 @@ import { canUndo, sortAudit } from "../lib/mcp-actions";
 import { plannerCatalog } from "../lib/plan";
 import { t, tInterp } from "../lib/i18n";
 import { resolveBodyMapFigure } from "../lib/settings";
+import { uid } from "../lib/uid";
 import {
   freeGearName,
   gearShelf,
@@ -262,19 +263,20 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl flex flex-col gap-4">
-      <header>
-        <h1 className="text-2xl font-bold leading-tight">
-          {t("nav.settings")}
-        </h1>
-        <p className="text-sm text-[var(--tl-text-secondary)] mt-1">
-          {t("settings.pageHint")}
-        </p>
+    <>
+      <header className="topbar">
+        <div>
+          <div className="topbar-title">{t("nav.settings")}</div>
+          <div className="topbar-sub">{t("settings.pageHint")}</div>
+        </div>
       </header>
+
+      <div className="content">
+        <div className="mx-auto w-full max-w-3xl flex flex-col gap-4">
 
       {/*
        * Sections are `<details>` (2026-09-30 f), in the order the plan fixes
-       * (`TRAININGLAB_UI_PLAN.md` §7): perfil · objetivo · equipo · entrenar ·
+       * (`DESIGN_DECISIONS_2026-11-07.md`, Ajustes): perfil · objetivo · equipo · entrenar ·
        * datos · acerca de. Collapsed by default because Ajustes is a reference
        * surface — you come here to change one thing, not to read everything —
        * and open by default for the two sections a new user is here to fill in.
@@ -400,12 +402,12 @@ export default function SettingsScreen() {
           defaultName={gearDefaultName}
           onName={(name) =>
             gearWrite(() =>
-              withGearProfileName(settings, name, crypto.randomUUID()),
+              withGearProfileName(settings, name, uid()),
             )
           }
           onNew={(name) =>
             gearWrite(() =>
-              withNewGearProfile(settings, name, crypto.randomUUID()),
+              withNewGearProfile(settings, name, uid()),
             )
           }
           onRename={(id, name) =>
@@ -463,6 +465,19 @@ export default function SettingsScreen() {
           onAsk={askCoach}
           busy={coachBusy}
         />
+        {/*
+         * The agent's seat is a screen of its own (2026-10-24): asking a model
+         * over MCP, or pasting an answer, needs a brief to copy and a result to
+         * read, which is more than a settings row should carry.
+         */}
+        <button
+          type="button"
+          className="btn tl-focusable mt-3"
+          onClick={() => navigate("coach")}
+        >
+          <Bot className="w-4 h-4" />
+          {t("coach.page.title")}
+        </button>
         {coachResult && (
           <div className="mt-4">
             <CoachResultView result={coachResult} />
@@ -471,11 +486,18 @@ export default function SettingsScreen() {
       </SectionCard>
 
       {/* ── Datos: BodyLab ───────────────────────────────────────────────── */}
+      {/*
+       * Open when there is no export yet (2026-10-30). The owner's report was
+       * literal: "es difícil hallar el archivo de importación". A collapsed
+       * section named after another app is not a place you look; an open one
+       * with the exact steps is. With a payload already loaded it stays shut,
+       * because then it is reference, not a task.
+       */}
       <SectionCard
         title={t("setup.title")}
         hint={t("settings.section.bodylabHint")}
         icon={<FileJson className="w-4 h-4" />}
-        defaultOpen={false}
+        defaultOpen={!payload}
         actions={
           <Badge tone={payload ? "success" : "neutral"}>
             {payload ? t("setup.loaded") : t("today.noSource")}
@@ -522,6 +544,9 @@ export default function SettingsScreen() {
           )}
         </div>
         <p className="text-xs text-[var(--tl-text-muted)] mt-3">
+          {t("settings.importSteps")}
+        </p>
+        <p className="text-xs text-[var(--tl-text-muted)] mt-1">
           {t("settings.importHint")}
         </p>
         {/* closes the BodyLab section below */}
@@ -903,10 +928,12 @@ export default function SettingsScreen() {
         </div>
       </SectionCard>
 
-      <p className="text-[11px] text-[var(--tl-text-muted)] text-center flex items-center justify-center gap-1.5">
-        <Info size={12} />
-        {t("settings.about.offline")}
-      </p>
-    </div>
+          <p className="text-[11px] text-[var(--tl-text-muted)] text-center flex items-center justify-center gap-1.5">
+            <Info size={12} />
+            {t("settings.about.offline")}
+          </p>
+        </div>
+      </div>
+    </>
   );
 }

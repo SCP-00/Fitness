@@ -32,6 +32,7 @@ import { ExerciseThumb } from "../features/exercises/ExerciseThumb";
 import { familyLabel } from "../lib/format";
 import { getLanguage, t, tInterp } from "../lib/i18n";
 import { exerciseName, type PlannedRow } from "../lib/plan";
+import { ExercisePicker } from "../features/exercises/ExercisePicker";
 import {
   ROUTINE_LIMITS,
   duplicateRoutine,
@@ -47,6 +48,13 @@ import {
   type RoutineTemplate,
   type TemplateBuild,
 } from "../lib/routine-templates";
+import {
+  routineContinuity,
+  routineSignature,
+  suggestedRoutines,
+  type RoutineContinuity,
+} from "../lib/routine-continuity";
+import { formatWeight, type WeightUnit } from "../lib/units";
 import { MIcons } from "../ui/mockup-icons";
 
 /** The page's own rep presets, identical to the queue screen's. */
@@ -60,10 +68,6 @@ const REP_PRESETS = [
 const REST_PRESETS = [30, 45, 60, 90, 120, 150, 180] as const;
 const SET_PRESETS = [1, 2, 3, 4, 5, 6, 8, 10] as const;
 const RIR_PRESETS = [0, 1, 2, 3, 4, 5] as const;
-/** How many picker candidates are rendered at once (more once there is a query). */
-const PICKER_LIMIT = 6;
-const PICKER_LIMIT_SEARCH = 40;
-
 /** What the editor holds while the user types (never written until Guardar). */
 interface Draft {
   id?: string;
@@ -79,17 +83,22 @@ export default function RoutinesScreen() {
     routines,
     loading,
     plan,
+    sets,
+    sessions,
     saveRoutine,
     saveRoutines,
     deleteRoutine,
     applyRoutineToday,
   } = useStore();
+  const unit: WeightUnit = settings?.unit ?? "kg";
 
   const [search, setSearch] = useState("");
   const [viewing, setViewing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   /** The routine a "Usar hoy" was just applied to, for the sheet's receipt. */
-  const [applied, setApplied] = useState<{ id: string; n: number } | null>(null);
+  const [applied, setApplied] = useState<{ id: string; n: number } | null>(
+    null,
+  );
   const [duplicated, setDuplicated] = useState<string | null>(null);
   /** The template shelf, and the preview of the one being confirmed. */
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -98,6 +107,23 @@ export default function RoutinesScreen() {
     build: TemplateBuild;
   } | null>(null);
   const [created, setCreated] = useState<string[] | null>(null);
+  /** Set when "Desde mi historial" found nothing repeatable to build from. */
+  const [historyNote, setHistoryNote] = useState<string | null>(null);
+
+  /**
+   * Continuity per routine, derived from the log on every render.
+   *
+   * Computed here rather than in each card because the cards are re-created on
+   * every keystroke of the search box, and walking 500 sets per card per letter
+   * is the kind of cost that shows up as a laggy field on a phone.
+   */
+  const continuity = useMemo(() => {
+    const map = new Map<string, RoutineContinuity>();
+    for (const routine of routines) {
+      map.set(routine.id, routineContinuity(routine, sets));
+    }
+    return map;
+  }, [routines, sets]);
 
   const query = search.trim().toLocaleLowerCase();
   const visible = useMemo(() => {
@@ -115,14 +141,35 @@ export default function RoutinesScreen() {
     });
   }, [routines, query]);
 
+  /**
+   * The three splits, built against the user's **usable** catalogue.
+   *
+   * The empty state prints them instead of a lone button. With zero routines
+   * this screen was mostly void on a 1440 px monitor, and the templates — the
+   * one thing that makes an empty shelf useful — lived behind a modal nobody
+   * could see. Building them here is cheap (pure, seven days of slots) and it
+   * also tells the truth: a split with holes shows its holes before you click.
+   */
+  const templateBuilds = useMemo(() => {
+    if (!plan) return [];
+    return ROUTINE_TEMPLATES.map((template) => ({
+      template,
+      build: buildTemplateRoutines(
+        template,
+        plan.usable,
+        (key) => t(key),
+        routines.map((routine) => routine.name),
+      ),
+    }));
+  }, [plan, routines]);
+
   if (loading || !settings || !plan) {
     return <div className="tl-loading">{t("common.loading")}</div>;
   }
 
   const selected = routines.find((routine) => routine.id === viewing) ?? null;
 
-  const openNew = () =>
-    setDraft({ name: "", notes: "", items: [] });
+  const openNew = () => setDraft({ name: "", notes: "", items: [] });
 
   const openFromToday = () => {
     const name = tInterp("ru.fromTodayName", {
@@ -132,7 +179,8 @@ export default function RoutinesScreen() {
       ),
     });
     const routine = routineFromRows(name, rows as PlannedRow[]);
-    if (routine) setDraft({ name: routine.name, notes: "", items: routine.items });
+    if (routine)
+      setDraft({ name: routine.name, notes: "", items: routine.items });
   };
 
   const openEdit = (routine: Routine) =>
@@ -200,6 +248,54 @@ export default function RoutinesScreen() {
   };
 
   /**
+   * "Desde mi historial": the split he already trains, read off his sessions.
+   *
+   * The owner's ask (2026-10-30) is continuity, and continuity cannot be
+   * invented: a routine is worth repeating only if it is the session he already
+   * does. `suggestedRoutines` groups his logged sessions by their set of
+   * exercises and keeps the groups repeated at least twice, with the
+   * prescription of the **most recent** one — so "Usar hoy" recreates the same
+   * exercises in the same window, and the load has somewhere to climb from.
+   *
+   * Nothing is overwritten: a group whose signature matches an existing routine
+   * is skipped, and a name already taken gets a numeric suffix.
+   */
+  const onFromHistory = () => {
+    setHistoryNote(null);
+    const taken = new Set(
+      routines.map((routine) => routineSignature(routine.items)),
+    );
+    const names = new Set(routines.map((routine) => routine.name));
+    const fresh = suggestedRoutines(sets, sessions).filter(
+      (suggestion) => !taken.has(suggestion.signature),
+    );
+    if (fresh.length === 0) {
+      setHistoryNote(t("ru.history.none"));
+      return;
+    }
+    // Family labels are lowercase on purpose (they are tags elsewhere); a
+    // routine is a title, so each half is capitalised here, not in `format.ts`.
+    const cap = (word: string) =>
+      word.charAt(0).toLocaleUpperCase() + word.slice(1);
+    const base = fresh.map((suggestion) => {
+      const families = suggestion.families
+        .slice(0, 2)
+        .map((family) => cap(familyLabel(family)));
+      return families.length > 0
+        ? families.join(" · ")
+        : t("ru.history.fallbackName");
+    });
+    const inputs = fresh.map((suggestion, index) => {
+      let name = base[index]!;
+      for (let n = 2; names.has(name); n += 1) name = `${base[index]} ${n}`;
+      names.add(name);
+      return { name, items: suggestion.items };
+    });
+    const stored = saveRoutines(inputs);
+    setCreated(stored.map((routine) => routine.name));
+  };
+
+  /**
    * The only write of the whole flow: each routine goes through the store's own
    * `saveRoutine`, so a template can never bypass validation. Existing routines
    * are only read (for their names) — no routine is edited or replaced.
@@ -230,15 +326,24 @@ export default function RoutinesScreen() {
             : tInterp("ru.count", { n: routines.length })}
         </span>
         <div className="spacer" />
+        {/* Only when there is something to browse: with zero routines the empty
+            state already *is* the shelf, and two buttons for one action made the
+            phone's top bar wrap onto a second row. */}
+        {routines.length > 0 && (
+          <button
+            type="button"
+            className="btn btn-lg tl-focusable"
+            onClick={() => setTemplatesOpen(true)}
+          >
+            <MIcons.layers />
+            {t("ru.tpl.button")}
+          </button>
+        )}
         <button
           type="button"
           className="btn btn-lg tl-focusable"
-          onClick={() => setTemplatesOpen(true)}
+          onClick={openNew}
         >
-          <MIcons.layers />
-          {t("ru.tpl.button")}
-        </button>
-        <button type="button" className="btn btn-lg tl-focusable" onClick={openNew}>
           <MIcons.plus />
           {t("ru.create")}
         </button>
@@ -255,7 +360,10 @@ export default function RoutinesScreen() {
         </div>
 
         {routines.length > 0 && (
-          <div className="field" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div
+            className="field"
+            style={{ display: "flex", gap: 8, alignItems: "center" }}
+          >
             <MIcons.search />
             <input
               value={search}
@@ -276,22 +384,99 @@ export default function RoutinesScreen() {
           </div>
         )}
 
+        {routines.length > 0 && (
+          <div className="row-wrap" style={{ gap: 8 }}>
+            <button
+              type="button"
+              className="btn btn-sm tl-focusable"
+              onClick={onFromHistory}
+            >
+              <MIcons.sparkles />
+              {t("ru.history.button")}
+            </button>
+            {historyNote && (
+              <span className="tiny muted" style={{ alignSelf: "center" }}>
+                {historyNote}
+              </span>
+            )}
+          </div>
+        )}
+
         {routines.length === 0 ? (
-          <section className="card card-pad ru-empty">
-            <MIcons.list />
-            <h2 style={{ margin: 0, fontSize: 17 }}>{t("ru.empty.title")}</h2>
-            <p className="small muted" style={{ margin: 0, maxWidth: "48ch" }}>
-              {t("ru.empty.body")}
-            </p>
-            <div className="row-wrap" style={{ marginTop: 6 }}>
-              <button
-                type="button"
-                className="btn btn-primary tl-focusable"
-                onClick={() => setTemplatesOpen(true)}
+          <section className="stack" style={{ gap: 12 }}>
+            <div className="stack" style={{ gap: 6 }}>
+              <h2 style={{ margin: 0, fontSize: 17 }}>{t("ru.empty.title")}</h2>
+              <p
+                className="small muted"
+                style={{ margin: 0, maxWidth: "60ch" }}
               >
-                <MIcons.layers />
-                {t("ru.tpl.empty")}
-              </button>
+                {t("ru.empty.body")}
+              </p>
+            </div>
+            {/* The shelf itself: what each split is, how many sessions it makes
+                and how many exercises they hold with *this* gear. */}
+            <div
+              className="row-wrap"
+              style={{ gap: 12, alignItems: "stretch" }}
+            >
+              {templateBuilds.map(({ template, build }) => {
+                const sessions = build.routines.length;
+                const exercises = build.routines.reduce(
+                  (n, routine) => n + routine.items.length,
+                  0,
+                );
+                const fits = sessions > 0 && build.gaps.length === 0;
+                return (
+                  <section
+                    key={template.id}
+                    className="card card-pad"
+                    style={{ flex: "1 1 260px", minWidth: 0 }}
+                  >
+                    <div className="row" style={{ gap: 8 }}>
+                      <MIcons.layers
+                        style={{
+                          width: 18,
+                          height: 18,
+                          color: "var(--tl-accent)",
+                          flex: "none",
+                        }}
+                      />
+                      <b style={{ fontSize: 15 }}>{t(template.nameKey)}</b>
+                    </div>
+                    <p className="small muted" style={{ margin: "6px 0 0" }}>
+                      {t(template.blurbKey)}
+                    </p>
+                    <p className="tiny muted" style={{ margin: "10px 0 0" }}>
+                      {tInterp("ru.tpl.shape", {
+                        days: sessions,
+                        ex: exercises,
+                      })}
+                    </p>
+                    {!fits && (
+                      <p
+                        className="tiny"
+                        style={{
+                          margin: "6px 0 0",
+                          color: "var(--tl-warn, #d9a341)",
+                        }}
+                      >
+                        {tInterp("ru.tpl.gaps", { n: build.gaps.length })}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-sm tl-focusable"
+                      style={{ marginTop: 12 }}
+                      onClick={() => openPreview(template)}
+                    >
+                      {t("ru.tpl.review")}
+                      <MIcons.chevronRight />
+                    </button>
+                  </section>
+                );
+              })}
+            </div>
+            <div className="row-wrap" style={{ gap: 8 }}>
               <button
                 type="button"
                 className="btn tl-focusable"
@@ -301,14 +486,31 @@ export default function RoutinesScreen() {
                 <MIcons.notebook />
                 {t("ru.empty.fromToday")}
               </button>
-              <button type="button" className="btn tl-focusable" onClick={openNew}>
+              <button
+                type="button"
+                className="btn tl-focusable"
+                onClick={openNew}
+              >
                 <MIcons.plus />
                 {t("ru.empty.blank")}
               </button>
-            </div>
+            </div>{" "}
+            <button
+              type="button"
+              className="btn tl-focusable"
+              onClick={onFromHistory}
+            >
+              <MIcons.sparkles />
+              {t("ru.history.button")}
+            </button>
             {rows.length === 0 && (
               <p className="tiny muted" style={{ margin: 0 }}>
                 {t("ru.empty.fromTodayNone")}
+              </p>
+            )}
+            {historyNote && (
+              <p className="tiny muted" style={{ margin: 0 }}>
+                {historyNote}
               </p>
             )}
           </section>
@@ -327,9 +529,7 @@ export default function RoutinesScreen() {
                     <ExerciseThumb exerciseId={first} size={46} />
                     <div className="grow" style={{ minWidth: 0 }}>
                       <div className="ru-name">{routine.name}</div>
-                      <div className="ru-meta">
-                        {metaLabel(totals)}
-                      </div>
+                      <div className="ru-meta">{metaLabel(totals)}</div>
                     </div>
                   </div>
 
@@ -346,8 +546,20 @@ export default function RoutinesScreen() {
                     <p className="tiny muted ru-notes">{routine.notes}</p>
                   )}
 
+                  {/*
+                   * Continuity, in one line: where this routine left off and
+                   * how much of it the log actually knows. It is derived from
+                   * the sets on every render, so it cannot claim a weight the
+                   * owner never lifted.
+                   */}
+                  <ContinuityLine
+                    continuity={continuity.get(routine.id) ?? null}
+                  />
+
                   <div className="ru-foot">
-                    <span className="tiny muted grow">{updatedLabel(routine)}</span>
+                    <span className="tiny muted grow">
+                      {updatedLabel(routine)}
+                    </span>
                     <button
                       type="button"
                       className="btn btn-sm tl-focusable"
@@ -379,7 +591,10 @@ export default function RoutinesScreen() {
           <p className="small muted" role="status" style={{ margin: 0 }}>
             {tInterp("ru.tpl.created", {
               n: created.length,
-              names: created.join(" · "),
+              // Commas, not dots: a name derived from families already reads
+              // "Dorsales · Bíceps", and dot-joining turned the receipt into
+              // one endless label.
+              names: created.join(", "),
             })}
           </p>
         )}
@@ -388,6 +603,8 @@ export default function RoutinesScreen() {
       {selected && (
         <RoutineSheet
           routine={selected}
+          continuity={continuity.get(selected.id) ?? null}
+          unit={unit}
           applied={applied?.id === selected.id ? applied.n : null}
           onClose={() => {
             setViewing(null);
@@ -422,11 +639,6 @@ export default function RoutinesScreen() {
           onChange={setDraft}
           onCancel={() => setDraft(null)}
           onSave={onSave}
-          candidates={plan.usable.map((entry) => ({
-            id: entry.exercise.id,
-            name: exerciseName(entry.exercise.id, getLanguage()),
-            families: entry.families.map((family) => familyLabel(family)),
-          }))}
         />
       )}
     </>
@@ -591,8 +803,45 @@ function TemplateSheet({
    The sheet — one routine, read-only, with its verbs
    ══════════════════════════════════════════════════════════════════════════ */
 
+/**
+ * "Where this routine left off", in one line.
+ *
+ * Deliberately factual: the day it was last done and how much of it the log
+ * knows. It never states a verdict — that belongs to the session screen, where
+ * the row's rep window and the gear are known — so the two can never disagree.
+ */
+function ContinuityLine({
+  continuity,
+}: {
+  continuity: RoutineContinuity | null;
+}) {
+  if (!continuity) return null;
+  if (continuity.known === 0) {
+    return (
+      <p className="tiny muted" style={{ margin: "8px 0 0" }}>
+        {t("ru.continuity.never")}
+      </p>
+    );
+  }
+  const days = continuity.lastDaysAgo ?? 0;
+  return (
+    <p className="tiny muted" style={{ margin: "8px 0 0" }}>
+      {days === 0
+        ? t("ru.continuity.today")
+        : tInterp("ru.continuity.last", { d: days })}
+      {" · "}
+      {tInterp("ru.continuity.known", {
+        n: continuity.known,
+        total: continuity.total,
+      })}
+    </p>
+  );
+}
+
 function RoutineSheet({
   routine,
+  continuity,
+  unit,
   applied,
   onClose,
   onUse,
@@ -601,6 +850,9 @@ function RoutineSheet({
   onDelete,
 }: {
   routine: Routine;
+  /** Derived from the log; `null` never happens in practice (kept tolerant). */
+  continuity: RoutineContinuity | null;
+  unit: WeightUnit;
   /** Rows added by the last "Usar hoy" on this routine, or `null`. */
   applied: number | null;
   onClose: () => void;
@@ -640,7 +892,10 @@ function RoutineSheet({
 
         <div className="card-body" style={{ paddingTop: 14 }}>
           <div className="ru-sheet-head">
-            <ExerciseThumb exerciseId={routine.items[0]!.exerciseId} size={64} />
+            <ExerciseThumb
+              exerciseId={routine.items[0]!.exerciseId}
+              size={64}
+            />
             <div className="grow" style={{ minWidth: 0 }}>
               <div className="ru-name" style={{ fontSize: 17 }}>
                 {routine.name}
@@ -711,11 +966,38 @@ function RoutineSheet({
                 </span>
                 <span className="detail-rx">
                   {item.sets} × {item.repsMin}–{item.repsMax} · RIR{" "}
-                  {item.rir ?? 2} · {tInterp("ent.restSec", { s: item.restSec })}
+                  {item.rir ?? 2} ·{" "}
+                  {tInterp("ent.restSec", { s: item.restSec })}
+                </span>
+                {/* The continuity of this exercise, one line under its own
+                    prescription: the same bar you last moved, and when. */}
+                <span className="tiny muted" style={{ display: "block" }}>
+                  {(() => {
+                    const last = continuity?.exercises.find(
+                      (entry) => entry.exerciseId === item.exerciseId,
+                    );
+                    if (!last || last.lastDay === null) {
+                      return t("ru.continuity.never");
+                    }
+                    const when =
+                      last.daysAgo === 0
+                        ? t("ru.continuity.today")
+                        : tInterp("ru.continuity.last", {
+                            d: last.daysAgo ?? 0,
+                          });
+                    return last.topWeightKg !== null
+                      ? `${when} · ${formatWeight(last.topWeightKg, unit)}${
+                          last.topReps !== null ? ` × ${last.topReps}` : ""
+                        }`
+                      : when;
+                  })()}
                 </span>
               </span>
               <span className="tag">
-                {familyLabel(routineTotals({ ...routine, items: [item] }).families[0] ?? "")}
+                {familyLabel(
+                  routineTotals({ ...routine, items: [item] }).families[0] ??
+                    "",
+                )}
               </span>
             </div>
           ))}
@@ -739,14 +1021,22 @@ function RoutineSheet({
               <MIcons.play />
               {t("ru.card.use")}
             </button>
-            <button type="button" className="btn btn-lg tl-focusable" onClick={onEdit}>
+            <button
+              type="button"
+              className="btn btn-lg tl-focusable"
+              onClick={onEdit}
+            >
               <MIcons.notebook />
               {t("ru.detail.edit")}
             </button>
           </div>
 
           <div className="row-wrap" style={{ marginTop: 10 }}>
-            <button type="button" className="btn btn-sm tl-focusable" onClick={onDuplicate}>
+            <button
+              type="button"
+              className="btn btn-sm tl-focusable"
+              onClick={onDuplicate}
+            >
               <MIcons.copy />
               {t("ru.detail.duplicate")}
             </button>
@@ -797,32 +1087,17 @@ function RoutineEditor({
   onChange,
   onCancel,
   onSave,
-  candidates,
 }: {
   draft: Draft;
   onChange: (next: Draft) => void;
   onCancel: () => void;
   onSave: () => void;
-  candidates: { id: string; name: string; families: string[] }[];
 }) {
-  const [picker, setPicker] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState(false);
-  useEscape(onCancel);
+  useEscape(onCancel, !pickerOpen);
 
   const chosen = new Set(draft.items.map((item) => item.exerciseId));
-  const query = picker.trim().toLocaleLowerCase();
-  const found = candidates.filter((entry) => {
-    if (!query) return true;
-    return (
-      entry.name.toLocaleLowerCase().includes(query) ||
-      entry.families.some((family) =>
-        family.toLocaleLowerCase().includes(query),
-      )
-    );
-  });
-  const matches = found
-    .filter((entry) => !chosen.has(entry.id))
-    .slice(0, query ? PICKER_LIMIT_SEARCH : PICKER_LIMIT);
 
   const patchItem = (index: number, over: Partial<RoutineItem>) =>
     onChange({
@@ -832,13 +1107,18 @@ function RoutineEditor({
       ),
     });
 
-  const addItem = (exerciseId: string) => {
-    const item = routineItemFor(exerciseId);
-    if (!item || chosen.has(exerciseId)) return;
-    onChange({ ...draft, items: [...draft.items, item] });
-    // Clear the query so the next search starts fresh; leaving it filled showed
-    // "no match" right after the only match had been added.
-    setPicker("");
+  const addItems = (ids: string[]) => {
+    const next = [...draft.items];
+    const seen = new Set(chosen);
+    for (const id of ids) {
+      if (seen.has(id)) continue;
+      const item = routineItemFor(id);
+      if (!item) continue;
+      next.push(item);
+      seen.add(id);
+    }
+    if (next.length > draft.items.length) onChange({ ...draft, items: next });
+    setPickerOpen(false);
     setError(false);
   };
 
@@ -1072,51 +1352,22 @@ function RoutineEditor({
           )}
 
           <div className="divider" style={{ margin: "14px 0" }} />
-          <div className="field" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <MIcons.search />
-            <input
-              value={picker}
-              onChange={(event) => setPicker(event.target.value)}
-              placeholder={t("ru.edit.search")}
-              aria-label={t("ru.edit.search")}
-              className="grow"
-              style={{
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                color: "var(--tl-text)",
-                fontSize: 16,
-                minWidth: 0,
-              }}
-            />
-          </div>
-
-          <div className="ru-picker">
-            {matches.length === 0 ? (
-              <p className="small muted" style={{ margin: "8px 0 0" }}>
-                {found.length > 0 ? t("ru.edit.already") : t("ru.edit.noResults")}
-              </p>
-            ) : (
-              matches.map((entry) => (
-                <button
-                  key={entry.id}
-                  type="button"
-                  className="ru-pick tl-focusable"
-                  onClick={() => addItem(entry.id)}
-                >
-                  <ExerciseThumb exerciseId={entry.id} size={34} />
-                  <span className="grow" style={{ minWidth: 0 }}>
-                    <span className="detail-name">{entry.name}</span>
-                    <span className="ru-meta">{entry.families.join(" · ")}</span>
-                  </span>
-                  <MIcons.plus />
-                </button>
-              ))
-            )}
-          </div>
+          <button
+            type="button"
+            className="btn btn-lg tl-focusable"
+            style={{ width: "100%" }}
+            onClick={() => setPickerOpen(true)}
+            data-testid="ru-picker-open"
+          >
+            <MIcons.plus />
+            {t("ru.edit.add")}
+          </button>
 
           {error && (
-            <p className="small" style={{ margin: "10px 0 0", color: "var(--tl-warning)" }}>
+            <p
+              className="small"
+              style={{ margin: "10px 0 0", color: "var(--tl-warning)" }}
+            >
               {t("ru.edit.invalid")}
             </p>
           )}
@@ -1136,12 +1387,25 @@ function RoutineEditor({
               <MIcons.check />
               {t("ru.edit.save")}
             </button>
-            <button type="button" className="btn btn-lg tl-focusable" onClick={onCancel}>
+            <button
+              type="button"
+              className="btn btn-lg tl-focusable"
+              onClick={onCancel}
+            >
               {t("ru.edit.cancel")}
             </button>
           </div>
         </div>
       </div>
+      {pickerOpen && (
+        <ExercisePicker
+          title={t("ru.edit.add")}
+          multiple
+          inUse={draft.items.map((item) => item.exerciseId)}
+          onClose={() => setPickerOpen(false)}
+          onConfirm={(ids) => addItems(ids)}
+        />
+      )}
     </>
   );
 }
@@ -1164,20 +1428,21 @@ function updatedLabel(routine: Routine): string {
   const date = new Date(routine.updatedAt);
   if (Number.isNaN(date.getTime())) return "";
   return tInterp("ru.updated", {
-    date: date.toLocaleDateString(
-      getLanguage() === "es" ? "es-ES" : "en-GB",
-      { day: "numeric", month: "short" },
-    ),
+    date: date.toLocaleDateString(getLanguage() === "es" ? "es-ES" : "en-GB", {
+      day: "numeric",
+      month: "short",
+    }),
   });
 }
 
 /** Escape closes a dialog — the keyboard path every overlay needs. */
-function useEscape(onClose: () => void) {
+function useEscape(onClose: () => void, enabled = true) {
   useEffect(() => {
+    if (!enabled) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, enabled]);
 }

@@ -140,12 +140,15 @@ export default function ProgressScreen() {
 
   return (
     <>
-      <header className="tl-topbar">
-        <div className="tl-welcome">
-          <h1>{t("nav.progress")}</h1>
-          <p>{tInterp("progress.periodHint", { n: days })}</p>
+      <header className="topbar">
+        <div>
+          <div className="topbar-title">{t("nav.progress")}</div>
+          <div className="topbar-sub">
+            {tInterp("progress.periodHint", { n: days })}
+          </div>
         </div>
-        <div className="flex gap-1.5">
+        <span className="spacer" />
+        <div className="row-wrap">
           {PERIODS.map((p) => (
             <Chip key={p} active={p === days} onClick={() => setDays(p)}>
               {tInterp("progress.days", { n: p })}
@@ -154,7 +157,8 @@ export default function ProgressScreen() {
         </div>
       </header>
 
-      {!hasData ? (
+      <div className="content">
+        {!hasData ? (
         <EmptyState
           icon={<Dumbbell size={28} />}
           title={t("progress.empty")}
@@ -198,14 +202,20 @@ export default function ProgressScreen() {
           <ConditionCard axes={condition.axes} mean={condition.mean} />
 
           {/* ── Body analysis: the figure, the legend, the families ──────── */}
-          <section className="tl-card">
-            <div className="tl-card-head">
+          <section className="card">
+            <div className="card-head">
               <div className="min-w-0">
                 <h2>{t("progress.body.title")}</h2>
                 <span>{t("progress.body.sub")}</span>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="tl-pill is-accent">
+              {/*
+               * `shrink-0` kept these controls on one row and pushed them 25 px
+               * past the viewport at 320 px (audited 2026-10-29). They now wrap
+               * as a group, so on a narrow phone the period pill and the two
+               * lenses drop under the title instead of leaving the card.
+               */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="badge badge-accent">
                   {tInterp("progress.periodHint", { n: days })}
                 </span>
                 <Chip
@@ -222,7 +232,7 @@ export default function ProgressScreen() {
                 </Chip>
               </div>
             </div>
-            <div className="tl-card-body">
+            <div className="card-body">
               {mapMode === "goal" && (
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
@@ -297,14 +307,14 @@ export default function ProgressScreen() {
           <div className="tl-dash">
             <div className="tl-col">
               {/* ── Trend ────────────────────────────────────────────────── */}
-              <section className="tl-card">
-                <div className="tl-card-head">
+              <section className="card">
+                <div className="card-head">
                   <h2>{t("progress.trend")}</h2>
                   <span className="tabular-nums">
                     {buckets[0]?.date} → {isoDay(new Date())}
                   </span>
                 </div>
-                <div className="tl-card-body">
+                <div className="card-body">
                   {/* Bars, not a line: sets per day are counts, and a line would
                       imply a value between the days that does not exist. */}
                   <div className="tl-chart">
@@ -327,8 +337,8 @@ export default function ProgressScreen() {
               </section>
 
               {/* ── Split per family ─────────────────────────────────────── */}
-              <section className="tl-card">
-                <div className="tl-card-head">
+              <section className="card">
+                <div className="card-head">
                   <div className="min-w-0">
                     <h2>{t("progress.detail.title")}</h2>
                     <span>{t("progress.heat.hint")}</span>
@@ -337,7 +347,7 @@ export default function ProgressScreen() {
                     {t("progress.heat.scale")}
                   </span>
                 </div>
-                <div className="tl-card-body">
+                <div className="card-body">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {families.map((f) => (
                       <div
@@ -377,14 +387,14 @@ export default function ProgressScreen() {
               </section>
 
               {/* ── Records ──────────────────────────────────────────────── */}
-              <section className="tl-card">
-                <div className="tl-card-head">
+              <section className="card">
+                <div className="card-head">
                   <h2>{t("progress.marks.title")}</h2>
                   <Badge tone="neutral">
                     {tInterp("progress.marks.count", { n: marks.length })}
                   </Badge>
                 </div>
-                <div className="tl-card-body">
+                <div className="card-body">
                   {marks.length === 0 ? (
                     <p className="text-sm text-[var(--tl-text-muted)]">
                       {t("progress.marks.empty")}
@@ -426,7 +436,8 @@ export default function ProgressScreen() {
             </aside>
           </div>
         </>
-      )}
+        )}
+      </div>
     </>
   );
 }
@@ -478,12 +489,12 @@ function BalanceCard({ balance }: { balance: FamilyBalance[] }) {
   const least = balance[balance.length - 1]!;
 
   return (
-    <section className="tl-card">
-      <div className="tl-card-head">
+    <section className="card">
+      <div className="card-head">
         <h2>{t("progress.balance.title")}</h2>
         <CalendarDays className="w-4 h-4 text-[var(--tl-text-muted)]" />
       </div>
-      <div className="tl-card-body flex flex-col gap-3">
+      <div className="card-body flex flex-col gap-3">
         <BalanceLine
           tone="var(--tl-success)"
           label={t("progress.balance.most")}
@@ -561,12 +572,12 @@ function AssistantCard() {
   const weekly = useMemo(() => volumeByFamily(sets, 7), [sets]);
 
   return (
-    <section className="tl-card">
-      <div className="tl-card-head">
+    <section className="card">
+      <div className="card-head">
         <h2>{t("progress.assistant.title")}</h2>
         <Badge tone="accent">{t("home.badge.zen")}</Badge>
       </div>
-      <div className="tl-card-body">
+      <div className="card-body">
         {priorities.length === 0 ? (
           <p className="text-sm text-[var(--tl-text-muted)]">
             {t("progress.assistant.empty")}

@@ -13,7 +13,7 @@ import ThemeToggle from '../ThemeToggle';
  * v3 shell: grouped rows with an icon chip, an accent indicator bar on the
  * active row and a gradient pill for the single primary action. The route
  * list, the keyboard shortcuts and the bilingual labels are unchanged — this
- * is form only (see docs/UI_DESIGN.md "what we deliberately don't do": no
+ * is form only (see docs/DESIGN_DECISIONS_2026-11-07.md "what we deliberately don't do": no
  * hamburger, every destination always visible).
  */
 

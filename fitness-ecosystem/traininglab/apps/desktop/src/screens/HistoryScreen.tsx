@@ -1,61 +1,56 @@
 /**
- * Historial — what has already been trained, newest first, and the two things
- * you can do to a closed session: rename it (and say where it happened) or
- * delete it.
+ * Historial — what has already been trained, newest first.
  *
- * The third destination of the mockup's rail and the first one that never
- * existed in the old front: it opens the record the log has been building since
- * the first imported Symmetry session. What it shows is exactly what the owner's
- * own log supports — and nothing else:
+ * **2026-11-09 (P0).** This screen used to draw the old `.tl-page` /
+ * `.tl-topbar` shell. It now uses the same `topbar` + `content` + `card`
+ * language as Hoy, Entrenamiento and Rutinas, so the record no longer looks
+ * like a second product. The data contract did not change:
  *
- *   * one card per **closed** session (see `closedSessionHistory` for the rule
- *     and why today's open session is not here);
- *   * date, name when the source gave one, provenance and place;
- *   * working sets, warm-up sets, exercises and volume (`weight × reps` over
- *     working sets — warm-ups never inflate it);
- *   * the session's effort marks (`D` near failure, `F` to failure, `W` for the
- *     ramp), because they are how the owner reads his own hard days;
- *   * a **duration only when a source supports it**. An imported date-only sheet
- *     leaves `durationMin: null` and the tile simply does not render, which is
- *     the whole point of the `MINUTES_TRUSTWORTHY` rule in `derive.ts`.
+ *   * one card per **closed** session (`closedSessionHistory` decides that);
+ *   * working sets and volume exclude warm-ups, and a duration is printed only
+ *     when the source supports it;
+ *   * the detail lists **all** sets through `summariseSession`, the same
+ *     derivation the post-session summary uses — no second set-by-set rule;
+ *   * renaming and deleting keep the existing confirmation and 20-second undo,
+ *     both routed through the store's `editSession`/`removeSession` actions.
  *
- * **Edit and delete (2026-10-21).** The store has been able to delete a session
- * since 2026-10-08, but no screen offered it: deleting your own history from a
- * list is the one action that must not be casual. So:
- *
- *   * the confirmation states the **numbers that disappear** (sets, working
- *     volume, warm-ups), computed from the sets themselves by
- *     `lib/session-delete.ts` — never from a guess;
- *   * the sets go **with** the session, because a session-less set would keep
- *     counting in volumes and PRs while becoming invisible here;
- *   * deletion is followed by a 20-second **Deshacer** that restores the record
- *     and its sets through `restoreSession` — the same lane the agent's
- *     `restore_session` undo uses, so human and agent cannot diverge;
- *   * editing touches only what the log actually stores as free text: the name
- *     and the place. Reps, loads and times are the record, not a form.
- *
- * Reading order and numbers come from the same function the MCP's `read_history`
- * mirrors, so the screen and an agent cannot disagree about what a session was.
+ * Filters (period + exercise/name search) only narrow what is on screen; they
+ * never touch the log. The card's totals and the KPI strip follow the visible
+ * rows so a filtered list cannot show numbers from sessions it is hiding.
  *
  * @module screens/HistoryScreen
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { Clock, Layers, Pencil, Trash2, Trophy, Undo2 } from "lucide-react";
-import { t, tInterp, getLanguage } from "../lib/i18n";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getLanguage, t, tInterp } from "../lib/i18n";
 import { EFFORT_MARKERS, EFFORT_MEANING } from "../lib/effort";
 import { exerciseName } from "../lib/plan";
-import { Badge, Chip, EmptyState, SectionCard } from "../ui/primitives";
+import { localDayKey } from "../lib/day";
 import { useStore } from "../app/store";
+import { hashFor } from "../app/router";
 import {
   closedSessionHistory,
   type SessionHistoryEntry,
 } from "../features/stats/derive";
+import { filterSessionHistory } from "../lib/history-filter";
+import { summariseSession, type SummarySet } from "../lib/session-summary";
+import { setEditPatch } from "../lib/set-edit";
 import { sessionDeletePlan } from "../lib/session-delete";
+import { ExerciseThumb } from "../features/exercises/ExerciseThumb";
+import { MIcons } from "../ui/mockup-icons";
 import type { TLSet, TLSession } from "../lib/types";
 
 /** How long «Deshacer» stays available after a deletion. */
 const UNDO_MS = 20_000;
+
+type Period = "all" | "30" | "90";
+
+/** The period selector labels live here, not in a template-string key. */
+function periodLabel(period: Period): string {
+  if (period === "30") return t("hist.period.30");
+  if (period === "90") return t("hist.period.90");
+  return t("hist.period.all");
+}
 
 export default function HistoryScreen() {
   const {
@@ -65,13 +60,21 @@ export default function HistoryScreen() {
     removeSession,
     restoreSession,
     editSession,
+    editSet,
   } = useStore();
   const lang = getLanguage();
 
+  // The archive is the whole local log, not the MCP/list default of 60: a
+  // period or exercise filter must be able to reach an old session too.
   const { entries, total } = useMemo(
-    () => closedSessionHistory(sessions, sets),
+    () =>
+      closedSessionHistory(sessions, sets, undefined, Number.MAX_SAFE_INTEGER),
     [sessions, sets],
   );
+
+  const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState<Period>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   /** The session that can still be brought back, with the sets it took. */
   const [undo, setUndo] = useState<{
@@ -96,11 +99,37 @@ export default function HistoryScreen() {
     if (undo && secondsLeft <= 0) setUndo(null);
   }, [undo, secondsLeft]);
 
-  if (loading) return <div className="tl-loading">{t("common.loading")}</div>;
+  const closeDetail = useCallback(() => setSelectedId(null), []);
 
-  const totalSets = entries.reduce((sum, e) => sum + e.workingSets, 0);
-  const totalVolume = entries.reduce((sum, e) => sum + e.volumeKg, 0);
-  const shown = entries.length;
+  const query = search.trim().toLocaleLowerCase(lang);
+  const cutoff = useMemo(() => {
+    const days = period === "30" ? 30 : period === "90" ? 90 : 0;
+    if (days === 0) return null;
+    return localDayKey(new Date(Date.now() - days * 86_400_000));
+  }, [period]);
+
+  const filtered = useMemo(
+    () =>
+      filterSessionHistory(
+        entries,
+        { query, notBefore: cutoff },
+        (exerciseId) => exerciseName(exerciseId, lang),
+      ),
+    [cutoff, entries, lang, query],
+  );
+
+  const shownSets = filtered.reduce((sum, entry) => sum + entry.workingSets, 0);
+  const shownVolume = filtered.reduce((sum, entry) => sum + entry.volumeKg, 0);
+  const filtering = query.length > 0 || period !== "all";
+
+  const selectedEntry = selectedId
+    ? entries.find((entry) => entry.id === selectedId)
+    : undefined;
+  const selectedSession = selectedId
+    ? sessions.find((session) => session.id === selectedId)
+    : undefined;
+
+  if (loading) return <div className="tl-loading">{t("common.loading")}</div>;
 
   /** Delete one session, remembering exactly what it took for the undo. */
   const deleteSession = (session: TLSession) => {
@@ -113,150 +142,395 @@ export default function HistoryScreen() {
       sets: removedSets,
       expiresAt: Date.now() + UNDO_MS,
     });
+    setSelectedId(null);
   };
 
   return (
-    <div className="tl-page">
-      <header className="tl-topbar">
-        <div className="tl-welcome">
-          <h1>{t("nav.history")}</h1>
-          <p>
+    <>
+      <header className="topbar">
+        <span className="pill">
+          <MIcons.clock />
+          {total === 1
+            ? t("hist.countPillOne")
+            : tInterp("hist.countPill", { n: total })}
+        </span>
+        <div className="spacer" />
+        {total > 0 && (
+          <span className="badge badge-accent">
+            <MIcons.layers />
+            {tInterp("hist.pillSets", { n: shownSets })}
+          </span>
+        )}
+      </header>
+
+      <div className="content">
+        <div className="stack" style={{ gap: 6 }}>
+          <h1 style={{ margin: 0, fontSize: 25, letterSpacing: "-0.6px" }}>
+            {t("nav.history")}
+          </h1>
+          <p className="small muted" style={{ margin: 0 }}>
             {total === 0
               ? t("hist.pageHintEmpty")
               : tInterp("hist.pageHint", { n: total })}
           </p>
         </div>
-        {total > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="tl-pill" title={t("hist.pillSetsHint")}>
-              <Layers className="w-3.5 h-3.5" aria-hidden />
-              {tInterp("hist.pillSets", { n: totalSets })}
+
+        {undo && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="card card-pad history-undo"
+          >
+            <MIcons.rotate className="icon" />
+            <span className="small">
+              {t("hist.deleted")}
+              <span className="muted">
+                {" · "}
+                {tInterp("hist.undoSets", { n: undo.sets.length })}
+              </span>
             </span>
-            <span className="tl-pill" title={t("hist.pillVolumeHint")}>
-              <Trophy className="w-3.5 h-3.5" aria-hidden />
-              {tInterp("hist.pillVolume", { kg: formatKg(totalVolume, lang) })}
-            </span>
+            <div className="row-wrap">
+              <button
+                type="button"
+                className="btn btn-primary tl-focusable"
+                onClick={() => {
+                  restoreSession(undo.session, undo.sets);
+                  setUndo(null);
+                }}
+              >
+                {tInterp("hist.undoIn", { n: secondsLeft })}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost tl-focusable"
+                onClick={() => setUndo(null)}
+              >
+                {t("hist.dismiss")}
+              </button>
+            </div>
           </div>
         )}
-      </header>
 
-      {undo && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="tl-card p-3 mb-3 flex items-center gap-3 flex-wrap border border-[var(--tl-accent)]/40"
-        >
-          <Undo2 className="w-4 h-4 text-[var(--tl-accent)]" aria-hidden />
-          <span className="text-sm">
-            {t("hist.deleted")}
-            <span className="text-[var(--tl-text-muted)]">
-              {" · "}
-              {tInterp("hist.undoSets", { n: undo.sets.length })}
-            </span>
-          </span>
-          <div className="flex items-center gap-2 ml-auto">
-            <button
-              type="button"
-              className="tl-btn tl-btn-primary tl-focusable"
-              onClick={() => {
-                restoreSession(undo.session, undo.sets);
-                setUndo(null);
-              }}
+        {total > 0 && (
+          <div className="history-tools">
+            <label className="field history-search">
+              <MIcons.search />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t("hist.searchPlaceholder")}
+                aria-label={t("hist.searchPlaceholder")}
+              />
+            </label>
+            <div
+              className="seg"
+              role="group"
+              aria-label={t("hist.periodLabel")}
             >
-              {tInterp("hist.undoIn", { n: secondsLeft })}
-            </button>
-            <button
-              type="button"
-              className="tl-btn tl-btn-ghost tl-focusable"
-              onClick={() => setUndo(null)}
-            >
-              {t("hist.dismiss")}
-            </button>
+              {(["all", "30", "90"] as const).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`seg-item tl-focusable${period === id ? " is-active" : ""}`}
+                  aria-pressed={period === id}
+                  onClick={() => setPeriod(id)}
+                >
+                  {periodLabel(id)}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {total === 0 ? (
-        <EmptyState
-          icon={<Clock size={28} />}
-          title={t("hist.empty")}
-          body={t("hist.emptyHint")}
+        {total === 0 ? (
+          <section className="card card-pad history-empty">
+            <MIcons.clock style={{ width: 28, height: 28 }} />
+            <h2>{t("hist.empty")}</h2>
+            <p className="small muted">{t("hist.emptyHint")}</p>
+          </section>
+        ) : (
+          <>
+            <div className="summary-kpis history-kpis">
+              <div className="summary-kpi">
+                <b>{filtered.length}</b>
+                <span>{t("hist.kpiSessions")}</span>
+              </div>
+              <div className="summary-kpi">
+                <b>{shownSets}</b>
+                <span>{t("hist.kpiSets")}</span>
+              </div>
+              <div className="summary-kpi">
+                <b>{formatKg(shownVolume, lang)}</b>
+                <span>{t("hist.kpiVolume")}</span>
+              </div>
+            </div>
+
+            <div className="row-wrap">
+              <span className="card-title" style={{ fontSize: 17 }}>
+                <MIcons.list />
+                {t("hist.listTitle")}
+              </span>
+              <span className="spacer" />
+              <span className="small muted">
+                {filtering
+                  ? tInterp("hist.filtered", {
+                      shown: filtered.length,
+                      total,
+                    })
+                  : tInterp("hist.shownCount", { n: filtered.length })}
+              </span>
+            </div>
+
+            {filtered.length === 0 ? (
+              <section className="card card-pad history-empty">
+                <MIcons.search style={{ width: 28, height: 28 }} />
+                <h2>{t("hist.noMatches")}</h2>
+                <p className="small muted">{t("hist.noMatchesHint")}</p>
+                <button
+                  type="button"
+                  className="btn tl-focusable"
+                  onClick={() => {
+                    setSearch("");
+                    setPeriod("all");
+                  }}
+                >
+                  {t("hist.clearFilters")}
+                </button>
+              </section>
+            ) : (
+              <ul className="history-list">
+                {filtered.map((entry) => (
+                  <SessionCard
+                    key={entry.id}
+                    entry={entry}
+                    lang={lang}
+                    onOpen={() => setSelectedId(entry.id)}
+                  />
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </div>
+
+      {selectedEntry && (
+        <SessionDetail
+          entry={selectedEntry}
+          session={selectedSession}
+          sets={sets}
+          lang={lang}
+          onClose={closeDetail}
+          onEdit={editSession}
+          onEditSet={editSet}
+          onDelete={deleteSession}
         />
-      ) : (
-        <SectionCard
-          title={t("hist.listTitle")}
-          hint={
-            shown < total
-              ? tInterp("hist.listHintCapped", { shown, total })
-              : t("hist.listHint")
-          }
-          icon={<Clock size={18} />}
-        >
-          <ul className="flex flex-col gap-3 list-none p-0 m-0">
-            {entries.map((entry) => {
-              const session = sessions.find((row) => row.id === entry.id);
-              return (
-                <SessionCard
-                  key={entry.id}
-                  entry={entry}
-                  lang={lang}
-                  session={session}
-                  sets={sets}
-                  onEdit={editSession}
-                  onDelete={deleteSession}
-                />
-              );
-            })}
-          </ul>
-        </SectionCard>
       )}
-    </div>
+    </>
   );
 }
 
-/** One closed session: the day, what it was, what it cost, and its two actions. */
+/** One closed session: the day, what it cost, and the way into its sets. */
 function SessionCard({
   entry,
   lang,
-  session,
-  sets,
-  onEdit,
-  onDelete,
+  onOpen,
 }: {
   entry: SessionHistoryEntry;
   lang: "es" | "en";
-  /** The stored record. Missing only if the list and the log disagree. */
-  session: TLSession | undefined;
-  sets: readonly TLSet[];
-  onEdit: (id: string, patch: Partial<TLSession>) => void;
-  onDelete: (session: TLSession) => void;
+  onOpen: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"view" | "edit" | "delete">("view");
-  const [name, setName] = useState(entry.title ?? "");
-  const [place, setPlace] = useState<"" | "gym" | "home">(
-    entry.location ?? "",
-  );
-
-  const shown = open ? entry.exercises : entry.exercises.slice(0, 4);
+  const shown = entry.exercises.slice(0, 4);
   const hidden = entry.exercises.length - shown.length;
 
-  // What the delete confirmation is allowed to promise: the sets themselves,
-  // not the card's totals (they come from the same derivation, but the plan also
-  // knows which ids go and whether some were already missing).
+  return (
+    <li className="card history-card" data-testid="history-card">
+      <div className="history-card-head">
+        <div style={{ minWidth: 0 }}>
+          <div className="history-card-title">
+            {formatDay(entry.date, lang)}
+          </div>
+          {entry.title && (
+            <div className="small secondary ellipsis">{entry.title}</div>
+          )}
+          <div className="history-card-meta">
+            {entry.location && (
+              <span className="badge">{t(`hist.place.${entry.location}`)}</span>
+            )}
+            {entry.source && entry.source !== "traininglab" && (
+              <span className="badge badge-info" title={t("hist.sourceHint")}>
+                {entry.source}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="row-wrap history-card-marks">
+          {EFFORT_MARKERS.filter((mark) => entry.markers[mark] > 0).map(
+            (mark) => (
+              <span
+                key={mark}
+                className={`badge ${mark === "F" ? "badge-danger" : "badge-warning"}`}
+                title={`${EFFORT_MEANING[mark].label[lang]} · ${EFFORT_MEANING[mark].detail[lang]}`}
+              >
+                {mark} · {entry.markers[mark]}
+              </span>
+            ),
+          )}
+        </div>
+      </div>
+
+      <div className="history-card-stats">
+        <span>
+          {entry.workingSets === 1
+            ? t("hist.setOne")
+            : tInterp("hist.sets", { n: entry.workingSets })}
+          {entry.warmupSets > 0 &&
+            ` · ${tInterp("hist.warmup", { n: entry.warmupSets })}`}
+        </span>
+        <span>
+          {entry.exercises.length === 1
+            ? t("hist.exerciseOne")
+            : tInterp("hist.exercises", { n: entry.exercises.length })}
+        </span>
+        {entry.volumeKg > 0 && (
+          <span>
+            {tInterp("hist.volume", { kg: formatKg(entry.volumeKg, lang) })}
+          </span>
+        )}
+        {entry.durationMin !== null && (
+          <span>{tInterp("hist.duration", { n: entry.durationMin })}</span>
+        )}
+      </div>
+
+      <div className="row-wrap">
+        {shown.map((line) => (
+          <span className="chip" key={line.exerciseId}>
+            {exerciseName(line.exerciseId, lang)} ×{line.sets}
+          </span>
+        ))}
+        {hidden > 0 && (
+          <span className="chip chip-optional">
+            {tInterp("hist.moreExercises", { n: hidden })}
+          </span>
+        )}
+      </div>
+
+      <div className="history-card-actions">
+        <button
+          type="button"
+          className="btn btn-lg tl-focusable"
+          onClick={onOpen}
+          data-testid="history-open"
+        >
+          <MIcons.chevronRight />
+          {t("hist.open")}
+        </button>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * The session's own record. It reuses the summary's `SummarySet` rows so a set
+ * cannot be one thing here and another on the close-of-session screen.
+ */
+function SessionDetail({
+  entry,
+  session,
+  sets,
+  lang,
+  onClose,
+  onEdit,
+  onEditSet,
+  onDelete,
+}: {
+  entry: SessionHistoryEntry;
+  /** Missing only if the list and the log disagree. */
+  session: TLSession | undefined;
+  sets: readonly TLSet[];
+  lang: "es" | "en";
+  onClose: () => void;
+  onEdit: (id: string, patch: Partial<TLSession>) => void;
+  onEditSet: (
+    id: string,
+    patch: {
+      weight?: number | null;
+      reps?: number | null;
+      effort?: "D" | "F" | null;
+    },
+  ) => void;
+  onDelete: (session: TLSession) => void;
+}) {
+  const panel = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const [mode, setMode] = useState<"view" | "edit" | "delete">("view");
+  const [name, setName] = useState(session?.title ?? "");
+  const [place, setPlace] = useState<"" | "gym" | "home">(
+    session?.location ?? "",
+  );
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [editWeight, setEditWeight] = useState("");
+  const [editReps, setEditReps] = useState("");
+  const [editEffort, setEditEffort] = useState<"D" | "F" | null>(null);
+  const editTrigger = useRef<string | null>(null);
+
+  const summary = useMemo(
+    () => (session ? summariseSession(session, [...sets]) : null),
+    [session, sets],
+  );
   const plan = useMemo(
-    () => (session ? sessionDeletePlan(session, sets) : null),
+    () => (session ? sessionDeletePlan(session, [...sets]) : null),
     [session, sets],
   );
 
+  /** Focus the close button, keep Tab inside, and give focus back on unmount. */
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButton.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(
+        panel.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus();
+    };
+  }, [onClose]);
+
+  if (!session || !summary) return null;
+
   const startEdit = () => {
-    setName(entry.title ?? "");
-    setPlace(entry.location ?? "");
+    setName(session.title ?? "");
+    setPlace(session.location ?? "");
     setMode("edit");
   };
 
   const saveEdit = () => {
-    if (!session) return;
     const trimmed = name.trim();
     onEdit(session.id, {
       title: trimmed.length > 0 ? trimmed.slice(0, 80) : undefined,
@@ -265,208 +539,441 @@ function SessionCard({
     setMode("view");
   };
 
+  const startSetEdit = (set: SummarySet) => {
+    editTrigger.current = set.id;
+    setEditingSetId(set.id);
+    setEditWeight(set.weightKg !== null ? String(set.weightKg) : "");
+    setEditReps(set.reps !== null ? String(set.reps) : "");
+    setEditEffort(set.marker);
+  };
+
+  const stopSetEdit = () => {
+    setEditingSetId(null);
+    // Escape/Guardar removes the row's form; without this the focus would fall
+    // back to the document and a keyboard user would lose their place. A timer,
+    // not rAF: the preview tab can be throttled and never run the frame.
+    window.setTimeout(() => {
+      if (!editTrigger.current) return;
+      document
+        .querySelector<HTMLButtonElement>(
+          `[data-testid="history-detail-set-edit"][data-set-id="${editTrigger.current}"]`,
+        )
+        ?.focus();
+    }, 0);
+  };
+
+  const saveSetEdit = (set: SummarySet) => {
+    onEditSet(
+      set.id,
+      setEditPatch(
+        { weight: set.weightKg, reps: set.reps },
+        { weight: editWeight, reps: editReps, effort: editEffort },
+      ),
+    );
+    stopSetEdit();
+  };
+
+  let workNo = 0;
+  let warmupNo = 0;
+
   return (
-    <li className="tl-card p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold">{formatDay(entry.date, lang)}</span>
-            {entry.title && (
-              <span className="text-[var(--tl-text-secondary)] truncate">
-                {entry.title}
-              </span>
-            )}
-            {entry.location && (
-              <Badge tone="neutral">{t(`hist.place.${entry.location}`)}</Badge>
-            )}
-            {entry.source && entry.source !== "traininglab" && (
-              <Badge tone="info" title={t("hist.sourceHint")}>
-                {entry.source}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-3 flex-wrap text-xs text-[var(--tl-text-muted)] mt-1">
-            <span>
-              {tInterp("hist.sets", { n: entry.workingSets })}
-              {entry.warmupSets > 0 &&
-                ` · ${tInterp("hist.warmup", { n: entry.warmupSets })}`}
-            </span>
-            <span>
-              {tInterp("hist.exercises", { n: entry.exercises.length })}
-            </span>
-            {entry.volumeKg > 0 && (
-              <span>
-                {tInterp("hist.volume", { kg: formatKg(entry.volumeKg, lang) })}
-              </span>
-            )}
-            {/* No trustworthy duration → no tile. A made-up "1 min" is worse
-                than an empty spot. */}
-            {entry.durationMin !== null && (
-              <span>{tInterp("hist.duration", { n: entry.durationMin })}</span>
-            )}
-          </div>
+    <div
+      className="mobile-sheet-backdrop"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={panel}
+        className="mobile-sheet history-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="history-detail-title"
+        data-testid="history-detail"
+      >
+        <div className="mobile-sheet-head">
+          <span className="mobile-sheet-brand">
+            <MIcons.clock />
+            <span>{t("hist.detailTitle")}</span>
+          </span>
+          <button
+            ref={closeButton}
+            type="button"
+            className="icon-btn tl-focusable"
+            aria-label={t("common.close")}
+            onClick={onClose}
+          >
+            <MIcons.x />
+          </button>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {EFFORT_MARKERS.filter((mark) => entry.markers[mark] > 0).map(
-            (mark) => (
-              <Badge
-                key={mark}
-                tone={mark === "F" ? "danger" : "warning"}
-                title={`${EFFORT_MEANING[mark].label[lang]} · ${EFFORT_MEANING[mark].detail[lang]}`}
+
+        <div className="history-detail">
+          <div className="history-detail-head">
+            <span className="badge badge-accent">
+              <MIcons.calendar />
+              {formatDay(entry.date, lang)}
+            </span>
+            <h2 id="history-detail-title">
+              {session.title ?? t("hist.detailHeading")}
+            </h2>
+            <div className="row-wrap small muted">
+              {entry.location && (
+                <span>{t(`hist.place.${entry.location}`)}</span>
+              )}
+              {entry.source && entry.source !== "traininglab" && (
+                <span>{entry.source}</span>
+              )}
+              {entry.durationMin !== null ? (
+                <span>
+                  {tInterp("hist.duration", { n: entry.durationMin })}
+                </span>
+              ) : (
+                <span title={t("summary.noDuration")}>—</span>
+              )}
+            </div>
+          </div>
+
+          <div className="summary-kpis">
+            <div className="summary-kpi">
+              <b>{summary.workingSets}</b>
+              <span>{t("summary.setsLabel")}</span>
+            </div>
+            <div className="summary-kpi">
+              <b>{summary.exercises.length}</b>
+              <span>{t("summary.exercisesLabel")}</span>
+            </div>
+            <div className="summary-kpi">
+              <b>{formatKg(summary.volumeKg, lang)}</b>
+              <span>{t("summary.volumeLabel")}</span>
+            </div>
+            <div className="summary-kpi">
+              <b>
+                {entry.durationMin !== null ? `${entry.durationMin} min` : "—"}
+              </b>
+              <span>{t("summary.durationLabel")}</span>
+            </div>
+          </div>
+
+          {mode === "view" && (
+            <>
+              <div>
+                {summary.exercises.map((row) => (
+                  <section className="summary-ex" key={row.exerciseId}>
+                    <a
+                      className="summary-ex-head tl-focusable"
+                      href={hashFor("exercises", [row.exerciseId])}
+                      onClick={onClose}
+                    >
+                      <ExerciseThumb exerciseId={row.exerciseId} size={40} />
+                      <span>
+                        <span className="summary-ex-name">
+                          {exerciseName(row.exerciseId, lang)}
+                        </span>
+                        <span className="summary-ex-sub">
+                          {tInterp("summary.setsShort", { n: row.sets })}
+                          {row.warmupSets > 0 && (
+                            <>
+                              {" · "}
+                              {tInterp("summary.warmups", {
+                                n: row.warmupSets,
+                              })}
+                            </>
+                          )}
+                        </span>
+                      </span>
+                      <span className="summary-ex-vol">
+                        <b>
+                          {row.volumeKg > 0
+                            ? formatKg(row.volumeKg, lang)
+                            : "—"}
+                        </b>
+                        <span>{t("summary.volumeShort")}</span>
+                      </span>
+                    </a>
+
+                    <div className="summary-sets-wrap">
+                      <table
+                        className="summary-sets"
+                        aria-label={`${exerciseName(row.exerciseId, lang)} · ${t("summary.what")}`}
+                      >
+                        <thead>
+                          <tr>
+                            <th scope="col">{t("summary.set")}</th>
+                            <th scope="col">{t("summary.weight")}</th>
+                            <th scope="col">{t("summary.reps")}</th>
+                            <th scope="col" title={t("summary.effortHint")}>
+                              {t("summary.effort")}
+                            </th>
+                            <th scope="col">{t("summary.mark")}</th>
+                            <th scope="col">{t("common.edit")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {row.entries.map((set) => {
+                            const number = set.warmup
+                              ? `${t("summary.warmupShort")}${++warmupNo}`
+                              : String(++workNo);
+                            if (editingSetId === set.id) {
+                              return (
+                                <tr
+                                  key={set.id}
+                                  className="summary-set-editing"
+                                  data-testid="history-detail-set-editing"
+                                >
+                                  <td colSpan={6}>
+                                    <div
+                                      className="summary-set-edit-form"
+                                      onKeyDown={(event) => {
+                                        if (event.key !== "Escape") return;
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        stopSetEdit();
+                                      }}
+                                    >
+                                      <span className="summary-set-edit-number">
+                                        {number}
+                                      </span>
+                                      <input
+                                        autoFocus
+                                        className="tl-input summary-set-edit-input"
+                                        inputMode="decimal"
+                                        aria-label={t("summary.weight")}
+                                        value={editWeight}
+                                        onChange={(event) =>
+                                          setEditWeight(event.target.value)
+                                        }
+                                        placeholder={t("summary.weight")}
+                                      />
+                                      <span className="tiny muted">×</span>
+                                      <input
+                                        className="tl-input summary-set-edit-input"
+                                        inputMode="numeric"
+                                        aria-label={t("summary.reps")}
+                                        value={editReps}
+                                        onChange={(event) =>
+                                          setEditReps(event.target.value)
+                                        }
+                                        placeholder={t("summary.reps")}
+                                      />
+                                      {EFFORT_MARKERS.map((mark) => (
+                                        <button
+                                          key={mark}
+                                          type="button"
+                                          value={mark}
+                                          aria-pressed={editEffort === mark}
+                                          aria-label={
+                                            EFFORT_MEANING[mark].label[lang]
+                                          }
+                                          title={`${EFFORT_MEANING[mark].label[lang]} · ${EFFORT_MEANING[mark].detail[lang]}`}
+                                          onClick={() =>
+                                            setEditEffort((current) =>
+                                              current === mark ? null : mark,
+                                            )
+                                          }
+                                          className={`summary-set-edit-mark ${editEffort === mark ? "is-active" : ""}`}
+                                        >
+                                          {mark}
+                                        </button>
+                                      ))}
+                                      <button
+                                        type="button"
+                                        className="btn btn-primary btn-sm tl-focusable"
+                                        onClick={() => saveSetEdit(set)}
+                                      >
+                                        {t("common.save")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm tl-focusable"
+                                        onClick={stopSetEdit}
+                                      >
+                                        {t("common.cancel")}
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            return (
+                              <tr
+                                key={set.id}
+                                className={set.warmup ? "is-warmup" : undefined}
+                                data-testid="history-detail-set"
+                              >
+                                <th scope="row">
+                                  <span className="summary-set-number">
+                                    {number}
+                                  </span>
+                                </th>
+                                <td>
+                                  {set.weightKg !== null
+                                    ? formatWeight(set.weightKg)
+                                    : "—"}
+                                </td>
+                                <td>
+                                  {set.reps !== null
+                                    ? set.reps
+                                    : set.durationSec !== null
+                                      ? `${set.durationSec} s`
+                                      : "—"}
+                                </td>
+                                <td>
+                                  {set.effort !== null
+                                    ? `${set.effort}/5`
+                                    : "—"}
+                                </td>
+                                <td>
+                                  {set.marker ? (
+                                    <span className="summary-mark">
+                                      {set.marker}
+                                    </span>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    className="summary-set-edit tl-focusable"
+                                    data-testid="history-detail-set-edit"
+                                    aria-label={t("common.edit")}
+                                    title={t("common.edit")}
+                                    data-set-id={set.id}
+                                    onClick={() => startSetEdit(set)}
+                                  >
+                                    {t("common.edit")}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                ))}
+              </div>
+
+              <div className="history-detail-actions">
+                <button
+                  type="button"
+                  className="btn tl-focusable"
+                  onClick={startEdit}
+                >
+                  <MIcons.settings />
+                  {t("hist.edit")}
+                </button>
+                <button
+                  type="button"
+                  className="btn tl-focusable history-danger"
+                  onClick={() => setMode("delete")}
+                >
+                  <MIcons.trash />
+                  {t("hist.delete")}
+                </button>
+              </div>
+            </>
+          )}
+
+          {mode === "edit" && (
+            <div className="history-edit">
+              <label className="field-label" htmlFor="history-name">
+                {t("hist.editName")}
+              </label>
+              <input
+                id="history-name"
+                type="text"
+                className="field"
+                style={{ width: "100%", fontSize: 16 }}
+                value={name}
+                maxLength={80}
+                placeholder={t("hist.editNamePlaceholder")}
+                onChange={(event) => setName(event.target.value)}
+              />
+              <label className="field-label" htmlFor="history-place">
+                {t("hist.editPlace")}
+              </label>
+              <select
+                id="history-place"
+                className="field"
+                style={{ width: "100%", fontSize: 16 }}
+                value={place}
+                onChange={(event) =>
+                  setPlace(event.target.value as "" | "gym" | "home")
+                }
               >
-                {mark} · {entry.markers[mark]}
-              </Badge>
-            ),
+                <option value="">{t("hist.place.none")}</option>
+                <option value="gym">{t("hist.place.gym")}</option>
+                <option value="home">{t("hist.place.home")}</option>
+              </select>
+              <div className="row-wrap">
+                <button
+                  type="button"
+                  className="btn btn-primary tl-focusable"
+                  onClick={saveEdit}
+                >
+                  {t("hist.save")}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost tl-focusable"
+                  onClick={() => setMode("view")}
+                >
+                  {t("hist.cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === "delete" && plan && (
+            <div
+              role="alertdialog"
+              aria-label={t("hist.deleteTitle")}
+              className="history-delete"
+            >
+              <p className="font-semibold">{t("hist.deleteTitle")}</p>
+              <p className="small secondary">
+                {tInterp("hist.deleteBody", {
+                  n: plan.workingSets + plan.warmupSets,
+                  kg: formatKg(plan.volumeKg, lang),
+                })}
+              </p>
+              {plan.warmupSets > 0 && (
+                <p className="tiny muted">
+                  {plan.warmupSets === 1
+                    ? t("hist.deleteWarmupOne")
+                    : tInterp("hist.deleteWarmup", { n: plan.warmupSets })}
+                </p>
+              )}
+              {plan.missingSets > 0 && (
+                <p className="tiny muted">
+                  {tInterp("hist.deleteMissing", { n: plan.missingSets })}
+                </p>
+              )}
+              <div className="row-wrap">
+                <button
+                  type="button"
+                  className="btn tl-focusable history-danger-btn"
+                  onClick={() => {
+                    onDelete(session);
+                    onClose();
+                  }}
+                >
+                  {t("hist.deleteConfirm")}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost tl-focusable"
+                  onClick={() => setMode("view")}
+                >
+                  {t("hist.cancel")}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
-
-      <div className="flex items-center gap-1.5 flex-wrap mt-3">
-        {shown.map((line) => (
-          <Chip key={line.exerciseId}>
-            {exerciseName(line.exerciseId, lang)} ×{line.sets}
-          </Chip>
-        ))}
-        {entry.exercises.length > 4 && (
-          <button
-            type="button"
-            className="tl-focusable text-[11px] text-[var(--tl-text-muted)] underline decoration-dotted"
-            onClick={() => setOpen((value) => !value)}
-          >
-            {open
-              ? t("hist.showLess")
-              : tInterp("hist.moreExercises", { n: hidden })}
-          </button>
-        )}
-      </div>
-
-      {mode === "view" && (
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            type="button"
-            className="tl-btn tl-btn-ghost tl-focusable"
-            style={{ padding: "8px 14px" }}
-            onClick={startEdit}
-          >
-            <Pencil className="w-4 h-4" aria-hidden />
-            {t("hist.edit")}
-          </button>
-          <button
-            type="button"
-            className="tl-btn tl-btn-ghost tl-focusable"
-            style={{ padding: "8px 14px", color: "var(--tl-danger)" }}
-            onClick={() => setMode("delete")}
-            disabled={!session}
-          >
-            <Trash2 className="w-4 h-4" aria-hidden />
-            {t("hist.delete")}
-          </button>
-        </div>
-      )}
-
-      {mode === "edit" && (
-        <div className="mt-3 rounded-xl border border-[var(--tl-border)] bg-[var(--tl-surface-2)] p-3">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--tl-text-muted)] mb-1">
-            {t("hist.editName")}
-            <input
-              type="text"
-              className="tl-input mt-1 w-full px-3 py-2 text-sm font-normal normal-case tracking-normal"
-              value={name}
-              maxLength={80}
-              placeholder={t("hist.editNamePlaceholder")}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--tl-text-muted)] mt-2 mb-1">
-            {t("hist.editPlace")}
-            <select
-              className="tl-input mt-1 w-full px-3 py-2 text-sm font-normal normal-case tracking-normal"
-              value={place}
-              onChange={(event) =>
-                setPlace(event.target.value as "" | "gym" | "home")
-              }
-            >
-              <option value="">{t("hist.place.none")}</option>
-              <option value="gym">{t("hist.place.gym")}</option>
-              <option value="home">{t("hist.place.home")}</option>
-            </select>
-          </label>
-          <div className="flex items-center gap-2 mt-3">
-            <button
-              type="button"
-              className="tl-btn tl-btn-primary tl-focusable"
-              style={{ padding: "8px 14px" }}
-              onClick={saveEdit}
-            >
-              {t("hist.save")}
-            </button>
-            <button
-              type="button"
-              className="tl-btn tl-btn-ghost tl-focusable"
-              style={{ padding: "8px 14px" }}
-              onClick={() => setMode("view")}
-            >
-              {t("hist.cancel")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {mode === "delete" && plan && (
-        <div
-          role="alertdialog"
-          aria-label={t("hist.deleteTitle")}
-          className="mt-3 rounded-xl border border-[var(--tl-danger)]/40 bg-[var(--tl-danger)]/10 p-3"
-        >
-          <p className="font-semibold text-sm">{t("hist.deleteTitle")}</p>
-          <p className="text-[13px] text-[var(--tl-text-secondary)] mt-1">
-            {tInterp("hist.deleteBody", {
-              n: plan.workingSets + plan.warmupSets,
-              kg: formatKg(plan.volumeKg, lang),
-            })}
-          </p>
-          {plan.warmupSets > 0 && (
-            <p className="text-xs text-[var(--tl-text-muted)] mt-1">
-              {/* One warm-up set is common, so it gets its own sentence: the
-                  plural key would print «Se incluyen 1 series». */}
-              {plan.warmupSets === 1
-                ? t("hist.deleteWarmupOne")
-                : tInterp("hist.deleteWarmup", { n: plan.warmupSets })}
-            </p>
-          )}
-          {plan.missingSets > 0 && (
-            <p className="text-xs text-[var(--tl-text-muted)] mt-1">
-              {tInterp("hist.deleteMissing", { n: plan.missingSets })}
-            </p>
-          )}
-          <div className="flex items-center gap-2 mt-3">
-            <button
-              type="button"
-              className="tl-btn tl-focusable"
-              style={{
-                padding: "8px 14px",
-                background: "var(--tl-danger)",
-                color: "#fff",
-                fontWeight: 800,
-              }}
-              onClick={() => {
-                if (session) onDelete(session);
-              }}
-            >
-              {t("hist.deleteConfirm")}
-            </button>
-            <button
-              type="button"
-              className="tl-btn tl-btn-ghost tl-focusable"
-              style={{ padding: "8px 14px" }}
-              onClick={() => setMode("view")}
-            >
-              {t("hist.cancel")}
-            </button>
-          </div>
-        </div>
-      )}
-    </li>
+    </div>
   );
 }
 
@@ -481,4 +988,9 @@ function formatDay(date: string, lang: "es" | "en"): string {
 /** Tonnage with the user's thousands separator (`149 107 kg` in Spanish). */
 function formatKg(kg: number, lang: "es" | "en"): string {
   return `${Math.round(kg).toLocaleString(lang === "es" ? "es-ES" : "en-GB")} kg`;
+}
+
+/** A single set's load, keeping the half-kilo the log may hold. */
+function formatWeight(kg: number): string {
+  return `${Math.round(kg * 10) / 10} kg`;
 }

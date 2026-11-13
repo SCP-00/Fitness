@@ -29,6 +29,12 @@
  * pure stress module, both fed by the shared `core/training` generator and the
  * user's own inputs.
  *
+ * **2026-11-12 (shell port).** The screen now draws the same `topbar` +
+ * `content` + `card` shell as Hoy, Entrenamiento, Historial, ZEN and Coach. It is
+ * no longer wrapped in `Legacy` by `App`, so the last visual seam before
+ * Progreso/Ajustes is gone. The data contract is untouched: drag, overrides and
+ * day editing still write through the same `weekPlan`/`rows` store actions.
+ *
  * @module screens/WeekScreen
  */
 
@@ -117,32 +123,41 @@ export default function WeekScreen() {
   const hasDesign = customDays > 0;
 
   return (
-    <div className="tl-page">
-      <header className="tl-topbar">
-        <div className="tl-welcome">
-          <h1>{t("week.pageTitle")}</h1>
-          <p>{tInterp("week.pageHint", { n: trainingDays })}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {weekStress && weekStress.trainingDays > 0 && (
-            <span
-              className="tl-pill"
-              title={t("week.stress.hint")}
-              style={{ color: BAND_COLOR[weekStress.band] }}
-            >
-              <Activity className="w-3.5 h-3.5" aria-hidden />
-              {tInterp("week.stress.weekScore", {
-                score: weekStress.weekScore,
-                band: t(BAND_KEY[weekStress.band]),
-              })}
-            </span>
-          )}
-          <span className="tl-pill">
-            <CalendarDays className="w-3.5 h-3.5" aria-hidden />
-            {tInterp("week.budget", { n: settings.timeBudgetMin })}
+    <>
+      <header className="topbar">
+        <span className="pill">
+          <MIcons.calendar />
+          {t("nav.week")}
+        </span>
+        <div className="spacer" />
+        {weekStress && weekStress.trainingDays > 0 && (
+          <span
+            className="pill"
+            title={t("week.stress.hint")}
+            style={{ color: BAND_COLOR[weekStress.band] }}
+          >
+            <Activity className="w-3.5 h-3.5" aria-hidden />
+            {tInterp("week.stress.weekScore", {
+              score: weekStress.weekScore,
+              band: t(BAND_KEY[weekStress.band]),
+            })}
           </span>
-        </div>
+        )}
+        <span className="pill">
+          <CalendarDays className="w-3.5 h-3.5" aria-hidden />
+          {tInterp("week.budget", { n: settings.timeBudgetMin })}
+        </span>
       </header>
+
+      <div className="content">
+        <div className="stack" style={{ gap: 6 }}>
+          <h1 style={{ margin: 0, fontSize: 25, letterSpacing: "-0.6px" }}>
+            {t("week.pageTitle")}
+          </h1>
+          <p className="small muted" style={{ margin: 0 }}>
+            {tInterp("week.pageHint", { n: trainingDays })}
+          </p>
+        </div>
 
       {trainingDays === 0 && !hasDesign ? (
         <EmptyState
@@ -164,8 +179,8 @@ export default function WeekScreen() {
           />
 
           {/* ── One row per day ─────────────────────────────────────────── */}
-          <section className="tl-card">
-            <div className="tl-card-head">
+          <section className="card">
+            <div className="card-head">
               <div className="min-w-0">
                 <h2>{t("week.planTitle")}</h2>
                 <span>{t("week.planHint")}</span>
@@ -177,7 +192,7 @@ export default function WeekScreen() {
                 })}
               </Badge>
             </div>
-            <div className="tl-card-body">
+            <div className="card-body">
               <p className="text-[11px] text-[var(--tl-text-muted)] mb-2">
                 {t("week.dragHint")}
               </p>
@@ -417,8 +432,8 @@ export default function WeekScreen() {
           </section>
 
           {/* ── Estimated stress of (his) week ──────────────────────────── */}
-          <section className="tl-card">
-            <div className="tl-card-head">
+          <section className="card">
+            <div className="card-head">
               <div className="min-w-0">
                 <h2>{t("week.stress.title")}</h2>
                 <span>{t("week.stress.hint")}</span>
@@ -432,7 +447,7 @@ export default function WeekScreen() {
                 </Badge>
               )}
             </div>
-            <div className="tl-card-body flex flex-col gap-3">
+            <div className="card-body stack" style={{ gap: 12 }}>
               {!weekStress || weekStress.trainingDays === 0 ? (
                 <p className="text-sm text-[var(--tl-text-secondary)]">
                   {t("week.stress.noDays")}
@@ -442,7 +457,7 @@ export default function WeekScreen() {
                   {t("week.stress.ok")}
                 </p>
               ) : (
-                <ul className="tl-note">
+                <ul className="stack" style={{ gap: 6, margin: 0, paddingLeft: 18 }}>
                   {weekStress.warnings.map((warning, i) => (
                     <li key={i}>
                       {warning.code === "no_rest_week"
@@ -474,13 +489,13 @@ export default function WeekScreen() {
           </section>
 
           {/* ── Why the week looks like this ────────────────────────────── */}
-          <section className="tl-card">
-            <div className="tl-card-head">
+          <section className="card">
+            <div className="card-head">
               <h2>{t("week.whyTitle")}</h2>
             </div>
-            <div className="tl-card-body flex flex-col gap-3">
+            <div className="card-body stack" style={{ gap: 12 }}>
               {plan && plan.advisories.length > 0 ? (
-                <ul className="tl-note">
+                <ul className="stack" style={{ gap: 6, margin: 0, paddingLeft: 18 }}>
                   {plan.advisories.map((advisory, i) => (
                     <li key={i}>{formatAdvisory(advisory)}</li>
                   ))}
@@ -526,6 +541,7 @@ export default function WeekScreen() {
           </p>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }

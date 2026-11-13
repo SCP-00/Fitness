@@ -193,7 +193,7 @@ Ver [CONTRIBUTING.md](CONTRIBUTING.md) antes de enviar un Pull Request.
 - [PLAN.md](PLAN.md) — Plan maestro del proyecto
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Arquitectura verificada (fuente de verdad)
 - [TESTING.md](docs/TESTING.md) — Estrategia de testing y comandos
-- [REDESIGN_STORM.md](docs/REDESIGN_STORM.md) — Contrato de interfaz de TrainingLab (8 personas, 10 invariantes, 8 pantallas)
+- [DESIGN_DECISIONS_2026-11-07.md](docs/DESIGN_DECISIONS_2026-11-07.md) — Decisiones de diseño y UX de TrainingLab (benchmark, invariantes, pantallas, roadmap)
 - [MCP_TOOL_SURFACE.md](docs/MCP_TOOL_SURFACE.md) — Cómo los modelos locales leen y escriben en las apps
 - [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) — Especificación del producto
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) — Notas de versión

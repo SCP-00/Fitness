@@ -16,6 +16,7 @@ import {
   type OwnedEquipment,
 } from "@fitness/bodylab-exercises";
 import { t, tInterp, getLanguage } from "../../lib/i18n";
+import { uid } from "../../lib/uid";
 import { SectionCard, Badge } from "./ui";
 
 export function GearPanel({
@@ -34,7 +35,7 @@ export function GearPanel({
   const preset = EQUIPMENT_PRESETS.find((p) => p.id === presetId);
 
   const add = () => {
-    const item = ownedFromPreset(presetId, crypto.randomUUID());
+    const item = ownedFromPreset(presetId, uid());
     if (!item) return;
     // Friendly default label in the current UI language.
     const label =
@@ -67,7 +68,7 @@ export function GearPanel({
         <select
           value={presetId}
           onChange={(e) => setPresetId(e.target.value)}
-          className="tl-input px-3 py-2 text-sm flex-1 min-w-[220px]"
+          className="tl-input px-3 py-2 text-sm w-full sm:w-auto sm:flex-1 min-w-0"
         >
           {EQUIPMENT_PRESETS.filter((p) => p.id !== "bodyweight").map((p) => (
             <option key={p.id} value={p.id}>
@@ -110,7 +111,7 @@ export function GearPanel({
                 <input
                   value={item.label}
                   onChange={(e) => patch(item.id, { label: e.target.value })}
-                  className="bg-transparent text-sm font-medium flex-1 min-w-[140px] focus:outline-none"
+                  className="gear-label-input bg-transparent text-sm font-medium flex-1 min-w-[140px] focus:outline-none"
                   aria-label={t("gear.title")}
                 />
                 {item.setupMin > 0 && (

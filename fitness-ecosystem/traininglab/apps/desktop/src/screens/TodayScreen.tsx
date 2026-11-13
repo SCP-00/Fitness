@@ -56,19 +56,28 @@
  * @module screens/TodayScreen
  */
 
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { getTraits, type Capability } from "@fitness/bodylab-exercises";
 import type { MuscleFamily } from "@fitness/bodylab-training";
 import { SORE_FAMILIES, useStore } from "../app/store";
-import { navigate } from "../app/router";
+import { HASH, navigate } from "../app/router";
 import { localDayKey } from "../lib/day";
 import { DAY_FOCUS_PRESETS, focusKeyOf } from "../lib/day-focus";
 import { familyLabel, formatAdvisory } from "../lib/format";
 import { getLanguage, t, tInterp } from "../lib/i18n";
 import { exerciseName, type PlannedRow, type TodayPlan } from "../lib/plan";
 import { parseNumberInput } from "../lib/parse-num";
+import { summariseSession } from "../lib/session-summary";
 import { workingSets } from "../features/stats/derive";
 import { ExerciseThumb } from "../features/exercises/ExerciseThumb";
+import { ExercisePicker } from "../features/exercises/ExercisePicker";
 import { MIcons } from "../ui/mockup-icons";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -92,13 +101,19 @@ export default function TodayScreen() {
     dayFocus,
     setDayFocus,
     setReadinessAndPersist,
+    sets,
     todaySets,
     plannedMinutes,
     totalSetsToday,
     finished,
     payload,
     finishSession,
+    addExerciseToToday,
   } = useStore();
+
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const closeAdjust = useCallback(() => setAdjustOpen(false), []);
 
   const plannedSets = rows.reduce((acc, row) => acc + row.sets, 0);
 
@@ -112,6 +127,16 @@ export default function TodayScreen() {
     return map;
   }, [todaySets]);
 
+  /**
+   * The close of today's session, for the compact card under the plan. Derived
+   * here — not in the card — so these numbers come from the same helper the
+   * summary page uses and the two can never disagree.
+   */
+  const completed = useMemo(
+    () => (finished ? summariseSession(finished, sets) : null),
+    [finished, sets],
+  );
+
   if (loading || !settings || !plan) {
     return <div className="tl-loading">{t("common.loading")}</div>;
   }
@@ -119,6 +144,11 @@ export default function TodayScreen() {
   const isRestDay = rows.length === 0;
   const gear = gearFor(rows, settings.inventory);
   const title = sessionTitle(rows);
+  /* Nine families on one line is a wall of words, not information. The first
+     four name the session; the rest are one tap away in the title/tooltip. */
+  const families = uniqueFamilies(rows);
+  const shownFamilies = families.slice(0, 4);
+  const hiddenFamilies = families.length - shownFamilies.length;
   const inProgress = totalSetsToday > 0 && finished === null;
   const currentId =
     rows.find((row) => (doneByExercise.get(row.exerciseId) ?? 0) < row.sets)
@@ -129,12 +159,24 @@ export default function TodayScreen() {
       {/* ── Top bar: the date, and the one action that starts the day.
           The mockup's topbar is a *sibling* of the content box — it is sticky,
           with its own background and bottom rule — not a card inside it. ─── */}
-      <header className="topbar">
+      <header className="topbar today-topbar">
         <span className="pill">
           <MIcons.calendar />
           {todayLabel()}
         </span>
         <div className="spacer" />
+        <button
+          type="button"
+          className="btn btn-sm today-adjust-top tl-focusable"
+          onClick={() => setAdjustOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={adjustOpen}
+          aria-label={t("hoy.adjust")}
+          data-testid="adjust-today-top"
+        >
+          <MIcons.settings />
+          {t("hoy.adjust")}
+        </button>
         {!isRestDay && (
           <a className="btn btn-primary btn-lg" href="#/sesion">
             <MIcons.play />
@@ -175,7 +217,9 @@ export default function TodayScreen() {
                 <button
                   type="button"
                   className="btn btn-sm tl-focusable"
-                  onClick={() => finishSession()}
+                  onClick={() => {
+                    if (finishSession()) navigate("summary");
+                  }}
                 >
                   {t("session.finish")}
                 </button>
@@ -206,9 +250,21 @@ export default function TodayScreen() {
                     {tInterp("stats.exercises", { n: rows.length })}
                   </span>
                   <span className="muted">·</span>
-                  <span className="row" style={{ gap: 6 }}>
+                  <span
+                    className="row"
+                    style={{ gap: 6 }}
+                    title={families.map(familyLabel).join(" · ")}
+                  >
                     <MIcons.target style={{ width: 16, height: 16 }} />
-                    {uniqueFamilies(rows).map(familyLabel).join(" · ")}
+                    {shownFamilies.map(familyLabel).join(" · ")}
+                    {hiddenFamilies > 0 && (
+                      <span
+                        className="muted"
+                        style={{ whiteSpace: "nowrap", fontSize: 11 }}
+                      >
+                        {tInterp("hoy.familiesMore", { n: hiddenFamilies })}
+                      </span>
+                    )}
                   </span>
                 </div>
               )}
@@ -236,6 +292,26 @@ export default function TodayScreen() {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {plan.fatigue && plan.fatigue.entries.length > 0 && (
+                <p className="tiny muted" style={{ margin: "12px 0 0" }}>
+                  <strong>{t("recovery.title")}</strong>{" "}
+                  {tInterp("recovery.line", {
+                    families: plan.fatigue.entries
+                      .map((entry) => familyLabel(entry.family))
+                      .join(", "),
+                    hours: Math.round(
+                      Math.min(
+                        ...plan.fatigue.entries.map(
+                          (entry) => entry.hoursSince,
+                        ),
+                      ),
+                    ),
+                    window: plan.fatigue.windowHours,
+                  })}{" "}
+                  {t("recovery.hint")}
+                </p>
               )}
 
               {!isRestDay && (
@@ -282,64 +358,46 @@ export default function TodayScreen() {
             )}
           </section>
 
-          {!isRestDay && (
-            <DayFocusBar value={dayFocus} onChange={setDayFocus} />
-          )}
-
-          {!isRestDay && (
-            <div className="row" style={{ gap: 10 }}>
-              <button
-                type="button"
-                className="btn btn-lg tl-focusable"
-                style={{ flex: 1 }}
-                onClick={() => navigate("exercises")}
-              >
-                <MIcons.plus />
-                {t("hoy.addExercise")}
-              </button>
-              <button
-                type="button"
-                className="btn btn-lg tl-focusable"
-                style={{ flex: 1 }}
-                onClick={() => navigate("week")}
-              >
-                <MIcons.list />
-                {t("hoy.fromRoutine")}
-              </button>
-            </div>
-          )}
-
-          <PlanNotes plan={plan} />
-
-          {payload === null && (
-            <p className="tiny muted" style={{ margin: 0 }}>
-              {t("home.hero.linked")}
-            </p>
-          )}
-
           {/*
-           * The recovery note is the one piece of the old rail that is about
-           * *today's plan* and not a readout: it says which families are still
-           * inside their window when the planner asks them to work again. It
-           * stays; the numbers, the rings, the week and the coach do not
-           * (owner order, 2026-10-16: Hoy is only Hoy).
+           * The close of the loop (2026-11-06): finishing from anywhere — ZEN,
+           * Hoy or an agent — leaves a card with the numbers and a way into the
+           * summary. It is a link, not a second set of readings.
            */}
-          {plan.fatigue && plan.fatigue.entries.length > 0 && (
-            <p className="tiny muted" style={{ margin: 0 }}>
-              <strong>{t("recovery.title")}</strong>{" "}
-              {tInterp("recovery.line", {
-                families: plan.fatigue.entries
-                  .map((entry) => familyLabel(entry.family))
-                  .join(", "),
-                hours: Math.round(
-                  Math.min(
-                    ...plan.fatigue.entries.map((entry) => entry.hoursSince),
-                  ),
-                ),
-                window: plan.fatigue.windowHours,
-              })}{" "}
-              {t("recovery.hint")}
-            </p>
+          {finished !== null && (
+            <a
+              className="card card-pad row tl-focusable"
+              href={HASH.summary}
+              data-testid="summary-view"
+              style={{ gap: 14 }}
+            >
+              <span
+                className="rail-logo"
+                style={{ width: 36, height: 36, borderRadius: 10 }}
+                aria-hidden
+              >
+                <MIcons.circleCheck />
+              </span>
+              <span className="grow">
+                <span className="bold" style={{ display: "block" }}>
+                  {t("summary.title")}
+                </span>
+                <span className="small muted">
+                  {completed
+                    ? (() => {
+                        const lang = getLanguage();
+                        const sets = completed.workingSets;
+                        const ex = completed.exercises.length;
+                        const kg = Math.round(completed.volumeKg);
+                        if (lang === "en") {
+                          return `${sets} ${sets === 1 ? "set" : "sets"} · ${ex} ${ex === 1 ? "exercise" : "exercises"} · ${kg} kg`;
+                        }
+                        return `${sets} ${sets === 1 ? "serie" : "series"} · ${ex} ${ex === 1 ? "ejercicio" : "ejercicios"} · ${kg} kg`;
+                      })()
+                    : t("summary.view")}
+                </span>
+              </span>
+              <MIcons.chevronRight style={{ color: "var(--tl-text-muted)" }} />
+            </a>
           )}
 
           <ReadinessCard
@@ -348,6 +406,49 @@ export default function TodayScreen() {
             onReadiness={setReadinessAndPersist}
             onToggleSore={toggleSoreFamily}
           />
+
+          <button
+            type="button"
+            className="btn btn-lg tl-focusable today-adjust"
+            onClick={() => setAdjustOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={adjustOpen}
+            data-testid="adjust-today"
+          >
+            <MIcons.settings />
+            {t("hoy.adjust")}
+            <span className="spacer" />
+            <MIcons.chevronRight />
+          </button>
+
+          {adjustOpen && (
+            <AdjustTodaySheet
+              plan={plan}
+              dayFocus={dayFocus}
+              setDayFocus={setDayFocus}
+              isRestDay={isRestDay}
+              showLinkedNote={payload === null}
+              onClose={closeAdjust}
+              onAddExercise={() => {
+                setAdjustOpen(false);
+                setPickerOpen(true);
+              }}
+            />
+          )}
+
+          {pickerOpen && (
+            <ExercisePicker
+              title={t("hoy.addExercise")}
+              inUse={rows.map((row) => row.exerciseId)}
+              defaultOnlyGear={false}
+              onClose={() => setPickerOpen(false)}
+              onConfirm={(ids) => {
+                const [id] = ids;
+                if (id) addExerciseToToday(id);
+                setPickerOpen(false);
+              }}
+            />
+          )}
         </div>
       </div>
     </>
@@ -539,7 +640,15 @@ function DayFocusBar({
   onChange: (families: MuscleFamily[]) => void;
 }) {
   // Compared by set, not by reference: the store may hand back a new array.
+  // `null` means a bespoke combination (an agent's `set_day_focus` can send any
+  // families), which is neither `auto` nor one of our five presets.
   const activeKey = focusKeyOf(value);
+  const bespoke = activeKey === null && value.length > 0;
+  const activeStyle = {
+    borderColor: "var(--tl-accent-border)",
+    background: "var(--tl-accent-wash)",
+    color: "var(--tl-accent-strong)",
+  } as const;
   return (
     <div className="row-wrap" style={{ gap: 8 }}>
       <span
@@ -554,21 +663,33 @@ function DayFocusBar({
             key={option.key}
             type="button"
             className="chip tl-focusable"
-            style={
-              activeKey === option.key
-                ? {
-                    borderColor: "var(--tl-accent-border)",
-                    background: "var(--tl-accent-wash)",
-                    color: "var(--tl-accent-strong)",
-                  }
-                : undefined
-            }
+            style={activeKey === option.key ? activeStyle : undefined}
             aria-pressed={activeKey === option.key}
             onClick={() => onChange(option.families)}
           >
             {t(option.label)}
           </button>
         ))}
+        {/*
+         * A focus the five chips cannot name. It is shown, not hidden: the plan
+         * is genuinely focused, and *Automático* pressing itself over it was a
+         * lie about what the planner was doing. One tap clears it back to auto.
+         */}
+        {bespoke && (
+          <button
+            type="button"
+            className="chip tl-focusable"
+            style={activeStyle}
+            aria-pressed
+            title={`${t("home.focus.customHint")}: ${value
+              .map(familyLabel)
+              .join(" · ")}`}
+            onClick={() => onChange([])}
+          >
+            {tInterp("home.focus.custom", { n: value.length })}
+            <MIcons.x />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -643,7 +764,7 @@ function ReadinessCard({
   };
 
   return (
-    <details className="card" open>
+    <details className="card" open data-testid="readiness-card">
       <summary className="card-head" style={{ cursor: "pointer" }}>
         <MIcons.activity
           style={{ color: "var(--tl-accent)", width: 16, height: 16 }}
@@ -709,6 +830,157 @@ function ReadinessCard({
         </div>
       </div>
     </details>
+  );
+}
+
+/**
+ * The one secondary door on Hoy: adjust today's plan without turning the
+ * screen into a menu. It is a real bottom sheet (Escape, focus trap, backdrop),
+ * and it deliberately owns every action that used to sit loose under the plan.
+ */
+function AdjustTodaySheet({
+  plan,
+  dayFocus,
+  setDayFocus,
+  isRestDay,
+  showLinkedNote,
+  onClose,
+  onAddExercise,
+}: {
+  plan: TodayPlan;
+  dayFocus: MuscleFamily[];
+  setDayFocus: (families: MuscleFamily[]) => void;
+  isRestDay: boolean;
+  showLinkedNote: boolean;
+  onClose: () => void;
+  onAddExercise: () => void;
+}) {
+  const panel = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    closeButton.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !panel.current) return;
+      const focusable = Array.from(
+        panel.current.querySelectorAll<HTMLElement>("a[href], button"),
+      ).filter((element) => !element.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="mobile-sheet-backdrop"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={panel}
+        className="mobile-sheet today-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("hoy.adjust")}
+        data-testid="adjust-today-sheet"
+      >
+        <div className="mobile-sheet-head">
+          <span className="card-title" style={{ fontSize: 16 }}>
+            <MIcons.settings />
+            {t("hoy.adjust")}
+          </span>
+          <button
+            ref={closeButton}
+            type="button"
+            className="icon-btn tl-focusable"
+            aria-label={t("common.close")}
+            onClick={onClose}
+          >
+            <MIcons.x />
+          </button>
+        </div>
+
+        <div className="today-sheet-body">
+          {!isRestDay && (
+            <DayFocusBar value={dayFocus} onChange={setDayFocus} />
+          )}
+
+          {!isRestDay && (
+            <div className="today-sheet-actions">
+              <button
+                type="button"
+                className="btn tl-focusable"
+                data-testid="adjust-add"
+                onClick={onAddExercise}
+              >
+                <MIcons.plus />
+                {t("hoy.addExercise")}
+                <span className="spacer" />
+                <MIcons.chevronRight />
+              </button>
+              <button
+                type="button"
+                className="btn tl-focusable"
+                data-testid="adjust-routine"
+                onClick={() => {
+                  onClose();
+                  navigate("week");
+                }}
+              >
+                <MIcons.list />
+                {t("hoy.fromRoutine")}
+                <span className="spacer" />
+                <MIcons.chevronRight />
+              </button>
+              <a
+                className="btn tl-focusable"
+                href="#/coach"
+                data-testid="adjust-coach"
+                onClick={onClose}
+              >
+                <MIcons.bot />
+                {t("hoy.coachOpen")}
+                <span className="spacer" />
+                <MIcons.chevronRight />
+              </a>
+            </div>
+          )}
+
+          <PlanNotes plan={plan} />
+
+          {showLinkedNote && (
+            <p className="tiny muted" style={{ margin: 0 }}>
+              {t("home.hero.linked")}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

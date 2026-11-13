@@ -155,4 +155,58 @@ describe("proposeNextSet — sets that carry no load decision", () => {
     expect(p.evidence.lastReps).toBe(8);
     expect(p.evidence.marker).toBe("D");
   });
+
+  it("suggests eccentric negatives or band assistance when pull-up reps fall below range", () => {
+    const p = proposeNextSet({
+      sets: [set(null, 5, { effort: "F" })], // 5 reps < 8-12 range
+      targetReps: { min: 8, max: 12 },
+      stepKg: null,
+      capKg: null,
+      suggestionKg: null,
+      exerciseId: "pull-ups",
+      lang: "es",
+    });
+
+    expect(p.move).toBe("decrease");
+    expect(p.weightKg).toBeNull();
+    expect(p.adaptation).toBeDefined();
+    expect(p.adaptation?.type).toBe("eccentric_tempo");
+    expect(p.adaptation?.label).toContain("Excéntricas / Banda");
+    expect(p.reason).toContain("banda elástica");
+    expect(p.reason).toContain("excéntricas");
+  });
+
+  it("suggests adding external load (+lastre) when bodyweight reps exceed range", () => {
+    const p = proposeNextSet({
+      sets: [set(null, 15)], // 15 reps > 12 max
+      targetReps: { min: 8, max: 12 },
+      stepKg: null,
+      capKg: null,
+      suggestionKg: null,
+      exerciseId: "dips",
+      lang: "es",
+    });
+
+    expect(p.move).toBe("increase");
+    expect(p.adaptation).toBeDefined();
+    expect(p.adaptation?.type).toBe("load_adjust");
+    expect(p.reason).toContain("lastre");
+  });
+
+  it("includes Myo-reps pacing recommendation when session runs past time budget", () => {
+    const p = proposeNextSet({
+      sets: [set(40, 10, { effort: "D" })],
+      targetReps: { min: 8, max: 12 },
+      stepKg: 2.5,
+      capKg: null,
+      suggestionKg: 40,
+      timeBudgetMin: 60,
+      sessionElapsedMin: 52, // 86% of budget
+      lang: "es",
+    });
+
+    expect(p.adaptation).toBeDefined();
+    expect(p.adaptation?.type).toBe("myo_reps");
+    expect(p.reason).toContain("Myo-reps");
+  });
 });

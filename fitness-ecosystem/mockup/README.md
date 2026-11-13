@@ -5,7 +5,7 @@ y no toca IndexedDB ni el store: es el diseño, ejecutado, para poder juzgarlo c
 el ratón antes de invertir una línea en la app.
 
 La autoridad de diseño sigue siendo
-[`../docs/REDESIGN_STORM.md`](../docs/REDESIGN_STORM.md). Esta carpeta es la
+[`../docs/DESIGN_DECISIONS_2026-11-07.md`](../docs/DESIGN_DECISIONS_2026-11-07.md). Esta carpeta es la
 traducción de ese documento a pantallas reales.
 
 ## Verlo

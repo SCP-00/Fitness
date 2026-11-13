@@ -45,8 +45,8 @@ export function WeekCard({
   }
 
   return (
-    <section className="tl-card">
-      <div className="tl-card-head">
+    <section className="card">
+      <div className="card-head">
         <h2>{t("week.card.title")}</h2>
         <Badge tone="neutral">
           {tInterp("week.summary", {
@@ -55,7 +55,7 @@ export function WeekCard({
           })}
         </Badge>
       </div>
-      <div className="tl-card-body">
+      <div className="card-body">
         <div className="tl-week">
           {weekPlan.rows.map((row, i) => {
             const date = new Date(weekStart.getTime() + i * DAY_MS);
@@ -113,7 +113,7 @@ export function WeekCard({
           <button
             type="button"
             onClick={onRegenerate}
-            className="tl-btn tl-btn-ghost tl-focusable text-xs"
+            className="btn btn-ghost tl-focusable text-xs"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             {t("week.regenerate")}

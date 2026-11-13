@@ -171,6 +171,9 @@ export function GearProfileBar({
       mode?.kind === "new" ||
       mode?.kind === "rename" ? (
         <div className="rounded-xl border border-[var(--tl-border)] bg-[var(--tl-surface-2)] px-3 py-2.5 flex flex-wrap items-center gap-2">
+          {/* The name field takes its own row on a phone: a 160 px minimum made it
+              12 px wider than this row at 320 px, so the box hung past the card
+              (audited 2026-10-29). */}
           <input
             value={draft}
             onChange={(e) => {
@@ -186,7 +189,7 @@ export function GearProfileBar({
             }}
             placeholder={t("gear.profiles.namePlaceholder")}
             aria-label={t("gear.profiles.namePlaceholder")}
-            className="tl-input flex-1 min-w-[160px] px-3 py-1.5 text-sm"
+            className="tl-input w-full sm:w-auto sm:flex-1 min-w-0 px-3 py-1.5 text-sm"
             autoFocus
           />
           <button

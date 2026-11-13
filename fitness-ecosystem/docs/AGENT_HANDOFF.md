@@ -3159,3 +3159,982 @@ leyéndose en vez de multiplicar su alpha por el id.
 - **Siguiente paso seguro:** abrir el instalador nuevo, Rutinas → Plantillas →
   previsualizar PPL → crear, y editar una de las tres rutinas para confirmar que el
   editor existente la trata como cualquier otra.
+
+## 2026-10-29 — Coach de la sesión: el contrato del agente y `propose_session` en MCP
+
+- **Resultado:** cerrada la ronda de "nuevas interfaces + conexión con el modelo" sin tocar
+  ningún LLM local. Lo que existe ahora es un **contrato**: `#/coach` genera el encargo con
+  los mismos números que recibe el modelo local, acepta la respuesta en JSON, y la mete por
+  la **misma puerta** (`applyCoachProposal` → `validateProposal`) que el modelo local y que
+  la acción `propose_session` del servidor MCP (herramienta 36). Un agente conectado por MCP
+  ya no necesita copiar y pegar: manda la sesión y la app la valida, la aplica en memoria y
+  la puede deshacer.
+- **Cambios:** `traininglab/apps/desktop/src/screens/CoachScreen.tsx` (nueva, 334 líneas),
+  `src/lib/coach-brief.ts` (nuevo: `buildCoachBrief` + `parseCoachAnswer`),
+  `src/app/{App,router,store}.tsx` (ruta `coach`, `coachBrief`/`applyCoachProposal`/`clearCoach`),
+  `src/lib/mcp-actions.ts` (`validateProposePlan`, `plan_override`),
+  `scripts/fitness-mcp-server.mjs` (`propose_session`), `src/lib/i18n.ts` (47 cadenas ES/EN),
+  `tests/training/test_coach_brief.test.ts` (nuevo, 23 tests),
+  `tests/training/test_mcp_server.test.ts`, `tests/training/test_mcp_actions.test.ts`,
+  `docs/MCP_TOOL_SURFACE.md` §14, `traininglab/apps/desktop/llm/MCP_TOOLS.md`, `AGENTS.md`.
+  Pulido de esta misma ronda: `GearProfileBar.tsx` (input a ancho completo bajo `sm`),
+  `CoachPanel.tsx`, `ZenSession.tsx`, `index.css`, `mockup.css`, `TodayScreen.tsx`,
+  `SettingsScreen.tsx`, `RoutinesScreen.tsx`, `ProgressScreen.tsx`, `primitives.tsx`,
+  `lib/format.ts`, `lib/day-focus.ts`.
+- **Verificación real (este estado, no uno anterior):** `npx tsc -b` 0 ·
+  `npx vitest run tests/training` **724/724 en 55 archivos** · `pnpm test` **1 370 tests / 94
+  archivos, exit 0** · `pnpm typecheck` 0 · `pnpm lint` 0 warnings / 0 errores ·
+  `pnpm audit:css` 0 hallazgos (94 ficheros, 92 clases `tl-*`) ·
+  `node .tmp-verify/audit-text-boxes.mjs` → **11 pantallas × 8 anchos (320…1440) = 88
+  combinaciones, 0 hallazgos** (scroll-x, texto fuera de caja, cajas desbordadas, elementos
+  fuera de viewport, inputs rotos). Capturas en `.tmp-verify/out-text-boxes/shots/`.
+- **Dos defectos que encontró el test nuevo, corregidos:** `parseCoachAnswer` llamaba
+  `no_json` a una respuesta truncada (ahora `bad_json`) y `no_json` a un array (ahora
+  `not_an_object`); y la tarjeta «Plan determinista de hoy» imprimía `2026-10-29` en vez de
+  `jue, 29 oct`.
+- **Pendiente / decisión del dueño:** (a) el LLM local **no se ha ejercitado** en esta ronda
+  — el dueño pidió explícitamente no probarlo, y el seam sigue intacto; (b) el mapa de fuerza
+  sigue bajo gate; (c) la página del coach no se ha probado en un iPhone físico.
+- **Siguiente paso seguro:** abrir `#/coach` con un agente MCP real (Freebuff), pedirle el
+  encargo con **Copiar el encargo** y comprobar que su `propose_session` aparece como plan de
+  hoy y se deshace desde el banner.
+
+## 2026-10-29 (b) — El contrato del coach: dos nombres para un campo
+
+- **Resultado:** cerrado el agujero más caro de la ronda. El encargo de `#/coach` imprime la
+  forma de la app (`exerciseId`, `repsMin`) y el esquema de `propose_session` anunciaba
+  snake_case (`exercise_id`, `reps_min`): un agente que respondía copiando el encargo veía
+  **todas** sus series mapeadas a `exerciseId: ""` y rechazadas como «not available with the
+  current equipment». Además el encargo pedía responder «con la acción `propose_plan`», que es
+  el id interno de la acción: la herramienta que un agente tiene se llama `propose_session`.
+- **Cambios:** `scripts/fitness-mcp-server.mjs` (acepta las dos grafías en el borde;
+  `TL_MCP_WAIT_MS` para que la suite no espere 8 s por recibo cuando sólo mira la cola),
+  `traininglab/apps/desktop/src/lib/coach-brief.ts` (nombra la herramienta),
+  `src/lib/i18n.ts` (`coach.mcp.body`), `tests/training/test_mcp_server.test.ts` (2 tests:
+  ambas grafías, leyendo `mcp-actions.json` de un `APPDATA` de sandbox — nunca el buzón real),
+  `tests/training/test_coach_brief.test.ts` (el encargo ya no menciona `propose_plan`),
+  `docs/MCP_TOOL_SURFACE.md` §14, `CHANGELOG.md`.
+- **Verificación real:** `npx tsc -b` (desktop) 0 · `pnpm test` **1 373 tests / 94 archivos,
+  exit 0** · `pnpm lint` 0/0 · `pnpm audit:css` 0 hallazgos ·
+  `node .tmp-verify/coach-page.mjs` en navegador real contra el log del dueño: encargo de
+  **4 525 caracteres con 129 ids**; respuesta **ilegal** («ejercicio-que-no-existe») rechazada y
+  plan intacto; respuesta **legal** (`barbell-bench-press`) aplicada, Hoy dibuja «1 Press con
+  Barra pecho · hombros · tríceps 3 series», el botón *Volver al plan determinista* aparece y
+  **restaura el plan exacto**; 0 errores de página y 0 de consola. Capturas en
+  `fitness-ecosystem/docs/screenshots/2026-10-29-coach/`.
+- **Detalle que el guion corrigió:** el primer intento usaba `barbell-squat` como «ilegal» y el
+  inventario real del dueño (barra, rack, banco, polea, máquinas) lo aceptó — el caso ilegal
+  honesto es un id que el catálogo no tiene.
+- **Pendiente / decisión del dueño:** (a) el LLM local sigue **sin ejercitarse** por decisión
+  explícita del dueño; (b) el mapa de fuerza sigue bajo gate; (c) sin prueba en iPhone físico.
+- **Siguiente paso seguro:** conectar Freebuff al servidor MCP real (`propose_session`), pedirle
+  el encargo desde `#/coach` y comprobar el recibo en Ajustes → auditoría de agentes.
+
+## 2026-10-29 (c) — El rechazo del coach, en el idioma de la app (y cierre del instalador)
+
+- **Resultado:** el último defecto visible de la ronda. La página del coach está en español y
+  el rechazo del validador salía en inglés (`"x" is not available with the current equipment`).
+  Ahora se traduce en el **borde de la vista** (`lib/coach-errors.ts`), no en `lib/llm.ts`: los
+  mensajes del validador siguen siendo identificadores en inglés (los lee un modelo local y los
+  afirman los tests), y la UI conserva los hechos — el id, la familia musculary **los dos
+  números** del presupuesto. Una regla desconocida se muestra tal cual en vez de desaparecer.
+- **Cambios:** `traininglab/apps/desktop/src/lib/coach-errors.ts` (nuevo, puro y sin i18n),
+  `src/features/today/CoachPanel.tsx` (`CoachResultView` traduce cada error),
+  `tests/training/test_coach_errors.test.ts` (nuevo, 9 tests), `CHANGELOG.md`.
+- **Verificación real:** `npx tsc -b` 0 · `pnpm test` **1 382 tests / 95 archivos, exit 0** ·
+  `pnpm lint` 0/0 · `pnpm audit:css` 0 hallazgos · `node .tmp-verify/coach-page.mjs`: el rechazo
+  se lee ««ejercicio-que-no-existe» no está en tu equipamiento actual.», el plan no cambia, la
+  propuesta legal se aplica, Hoy la dibuja y *Volver al plan determinista* la deshace. 0 errores
+  de página, 0 de consola.
+- **Instalador (regla de cierre):** `pnpm tauri build` desde este estado, exit 0 ·
+  `TrainingLab_0.2.0_x64-setup.exe` **16:34:08**, **17 632 036 B**, sha256
+  `33d2047beabc1556b9e2612f9a3df8edf15de3185de3b7804cbc45064680e2ba`; copiado al escritorio
+  **real** (`C:\Users\andyh\Desktop`) como `TrainingLab-setup.exe` y versionado, mismo sha256.
+  El bundle contiene la frase nueva (`dist/assets/CoachPanel-C7dbZTmN.js`). **BodyLab no se
+  tocó**, así que su instalador no se reconstruyó.
+- **Pendiente / decisión del dueño:** (a) LLM local sin ejercitar, por instrucción; (b) mapa de
+  fuerza bajo gate; (c) el instalador no está firmado (SmartScreen); (d) sin iPhone físico.
+- **Siguiente paso seguro:** abrir el instalador nuevo y, con Freebuff conectado al servidor MCP,
+  pedirle la sesión desde `#/coach` y comprobar el recibo en Ajustes → auditoría de agentes.
+## 2026-10-30 — Rutinas con continuidad + instaladores al día
+
+- **Petición del dueño (literal):** «actualizar los ejecutables… no tienen cargada mi
+  información personal… es difícil hallar el archivo de importación de BodyLab a TrainingLab…
+  termina de conectar el motor con lo que ve el usuario, no pueden haber discrepancias en el
+  entrenamiento, las rutinas deben tener un valor de continuidad para garantizar una mejor
+  progresión en Carga».
+- **Diagnóstico real, no supuesto:** el TrainingLab instalado **sí** tiene sus datos
+  (`%APPDATA%\com.traininglab.desktop\backups\traininglab-…json`: **562 series, 30 sesiones**,
+  su inventario de 9 piezas) pero **0 rutinas** y **sin export de BodyLab**. El BodyLab de
+  escritorio (`%LOCALAPPDATA%\com.bodylab.desktop\…\IndexedDB`) tiene `profile` y **cero**
+  `measurements`: está vacío de medidas.
+- **Hecho — continuidad:** `lib/routine-continuity.ts` (nuevo, puro) + botón *Desde mi
+  historial* en Rutinas + línea de continuidad en tarjeta y ficha. El peso **no** se guarda en
+  la plantilla: se deriva del log en cada render (una sola fuente de verdad; el veredicto de
+  progresión sigue siendo de `lib/progression.ts`, que se lee en ZEN con la fila delante).
+- **Hecho — discrepancias del motor:** la fila añadida a mano costaba `setup + 4` minutos
+  fijos; ahora `setup + series × (45 s + descanso)`, la constante del motor. `routineTotals`
+  usaba 30 s por serie; ahora 45 s. Prueba en navegador con su log: rutina de ~50 min →
+  Hoy pasa de 51 a **101 min previstos** (50 + 51), no a ~80.
+- **Hecho — el archivo de importación:** Ajustes abre *Datos: BodyLab* cuando no hay export y
+  nombra los pasos; BodyLab dice dónde se carga. Además se regeneró su import de BodyLab
+  (`node scripts/build-owner-import.mjs`, 36 medidas, perfil Andy) y se copió al escritorio
+  real como **`BodyLab-mis-datos.json`** para que lo elija en Datos → Importar.
+- **Verificación:** `pnpm typecheck` 0 · `pnpm lint` 0/0 · `pnpm audit:css` 0 hallazgos ·
+  `pnpm test` **1 393 tests / 96 archivos, exit 0** · `npx tsc -b` (TrainingLab) 0 ·
+  `.tmp-verify/routines-history.mjs` sobre su backup real: 3 rutinas creadas con continuidad
+  (`Última vez hace 1 d · 6 de 6 con historial`), ficha con `67,5 kg × 10`, *Usar hoy* → Hoy,
+  0 errores de página y de consola. Capturas en `docs/screenshots/2026-10-30-rutinas/`.
+- **Instaladores (regla de cierre):** reconstruidos los dos desde este mismo árbol y copiados
+  al escritorio **real** (`C:\Users\andyh\Desktop`); tamaños, horas y sha256 en el reporte de
+  la sesión.
+- **Pendiente:** (a) LLM local sin ejercitar (instrucción expresa); (b) mapa de fuerza bajo
+  gate del dueño; (c) instaladores sin firmar (SmartScreen); (d) sin iPhone físico.
+- **Siguiente paso seguro:** instalar los dos `.exe`, importar `BodyLab-mis-datos.json` en
+  BodyLab y, desde BodyLab → Datos → Exportar → *TrainingLab Link*, cargar el `.json` en
+  Ajustes; después, en Rutinas, *Desde mi historial*.
+## 2026-10-30 (b) — El LLM local, probado contra el modelo real
+
+- **Petición del dueño:** «puedes comenzar a hacer pruebas, pero la prioridad es dejar todo lo
+  complejo hecho», con Qwen3.5-4B (llama.cpp, `127.0.0.1:9931`, 16k ctx, visión nativa)
+  cargado y esperando.
+- **Lo que se midió, no lo que se supuso.** Arnés real (`.tmp-verify/qwen-live.ts` +
+  `run-qwen-live.mjs`): planificador real (`buildTodayPlan`), inventario de mancuernas,
+  `TOOL_SPECS` reales y `validateProposal` real. **Con una sola conversación el modelo NUNCA
+  propuso sesión**: llamó `get_context`, `get_deterministic_plan`,
+  `report_fatigue_and_query_safe` y `list_available_exercises` dos veces, y murió por
+  `finish_reason: length` a los 74 s. Tres hallazgos, tres arreglos:
+  1. **El razonamiento se come el presupuesto.** El mismo prompt con
+     `chat_template_kwargs: {enable_thinking:false}` contesta `propose_session` en **153 tokens**.
+     `lib/llm.ts` lo envía siempre y **reintenta una vez sin el campo** si el servidor lo
+     rechaza con 400.
+  2. **`tool_choice` forzado no lo obedece este servidor**, y quitar la herramienta de la lista
+     tampoco: llama.cpp no valida el nombre emitido contra las herramientas ofrecidas (seguía
+     llamando `list_available_exercises` tres veces con la lista recortada). Ahora un nombre
+     fuera de alcance se **rechaza con motivo** en vez de ejecutarse.
+  3. **Nadie garantizaba el final.** `ChatWithToolsInput` gana `finalTool`/`finalAfter`; un
+     modelo que contesta en prosa cuando el cierre estaba forzado devuelve `ok:false` con
+     `the model answered without calling …`, no un «éxito» sin filas.
+- **Arquitectura nueva — dos fases (`lib/coach-run.ts`, 245 líneas, nuevo):**
+  exploración acotada con herramientas de solo lectura (donde `propose_session` **no llega al
+  ejecutor**, así que no puede tocar el plan), y luego una petición **nueva y estrecha** cuya
+  única herramienta es `propose_session`, con el CSV del planificador + `usable_exercises(id:family)`
+  + `vetoed_patterns` + las notas de la fase 1. El rechazo del validador se devuelve **con los
+  ids que chocan** (`family chest appears 2 times (push-ups, dumbbell-fly) — keep exactly ONE`),
+  y se reintenta (3 rondas). Esa frase fue la que hizo aceptar la propuesta: sin ella el 4B
+  repetía el mismo par dos veces.
+- **Discrepancia real cerrada:** el día vetaba empujes por hombro cansado y una propuesta de
+  agente podía meterlos igual. `validateProposal` gana `vetoedPatterns`/`patternOf`; el store
+  los deriva **de la propia petición** con `evaluateBiomechanicsAndFatigue([request])` (el modelo
+  solo reportó el dolor en 1 de 2 corridas idénticas — no se puede depender de eso) y el reporte
+  de la fase 1 solo puede **añadir** vetos, nunca quitarlos.
+- **Verificación de punta a punta, en la app, no solo en la librería:**
+  `.tmp-verify/coach-live.mjs` (Playwright) sobre `vite --port 5199` y el servidor real:
+  «piernas y core, 40 min» → **22,9 s**, plan de Hoy reemplazado por Sentadilla con Barra ·
+  Peso Muerto Rumano · Abducción de Cadera · Abdominales en Polea; 0 errores de página y 0 de
+  consola. Capturas en `docs/screenshots/2026-10-30-coach-llm/`.
+- **Límite honesto del modelo:** «quiero entrenar pecho» con «hombros cansados» es una petición
+  **contradictoria**; el 4B insiste en meter press y el validador lo rechaza las 3 rondas. El
+  resultado es correcto (plan determinista intacto + razones en español), pero la sesión no
+  aparece: eso necesita una decisión de producto (¿el día enfocado puede repetir familia?), no
+  otro prompt.
+- **Tests:** `tests/training/test_coach_run.test.ts` (**nuevo, 7 casos**: no aplica nada en la
+  exploración, la petición de cierre ofrece solo la herramienta terminal, manda familia por id,
+  nombra la familia que choca y acepta la corrección, rechaza un patrón vetado, reporta prosa
+  sin propuesta, y no llega a la fase 2 si el servidor no está). `test_llm_bridge.test.ts` +2
+  (veto). `test_coach_errors.test.ts` +2 (prosa sin propuesta, patrón vetado). El `Modelfile`
+  del knowledge pack se actualizó con la misma frase del prompt (el test que lo fija falló y
+  tenía razón).
+- **Verificación:** `npx vitest run` → **1 406 tests / 97 archivos, exit 0** · `npx tsc -b`
+  (TrainingLab) 0 · `pnpm lint` 0/0 · `pnpm audit:css` 0 hallazgos.
+- **Siguiente paso seguro:** con el modelo cargado, Ajustes → *Coach local* → «Hoy quiero
+  entrenar piernas y core, 40 minutos»; comprobar que Hoy cambia y que *Deshacer* lo devuelve.
+  Después, decidir la regla del día enfocado (una familia vs. dos del mismo grupo).
+
+## 2026-10-30 (c) — Instalador aplicado, escritorio limpio y Qwen medido
+
+- **Instalador ejecutado** (`Desktop\TrainingLab-setup.exe /S`): `%LOCALAPPDATA%\TrainingLab\traininglab.exe`
+  pasa de **2026-10-20 08:57** a **2026-10-30 11:38** (17 977 856 B); la app arrancó y escribió
+  copia de seguridad (`traininglab-…-117000.json`). Los datos del dueño intactos.
+- **Escritorio limpio:** se borraron los dos duplicados byte-idénticos
+  (`TrainingLab_0.2.0_x64-setup.exe`, `BodyLab_1.0.0-beta.8_x64-setup.exe`; `cmp` los declaró
+  iguales). Se conservan `TrainingLab-setup.exe`, `BodyLab-setup.exe`, los accesos directos y
+  `BodyLab-mis-datos.json`. Escritorio: 68 MB → **34 MB**.
+- **Qwen3.5-4B medido hoy** (`.tmp-verify/qwen-health.mjs`): saludo **455 ms** (22 tok/s);
+  137 tokens de texto coherente en **3,99 s** (34,3 tok/s); llamada de herramienta correcta en
+  **3,43 s** (111 tokens, `finish: tool_calls`); la **misma** llamada pensando tarda **10,79 s**
+  y se corta en `finish: length` con el tope en 400. El `enable_thinking:false` del puente no es
+  una optimización cosmética: es 3× más rápido y la única forma de que cierre.
+- **Pendiente para el dueño en el .exe nuevo:** rellenar Ajustes → *Coach local* (URL
+  `http://127.0.0.1:9931/v1`, modelo `unsloth/Qwen3.5-4B-MTP-GGUF:Q4_K_M`); el seed del
+  navegador no toca su base de escritorio.
+- **Sin pruebas largas nuevas:** la suite (1 406/97, exit 0), lint 0/0, css 0 y `tsc -b` 0 de la
+  ronda anterior siguen siendo válidos; esta sesión no cambió código.
+
+## 2026-10-30 (d) — Día enfocado (dos por familia) y detección del servidor
+
+- **Petición del dueño:** «permite dos ejercicios de la misma familia cuando el día está
+  enfocado en ella, sin romper la ventana de recuperación ni la regla de patrones» + «que Ajustes
+  detecte el servidor local y el modelo cargado automáticamente, sin que el dueño escriba nada».
+- **Hallazgo que cambió el diseño:** la regla «una familia por sesión» existía **solo** en
+  `validateProposal`. El motor (`session.ts`) siempre limitó **un patrón de movimiento** por
+  sesión, no una familia — el coach era más estricto que el planificador.
+- **Regla nueva, con un matiz medido:** familia enfocada = 2 ranuras; el resto = 1. Patrón: 1 por
+  sesión… **con una excepción**: el segundo ejercicio de la familia enfocada puede repetirlo.
+  Motivo, del catálogo real: **15 de los 16 ejercicios de pecho son `horizontal_push`**, así que
+  sin la excepción un día de pecho era imposible (bench + fly es entrenamiento normal; tres no).
+- **Bug propio corregido:** derivar los vetos del texto de la petición hacía que «hoy quiero
+  entrenar **pecho**» se leyera como pecho dolorido y vetara los empujes. Ahora `painVetoesFor()`
+  exige una palabra de molestia (`dolor`, `cansad`, `molestia`…) y **descarta «descansado»**
+  antes de mirar.
+- **Detección del servidor:** `detectLocalServer()` prueba 6 puertos en **paralelo** (8080,
+  9931, 1234, 11434, 1337, 8000) con 2 s de espera y devuelve URL + primer id de modelo. El
+  panel lo lanza **solo** al abrirse si el modelo sigue en el marcador `local-model`, y hay botón
+  «Buscar mi servidor» para repetirlo.
+- **El digest del commit se recortó** porque costaba minutos reales: notas de la fase 1 a 500
+  caracteres, lista de ids a 32 priorizando familia enfocada y plan, tope de 3 800 caracteres.
+  Medido con el modelo real y «hoy pecho»: **242 s → 63,6 s** (explore 20,4 / commit 43,1) y la
+  propuesta se acepta (2 ejercicios de pecho).
+- **Tests:** `tests/training/test_coach_focus.test.ts` (**nuevo, 7**), +4 de detección en
+  `test_llm_bridge.test.ts`, +2 en `test_coach_run.test.ts` (2 enfocados aceptados, tercero
+  rechazado y corregido), +2 en `test_coach_errors.test.ts` (tercero / patrón repetido).
+- **Verificación:** `npx vitest run` **1 422 tests / 98 archivos, exit 0** · `npx tsc -b` 0 ·
+  `pnpm lint` 0/0 · `pnpm audit:css` 0 · `.tmp-verify/detect-live.mjs` en la app real: campos
+  rellenados en **2 007 ms** (`http://127.0.0.1:9931/v1` + `unsloth/Qwen3.5-4B-…`), 0 errores.
+- **Siguiente paso seguro:** en el `.exe` nuevo, Ajustes → *Coach local*: debe aparecer solo;
+  pedir «hoy pecho, 45 minutos» y ver dos ejercicios de pecho en Hoy.
+
+## 2026-11-06 — UX: cierre de sesión y sesión en curso en todo el shell
+
+- **Resultado:** el ciclo de entrenamiento ya no se queda sin final. Al terminar una sesión se
+  abre un **resumen** con los números reales (series de trabajo, calentamientos, volumen,
+  duración sólo si es fiable, marcas D/F y mejor serie por ejercicio). Una sesión abierta se
+  ve en **cualquier destino** mediante una barra flotante que vuelve a ZEN, y Hoy enlaza al
+  resumen cuando la sesión ya está cerrada. Se documentó antes la investigación, la comparación
+  con Hevy/referencias y el plan P0/P1/P2.
+- **Cambios:**
+  - `traininglab/apps/desktop/src/lib/session-summary.ts` (nuevo) — derivación pura del cierre;
+    calentamientos fuera del volumen, sin cargas inventadas, duración con el umbral de 5 min y
+    orden de la propia sesión.
+  - `traininglab/apps/desktop/src/screens/SessionSummaryScreen.tsx` (nuevo) — página `#/resumen`
+    con KPIs, lista por ejercicio y enlaces a Historial/Progreso/Hoy.
+  - `traininglab/apps/desktop/src/app/router.ts`, `app/App.tsx` — ruta `summary` y barra de
+    sesión en curso en todos los destinos salvo Hoy/ZEN/Resumen.
+  - `traininglab/apps/desktop/src/screens/SessionScreen.tsx` — al terminar navega al resumen.
+  - `traininglab/apps/desktop/src/screens/TodayScreen.tsx` — tarjeta «Sesión completada» con
+    acceso al resumen y cierre desde Hoy que también navega allí.
+  - `traininglab/apps/desktop/src/lib/i18n.ts` y `src/mockup.css` — copy ES/EN y estilos.
+  - `tests/training/test_session_summary.test.ts` (nuevo, 7 casos) — reglas del resumen.
+  - `docs/FRONTEND_UX_PLAN_2026-11-06.md` (nuevo) — investigación, comparación y plan.
+- **Verificación:** `pnpm test` **1 429/1 429, 99 archivos, exit 0**; `pnpm typecheck` 0;
+  `cd traininglab/apps/desktop && pnpm typecheck` 0; `pnpm lint` **0/0**; `pnpm audit:css` 0
+  incidencias; `pnpm vite build` 0. `pnpm tauri build` TrainingLab **exit 0**,
+  `TrainingLab_0.2.0_x64-setup.exe` **16,82 MiB**, copiado a `C:\Users\andyh\Desktop`; el
+  bundle contiene «Sesión completada», `sessionBar` y `active-session-bar`. BodyLab se
+  reconstruyó también (sin tocar código): `BodyLab_1.0.0-beta.8_x64-setup.exe` **16,30 MiB**,
+  copiado al escritorio; el exit 1 es el esperado por `TAURI_SIGNING_PRIVATE_KEY`. **No se hizo
+  inspección visual con captura en esta ronda.**
+- **Pendiente / decisión del dueño:** el plan deja P1 (unificar Historial/Progreso/Ejercicios/
+  Semana/Ajustes con el topbar del mockup, reducir Hoy a tres bloques, editar series en ZEN) y P2
+  (calculadora de discos, resumen compartible). No se tocó el mapa muscular ni ninguna puerta
+  semántica.
+- **Siguiente paso seguro:** abrir el `.exe` nuevo de TrainingLab, cerrar una sesión con series
+  y comprobar el resumen; con una sesión abierta, navegar a Historial y ver la barra «Sesión en
+  curso» sin perder el registro.
+
+### 2026-11-06 (b) — benchmark real con Hevy web y Symmetry
+
+- **Resultado:** la comparación dejó de apoyarse en documentación. Se abrió Hevy web
+  con la sesión del dueño y se capturaron rutinas, detalle de rutina, perfil y selector
+  de ejercicios; se revisaron las capturas in-app de Symmetry (`Home`, `Zen mode`,
+  `History`, `Personal Recod`, `Exercise History`). El emulador Android no es viable
+  (virtualización desactivada), así que no se instaló Android Studio.
+- **Hallazgo principal:** el ZEN móvil de TrainingLab no tiene el registro primero;
+  técnica/GIF/calentamiento van antes que la tabla de series. Symmetry pone la tabla y
+  el descanso inmediatamente bajo el ejercicio. Se añadió al plan como P0 de la
+  siguiente ronda, junto con la lista completa de series en el resumen (P1) y el panel
+  muscular del detalle de rutina al estilo Hevy (P2).
+- **Hevy web:** es un planificador de escritorio, no la app completa; a 390 px no se
+  adapta y los ajustes remiten a la app móvil. No se copia ese modelo: la web
+  responsive de TrainingLab se conserva.
+- **Archivos:** `docs/FRONTEND_UX_PLAN_2026-11-06.md` (§1, §4, §4.b, §5, §6);
+  capturas locales en `docs/reference/benchmark-2026-11-06/` (gitignored).
+- **Verificación:** `npx prettier --check` sobre el plan; no se tocó código ni
+  instaladores en esta pasada.
+- **Siguiente paso seguro:** implementar el P0 móvil de ZEN (tabla de series primero,
+  técnica plegable) y verificar a 390×844 antes de reconstruir el instalador.
+
+### 2026-11-06 (c) — benchmark nativo Android y corrección del estado del emulador
+
+- **Resultado:** el AVD `tl-compare` (Android 15) sí es viable en esta máquina. Hevy,
+  Strong, Fitbod y Jefit se instalaron, abrieron y se capturaron; qemu sobrevivió
+  durante las cuatro pruebas. Symmetry (`club.symmetry.application`) también se
+  instaló, pero qemu muere al abrirla.
+- **Corrección de (b):** la frase «el emulador Android no es viable (virtualización
+  desactivada)» era falsa. El AVD arranca con 6 GB, GPU software
+  (`swiftshader_indirect`) y Vulkan desactivado:
+  `emulator -avd tl-compare -memory 6144 -gpu swiftshader_indirect -feature -Vulkan -no-snapshot-load -no-boot-anim`.
+  Durante la prueba: `MemTotal 6.072.652 kB`, `MemAvailable 4.975.412 kB`.
+- **Symmetry:** `MainActivity` llegó a verse a los 11,35 s; qemu murió antes de los
+  30 s. `logcat` no muestra `FATAL EXCEPTION` de Flutter y la última prueba no dejó
+  un WER nuevo; el evento previo de Windows fue
+  `qemu-system-x86_64.exe` `0xc0000005` a las 19:24. Desactivar Vulkan y usar
+  SwiftShader no lo resolvió. No hay evidencia pública de un bloqueo anti-emulador:
+  el síntoma es del emulador y no permite afirmar intención.
+- **Hallazgos UX nativos:** Hevy deja una sola acción primaria (`Start Empty Workout`
+  y luego `Add Exercise`) con métricas de sesión arriba; Strong usa `Quick start` +
+  cuadrícula de plantillas y minimiza la sesión activa a una barra inferior
+  persistente; Fitbod enseña una hoja de foco y luego un paywall anual (COP 174.900);
+  Jefit empuja plan/reto y Elite desde la primera pantalla. Confirman el P0 móvil
+  (registro primero) y la barra de sesión ya implementada; no cambian el orden.
+- **Archivos:** `docs/FRONTEND_UX_PLAN_2026-11-06.md` (§1, §4, §4.b, §6, §7);
+  capturas en `docs/reference/benchmark-2026-11-06/native-*.png` (gitignored):
+  `native-hevy-workouts`, `native-hevy-log-workout`, `native-strong-workouts`,
+  `native-strong-active-workout`, `native-fitbod-ready`, `native-fitbod-paywall`,
+  `native-jefit-home` y `native-jefit-challenge`. Se borraron las PNG temporales de
+  `.tmp-verify`; quedan logs y scripts.
+- **Verificación:** `npx prettier --check docs/FRONTEND_UX_PLAN_2026-11-06.md` exit 0;
+  `git diff --check` exit 0. No se tocó código: no se ejecutaron tests, typecheck,
+  builds ni instaladores en esta pasada.
+- **Límites / bloqueos:** BlueStacks no está instalado; `winget` ofrece
+  `BlueStack.BlueStacks 5.22.166.1003`, pero no se probó. El teclado físico está
+  configurado (`show_ime_with_hard_keyboard=0`) y el AVD sigue vivo en
+  `emulator-5554` (qemu PID 61964), pero **no se verificó escribiendo** desde el
+  teclado del host. El MCP `mcp.android.json` sigue sin verificar; el plugin
+  JetBrains no se instaló.
+- **Siguiente paso seguro:** implementar el P0 móvil de ZEN (tabla de series primero,
+  técnica plegable) y verificar a 390×844 antes de reconstruir el instalador. Para
+  Symmetry, probar BlueStacks o un Android físico antes de tocar código o atribuir
+  el crash a la app.
+
+### 2026-11-06 (d) — BWS+ (Jeremy Ethier): referencia de entrenamiento + nutrición
+
+- **Resultado:** la app descrita como «la de Jerry» encaja con **Built With Science+**
+  (`com.bws.appv2`), de Jeremy Ethier. Se instaló la versión 3.24.0 desde Play Store
+  (152 MB) para revisar el onboarding, pero no se pudo ejecutar en el AVD.
+- **Causa real del crash:** `FATAL EXCEPTION: main` y
+  `couldn't find DSO to load: libreactnative.so`; `dumpsys package` muestra
+  `primaryCpuAbi=arm64-v8a` mientras el AVD es x86_64, y Play Store entregó
+  `split_config.arm64_v8a.apk`. Es una incompatibilidad de ABI, no un fallo de la app
+  ni un paywall. No hay UI nativa que revisar.
+- **Qué es, según fuentes oficiales:** app de suscripción con entrenamiento
+  personalizado y registro, sobrecarga progresiva, 250+ tutoriales, nutrición con
+  escaneo de comidas por IA, check-in nutricional semanal, recetas y «Jeremy AI». La
+  ficha de App Store listaba 29,99 USD/mes y 189 USD/año; el sitio ofrece dos semanas
+  de prueba. **No se creó cuenta en BWS+, no se inició prueba y no se compró nada.**
+- **Lectura de producto:** BWS+ demuestra que entrenamiento + nutrición pueden vivir
+  en una app, pero no autoriza a meter nutrición en TrainingLab. La decisión del dueño
+  del 2026-10-05 sigue siendo «nada de módulo nutricional»;
+  `RESEARCH_FEATURE_VALIDATION.md` la marca **NO POR AHORA** (fase F congelada, XL).
+  Si se quiere reabrir, es decisión de producto + rediseño de datos, no una tarjeta.
+- **Archivos:** `docs/FRONTEND_UX_PLAN_2026-11-06.md` §4.b, §6 y §7; captura de la
+  ficha en `docs/reference/benchmark-2026-11-06/native-bws-play-store.png`
+  (gitignored). Se borraron las PNG/XML temporales de BWS+.
+- **Verificación:** `npx prettier --check docs/FRONTEND_UX_PLAN_2026-11-06.md` exit 0;
+  `git diff --check` exit 0. No se tocó código; no se ejecutaron tests, typecheck,
+  builds ni instaladores.
+- **Bloqueos:** BWS+ necesita un Android ARM físico o un entorno con traducción ARM;
+  el AVD x86_64 no sirve. BlueStacks no está instalado y no se probó.
+- **Siguiente paso seguro:** no añadir nutrición; seguir con el P0 móvil de ZEN. Para
+  estudiar BWS+ en ejecución, usar un Android físico ARM y detenerse en el paywall.
+
+## 2026-11-07 — Consolidación de diseño: autoridad única y retirada de siete documentos
+
+- **Resultado:** el benchmark de Hevy, Strong, Fitbod, Jefit, Symmetry y BWS+ quedó
+  consolidado en una sola autoridad de diseño/UX, y se retiraron los siete
+  documentos de diseño/UI obsoletos que aún seguían en el árbol. No se cambió lógica de
+  producto: esta ronda es documental y de referencias.
+- **Cambios:** `docs/DESIGN_DECISIONS_2026-11-07.md` (nuevo: comparativa,
+  diagnóstico del código, 12 invariantes, decisiones por pantalla, P0/P1/P2, criterios
+  de aceptación, gates y documentos retirados). Eliminados `docs/UI_DESIGN.md`,
+  `docs/TRAININGLAB_UI_PLAN.md`, `docs/plan_evaluacion_qa_ui_ux.md`,
+  `docs/REDESIGN_STORM.md`, `docs/INTERFACE_REPORT_2026-10-16.md`,
+  `docs/FRONTEND_UX_PLAN_2026-11-06.md` y `REPORTE.md` (raíz). Referencias actualizadas en `AGENTS.md`,
+  `knowledge.md`, `ROADMAP.md`, `docs/ECOSYSTEM_STRATEGY.md`,
+  `CONTRIBUTING.md`, `PLAN.md`, `README.md`, `bodylab/README.md`,
+  `bodylab/core/training/AGENTS.md`, `docs/BUFFY_IMPLEMENTATION_BRIEF.md`,
+  `docs/DECISIONS_2026-10-19.md`, `docs/MCP_TOOL_SURFACE.md`, `docs/TESTING.md`,
+  `docs/EXERCISE_DATA_AUDIT.md`, `mockup/README.md`, comentarios de código de BodyLab
+  y TrainingLab, y `scripts/audit-contrast.mjs`. `AGENT_HANDOFF.md` y `CHANGELOG.md`
+  conservan menciones históricas a propósito; no se reescribieron.
+- **Evidencia y límites:** capturas nativas de Hevy, Strong, Fitbod y Jefit en
+  `docs/reference/benchmark-2026-11-06/` (gitignored); Symmetry no se pudo ejecutar
+  en qemu y BWS+ es arm64-only en un AVD x86_64. El análisis es auditoría heurística
+  + código + benchmark, no una prueba con usuarios.
+- **Verificación:** `pnpm exec prettier --check docs/DESIGN_DECISIONS_2026-11-07.md`
+  exit 0; `git diff --check` exit 0; comprobación de existencia: los siete documentos
+  están ausentes; `grep` acotado a `docs/` y a los documentos raíz no encontró
+  referencias vivas fuera de `AGENT_HANDOFF.md`, `CHANGELOG.md` y la tabla de
+  retirados del documento nuevo. No se ejecutaron tests, typecheck, builds ni
+  instaladores porque no cambió código de aplicación.
+- **Estado Git:** sin commit ni push; el árbol ya estaba sucio y se conservaron los
+  cambios ajenos y los archivos untracked (capturas, planes técnicos y trabajo de
+  TrainingLab). Esta ronda sólo añadió/retiró documentación y actualizó referencias.
+- **Pendiente / decisión del dueño:** nutrición sigue **NO POR AHORA**; fuerza contra
+  referencia externa sigue con el gate cerrado; BodyLab permanece congelado; STT
+  (decisión B) sigue deferred. No se cruzó ninguna aprobación.
+- **Siguiente paso seguro:** si el dueño autoriza código, empezar por el P0 de ZEN
+  móvil (tabla de series y entrada antes de técnica/media) y verificarlo a 390×844;
+  después Hoy (tres bloques + «Ajustar hoy») y el resumen con todas las series.
+  Leer `docs/DESIGN_DECISIONS_2026-11-07.md` §5 (D4) y esta entrada antes de tocar
+  `ZenSession.tsx`.
+
+## 2026-11-09 — P0 ZEN móvil: registro primero a 390×844
+
+- **Resultado:** en TrainingLab móvil, ZEN abre con la tabla `Registro de hoy` y la
+  entrada de la serie antes que el GIF/técnica. `Registrar` es el mismo botón y el
+  mismo handler de siempre, fijado sobre la barra inferior para que quede bajo el
+  pulgar; en escritorio la composición no cambia. No se tocó la lógica de warm-up,
+  RIR, marcas, progresión ni datos.
+- **Cambios:** `traininglab/apps/desktop/src/features/today/ZenSession.tsx` — orden
+  responsive por clases, contador `doneWorkSets/totalWorkSets`, botón `Técnica`,
+  acciones superiores compactas con etiquetas ARIA, tabla de lectura en móvil y CTA
+  `zen-log-cta`. `traininglab/apps/desktop/src/mockup.css` — orden móvil
+  `log → entrada → media → secuencia`, topbar compacta, objetivos de 44 px, tabla de
+  lectura y CTA fijo sobre la barra inferior; las reglas de escritorio quedan intactas.
+  `fitness-ecosystem/docs/DESIGN_DECISIONS_2026-11-07.md` — D4 marcado como
+  implementado y P0 actualizado. `ROADMAP.md` — última actualización.
+- **Verificación:** `pnpm test` (raíz): **99 archivos, 1429 tests, exit 0**;
+  `pnpm lint`: **0 warnings / 0 errores**; `pnpm exec vitest run
+  tests/training/test_css_class_audit.test.ts`: **9/9**; `pnpm audit:css`: exit 0;
+  `pnpm typecheck` en `traininglab/apps/desktop`: exit 0; `pnpm tauri build` ejecutó
+  `tsc -b` y `vite build` (exit 0). Prettier de los dos archivos de app: exit 0;
+  `git diff --check`: exit 0 (solo avisos CRLF/LF preexistentes).
+- **Verificación visual exacta:** Playwright con viewport CSS **390×844**, sin
+  escalado, sobre la app real con datos demo. Tabla `135.6–414.8`; peso
+  `536.2–580.2`; reps `658.5–702.5`; CTA `716–768`; nav `777–844`;
+  `scrollWidth === clientWidth === 390`. Orden `log 1`, `entrada 2`, `media 3`.
+  Al pulsar el CTA fijo el progreso pasó de `0/20` a `1/20`, la primera fila quedó
+  `1 · 60 · 8 · Completada · 8 × 57.5` y no hubo errores de consola. Captura:
+  `fitness-ecosystem/.tmp-verify/zen-p0-390x844.png`.
+- **Instaladores:** TrainingLab `0.2.0` NSIS, **17.642.372 bytes**, construido
+  `2026-11-09 15:02:16`, `TAURI_EXIT:0`; el bundle contiene `zen-log-cta` y `Técnica`.
+  Copiado al escritorio real (`C:\Users\andyh\Desktop`) como
+  `TrainingLab_0.2.0_x64-setup.exe` y alias estable `TrainingLab-setup.exe`
+  (15:02:40). BodyLab `1.0.0-beta.8` NSIS, **17.087.089 bytes**, construido
+  `2026-11-09 15:07:53`, `TAURI_BODYLAB_EXIT:1` esperado por
+  `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; el `.exe` es nuevo y
+  válido. Copiado al escritorio real como `BodyLab_1.0.0-beta.8_x64-setup.exe` y
+  alias `BodyLab-setup.exe`.
+- **Estado Git:** sin commit ni push. El árbol sigue sucio con cambios previos y
+  archivos untracked; esta ronda solo añadió los cambios de ZEN, documentación y
+  evidencias. No se tocaron BodyLab, el mapa muscular, las puertas semánticas ni
+  nutrición.
+- **Pendiente / decisión del dueño:** no se probó en un iPhone físico ni con usuarios;
+  la verificación es Chromium a 390×844 y la suite automatizada. El CTA fijo es una
+  decisión de implementación para cumplir “a un pulgar”; si el dueño prefiere que no
+  cubra contenido al hacer scroll, se puede cambiar a sticky solo dentro de la tarjeta.
+- **Siguiente paso seguro:** abrir el instalador nuevo y comprobar el flujo en un
+  dispositivo real; después continuar el P0 por `Hoy` (tres bloques + `Ajustar hoy`),
+  sin reabrir el gate del mapa de fuerza ni añadir nutrición.
+
+## 2026-11-09 (b) — P0 Hoy: tres bloques + Ajustar hoy; resumen serie a serie
+
+- **Resultado:** Hoy queda en el orden **sesión → Estado de hoy → Ajustar hoy**.
+  `Empezar/Continuar` es el único CTA primario; enfoque, añadir, rutina, coach y
+  notas viven en una hoja accesible, no en botones sueltos. La tarjeta de cierre
+  sigue siendo condicional y `ResumeRow` sólo aparece si hay algo que reanudar o
+  recordar. El resumen lista ahora **todas las series** de cada ejercicio, en el
+  orden de la sesión, con peso, reps o duración, esfuerzo y marca D/F.
+- **Cambios:** `screens/TodayScreen.tsx` — tres bloques, hoja `Ajustar hoy` con
+  foco atrapado, Escape, backdrop y devolución del foco; recuperación integrada
+  como línea dentro de la sesión. `screens/SessionSummaryScreen.tsx` — tabla de
+  series por ejercicio. `lib/session-summary.ts` — `SummaryExercise.entries` y
+  `SummarySet`, derivados de los mismos ids; calentamientos marcados y fuera del
+  volumen. `lib/i18n.ts` — copy ES/EN (`hoy.adjust`, cabeceras de la tabla y
+  `summary.effortHint`). `mockup.css` — estilos de la hoja, tabla y estados de
+  calentamiento. `tests/training/test_session_summary.test.ts` — 2 casos nuevos
+  (9 en total). `docs/DESIGN_DECISIONS_2026-11-07.md` — D3/D5 y P0 actualizados.
+- **Verificación:** `pnpm test` raíz: **99 archivos, 1431 tests, exit 0**;
+  focalizados del resumen/i18n: **12/12**; `pnpm lint`: **0 warnings / 0 errores**;
+  `pnpm typecheck` TrainingLab: exit 0; `pnpm audit:css`: 99 archivos, 165 clases,
+  sin clases usadas sin definir ni definidas sin uso; Prettier: exit 0;
+  `git diff --check`: exit 0 (sólo avisos CRLF/LF preexistentes).
+- **Verificación visual exacta:** Playwright a **390×844**, datos demo.
+  Hoy: `scrollWidth === clientWidth === 390`; `Ajustar` es el tercer bloque
+  (`1782.8–1834.8`), con la tarjeta de sesión y `Continuar` antes. La hoja mide
+  `305.4–844`, contiene enfoque + añadir + rutina + coach + notas, y Escape la
+  cierra. Resumen: 6 ejercicios, **21 filas**, 1 calentamiento, sin overflow
+  horizontal. Capturas: `.tmp-verify/p0-hoy-390.png`,
+  `.tmp-verify/p0-adjust-390.png`, `.tmp-verify/p0-summary-390.png`.
+- **Decisión de honestidad:** la columna se llama **Esfuerzo**, no RIR. El logger
+  guarda `TLSet.rpe` (1–5); no hay un RIR por serie y etiquetarlo como RIR sería
+  inventar una escala. Se documenta en D5 y en el `title` de la cabecera.
+- **Instaladores:** TrainingLab `0.2.0` NSIS, **17.642.924 bytes**, construido
+  `2026-11-09 15:28:55`, `TAURI_HOY_EXIT:0`; copiado al escritorio real
+  (`C:\Users\andyh\Desktop`) como `TrainingLab_0.2.0_x64-setup.exe` y
+  `TrainingLab-setup.exe` a las 15:30:19; sha256
+  `3e940b1139be123e49b4e4ed2b75638045bc393d678bc552c10e3af587ac5754`. BodyLab `1.0.0-beta.8` NSIS, **17.088.573 bytes**, construido
+  `2026-11-09 15:29:25`, `TAURI_BODYLAB_HOY_EXIT:1` esperado por
+  `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; `.exe` nuevo y válido,
+  copiado como `BodyLab_1.0.0-beta.8_x64-setup.exe` y `BodyLab-setup.exe`;
+  sha256 `870e8f883713d3c4035f84207456ac7692ec084d641d9b3d50e6762e4e49ed51`.
+- **Estado Git:** sin commit ni push. El árbol sigue sucio con cambios previos y
+  archivos untracked; esta ronda sólo añadió este P0, sus tests, documentación y
+  capturas. No se tocaron datos, motor de entrenamiento, BodyLab, mapa muscular,
+  puertas semánticas ni nutrición.
+- **Pendiente / decisión del dueño:** no se probó en iPhone físico ni con usuarios.
+  En el ejemplo de 6 ejercicios, `Ajustar` queda tras el scroll porque la tarjeta
+  de sesión es larga; si se quiere a un pulgar, hay que mover el trigger al topbar
+  o plegar la lista, decisión de producto que no se tomó por no ocultar funciones.
+  La fila de resumen para bodyweight con holds ya no dice “0 reps”; muestra las
+  series y la tabla muestra `30 s`/`40 s`/etc.
+- **Siguiente paso seguro:** abrir el instalador nuevo y comprobar Hoy/Ajustar/
+  Resumen en un dispositivo real; después continuar el P0 por Historial al shell
+  único, sin reabrir el gate del mapa de fuerza ni añadir nutrición.
+
+## 2026-11-09 (c) — Hoy: acceso superior a `Ajustar hoy`
+
+- **Resultado:** `Ajustar hoy` deja de ser inalcanzable sin scroll en un día largo.
+  En ≤900 px la topbar de Hoy gana un botón secundario a la **misma** hoja; el
+  tercer bloque sigue existiendo al final para quien recorre la pantalla. El CTA
+  primario pasa a ocupar una fila completa y el botón de ajuste no compite con él.
+- **Cambios:** `traininglab/apps/desktop/src/screens/TodayScreen.tsx` — botón
+  `adjust-today-top` en la topbar, mismo `setAdjustOpen(true)` y mismo estado
+  `aria-expanded`; `traininglab/apps/desktop/src/mockup.css` — topbar móvil en
+  grid de dos filas, fecha compacta, ajuste a la derecha y `Empezar/Continuar` a
+  ancho completo; `docs/DESIGN_DECISIONS_2026-11-07.md` — D3 documenta el acceso
+  y por qué no es una acción nueva.
+- **Verificación:** `pnpm typecheck` TrainingLab exit 0; `pnpm lint` **0 warnings
+  / 0 errores**; `pnpm audit:css` 99 archivos / 165 clases, sin clases usadas sin
+  definir ni definidas sin uso; Prettier exit 0. `pnpm test` no se repitió: el
+  cambio es JSX/CSS y no toca datos, motor ni validación; la suite de 1431 tests
+  de la entrada (b) sigue siendo la última ejecución completa.
+- **Verificación en preview real:** Vite `http://localhost:5174`, viewport CSS
+  **390×844**, datos demo. `scrollWidth - clientWidth = 0`; botón superior
+  `107.6×44 px` en `y=12–56`, visible al abrir; primario `352.8×44 px` en
+  `y=70–114`; el bloque inferior sigue en `y=1622.8`. Al pulsar el botón superior
+  se abre la misma hoja (`306–844`, 538 px), el foco entra en «Cerrar»,
+  `body.overflow=hidden`; Escape la cierra, restaura `body.overflow` y devuelve
+  el foco a `adjust-today-top`. Sin errores de consola (sólo HMR de Vite).
+  Captura de preview: `.tmp-verify/p0-hoy-topbar-390-closed.png`. El servidor de
+  preview se deja corriendo.
+- **Instaladores:** TrainingLab `0.2.0` NSIS, **17.643.718 bytes**, construido
+  `2026-11-09 15:40:02`, `TAURI_HOY_TOPBAR_EXIT:0`; copiado al escritorio real
+  (`C:\Users\andyh\Desktop`) como `TrainingLab_0.2.0_x64-setup.exe` y
+  `TrainingLab-setup.exe` a las 15:41:28; sha256
+  `065d23c4194c2ac6fa9978daf1142ee647276a5ddc1cfde87d6988f90973c914`.
+  BodyLab `1.0.0-beta.8` NSIS, **17.087.703 bytes**, construido
+  `2026-11-09 15:40:17`, `TAURI_BODYLAB_HOY_TOPBAR_EXIT:1` esperado por
+  `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; `.exe` nuevo y válido,
+  copiado como `BodyLab_1.0.0-beta.8_x64-setup.exe` y `BodyLab-setup.exe` a las
+  15:41:28; sha256
+  `09f03c816acb70ce06e6aa5ecd09aff5514da8d42b40e1df07e1f8c66363ac0e`.
+  El bundle de TrainingLab contiene `adjust-today-top` y `today-adjust-top`.
+- **Estado Git:** sin commit ni push; árbol sucio con cambios previos. No se tocó
+  la lógica de datos, el mapa muscular, BodyLab ni nutrición.
+- **Pendiente / decisión del dueño:** no se probó en iPhone físico; la captura de
+  preview incluye el badge externo de Freebuff sobre la fecha, no es UI de la app.
+  El tercer bloque sigue tras el scroll: el acceso superior resuelve el uso, pero
+  si se quiere eliminar la duplicación visual habría que decidir si el bloque
+  inferior se queda como descubrimiento o se pliega.
+- **Siguiente paso seguro:** instalar el nuevo `TrainingLab-setup.exe`, comprobar
+  el acceso superior y la hoja en un teléfono real; luego continuar el P0 por
+  Historial al shell único, sin reabrir el gate del mapa de fuerza.
+## 2026-11-10 (a) — Historial al shell único
+
+- **Resultado:** Historial deja de ser la pantalla `Legacy` y usa el mismo
+  `topbar` + `content` + `card` que Hoy, Entrenamiento y Rutinas. Conserva las
+  tarjetas de sesión, el detalle, el renombrado/lugar, el borrado con
+  confirmación y el Deshacer de 20 s; añade filtros de periodo (`Todo · 30 días ·
+  90 días`) y búsqueda por nombre de sesión o ejercicio. Las tarjetas muestran
+  hasta 4 ejercicios; el detalle muestra **todas** las series.
+- **Cambios:** `traininglab/apps/desktop/src/screens/HistoryScreen.tsx` (shell,
+  KPIs, lista, hoja de detalle, foco/Escape, edición y borrado);
+  `traininglab/apps/desktop/src/app/App.tsx` (Historial ya no pasa por `Legacy`);
+  `traininglab/apps/desktop/src/lib/history-filter.ts` (filtro puro);
+  `traininglab/apps/desktop/src/mockup.css` (`.history-*`, KPIs 3→2 columnas
+  por debajo de 360 px); `traininglab/apps/desktop/src/lib/i18n.ts` (claves
+  nuevas); `tests/training/test_history_filter.test.ts` (5 tests);
+  `docs/DESIGN_DECISIONS_2026-11-07.md` (D10 y P0 4 marcados).
+- **Datos:** no se tocó el esquema, el motor, el mapa muscular ni BodyLab. Las
+  tarjetas siguen leyendo `closedSessionHistory`; el detalle reutiliza
+  `summariseSession`, sin recalcular series ni volumen en la pantalla. Para que
+  los filtros puedan alcanzar una sesión antigua, esta pantalla pide el archivo
+  completo y no el límite por defecto de 60 de otros consumidores. La edición de
+  una serie individual sigue siendo P1 (§10): aquí sólo se listan en lectura.
+- **Verificación de lógica:** `pnpm test` → **100 archivos / 1436 tests, exit 0**
+  (incluye los 5 nuevos de `test_history_filter.test.ts`);
+  `cd traininglab/apps/desktop && pnpm typecheck` → **exit 0**;
+  `pnpm lint` → **0 warnings / 0 errores**; `pnpm audit:css` → **100 ficheros,
+  165 clases**, sin usadas sin definir, sin definidas sin uso, allowlist al día;
+  Prettier aplicado a los archivos de código tocados; los documentos largos
+  conservan su formato histórico (un `--write` los reescribiría enteros).
+- **Verificación en preview real:** Vite `http://localhost:5174/#/historial`,
+  datos demo. A **390×844**: `scrollWidth - clientWidth = 0`; topbar con 18
+  sesiones y 412 series; KPIs 18 / 412 / 147.100 kg; buscador de 50 px; una
+  tarjeta por fila. `press` → **Mostrando 5 de 18**, 104 series, 24.682 kg;
+  `30 días` → 0 tarjetas y «Quitar filtros»; limpiar → 18. El detalle de la
+  primera sesión (7 oct) lista **22 series**; el de 23 sept lista **26**, con
+  una fila `.is-warmup` y `C1 17.5 kg × 7`. Foco entra en «Cerrar»; Escape
+  cierra y devuelve el foco a `history-open`; `body.overflow` se restaura. La
+  edición y el borrado se abrieron hasta el formulario/confirmación y se
+  cancelaron sin modificar datos.
+- **Responsive:** a **390×844** sin overflow; a **1440×900** contenido de
+  1141 px y dos tarjetas de 565 px; a **320×844** sin overflow (la topbar
+  envuelve a dos filas). Capturas:
+  `.tmp-verify/p0-history-390-default.png`,
+  `.tmp-verify/p0-history-390-final.png` (filtro `press`),
+  `.tmp-verify/p0-history-detail-390.png`,
+  `.tmp-verify/p0-history-320.png`,
+  `.tmp-verify/p0-history-1440.png`. El badge externo «Freebuff» de la captura
+  no es UI de la app.
+- **Instaladores (mismo estado que el código; sin commit):** TrainingLab `0.2.0`
+  NSIS, **17.645.751 bytes**, construido `2026-11-09 17:24:31`,
+  `TAURI_HISTORY_FINAL_EXIT:0`; copiado al escritorio real
+  (`C:\Users\andyh\Desktop`) como `TrainingLab_0.2.0_x64-setup.exe` y
+  `TrainingLab-setup.exe` el `2026-11-10 14:07:31`; sha256
+  `3b893d8e1a794e9de0d25e33b3cb2f60b0cba46f8b78f5c7a788ac8ead6311e3`.
+  BodyLab `1.0.0-beta.8` NSIS, **17.087.660 bytes**, construido
+  `2026-11-09 17:24:48`, `TAURI_BODYLAB_HISTORY_FINAL_EXIT:1` esperado por
+  `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; `.exe` nuevo y
+  válido, copiado como `BodyLab_1.0.0-beta.8_x64-setup.exe` y
+  `BodyLab-setup.exe` el `2026-11-10 14:07:31`; sha256
+  `f0673abc39e46353fed486cd7051c970d930923030573d6b2dfc92580e5cc418`.
+  El bundle de TrainingLab contiene `HistoryScreen-6GxhvWS7.js`,
+  `index-C9jqGFo7.js` e `index-DK99jdQZ.css` con las cadenas nuevas.
+- **Estado Git:** sin commit ni push; árbol sucio con cambios previos y
+  ficheros untracked. No se revirtió ningún cambio ajeno.
+- **Pendiente / decisión del dueño:** no se probó en iPhone físico; falta
+  editar series individuales desde el detalle (P1 §10) y no se reabrió el gate
+  del mapa de fuerza ni se añadió nutrición.
+- **Siguiente paso seguro:** instalar el nuevo `TrainingLab-setup.exe` y
+  comprobar Historial, filtros y detalle en un teléfono real; después continuar
+  el P0 por la siguiente pantalla que indique
+  `docs/DESIGN_DECISIONS_2026-11-07.md`, sin reabrir el gate del mapa de fuerza.
+
+## 2026-11-10 (b) — Ejercicios al shell único y editar una serie en Historial
+
+- **Resultado:** La lista y la ficha de Ejercicios dejan de ser `Legacy` y usan
+  `topbar` + `content`. La ficha conserva Guía/Resumen/Historial y añade
+  `Usar hoy` y `Añadir a rutina` con un panel inline; no inventa prescripción
+  (la serie entra con la prescripción por defecto de `routineItemFor`). En
+  Historial, cada fila del detalle abre peso, reps y marca D/F; guardar usa el
+  mismo `editSet` y el Deshacer global de 20 s. Guardar sin cambios no abre undo.
+- **Cambios:** `traininglab/apps/desktop/src/screens/ExercisesScreen.tsx` (shell,
+  topbar con total y Favoritos, filtros/listado existentes);
+  `traininglab/apps/desktop/src/screens/ExerciseDetailScreen.tsx` (shell,
+  acciones, panel de rutinas, editor existente con `setEditPatch`);
+  `traininglab/apps/desktop/src/screens/HistoryScreen.tsx` (edición por fila,
+  foco de vuelta al botón tras Escape/Cancelar/Guardar);
+  `traininglab/apps/desktop/src/app/App.tsx` (Ejercicios fuera de `Legacy`);
+  `traininglab/apps/desktop/src/lib/set-edit.ts` (helper puro compartido);
+  `traininglab/apps/desktop/src/mockup.css` (`.summary-set-edit*`);
+  `traininglab/apps/desktop/src/lib/i18n.ts` (claves de las acciones);
+  `tests/training/test_set_edit.test.ts` (5 tests);
+  `docs/DESIGN_DECISIONS_2026-11-07.md` (D9/D10, P1 5 y P1 10) y `ROADMAP.md`.
+- **Datos:** no se tocó el esquema, el motor, el mapa muscular ni BodyLab. La
+  edición escribe por `editSet`; el volumen se recalcula en el resumen existente.
+  `Usar hoy` sobre un ejercicio ya presente devuelve `false` y no escribe. El
+  panel de rutinas está vacío en DEMO y no se forzó ninguna rutina.
+- **Verificación de lógica:** `pnpm test` → **101 archivos / 1441 tests, exit 0**
+  (incluye `test_set_edit.test.ts`); `cd traininglab/apps/desktop && pnpm
+  typecheck` → **exit 0**; `pnpm lint` → **0 warnings / 0 errores**;
+  `pnpm audit:css` → **101 ficheros, 165 clases**, sin usadas sin definir, sin
+  definidas sin uso, allowlist al día; Prettier `--check` sobre los archivos de
+  código tocados → **todo formateado**. `git diff --check` → exit 0.
+- **Verificación en preview real:** Vite `http://localhost:5174`, datos DEMO. A
+  **390×844**: Ejercicios muestra 152 ejercicios y 48 con indicaciones propias,
+  sin overflow; buscar `sentadilla` deja **9 a la vista**; la ficha no tiene
+  overflow. `Usar hoy` en un ejercicio ya presente muestra «Ya está en la sesión
+  de hoy.» sin escribir. El panel `Añadir a rutina` abre (DEMO sin rutinas). En
+  el detalle de Historial se editó `Crunch Oblicuo` de **28,6 kg × 15** a
+  **30,5 kg × 12**: el volumen pasó de **1716 a 1653 kg**, el undo mostró
+  «Crunch Oblicuo · 28,6 kg × 15 → 30,5 kg × 12» y después se restauró a
+  **1716 kg / 28,6 kg × 15**. Escape y Cancelar cierran la fila y devuelven el
+  foco al botón `Editar` de esa misma fila; la hoja sigue abierta. A
+  **1440×900**: contenido de 1185 px y ficha de 768 px, sin overflow. A
+  **320×844**: sin overflow (la topbar de la ficha envuelve).
+- **Capturas:** `.tmp-verify/p1-exercises-390.png`,
+  `.tmp-verify/p1-exercise-detail-390.png`,
+  `.tmp-verify/p1-history-set-edit-390.png`,
+  `.tmp-verify/p1-exercises-1440.png` y
+  `.tmp-verify/p1-exercise-detail-1440.png`. El badge externo «Freebuff» no es
+  UI de la app.
+- **Instaladores (mismo estado que el código; sin commit):** TrainingLab `0.2.0`
+  NSIS, **17.647.389 bytes**, build exit 0; copiado al escritorio real
+  (`C:\Users\andyh\Desktop`) como `TrainingLab_0.2.0_x64-setup.exe` y
+  `TrainingLab-setup.exe`; sha256
+  `13a9ca233b903c4e9fcae21dd2e24384df2e4964d5779ec94ba010134f5a1d0d`. BodyLab
+  `1.0.0-beta.8` NSIS, **17.087.761 bytes**, build exit 1 esperado por
+  `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; `.exe` nuevo y
+  válido, copiado como `BodyLab_1.0.0-beta.8_x64-setup.exe` y
+  `BodyLab-setup.exe`; sha256
+  `3ab33bc0195697b7185a58322726536d7a8bc4693cd6fd5d460c42d14f4833e1`. El bundle
+  de TrainingLab contiene `Volver a la biblioteca`, `Usar hoy`, `Añadir a
+  rutina`, `history-detail-set-edit` y la regla `.summary-set-edit*` en
+  `dist/assets`.
+- **Estado Git:** sin commit ni push; árbol sucio con cambios previos. Nuevos
+  untracked: `src/lib/set-edit.ts` y `tests/training/test_set_edit.test.ts`. No
+  se revirtió ningún cambio ajeno.
+- **Pendiente / decisión del dueño:** el `ExercisePicker` único de D9 sigue sin
+  extraer ni cablear en Hoy/Entrenamiento/Rutinas; la edición de serie en ZEN
+  sigue pendiente (P1 §10). No se probó en iPhone físico ni se reabrió el gate
+  del mapa de fuerza. No se añadió nutrición.
+- **Siguiente paso seguro:** instalar `TrainingLab-setup.exe` y comprobar en un
+  teléfono real Ejercicios, la ficha y la edición de una serie en Historial;
+  después decidir si el siguiente corte es el `ExercisePicker` único o ZEN.
+
+## 2026-11-11 (a) — D9 cerrado: un único ExercisePicker
+
+- **Resultado:** D9 queda cerrado. `ExercisePicker` es el único selector de
+  ejercicios y se usa en **Hoy** (una fila), **Entrenamiento** (selección
+  múltiple con su prescripción común) y **Rutinas** (selección múltiple sobre el
+  borrador). Comparte búsqueda, filtros de familia, favoritos, «Sólo mi equipo»
+  y filtros removibles; no escribe datos por sí mismo.
+- **Cambios:** `traininglab/apps/desktop/src/features/exercises/ExercisePicker.tsx`
+  (modal único, foco, Escape, filtros y multi-selección);
+  `traininglab/apps/desktop/src/lib/exercise-picker.ts` (filtro puro);
+  `traininglab/apps/desktop/src/screens/TodayScreen.tsx` (sustituye el enlace a
+  Ejercicios por el selector; sigue usando `addExerciseToToday`);
+  `traininglab/apps/desktop/src/screens/TrainingScreen.tsx` (sustituye el listado
+  inline por el selector y conserva series/reps/descanso);
+  `traininglab/apps/desktop/src/screens/RoutinesScreen.tsx` (sustituye el buscador
+  inline por el selector y conserva `routineItemFor`);
+  `traininglab/apps/desktop/src/lib/i18n.ts`; `mockup.css`
+  (`.exercise-picker-*`, retirada de `.ru-picker` y `.ent-add`);
+  `tests/training/test_exercise_picker.test.ts` (6 tests).
+- **Datos:** no se cambió el esquema, el motor, el mapa muscular ni BodyLab. Hoy
+  conserva el `sets: 0` deliberado de `addExerciseToToday` cuando no se da
+  prescripción; Entrenamiento conserva sus tres campos (3 series, 10–12 reps,
+  90 s en la prueba); Rutinas sólo modifica el borrador hasta Guardar. El
+  selector lee `buildRows()`, `settings.favorites` y `plan.usable`.
+- **Verificación de lógica:** `pnpm test` → **102 archivos / 1447 tests, exit 0**
+  (incluye `test_exercise_picker.test.ts`); `pnpm typecheck` → **exit 0**;
+  `pnpm lint` → **0 warnings / 0 errores**; `pnpm audit:css` → **103 ficheros,
+  165 clases**, sin usadas sin definir, sin definidas sin uso, allowlist al día;
+  Prettier aplicado a los archivos de código tocados; `git diff --check` → 0.
+- **Preview 390×844:** selector de **390,4 × 742,7 px**, `scrollWidth -
+  clientWidth = 0`. Hoy abre con **152 de 152**; Entrenamiento con **96 de 152**
+  (6 ya en la sesión, «Sólo mi equipo» activo por defecto) y Rutinas con **96 de
+  152**. Búsqueda `plancha` → 4 resultados; `sentadilla copa` → 1; favoritos → 0
+  en los datos DEMO y «Quitar filtros» devuelve 96; apagar «Sólo mi equipo» →
+  152. Se añadió una fila desde Hoy y se retiró; se añadió Sentadilla Copa desde
+  Entrenamiento con 3 × 10–12 · 90 s y se retiró; en Rutinas se añadió al
+  borrador y se cerró sin guardar (`0 rutinas`). Escape cierra sólo el selector
+  y deja abierto el editor de rutina; el foco vuelve al campo/acción anterior.
+- **Preview 1440×900:** selector de **720 × 760 px** centrado en `(360, 70)` en
+  Hoy, Entrenamiento y Rutinas; sin overflow. Los filtros pasan a dos filas y la
+  lista mantiene el scroll interno. Capturas:
+  `.tmp-verify/d9-picker-hoy-390-final.png`,
+  `.tmp-verify/d9-picker-training-390.png`,
+  `.tmp-verify/d9-picker-routines-1440.png`.
+- **Instaladores (mismo estado que el código; sin commit):** TrainingLab `0.2.0`
+  NSIS, **17.649.574 bytes**, `TAURI_D9_EXIT:0`; copiado al escritorio real
+  (`C:\Users\andyh\Desktop`) como `TrainingLab_0.2.0_x64-setup.exe` y
+  `TrainingLab-setup.exe`; sha256
+  `399f85817c05186c3a16b1f057d7091d13955aa551a3dd080ad148b7f8c07ecf`. BodyLab
+  `1.0.0-beta.8` NSIS, **17.087.307 bytes**, `TAURI_BODYLAB_D9_EXIT:1` esperado
+  por `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; `.exe` nuevo y
+  válido, copiado como `BodyLab_1.0.0-beta.8_x64-setup.exe` y
+  `BodyLab-setup.exe`; sha256
+  `b08d048fa086767c9079fe9906d658e900a5b41fff7f33982b3bf3da4a080890`. El bundle
+  de TrainingLab contiene `exercise-picker`, `Sólo mi equipo`, `Elegir
+  ejercicios`, `picker.selectedOne` y `Añadir varios`.
+- **Estado Git:** sin commit ni push; árbol sucio con cambios previos. Nuevos
+  untracked: `src/features/exercises/ExercisePicker.tsx`,
+  `src/lib/exercise-picker.ts` y `tests/training/test_exercise_picker.test.ts`.
+  No se revirtió ningún cambio ajeno.
+- **Pendiente / decisión del dueño:** la edición de serie en ZEN sigue pendiente
+  (P1 §10). No se probó en iPhone físico ni se reabrió el gate del mapa de fuerza.
+  No se añadió nutrición.
+- **Siguiente paso seguro:** instalar `TrainingLab-setup.exe` y comprobar el
+  selector en un teléfono real; después continuar por ZEN o por la siguiente
+  pantalla aprobada del brief.
+
+## 2026-11-12 (a) — P1 §10 cerrado: edición de serie en ZEN
+
+- **Resultado:** las series ya registradas en ZEN se pueden editar sin salir de
+  la sesión. Cada fila de `.zen-sets` muestra un botón `Editar serie N`; abre
+  peso, reps y D/F en la propia tabla. El guardado usa `setEditPatch` y el
+  `editSet` del store, por lo que reutiliza el Deshacer global de 20 s y no abre
+  ventana si nada cambió. Escape cancela la edición sin disparar el Escape global
+  que sale de ZEN, y el foco vuelve al botón de la fila. No se tocó el motor,
+  el esquema ni la lógica de datos.
+- **Cambios:** `traininglab/apps/desktop/src/features/today/ZenSession.tsx`
+  (prop `onEditSet`, estado de fila, formulario inline, `startSetEdit`/
+  `saveSetEdit`/`stopSetEdit`, foco y `stopPropagation` de Escape, botón por
+  fila); `traininglab/apps/desktop/src/screens/SessionScreen.tsx` (pasa
+  `editSet`); `traininglab/apps/desktop/src/ui/mockup-icons.tsx` (icono `edit`);
+  `traininglab/apps/desktop/src/mockup.css` (`.zen-set-edit` y el ancho de la
+  última columna en móvil); `traininglab/apps/desktop/src/lib/i18n.ts`
+  (`zen.editSet`); `docs/DESIGN_DECISIONS_2026-11-07.md` (P1 §10 y D4);
+  `ROADMAP.md`; esta entrada.
+- **Verificación de lógica:** `pnpm typecheck` en TrainingLab → **exit 0**;
+  `pnpm test` (raíz) → **102 archivos / 1447 tests, exit 0**; `pnpm lint` (raíz)
+  → **0 warnings / 0 errores**; `pnpm audit:css` → **103 ficheros, 165 clases**,
+  sin clases usadas sin definir ni definidas sin uso; Prettier aplicado a los
+  archivos de código tocados; `git diff --check` → **0**. No hay test de
+  componente/E2E nuevo para esta interacción: la comprobación es el preview real.
+- **Preview 390×844:** se registró un calentamiento y una serie de Flexión
+  Declinada; el botón `Editar serie 1` abrió el formulario con foco en Peso.
+  Reps `8 → 9` + marca `F` → la fila mostró `9` y `F`, el estado anunció
+  `Flexión Declinada · 8 reps → 9 reps · F` y **Deshacer** restauró `8`/
+  `Completada`. Después, peso `12,5` → la tabla mostró `12.5` y Deshacer lo
+  devolvió a `—` (coma decimal y conversión a kg correctas). Escape con el
+  formulario abierto dejó `#/sesion`, cerró la edición y devolvió el foco a
+  `zen-set-edit`. Los datos de prueba se eliminaron; Hoy vuelve a **0 series
+  registradas** en los seis ejercicios (0/4 en cinco y 0/3 en V-Up).
+- **Instaladores (mismo estado que el código; sin commit):** TrainingLab `0.2.0`
+  NSIS, **17.650.788 bytes**, `TAURI_TRAININGLAB_EXIT:0`; copiado al escritorio
+  real (`C:\Users\andyh\Desktop`) como `TrainingLab_0.2.0_x64-setup.exe` y
+  `TrainingLab-setup.exe`; sha256
+  `447c93f537764f41f101ac1f82609d71e01cbdcf71a1fdce1f63710d5488e329`. BodyLab
+  `1.0.0-beta.8` NSIS, **17.087.024 bytes**, `TAURI_BODYLAB_EXIT:1` esperado por
+  `createUpdaterArtifacts` sin `TAURI_SIGNING_PRIVATE_KEY`; `.exe` nuevo y
+  válido, copiado como `BodyLab_1.0.0-beta.8_x64-setup.exe` y
+  `BodyLab-setup.exe`; sha256
+  `c54900f2630b65e1103bc4720f442d1eac8709e1d2976c94f809f5a6d2126b53`. El bundle
+  de TrainingLab contiene `zen-set-edit` (7), `Editar serie` (1) y
+  `summary-set-edit-form` (3) en `dist/assets`.
+- **Estado Git:** sin commit ni push; árbol sucio con cambios previos. No se
+  revirtió ningún cambio ajeno.
+- **Pendiente / decisión del dueño:** la edición de serie en ZEN no se probó en
+  iPhone físico ni con teclado real; el resto del P1 (Semana, Progreso, Ajustes,
+  Rutinas y Coach contextual) sigue pendiente. No se reabrió el gate del mapa de
+  fuerza. No se añadió nutrición.
+- **Siguiente paso seguro:** instalar `TrainingLab-setup.exe` y comprobar la
+  edición de una serie en ZEN en un teléfono real; después continuar por Semana,
+  Progreso, Ajustes o Rutinas según el orden aprobado.
+
+## 2026-11-12 (b) — Auditoría QA de TrainingLab: fiabilidad, competencia, BodyLab y nutrición
+
+- **Fase/tarea:** análisis y QA de producto; **sin cambios de código de la app**.
+  Se auditó el flujo completo en Chromium (390×844 y 1440×900, incógnito), datos
+  frescos y con historial, además de la suite existente y fuentes externas.
+- **P0 reproducido — el historial se infla al cerrar dos veces la misma sesión:**
+  3 series → Terminar → volver a registrar 1 serie → Terminar produce **3
+  sesiones y 11 series**, aunque solo existen 4 series únicas; Progreso sigue
+  mostrando 4. Causa: `finishSession` (`app/store.tsx`) usa **todos** los
+  `todaySets` en cada cierre y `addSet` limpia `finished`; no hay una sesión
+  abierta/idempotencia ni exclusión de series ya asignadas. Corregir antes de
+  vender fiabilidad; añadir test de cerrar → reabrir → cerrar.
+- **P0 reproducido — Hoy y Semana describen planes distintos:** con datos
+  frescos, Hoy ofrece 5 ejercicios (51 min) y Semana marca **Jue · Hoy ·
+  Descanso**; además Semana dice «90 min por día» pero resume 66 series/162 min
+  y sus días duran 29–45 min. Causa: `buildTodayPlan` y `buildWeekPlan` son
+  generadores independientes; `weekOverrides` solo se aplica al foco de Hoy
+  cuando es `train`. Unificar en una sola fuente (o derivar Hoy de la fila de
+  hoy de Semana) y añadir un invariante de coherencia.
+- **P1 reproducido — el CTA fijo de ZEN tapa «Terminar sesión» a 390×844:**
+  el objetivo queda en y≈722–766 y `elementFromPoint(190,743)` devuelve
+  `button[data-testid="log-set"]`; tocar ahí **registra otra serie** en vez de
+  terminar. `.zen-layout` reserva 58 px y el CTA fijo mide 52 px + 76 px de
+  separación. Reservar el alto real o retirar el CTA al llegar al final.
+- **P1 reproducido — el descanso flota sobre el resumen:** al terminar con un
+  descanso activo, `RestTimer` sigue en `#/resumen` (captura 390×844: 0:56 sobre
+  la tabla). `finishSession` no limpia `rest` y el shell lo pinta fuera de
+  `session`. Limpiar el descanso al cerrar y no mostrarlo en Resumen.
+- **P1 de producto — primer arranque sin onboarding:** `DEFAULT_SETTINGS` es
+  hipertrofia/nivel intermedio/90 min/4 días/inventario vacío; la app abre
+  directamente con Flexión Declinada, Remo bajo Mesa, Sentadilla Pistol, V-Up y
+  Flexión Diamante, «RIR 2» y «Estado de hoy 3/3/3» sin explicación. No hay
+  paso de objetivo, experiencia, equipo ni tiempo. Un principiante no sabe qué
+  hacer ni por qué; el nivel por defecto no es «principiante».
+- **Cobertura:** `tests/training/` tiene **64 archivos de test puro y 0
+  `.test.tsx`**; no hay test de componente/E2E propio de las pantallas de
+  TrainingLab. Los cuatro defectos anteriores no tienen red de seguridad.
+- **Accesibilidad (medido):** `node scripts/audit-contrast.mjs --base
+  http://localhost:5174` midió 2.032 nodos y marcó 7 pares bajo AA; parte son
+  falsos positivos por fondos en gradiente (el CTA naranja real es oscuro sobre
+  naranja). Casos que sí merecen corrección: «3 %» blanco sobre naranja a
+  **2,49:1** (20 px/700, necesita 3:1) y badge «Hoy» naranja sobre marrón a
+  **4,47:1**. A 390: enlaces/steppers de 40–42 px, `Registrar series` 108×18,
+  sliders 13 px y textareas del Coach a 11,5 px. No se probó iPhone/Safari ni
+  lector de pantalla.
+- **Copy/semántica:** «1 sesiones cerradas», «1 ejercicios», «0 kg VOLUMEN»
+  en bodyweight y «Sesión completada» con 3/19 series. El resumen y el historial
+  deben distinguir «cerrada/parcial» y «sin carga externa» de cero.
+- **Competencia (consulta 2026-11-12):** Hevy oficial $2,99/mes o $23,99/año,
+  free 4 rutinas/7 ejercicios propios/3 meses de gráficas; Fitbod oficial
+  $15,99/mes o $95,99/año con prueba de 7 días; Jefit free + Elite $12,99/mes o
+  $69,99/año; Strong (App Store/terceros) 3 rutinas gratis y $4,99/mes o
+  $29,99/año. TrainingLab conserva una posición única local-first, sin cuentas
+  ni nube, con motor determinista, 152 ejercicios, BodyLab y MCP; pierde en
+  acabado nativo, reloj, sync, social, biblioteca y nutrición.
+- **BodyLab:** no es técnicamente necesario para que TrainingLab funcione
+  (comparte `@fitness/bodylab-exercises`/`training` y arranca sin importar). La
+  decisión D16 de mantenerlos separados sigue siendo defendible por alcance y
+  profundidad científica, pero el coste es doble instalador, doble shell y un
+  import manual. No fusionar ahora; hacer el import de un clic y revisar la
+  decisión con uso real. Si BodyLab no se usa, absorber solo medidas/protocolos
+  y composición en un módulo «Cuerpo» sería más honesto que mantener dos apps.
+- **Nutrición:** D17 sigue cerrada. Un módulo completo (base de alimentos,
+  escáner, macros) es XL y no se recomienda ahora. Si el dueño lo reabre, el
+  MVP defendible es opt-in y local: objetivo energético aproximado, proteína
+  (1,4–2,0 g/kg/d; 1,6–2,2 en déficit), tendencia de peso a 2–4 semanas y
+  adherencia, sin prometer precisión calórica ni diagnóstico. La evidencia
+  apoya el registro, pero el autoregistro subestima y cansa; el escáner por foto
+  subestima ~33% en un estudio 2026. No meterlo como tarjeta de Hoy.
+- **Checks:** baseline `pnpm check` exit 0 (102 archivos/1447 tests raíz, 11/129
+  web, Playwright 17/17); `pnpm lint` 0/0; `pnpm audit:css` 103 ficheros/165
+  clases; typecheck 0. No se recompilaron instaladores (no hubo cambio de app).
+- **Límites:** sin usuarios reales, sin iPhone físico, sin Safari/VoiceOver; la
+  inspección es heurística + automatización + recorrido propio, no un test con
+  personas.
+- **Estado Git:** sin commit ni push; árbol sucio previo intacto. Este handoff es
+  el único archivo tocado por esta auditoría.
+- **Siguiente paso seguro:** corregir F-01 (idempotencia de sesión) y F-02
+  (fuente única Hoy/Semana) con tests; después F-03/F-04. No abrir nutrición ni
+  fusionar BodyLab hasta cerrar esos P0.
+
+## 2026-11-12 (c) — P0/P1 de TrainingLab ejecutados; Hoy y Semana comparten el día actual
+
+- **Fase/tarea:** implementación de la recomendación del 2026-11-12 (b): cerrar P0 antes de features, después P1. BodyLab no se tocó ni se fusionó; D17 (nutrición) sigue cerrada.
+- **P0-1 — sesión cerrada y series no reutilizadas:** `finishSession` ahora pasa por `lib/session-identity.ts#unassignedTodaySets`: excluye series ya contenidas en `sessions[].setIds`, deduplica y filtra el día. `lib/session-identity.ts` es puro y tiene `tests/training/test_session_identity.test.ts` (cerrar → añadir → cerrar, batch same-tick, warm-ups). El volumen del cierre usa solo las series nuevas. Evidencia real: 3 series → terminar → 1 serie → terminar deja **2 sesiones / 4 series** en Historial y **4** en Progreso, no 3/11.
+- **P0-2 — una sola verdad Hoy/Semana:** `lib/week-today.ts#alignWeekToToday` proyecta la fila de hoy de Semana desde las filas reales de Hoy (estado, familias, series, minutos, preview); `Store` expone esa vista y calcula el estrés semanal desde ella. Los totales se recalculan y un día de descanso autorado vacía también Hoy (`todayIsRest`). Test `tests/training/test_week_today.test.ts` (rest vs rows + totales). Evidencia 390×844 con la preview: Hoy = 5 ejercicios/38.2 min; Semana Jue = 14 series/38.2 min y los mismos tres primeros nombres; el total semanal suma las filas que se ven.
+- **P1-1 — CTA fijo de ZEN:** `.zen-layout` reserva 148 px y `.zen-layout + .btn` añade 96 px al botón «Terminar sesión» (el botón es hermano del layout, no hijo). Medido a 390×844: finish 626–670 px, CTA 716–768 px; `elementFromPoint` en el botón devuelve «Terminar sesión». Playwright lo cubre.
+- **P1-2 — descanso al cerrar:** `finishSession` llama `setRest(null)`; Resumen ya no muestra el overlay de descanso. Cubierto por E2E (`heading Descanso` count 0).
+- **P1-3 — onboarding de 3 pasos:** `features/onboarding/Onboarding.tsx` (objetivo, experiencia, tiempo/días/equipo) con RIR y readiness explicados; arranca en **principiante** si no se sabe, guarda el marcador `traininglab-onboarding-v1` y no aparece si ya hay historial. El equipo elige presets reales de `EQUIPMENT_PRESETS`.
+- **P1-4 — Playwright mínimo:** `bodylab/apps/web/playwright.traininglab.config.ts` + `e2e-traininglab/session.spec.ts`; arranca TrainingLab en 5198 con viewport 390×844 y cubre onboarding → empezar → 3 series → terminar → reabrir → 1 serie → terminar → Historial (2 sesiones/4 series) + hueco del CTA + ausencia de descanso. Script: `pnpm --filter web test:e2e:traininglab` (1/1).
+- **P1-5 — táctil/contraste:** a 390×844 ZEN ya no tiene controles <44×44 (consulta DOM; `zen-set-edit` 44, steppers y tabs 44, inputs ≥16 px). Tokens: `--tl-text-muted` pasa a `#94a0ab` (4.17→4.74 sobre el fondo warning) y `.tl-chip` usa `--tl-accent-strong` (badge «Hoy» 4.47→5.57). El audit sigue marcando 6 pares; el «2 %» 2.49:1 es falso positivo del anillo cónico (el texto está en el hueco oscuro), igual que los CTA por gradiente. No se tocaron esos falsos positivos.
+- **P1-6/7 — copy:** «Sesión cerrada» sustituye a «Sesión completada» en el resumen y en la tarjeta de Hoy; plurales corregidos en Historial («1 serie», «1 ejercicio»), tarjeta de Hoy y filas del resumen («1 serie»). «Sin carga externa» ya existía y se mantiene.
+- **Checks exactos:** `cd traininglab/apps/desktop && pnpm typecheck` exit 0; `pnpm build` exit 0 (dist generado a las 01:51; contiene «Sesión cerrada» y `traininglab-onboarding-v1`); `cd fitness-ecosystem && pnpm test` **104 archivos / 1452 tests, todos pass**; `pnpm audit:css` exit 0 (103 ficheros/165 clases, 17 nombres runtime); `cd bodylab/apps/web && pnpm test:e2e:traininglab` **1/1 pass**; `node scripts/audit-contrast.mjs --base http://localhost:5174` mide 2052 nodos y deja 6 pares, todos falsos positivos conocidos de gradientes/anillo.
+- **Cierre de artefacto:** `pnpm tauri build` en `traininglab/apps/desktop` exit 0; NSIS `TrainingLab_0.2.0_x64-setup.exe` de **17.652.743 bytes** (01:56), copiado a `C:\Users\andyh\Desktop\TrainingLab-setup.exe` y `TrainingLab_0.2.0_x64-setup.exe` (01:59). No se reconstruyó BodyLab porque no se tocó su código.
+- **Límites:** sin iPhone físico, Safari ni VoiceOver; sin usuarios reales; no se ejecutó import/export completo ni LLM/MCP en vivo. La preview 390×844 es Chromium, no Safari.
+- **Estado Git:** sin commit ni push; árbol sucio previo intacto. Nuevos: `features/onboarding/`, `lib/session-identity.ts`, `lib/week-today.ts`, dos tests puros, config/spec E2E.
+- **Siguiente paso seguro:** revisar en un dispositivo real el nuevo onboarding y el CTA de ZEN; después abordar Semana/Progreso/Ajustes al shell único y el import BodyLab de un clic. No abrir nutrición ni fusionar BodyLab.
+
+## 2026-11-12 (d) — una sola sesión en todas las superficies
+
+- **Alcance:** auditoría de las superficies que pueden proponer la sesión de hoy — Hoy, Entrenamiento, ZEN, Semana, Coach y Rutinas — y de las retrospectivas que no deben proponer otra (Progreso, Historial). Todas las primeras consumen el mismo `rows` del store; Semana es la única proyección (`alignWeekToToday`). Progreso/Historial no tienen ningún enlace a `#/sesion`.
+- **Divergencia corregida en el origen:** Semana recortaba la lista del día actual a tres ejercicios (`rows.slice(0, 3)`), así que no podía demostrar el mismo orden completo. `lib/week-today.ts` ahora proyecta **todos** los nombres, en el mismo orden, y mantiene los totales de series/minutos. No se parcheó la pantalla.
+- **Duración en ZEN:** el pie de la sesión ahora muestra también los minutos planificados (`0 / 23 series de trabajo · Sesión en curso · 62 min`), para que la duración sea verificable también dentro de ZEN.
+- **Dataset de preview (390×844):** 18 sesiones cerradas / 412 series de historial; hoy 6 ejercicios / 23 series / 62 min. Cifras observadas: Hoy 6/23/62; Semana Jue 23/62 con los seis nombres en orden; Entrenamiento 62/6/23; ZEN 0/23 y 62 min. Progreso e Historial: 0 enlaces a `#/sesion`.
+- **Invariante unitario:** `test_week_today.test.ts` compara la proyección completa de Semana con la lista/totales de las superficies que leen `rows`, incluyendo el caso de descanso. Falla si Semana recorta, reordena o cambia series/minutos.
+- **Invariante de navegador:** segundo test Playwright que lee el DOM de Hoy, Entrenamiento, Semana y ZEN, exige el mismo `{names, sets, minutes}` y luego convierte hoy en descanso desde Semana; comprueba que Hoy, Entrenamiento, Semana y ZEN quedan en descanso. Pasa 2/2.
+- **Series:** el journey existente vuelve a dejar **2 sesiones / 4 series** y el CTA de ZEN sigue sin tapar «Terminar sesión» a 390×844.
+- **Checks:** `pnpm typecheck` 0; `pnpm build` 0; `pnpm test` **104 archivos / 1453 tests**; `pnpm test:e2e:traininglab` **2/2**; `pnpm tauri build` 0. Instalador nuevo `17.652.449 bytes` (02:10), copiado al escritorio a las 02:11.
+- **Límites:** sin iPhone/Safari/VoiceOver físico ni usuarios reales; la comprobación de descanso es Chromium 390×844 vía Playwright. BodyLab y nutrición no se tocaron. Sin commit, push ni merge.
+
+## 2026-11-12 (e) — Semana sale de `Legacy` y usa el shell compartido
+
+- **Fase/tarea:** P1 de coherencia visual, pieza **Semana**. `App.tsx` ya no envuelve `#/semana` en `Legacy`; `WeekScreen` dibuja `topbar` + `content` + `card` como Hoy, Entrenamiento, Historial, ZEN y Coach. `WeekCard` también usa `card`/`card-head`/`card-body` y el botón compartido `btn btn-ghost`.
+- **Contrato de datos intacto:** no se tocó `weekPlan`, `rows`, `weekOverrides`, `swapPlanDays`, el esquema persistido ni el generador. Se conservan drag (ratón y flechas sobre el asa), edición por día, `Entrenar/Descansar`, restaurar plan automático, regenerar semana y los enlaces a ZEN/Hoy.
+- **Estilos muertos eliminados:** al desaparecer el wrapper, `.tl-page` y `.tl-note` quedaron sin uso; se borraron de `index.css` (no se añadieron allowlist). `pnpm audit:css` vuelve a exit 0.
+- **E2E de shell:** el invariante de navegador ahora exige `.tl-page` count 0, un `header.topbar`, un `.content` y el asa `week-drag-0` en Semana.
+- **Preview real:** 1440×900 → rail 245 px, topbar sticky 61 px, contenido 1185 px, cuatro columnas de 267,95 px, overflow 0. A 390×844 → una columna, overflow 0, 7 asas, «Editar» presente. En ambos: Jue = **23 series · 62 min**, seis ejercicios en el mismo orden que Hoy, Entrenamiento y ZEN (ZEN: `0 / 23 series · Sesión en curso · 62 min`).
+- **Interacción manual:** foco en `week-drag-0` + `ArrowRight` anunció «Intercambiados Lun y Mar»; se restauró con `ArrowLeft` sobre la fila 1 y «Volver al día del planificador». El swap mueve la capa de overrides (familias), como estaba diseñado; no se cambió el esquema para guardar una prescripción exacta.
+- **Checks:** `pnpm typecheck` 0 · `pnpm build` 0 · `pnpm test` **104 archivos / 1453 tests** · `pnpm audit:css` 0 · `pnpm test:e2e:traininglab` **2/2** · `pnpm tauri build` 0. Instalador **17.652.834 bytes** (02:24), copiado a `C:\Users\andyh\Desktop\TrainingLab-setup.exe` y `TrainingLab_0.2.0_x64-setup.exe` (02:25).
+- **Límites:** sin iPhone/Safari/VoiceOver físico; preview Chromium 390×844 y 1440×900. No se tocaron BodyLab, nutrición ni mapa muscular. Sin commit, push ni merge.
+
+## 2026-11-13 — Sustitutos biomecánicos (SFR), inferencia de carga cruzada y adaptaciones dinámicas de series
+
+- **Fase/tarea:** Implementación del motor de sustitución biomecánica (`exercise-substitutes.ts`), inferencia de carga inicial cruzada (`cross-progression.ts`) y adaptaciones intra-sesión para peso corporal, calistenia y presupuesto de tiempo (`set-proposal.ts`).
+- **Sustitutos y SFR:** `lib/exercise-substitutes.ts` computa el ratio estímulo-fatiga `SFR = (hipertrofia * 2.5) / (jointStress + spineLoad)` y anota científicamente ventajas de estiramiento (Maeo 2021/2022), protección espinal lumbar (remo con apoyo de pecho vs remo con barra) y soluciones anatómicas (sentadillas frontal, goblet, hack y prensa para personas con fémures largos). El cajón de sustitución en `ZenSession.tsx` muestra las insignias de SFR, "Estiramiento óptimo" y consejos anatómicos.
+- **Inferencia de carga cruzada:** `lib/cross-progression.ts` calcula el 1RM transferible entre ejercicios hermanos del mismo patrón de movimiento para sugerir pesos realistas en ejercicios primerizos (banca a press inclinado con mancuernas 0.32x, sentadilla a prensa 1.65x, etc.). Integrado en `suggestLoadFor` de `lib/plan.ts`.
+- **Adaptaciones dinámicas intra-sesión:** `lib/set-proposal.ts` sugiere repeticiones excéntricas controladas (4–5s) o asistencia con banda elástica cuando el usuario queda por debajo del rango de hipertrofia en peso corporal (ej. dominadas < 6 reps), sugiere lastre cuando supera el rango, y propone Myo-reps para ahorrar 5 min cuando la sesión supera el 80% del presupuesto de tiempo.
+- **Checks:** `pnpm typecheck` 0 · `pnpm lint` 0 · `pnpm test` **106 suites / 1467 tests pasados** · Playwright E2E TrainingLab **7/7 pasadas** en Chromium real.
+- **Límites:** no se probó en Safari móvil físico.
+
+
+## 2026-11-13 (b) — Revisión de la ronda anterior: evidencia, accesibilidad, personas y servidor LAN
+
+- **Fase/tarea:** auditoría de la entrega anterior (sustitutos + transferencia + set-proposal), corrección de honestidad científica, arreglo del gate de contraste, arreglos de accesibilidad/móvil, E2E por personas y cierre de la deuda del servidor LAN.
+- **Honestidad científica (lo importante):** `DIRECT_TRANSFER_RATIOS` son **priors de entrenador**, no coeficientes medidos; el resultado viaja con `sourceIsHeuristic: true` y el texto pasó a «Estimado … (prior x.xx, ajústalo si no cuadra)». El índice `SFR` es una fórmula propia (no publicada) y ahora solo ordena alternativas: el badge dice «estimación, solo para ordenar». Citas corregidas a Maeo 2021 MSSE 53(4):825-837 (curl sentado vs tumbado, +14,1 % vs +9,3 %) y Maeo 2023 EJSS (tríceps overhead). Detalle completo y lo que queda como criterio: `docs/SFR_TRANSFER_EVIDENCE_2026-11-13.md`.
+- **Gate de contraste reparado** (`scripts/audit-contrast.mjs`): el fondo raíz se añadía **siempre** como candidato y hundía el mínimo a 1:1 sobre los CTA con degradado; además ignoraba los pseudo-elementos, que es lo que hay detrás del número del anillo de constancia. Ahora mide el fondo real y el selector de CTA acepta `.tl-btn-primary, .btn-primary`. Resultado: **19 PASS / 0 FAIL**, 0 nodos bajo AA (antes 2 PASS / 17 FAIL).
+- **Accesibilidad/móvil:** `setLanguage` sincroniza `<html lang>`; guardia global de `prefers-reduced-motion`; suelo tipográfico de 12 px (34 declaraciones de 10–11,5 px); `base: './'` en `vite.config.ts` para que ningún modo de build produzca un `dist` inservible; `lib/uid.ts` con fallback para contexto no seguro (el `crypto.randomUUID` del iPhone por HTTP).
+- **Servidor LAN:** `serve-lan.mjs` detecta `index.html` con enlaces absolutos a la raíz (build de escritorio o base fija) y recompila con `--base=./` aunque se pase `--no-build`, con guardia posterior que impide arrancar sirviendo la página en blanco.
+- **E2E por personas:** `bodylab/apps/web/e2e-traininglab/personas.spec.ts` con cinco recorridos completos (estándar, máximo provecho, curioso, power user con teclado, necesidades distintas) que además fallan ante cualquier excepción de página. **7/7** junto a los dos journeys existentes.
+- **Checks de esta sesión:** `pnpm test` **106 archivos / 1.467 tests** · `pnpm typecheck` 0 · `tsc -b` TrainingLab 0 · `pnpm audit:css` 0 · `test:e2e:traininglab` 7/7 · `audit-contrast` 19/0 · `vite build` (base relativa) 0.
+- **Límites:** sin iPhone/Safari/VoiceOver físico ni usuarios reales; el E2E es Chromium 390×844. El `git push` se hace en esta misma ronda.

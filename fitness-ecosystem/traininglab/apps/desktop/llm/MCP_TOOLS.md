@@ -1,4 +1,4 @@
-# Las 35 herramientas del MCP `fitness` — guía de uso para el coach local
+# Las 36 herramientas del MCP `fitness` — guía de uso para el coach local
 
 Este fichero es para el modelo que actúa como coach (Qwen u otro) cuando habla con
 TrainingLab por el servidor MCP (`scripts/fitness-mcp-server.mjs`). No es
@@ -73,7 +73,17 @@ segmentarias). Si la pregunta no es de esos dos, devuelve
   publicado y ofrece lo que sí sale del registro (`read_progression`,
   `read_recovery`). Nunca inventes anatomía, ni mezcles temas.
 
-## 3. Proponer (1) — el conjunto fundamentado, no la prescripción
+## 3. Proponer (2) — leer candidatos, y enviar la sesión
+
+`propose_session` es la **mitad de escritura** (2026-10-24): envía *tu* sesión para hoy y la
+app la adopta como plan del día si pasa sus reglas (material, presupuesto de tiempo, una sola
+familia principal, ventana de recuperación). Si no pasa, te devuelve el motivo con números y
+el plan determinista se queda. Es reversible por el usuario con un toque (Ajustes → auditoría
+de agentes). Manda `slots: []` si con el contexto no puedes proponer algo honesto: eso también
+es una respuesta y la app lo registra sin cambiar nada.
+
+claves: `slots` (`exercise_id`, `sets`, `reps_min`, `reps_max`, `rest_sec`, `note`),
+`summary`, `idempotency_key`.
 
 `propose_training_session` (`time_budget_min`, `focus_family` opcional) devuelve
 los ejercicios que **tu registro y tu material permiten hoy**: excluye familias
@@ -85,7 +95,7 @@ app contra tu presupuesto.
 su razón (recuperación, patrón, dificultad) y no prometas números que la
 herramienta no ha devuelto.
 
-## 4. Acciones (24) — con acuse y deshacer
+## 4. Acciones (25) — con acuse y deshacer
 
 | Herramienta | Qué hace | Claves |
 |---|---|---|

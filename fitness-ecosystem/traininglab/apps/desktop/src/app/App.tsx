@@ -24,9 +24,11 @@
  *
  * Screens are lazy, so a phone pays for the screen it opens and not for the
  * other nine. The ported ones — Hoy (01), ZEN (03), Entrenamiento (02),
- * Historial (08), Rutinas (06) — draw their own top bar and content, exactly
- * like their pages; the ones still waiting for their port (Progreso, Ejercicios,
- * Semana, Configuración) are wrapped in `Legacy` for the old shell's gutters.
+ * Historial (08), Ejercicios (05), Rutinas (06) — draw their own top bar and
+ * content, exactly like their pages. Historial joined the ported list on
+ * 2026-11-09 (P0); Ejercicios and its sheet joined on 2026-11-10; Semana,
+ * Progreso and Configuración on 2026-11-12, when the last `Legacy` wrapper was
+ * removed.
  *
  * @module app/App
  */
@@ -38,7 +40,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { getExerciseById } from "@fitness/bodylab-exercises";
 import {
@@ -49,9 +50,10 @@ import {
   type Destination,
 } from "./nav";
 import { SEGMENT, useRoute, type Route, type RouteId } from "./router";
-import { TrainingLabProvider } from "./store";
+import { TrainingLabProvider, useStore } from "./store";
 import { MIcons } from "../ui/mockup-icons";
 import { t, tInterp } from "../lib/i18n";
+import Onboarding from "../features/onboarding/Onboarding";
 
 const TodayScreen = lazy(() => import("../screens/TodayScreen"));
 const WeekScreen = lazy(() => import("../screens/WeekScreen"));
@@ -65,6 +67,10 @@ const ProgressScreen = lazy(() => import("../screens/ProgressScreen"));
 const SettingsScreen = lazy(() => import("../screens/SettingsScreen"));
 const HistoryScreen = lazy(() => import("../screens/HistoryScreen"));
 const RoutinesScreen = lazy(() => import("../screens/RoutinesScreen"));
+const CoachScreen = lazy(() => import("../screens/CoachScreen"));
+const SessionSummaryScreen = lazy(
+  () => import("../screens/SessionSummaryScreen"),
+);
 
 function ScreenFallback() {
   return (
@@ -79,39 +85,74 @@ function ScreenFallback() {
 }
 
 export default function App() {
-  const route = useRoute();
-
   return (
     <TrainingLabProvider>
-      <div className="app">
-        <Rail active={route.id} />
-        <main className="main">
-          <Suspense fallback={<ScreenFallback />}>
-            <Screen route={route} />
-          </Suspense>
-        </main>
-        <MobileTabBar active={route.id} />
-      </div>
+      <Shell />
     </TrainingLabProvider>
+  );
+}
+
+/**
+ * The provider's child: the only place that can read both the store and the
+ * route, which is what lets an open session follow the user across destinations.
+ */
+function Shell() {
+  const route = useRoute();
+  const { totalSetsToday, finished, loading } = useStore();
+  const showSessionBar =
+    !loading &&
+    finished === null &&
+    totalSetsToday > 0 &&
+    route.id !== "today" &&
+    route.id !== "session" &&
+    route.id !== "summary";
+
+  return (
+    <div className="app">
+      <Rail active={route.id} />
+      <main className={`main ${showSessionBar ? "has-session-bar" : ""}`}>
+        <Suspense fallback={<ScreenFallback />}>
+          <Screen route={route} />
+        </Suspense>
+        {showSessionBar && <ActiveSessionBar sets={totalSetsToday} />}
+      </main>
+      <MobileTabBar active={route.id} />
+      <Onboarding />
+    </div>
+  );
+}
+
+/**
+ * A session that is open follows the user across destinations (invariant 9,
+ * 2026-11-06). Hoy and ZEN already say it; before this, walking into Historial,
+ * Progreso or Ajustes made the open log invisible. The bar is a link back to
+ * ZEN, never a second place to log.
+ */
+function ActiveSessionBar({ sets }: { sets: number }) {
+  return (
+    <a
+      className="active-session-bar tl-focusable"
+      href="#/sesion"
+      data-testid="active-session"
+    >
+      <span className="active-session-dot" aria-hidden />
+      <span className="grow">
+        <b style={{ display: "block" }}>{t("sessionBar.title")}</b>
+        <span className="small muted">
+          {tInterp("sessionBar.sets", { n: sets })}
+        </span>
+      </span>
+      <span className="btn btn-primary btn-sm">
+        {t("sessionBar.continue")}
+        <MIcons.arrowRight />
+      </span>
+    </a>
   );
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    Routing
    ══════════════════════════════════════════════════════════════════════════ */
-
-/**
- * Migration bridge: a not-yet-replaced screen inside the mockup shell.
- *
- * The old shell's `.tl-main` carried the page gutters; the mockup gives them to
- * `.content` instead, because its pages draw their own topbar and content. Until
- * a destination's port lands, its old screen renders inside `.content` so it
- * keeps the same margins (and never sits edge-to-edge on a phone). One wrapper,
- * deleted with the last old screen.
- */
-function Legacy({ children }: { children: ReactNode }) {
-  return <div className="content">{children}</div>;
-}
 
 function Screen({ route }: { route: Route }) {
   switch (route.id) {
@@ -121,61 +162,50 @@ function Screen({ route }: { route: Route }) {
       // which keeps the router free of screen knowledge.
       const [first, second] = route.params;
       if (first && getExerciseById(first)) {
-        return (
-          <Legacy>
-            <ExerciseDetailScreen exerciseId={first} tab={second} />
-          </Legacy>
-        );
+        return <ExerciseDetailScreen exerciseId={first} tab={second} />;
       }
-      return (
-        <Legacy>
-          <ExercisesScreen initialFamily={first} />
-        </Legacy>
-      );
+      return <ExercisesScreen initialFamily={first} />;
     }
     case "today":
-      // Hoy and the session draw their own top bar and `.content` (their pages
-      // do), so they are NOT wrapped: `Legacy` exists for the screens still
-      // wearing the old shell's gutters.
+      // Hoy and the session draw their own top bar and `.content`, like every
+      // other screen in the app.
       return <TodayScreen />;
     case "training":
       // Mockup 02 ported (2026-10-18): the day's queue — order, swap, out,
       // add-many and the plan's own why. It draws its own topbar and `.content`
-      // like Hoy, so it is deliberately not wrapped in `Legacy`.
+      // like Hoy.
       return <TrainingScreen />;
     case "history":
-      // Port of mockup 08: the record the log has been building. Wrapped in
-      // `Legacy` while the port keeps the old shell's gutters (like Semana,
-      // Progreso and Configuración).
-      return (
-        <Legacy>
-          <HistoryScreen />
-        </Legacy>
-      );
+      // Port of mockup 08 (2026-11-09): the record the log has been building,
+      // now on the shared topbar/content/card shell like Hoy and Entrenamiento.
+      return <HistoryScreen />;
     case "week":
-      return (
-        <Legacy>
-          <WeekScreen />
-        </Legacy>
-      );
+      // Port of the week screen (2026-11-12): it now draws its own topbar and
+      // `.content` like the other shared-shell destinations.
+      return <WeekScreen />;
     case "session":
       return <SessionScreen />;
     case "progress":
-      return (
-        <Legacy>
-          <ProgressScreen />
-        </Legacy>
-      );
+      // Port of the progress screen (2026-11-12): it now draws its own topbar
+      // and `.content` like the other shared-shell destinations.
+      return <ProgressScreen />;
     case "routines":
       // Port of mockup 06 (2026-10-18): the user's own templates. It draws its
-      // own topbar and `.content`, so it is not wrapped in `Legacy`.
+      // own topbar and `.content`.
       return <RoutinesScreen />;
+    case "coach":
+      // New (2026-10-24): the agent's seat. The brief is the contract, the answer
+      // is validated by `lib/set-proposal.ts`, and the same path serves the local
+      // model and the MCP inbox. Draws its own topbar and `.content`.
+      return <CoachScreen />;
+    case "summary":
+      // The close of the loop (2026-11-06): a finished session has its own
+      // address, so the bell lands on the numbers instead of on Hoy.
+      return <SessionSummaryScreen />;
     case "settings":
-      return (
-        <Legacy>
-          <SettingsScreen />
-        </Legacy>
-      );
+      // Port of the settings screen (2026-11-12): the last `Legacy` wrapper is
+      // gone; the rail destinations all draw the shared topbar/content shell.
+      return <SettingsScreen />;
   }
 }
 
@@ -248,8 +278,11 @@ function MobileTabBar({ active }: { active: RouteId }) {
     <>
       <nav className="mobile-tabs" aria-label={t("nav.label")}>
         {MOBILE_PRIMARY.map((id) => (
-          <MobileTab          key={id}
-          dest={destinationFor(id)} active={id === active} />
+          <MobileTab
+            key={id}
+            dest={destinationFor(id)}
+            active={id === active}
+          />
         ))}
         <button
           type="button"
@@ -299,7 +332,13 @@ function MobileTab({ dest, active }: { dest: Destination; active: boolean }) {
  * open. It lists every secondary destination with the full name, because the
  * whole point of the change is that a name is read *before* the tap.
  */
-function MoreSheet({ active, onClose }: { active: RouteId; onClose: () => void }) {
+function MoreSheet({
+  active,
+  onClose,
+}: {
+  active: RouteId;
+  onClose: () => void;
+}) {
   const panel = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
 

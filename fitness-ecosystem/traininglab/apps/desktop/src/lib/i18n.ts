@@ -10,6 +10,12 @@ let current: "en" | "es" = "es";
 
 export function setLanguage(lang: "en" | "es"): void {
   current = lang;
+  // Keep the document in the language it is written in: a screen reader picks
+  // its pronunciation from `<html lang>`, and the static value in index.html
+  // would read the English UI with Spanish phonetics.
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = lang;
+  }
 }
 
 export function getLanguage(): "en" | "es" {
@@ -81,6 +87,10 @@ const DICT: Record<string, { en: string; es: string }> = {
   "zen.setOf": {
     en: "Set {done} of {total}",
     es: "Serie {done} de {total}",
+  },
+  "zen.editSet": {
+    en: "Edit set {n}",
+    es: "Editar serie {n}",
   },
   "zen.warmup": { en: "Warm-up", es: "Calentamiento" },
   "zen.emptyBar": {
@@ -782,6 +792,20 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Hoy tengo 45 min y solo mancuernas…",
   },
   "coach.ask": { en: "Ask the coach", es: "Pedir al coach" },
+  "coach.detect": { en: "Find my server", es: "Buscar mi servidor" },
+  "coach.detecting": { en: "Searching…", es: "Buscando…" },
+  "coach.detect.ok": {
+    en: "Found {model} at {url} ({ms} ms) — fields filled in.",
+    es: "Encontrado {model} en {url} ({ms} ms) — campos rellenados.",
+  },
+  "coach.detect.noModel": {
+    en: "Server at {url} answers, but has no model loaded.",
+    es: "El servidor de {url} responde, pero no tiene ningún modelo cargado.",
+  },
+  "coach.detect.fail": {
+    en: "No local server on the usual ports ({ports}). Start your model and try again.",
+    es: "Ningún servidor local en los puertos habituales ({ports}). Arranca el modelo y vuelve a intentarlo.",
+  },
   "coach.thinking": { en: "Thinking locally…", es: "Pensando en local…" },
   "coach.applied": {
     en: "Coach plan applied ({n} slots)",
@@ -800,6 +824,125 @@ const DICT: Record<string, { en: string; es: string }> = {
   // in a badge on a phone).
   "coach.offBadge": { en: "Off", es: "Apagado" },
   "coach.onBadge": { en: "Ready", es: "Listo" },
+
+  // ── Coach page (2026-10-24) — the agent's seat ────────────────────────────
+  // The brief/answer screen: one contract, three transports (local model, an
+  // agent over MCP, a pasted answer).
+  "coach.page.title": { en: "Session coach", es: "Coach de la sesión" },
+  "coach.page.sub": {
+    en: "The app calculates, the agent proposes, the rules decide. Nothing it suggests is applied without passing validation.",
+    es: "La app calcula, el agente propone y las reglas deciden. Nada de lo que sugiera se aplica sin pasar la validación.",
+  },
+  "coach.page.back": { en: "Back to Today", es: "Volver a Hoy" },
+  "coach.page.pill": { en: "Coach", es: "Coach" },
+  "coach.page.rest": {
+    en: "Today is planned as rest, so there is no session for the coach to propose over.",
+    es: "Hoy está planificado como descanso, así que no hay sesión sobre la que el coach pueda proponer.",
+  },
+  "coach.page.loading": { en: "Loading the plan…", es: "Cargando el plan…" },
+  "coach.page.settings": { en: "Settings", es: "Ajustes" },
+  // The door from Hoy. Says what it does, not what it is called.
+  "hoy.coachOpen": {
+    en: "Ask the coach for today's session",
+    es: "Pedir la sesión de hoy al coach",
+  },
+  "coach.page.detTitle": {
+    en: "Today's deterministic plan",
+    es: "Plan determinista de hoy",
+  },
+  "coach.page.detLine": {
+    en: "{n} exercises · ~{m} min with rest",
+    es: "{n} ejercicios · ~{m} min con descansos",
+  },
+  "coach.brief.title": {
+    en: "1 · Ask for the session",
+    es: "1 · Pide la sesión",
+  },
+  "coach.brief.body": {
+    en: "Copy the brief and give it to an agent with access to the app (Freebuff over MCP) or to any chat. It carries today's real context and the only answer shape the app accepts.",
+    es: "Copia el encargo y dáselo a un agente con acceso a la app (Freebuff por MCP) o a cualquier chat. Lleva el contexto real de hoy y la única forma de respuesta que la app acepta.",
+  },
+  "coach.brief.copy": { en: "Copy the brief", es: "Copiar el encargo" },
+  "coach.brief.copied": { en: "Copied", es: "Copiado" },
+  "coach.brief.copyFailed": {
+    en: "No clipboard permission: open the text and copy it by hand.",
+    es: "Sin permiso de portapapeles: abre el texto y cópialo a mano.",
+  },
+  "coach.brief.show": {
+    en: "Show the whole brief",
+    es: "Ver el encargo completo",
+  },
+  "coach.brief.chars": {
+    en: "{n} characters · your gear, your recent log and the deterministic plan",
+    es: "{n} caracteres · tu equipo, tu registro reciente y el plan determinista",
+  },
+  "coach.answer.title": {
+    en: "2 · Paste the answer",
+    es: "2 · Pega la respuesta",
+  },
+  "coach.answer.body": {
+    en: "A JSON object with `summary` and `slots`. It is checked against your gear, your time budget, one primary family per session and the recovery window.",
+    es: "Un objeto JSON con `summary` y `slots`. Se valida contra tu equipamiento, tu presupuesto de tiempo, una familia principal por sesión y la ventana de recuperación.",
+  },
+  "coach.answer.apply": { en: "Validate and apply", es: "Validar y aplicar" },
+  "coach.answer.clear": { en: "Clear", es: "Limpiar" },
+  "coach.answer.applied": {
+    en: "Applied: {n} exercises. Today trains this.",
+    es: "Aplicada: {n} ejercicios. Hoy entrena esto.",
+  },
+  "coach.answer.minutes": {
+    en: "~{n} min estimated, rest included.",
+    es: "~{n} min estimados, descansos incluidos.",
+  },
+  "coach.answer.rejected": {
+    en: "The proposal did not pass the rules:",
+    es: "La propuesta no pasó las reglas:",
+  },
+  "coach.err.no_json": {
+    en: "There is no JSON in what you pasted.",
+    es: "No hay JSON en lo que pegaste.",
+  },
+  "coach.err.bad_json": {
+    en: "The JSON cannot be read (check commas and quotes).",
+    es: "El JSON no se puede leer (revisa comas y comillas).",
+  },
+  "coach.err.not_an_object": {
+    en: "The answer must be a JSON object.",
+    es: "La respuesta debe ser un objeto JSON.",
+  },
+  "coach.err.no_slots": {
+    en: "The `slots` list is missing.",
+    es: "Falta la lista `slots`.",
+  },
+  "coach.active.title": {
+    en: "Today's plan came from the agent",
+    es: "El plan de hoy lo propuso el agente",
+  },
+  "coach.active.body": {
+    en: "The deterministic plan is still the fallback: undoing this restores it exactly.",
+    es: "El plan determinista sigue siendo el respaldo: deshacer esto lo restaura exactamente.",
+  },
+  "coach.active.clear": {
+    en: "Back to the deterministic plan",
+    es: "Volver al plan determinista",
+  },
+  "coach.mcp.title": {
+    en: "Over MCP, without copying",
+    es: "Por MCP, sin copiar nada",
+  },
+  "coach.mcp.body": {
+    // Names the **tool** the agent actually has (`propose_session`), not the
+    // internal action id: the two are one step apart and an agent told to call
+    // `propose_plan` finds no such tool.
+    en: "With the app open and the MCP server connected, the agent can send the session with the `propose_session` tool: it is validated the same way, leaves a receipt and is undone from Settings → audit.",
+    es: "Con la app abierta y el servidor MCP conectado, el agente puede enviar la sesión con la herramienta `propose_session`: se valida igual, deja recibo y se deshace desde Ajustes → auditoría.",
+  },
+  "coach.local.title": { en: "Local model", es: "Modelo local" },
+  "coach.local.body": {
+    en: "The local model setting stays in Settings. It proposes the same thing, through the same validator.",
+    es: "El ajuste del modelo local sigue en Ajustes. Propone lo mismo, con el mismo validador.",
+  },
+  "coach.local.open": { en: "Open Settings", es: "Abrir Ajustes" },
 
   // ── Settings ──────────────────────────────────────────────────────────────
   "setup.preferences": { en: "Plan preferences", es: "Preferencias del plan" },
@@ -820,6 +963,32 @@ const DICT: Record<string, { en: string; es: string }> = {
   "settings.llmModel": { en: "Model name", es: "Nombre del modelo" },
   "settings.llmKey": { en: "API key (optional)", es: "API key (opcional)" },
   "settings.llmPresets": { en: "Quick presets", es: "Presets rápidos" },
+  // ── Local server probe (2026-10-30) ─────────────────────────────────────
+  // The owner's real failure was "no server at that URL", not "a bad model":
+  // llama.cpp on 8080, his router UI on 9931, LM Studio on 1234. A GET on
+  // /models answers reachability, CORS and model id without spending tokens.
+  "coach.probe": { en: "Test connection", es: "Probar conexión" },
+  "coach.probing": { en: "Testing…", es: "Probando…" },
+  "coach.probe.ok": {
+    en: "Answers in {ms} ms · {model}",
+    es: "Responde en {ms} ms · {model}",
+  },
+  "coach.probe.noModels": {
+    en: "Answers in {ms} ms, but advertises no model (is `/v1` in the URL?)",
+    es: "Responde en {ms} ms, pero no anuncia ningún modelo (¿falta `/v1` en la URL?)",
+  },
+  "coach.probe.fail": {
+    en: "No answer: {error} — tried {endpoint}",
+    es: "No responde: {error} — probé {endpoint}",
+  },
+  "coach.maxTokens": {
+    en: "Token cap per answer",
+    es: "Tope de tokens por respuesta",
+  },
+  "coach.maxTokensHint": {
+    en: "Qwen3 thinks before answering: below 1024 the session JSON can arrive cut in half.",
+    es: "Qwen3 razona antes de contestar: por debajo de 1024 el JSON de la sesión puede llegar cortado.",
+  },
 
   // ── Sound cues (the three moments worth hearing) ────────────────────────
   "settings.sounds": { en: "Sound cues", es: "Avisos sonoros" },
@@ -1075,6 +1244,36 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Closed sessions will appear here.",
     es: "Aquí aparecerán tus sesiones cerradas.",
   },
+  "hist.countPill": { en: "{n} closed sessions", es: "{n} sesiones cerradas" },
+  "hist.countPillOne": { en: "1 closed session", es: "1 sesión cerrada" },
+  "hist.searchPlaceholder": {
+    en: "Search by exercise or session name",
+    es: "Buscar por ejercicio o nombre de sesión",
+  },
+  "hist.periodLabel": { en: "Period", es: "Periodo" },
+  "hist.period.all": { en: "All", es: "Todo" },
+  "hist.period.30": { en: "30 days", es: "30 días" },
+  "hist.period.90": { en: "90 days", es: "90 días" },
+  "hist.kpiSessions": { en: "sessions", es: "sesiones" },
+  "hist.kpiSets": { en: "working sets", es: "series de trabajo" },
+  "hist.kpiVolume": { en: "volume", es: "volumen" },
+  "hist.filtered": {
+    en: "Showing {shown} of {total}",
+    es: "Mostrando {shown} de {total}",
+  },
+  "hist.shownCount": { en: "Showing {n}", es: "Mostrando {n}" },
+  "hist.open": { en: "Open session", es: "Abrir sesión" },
+  "hist.detailTitle": { en: "Session detail", es: "Detalle de la sesión" },
+  "hist.detailHeading": { en: "Logged session", es: "Sesión registrada" },
+  "hist.noMatches": {
+    en: "No sessions match",
+    es: "Ninguna sesión coincide",
+  },
+  "hist.noMatchesHint": {
+    en: "Try another exercise or a wider period.",
+    es: "Prueba otro ejercicio o un periodo más amplio.",
+  },
+  "hist.clearFilters": { en: "Clear filters", es: "Quitar filtros" },
   "hist.pillSets": { en: "{n} working sets", es: "{n} series de trabajo" },
   "hist.pillSetsHint": {
     en: "Working sets in the sessions shown here (warm-up ramps excluded).",
@@ -1095,8 +1294,10 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Se muestran las {shown} más recientes de {total}.",
   },
   "hist.sets": { en: "{n} sets", es: "{n} series" },
+  "hist.setOne": { en: "1 set", es: "1 serie" },
   "hist.warmup": { en: "{n} warm-up", es: "{n} de calentamiento" },
   "hist.exercises": { en: "{n} exercises", es: "{n} ejercicios" },
+  "hist.exerciseOne": { en: "1 exercise", es: "1 ejercicio" },
   "hist.volume": { en: "{kg} moved", es: "{kg} movidos" },
   "hist.duration": { en: "{n} min", es: "{n} min" },
   "hist.moreExercises": { en: "+{n} more", es: "+{n} más" },
@@ -1170,6 +1371,36 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "{total} exercises · {guide} with extra variant cues",
     es: "{total} ejercicios · {guide} con indicaciones propias de variante",
   },
+  "ex.pill": { en: "{n} exercises", es: "{n} ejercicios" },
+  "ex.useToday": { en: "Use today", es: "Usar hoy" },
+  "ex.useTodayDone": {
+    en: "Added to today's session.",
+    es: "Añadido a la sesión de hoy.",
+  },
+  "ex.useTodayExists": {
+    en: "Already in today's session.",
+    es: "Ya está en la sesión de hoy.",
+  },
+  "ex.addRoutine": { en: "Add to routine", es: "Añadir a rutina" },
+  "ex.addRoutineTitle": { en: "Choose a routine", es: "Elige una rutina" },
+  "ex.addRoutineEmpty": {
+    en: "You have no routines yet. Create one in Rutinas.",
+    es: "Aún no tienes rutinas. Crea una en Rutinas.",
+  },
+  "ex.addRoutineAdd": { en: "Add", es: "Añadir" },
+  "ex.addRoutineHasShort": { en: "Already in it", es: "Ya está" },
+  "ex.addRoutineHas": {
+    en: "Already in «{name}».",
+    es: "Ya está en «{name}».",
+  },
+  "ex.addRoutineDone": {
+    en: "Added to «{name}».",
+    es: "Añadido a «{name}».",
+  },
+  "ex.addRoutineError": {
+    en: "That routine could not be saved.",
+    es: "No se pudo guardar esa rutina.",
+  },
   "ex.variant": { en: "Variant", es: "Variante" },
   "ex.search": {
     en: "Search exercise, muscle or equipment…",
@@ -1221,6 +1452,48 @@ const DICT: Record<string, { en: string; es: string }> = {
   "ex.favOnly": {
     en: "Only favourites",
     es: "Solo favoritos",
+  },
+  "picker.count": { en: "{shown} of {total}", es: "{shown} de {total}" },
+  "picker.search": {
+    en: "Search exercise, muscle or equipment…",
+    es: "Buscar ejercicio, músculo o equipo…",
+  },
+  "picker.clearSearch": {
+    en: "Clear search",
+    es: "Borrar búsqueda",
+  },
+  "picker.onlyGear": {
+    en: "Only my equipment",
+    es: "Sólo mi equipo",
+  },
+  "picker.filtered": {
+    en: "Filters active",
+    es: "Filtros activos",
+  },
+  "picker.empty": {
+    en: "No exercise matches these filters.",
+    es: "Ningún ejercicio coincide con estos filtros.",
+  },
+  "picker.inUse": {
+    en: "Already added",
+    es: "Ya está",
+  },
+  "picker.noGear": {
+    en: "Not in your gear",
+    es: "Sin tu equipo",
+  },
+  "picker.selected": {
+    en: "{n} selected",
+    es: "{n} seleccionados",
+  },
+  "picker.selectedOne": {
+    en: "1 selected",
+    es: "1 seleccionado",
+  },
+  "picker.add": { en: "Add {n}", es: "Añadir {n}" },
+  "picker.tap": {
+    en: "Tap an exercise to add it.",
+    es: "Toca un ejercicio para añadirlo.",
   },
   "ex.sort.az": { en: "A–Z", es: "A–Z" },
   "ex.sort.level": { en: "By level", es: "Por nivel" },
@@ -1908,6 +2181,10 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "exercises in the built-in catalog",
     es: "ejercicios en el catálogo interno",
   },
+  "settings.importSteps": {
+    en: "Where it comes from: BodyLab → Data → Export → TrainingLab Link (JSON). The file is called bodylab-traininglab-YYYY-MM-DD.json and downloads to your Downloads folder.",
+    es: "De dónde sale: BodyLab → Datos → Exportar → TrainingLab Link (JSON). El archivo se llama bodylab-traininglab-AAAA-MM-DD.json y cae en tu carpeta de Descargas.",
+  },
   "settings.importHint": {
     en: "BodyLab's v2 export brings measurements, the weakness map and your records. Without it, TrainingLab plans from your own history alone.",
     es: "El export v2 de BodyLab aporta medidas, el mapa de debilidades y tus marcas. Sin él, TrainingLab planifica solo con tu historial.",
@@ -1982,6 +2259,7 @@ const DICT: Record<string, { en: string; es: string }> = {
   "hoy.logNew": { en: "Log sets", es: "Registrar series" },
   "hoy.addExercise": { en: "Add exercise", es: "Añadir ejercicio" },
   "hoy.fromRoutine": { en: "From my routine", es: "Desde mi rutina" },
+  "hoy.adjust": { en: "Adjust today", es: "Ajustar hoy" },
   "hoy.sets": { en: "{n} sets", es: "{n} series" },
   "hoy.reps": { en: "reps", es: "reps" },
   "hoy.rest": { en: "Rest", es: "Descanso" },
@@ -2068,6 +2346,15 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "home.focus.auto": { en: "Automatic", es: "Automático" },
   "home.focus.core": { en: "Core", es: "Core" },
+  // A focus the five chips cannot name (an agent's `set_day_focus` accepts any
+  // families). Shown as its own chip so *Automático* never claims a day it is
+  // not planning (2026-10-24).
+  "home.focus.custom": { en: "Custom ({n})", es: "A medida ({n})" },
+  "home.focus.customHint": {
+    en: "Focus set by an agent — tap to clear",
+    es: "Enfoque fijado por un agente: toca para quitarlo",
+  },
+  "hoy.familiesMore": { en: "+{n}", es: "+{n}" },
   "home.focus.label": { en: "Focus", es: "Enfoque de hoy" },
   "home.focus.legs": { en: "Legs", es: "Pierna" },
   "home.focus.pull": { en: "Pull", es: "Tracción" },
@@ -2477,8 +2764,12 @@ const DICT: Record<string, { en: string; es: string }> = {
   "ent.add.title": { en: "Add several", es: "Añadir varios" },
   "ent.add.available": { en: "{n} available", es: "{n} disponibles" },
   "ent.add.hint": {
-    en: "Pick several exercises and add them at once with one common prescription.",
-    es: "Selecciona varios ejercicios y agrégalos de una vez con una prescripción común.",
+    en: "Choose several exercises with the shared picker and add them at once with one common prescription.",
+    es: "Elige varios ejercicios con el selector común y agrégalos de una vez con una prescripción común.",
+  },
+  "ent.add.choose": {
+    en: "Choose exercises",
+    es: "Elegir ejercicios",
   },
   "ent.add.search": { en: "Search exercise", es: "Buscar ejercicio" },
   "ent.add.empty": {
@@ -2496,6 +2787,10 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "ent.add.apply": { en: "Add to today", es: "Añadir a hoy" },
   "ent.add.applied": { en: "{n} added to today", es: "{n} añadidos a hoy" },
+  "ent.add.appliedOne": {
+    en: "1 added to today",
+    es: "1 añadido a hoy",
+  },
   "ent.add.none": {
     en: "Nothing was added — those exercises are already in today.",
     es: "No se añadió nada — esos ejercicios ya están en hoy.",
@@ -2560,7 +2855,17 @@ const DICT: Record<string, { en: string; es: string }> = {
     es: "Cada plantilla se convierte en rutinas editables, montadas con tu equipamiento. Nada de lo que ya tienes se toca.",
   },
   "ru.tpl.pick": { en: "Preview", es: "Ver" },
-  "ru.tpl.preview.title": { en: "What it would create", es: "Lo que se crearía" },
+  // «días», not «sesiones»: the blurb above already says how many sessions the
+  // split has, and one routine *is* one day of it (2026-10-24).
+  "ru.tpl.shape": {
+    en: "{days} days · {ex} exercises",
+    es: "{days} días · {ex} ejercicios",
+  },
+  "ru.tpl.review": { en: "See and create", es: "Ver y crear" },
+  "ru.tpl.preview.title": {
+    en: "What it would create",
+    es: "Lo que se crearía",
+  },
   "ru.tpl.keep": {
     en: "Your current routines are not modified: this only adds new ones, and every one stays editable.",
     es: "Tus rutinas actuales no se modifican: esto solo añade nuevas, y todas quedan editables.",
@@ -2646,6 +2951,35 @@ const DICT: Record<string, { en: string; es: string }> = {
   "ru.updated": { en: "Updated {date}", es: "Actualizada el {date}" },
   "ru.card.use": { en: "Use today", es: "Usar hoy" },
   "ru.card.view": { en: "View routine", es: "Ver rutina" },
+  // ── Continuity (2026-10-30) ─────────────────────────────────────────────
+  // A routine is worth repeating only if repeating it lets the load climb.
+  // These three lines are derived from the log every render — never stored in
+  // the routine, so the template cannot quote a weight the owner never lifted.
+  "ru.continuity.never": {
+    en: "No history yet",
+    es: "Sin historial todavía",
+  },
+  "ru.continuity.today": { en: "Last done today", es: "Última vez hoy" },
+  "ru.continuity.last": {
+    en: "Last done {d} d ago",
+    es: "Última vez hace {d} d",
+  },
+  "ru.continuity.known": {
+    en: "{n} of {total} with history",
+    es: "{n} de {total} con historial",
+  },
+  "ru.history.button": {
+    en: "From my history",
+    es: "Desde mi historial",
+  },
+  "ru.history.none": {
+    en: "No two sessions share the same group of exercises yet — the split appears once you repeat one.",
+    es: "Aún no hay dos sesiones con el mismo grupo de ejercicios: el split aparece cuando repitas uno.",
+  },
+  "ru.history.fallbackName": {
+    en: "Routine from history",
+    es: "Rutina del historial",
+  },
   "ru.detail.overview": { en: "Overview", es: "Vista general" },
   "ru.detail.exercises": {
     en: "Routine exercises ({n})",
@@ -2688,9 +3022,10 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
   "ru.edit.items": { en: "Exercises ({n})", es: "Ejercicios ({n})" },
   "ru.edit.empty": {
-    en: "Add the first exercise with the search box.",
-    es: "Añade el primer ejercicio con el buscador.",
+    en: "Add the first exercise with the shared picker.",
+    es: "Añade el primer ejercicio con el selector.",
   },
+  "ru.edit.add": { en: "Add exercise", es: "Añadir ejercicio" },
   "ru.edit.search": {
     en: "Search the catalogue…",
     es: "Buscar en el catálogo…",
@@ -2716,6 +3051,79 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "Give it a name and add at least one exercise.",
     es: "Ponle un nombre y añade al menos un ejercicio.",
   },
+
+  // ── Session summary (2026-11-06) ─────────────────────────────────────
+  "nav.summary": { en: "Summary", es: "Resumen" },
+  "summary.title": {
+    // A session is always *closed*; only the log says whether the plan was
+    // completed, so the badge must not claim that for a partial session.
+    en: "Session closed",
+    es: "Sesión cerrada",
+  },
+  "summary.heading": { en: "Your session", es: "Tu sesión" },
+  "summary.empty": {
+    en: "No closed session yet",
+    es: "Aún no hay ninguna sesión cerrada",
+  },
+  "summary.emptyHint": {
+    en: "Finish today's session and its numbers will land here.",
+    es: "Termina la sesión de hoy y sus números aparecerán aquí.",
+  },
+  "summary.setsLabel": { en: "working sets", es: "series de trabajo" },
+  "summary.exercisesLabel": { en: "exercises", es: "ejercicios" },
+  "summary.volumeLabel": { en: "volume", es: "volumen" },
+  "summary.durationLabel": { en: "duration", es: "duración" },
+  "summary.volumeShort": { en: "volume", es: "volumen" },
+  "summary.setsShort": { en: "{n} sets", es: "{n} series" },
+  "summary.setOne": { en: "1 set", es: "1 serie" },
+  "summary.bestSet": {
+    en: "best set {weight} × {reps}",
+    es: "mejor serie {weight} × {reps}",
+  },
+  "summary.bwSet": { en: "{n} reps", es: "{n} reps" },
+  "summary.warmups": {
+    en: "{n} warm-up sets",
+    es: "{n} series de calentamiento",
+  },
+  "summary.marks": {
+    en: "{n} sets near/failure",
+    es: "{n} series cerca del fallo/fallo",
+  },
+  "summary.what": { en: "What you did", es: "Lo que hiciste" },
+  "summary.set": { en: "Set", es: "Serie" },
+  "summary.weight": { en: "Weight", es: "Peso" },
+  "summary.reps": { en: "Reps", es: "Reps" },
+  "summary.effort": { en: "Effort", es: "Esfuerzo" },
+  "summary.effortHint": {
+    en: "Recorded 1–5 effort, not RIR",
+    es: "Esfuerzo registrado 1–5; no es RIR",
+  },
+  "summary.mark": { en: "Mark", es: "Marca" },
+  "summary.warmupShort": { en: "W", es: "C" },
+  "summary.duration": { en: "{n} min", es: "{n} min" },
+  "summary.noDuration": {
+    en: "No reliable duration",
+    es: "Sin duración fiable",
+  },
+  "summary.line": {
+    en: "{sets} sets · {exercises} exercises · {kg} kg",
+    es: "{sets} series · {exercises} ejercicios · {kg} kg",
+  },
+  "summary.view": { en: "View summary", es: "Ver resumen" },
+  "summary.toHistory": { en: "History", es: "Historial" },
+  "summary.toProgress": { en: "Progress", es: "Progreso" },
+  "summary.toToday": { en: "Back to today", es: "Volver a hoy" },
+
+  // The open session follows the user across the shell (2026-11-06)
+  "sessionBar.title": {
+    en: "Session in progress",
+    es: "Sesión en curso",
+  },
+  "sessionBar.sets": {
+    en: "{n} sets logged",
+    es: "{n} series registradas",
+  },
+  "sessionBar.continue": { en: "Continue", es: "Continuar" },
 };
 
 /**

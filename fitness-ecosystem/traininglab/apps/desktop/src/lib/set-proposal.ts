@@ -68,6 +68,12 @@ export interface NextSetProposal {
   move: ProposalMove;
   /** Why, already in the app language — the UI only prints it. */
   reason: string;
+  /** Actionable adaptation suggestion for bodyweight/tempo/time/intensity */
+  adaptation?: {
+    type: "eccentric_tempo" | "band_assist" | "load_adjust" | "myo_reps" | "variant_regress";
+    label: string;
+    description: string;
+  };
   /** The numbers the decision used, never hidden from the caller. */
   evidence: {
     lastReps: number | null;
@@ -90,6 +96,13 @@ export interface ProposeNextSetInput {
   capKg: number | null;
   /** The planner's first-set suggestion (kg) — used only before any set. */
   suggestionKg: number | null;
+  /** Optional exercise context */
+  exerciseId?: string;
+  loadType?: string;
+  lang?: "es" | "en";
+  /** Session pace and time budget context */
+  timeBudgetMin?: number;
+  sessionElapsedMin?: number;
 }
 
 const round1 = (n: number): number => Math.round(n * 10) / 10;
@@ -124,9 +137,60 @@ export function proposeNextSet(input: ProposeNextSetInput): NextSetProposal {
   evidence.lastWeightKg = weight;
   evidence.marker = marker;
 
-  // Nothing to adjust on a bodyweight/timed movement: the lever there is the
-  // variant, and `lib/progression.ts` owns that decision across sessions.
+  const step = input.stepKg && input.stepKg > 0 ? input.stepKg : null;
+  const min = input.targetReps?.min ?? null;
+  const max = input.targetReps?.max ?? null;
+
+  // ── Bodyweight & unloaded movements ───────────────────────────────────────
   if (weight === null) {
+    if (reps !== null && min !== null && reps < min) {
+      const isPullupOrDip =
+        input.exerciseId?.includes("pull-up") ||
+        input.exerciseId?.includes("chin-up") ||
+        input.exerciseId?.includes("dip");
+
+      const reason = isPullupOrDip
+        ? (input.lang === "en"
+            ? `Completed ${reps} reps (below ${min}-${max} hypertrophy zone): for the next set, use an assistance band (-10 to -15 kg) or do slow eccentric negatives (4–5s descent) to accumulate effective volume safely.`
+            : `Hiciste ${reps} reps (por debajo del rango óptimo ${min}-${max}): para la siguiente serie usa una banda elástica de asistencia (-10 a -15 kg) o realiza repeticiones excéntricas (salto arriba y 4–5 s de bajada controlada) para acumular volumen efectivo sin fallar prematuramente.`)
+        : (input.lang === "en"
+            ? `Completed ${reps} reps (below ${min} target): consider an easier leverage angle or knee support to stay in the hypertrophy zone.`
+            : `Hiciste ${reps} reps (por debajo de ${min}): considera una variante más accesible (apoyo en rodillas o elevación de manos) para mantenerte en la zona de hipertrofia.`);
+
+      return {
+        weightKg: null,
+        move: "decrease",
+        reason,
+        adaptation: {
+          type: "eccentric_tempo",
+          label: isPullupOrDip ? "Excéntricas / Banda" : "Ajuste de palanca",
+          description: isPullupOrDip
+            ? "Banda elástica o bajada en 4-5s"
+            : "Reducir inclinación para completar reps",
+        },
+        evidence,
+      };
+    }
+
+    if (reps !== null && max !== null && reps > max) {
+      const reason =
+        input.lang === "en"
+          ? `Cleared the range with ${reps} reps (target max ${max}): consider adding external load (+2.5 to +5 kg) or adding a 2-second pause at maximum stretch.`
+          : `Superaste el rango con ${reps} reps (máx ${max}): para la siguiente serie añade lastre (+2.5 a +5 kg) o realiza una pausa de 2 segundos en máximo estiramiento.`;
+
+      return {
+        weightKg: null,
+        move: "increase",
+        reason,
+        adaptation: {
+          type: "load_adjust",
+          label: "+Lastre / Pausa",
+          description: "Añadir 2.5–5 kg o pausa de 2s",
+        },
+        evidence,
+      };
+    }
+
     return {
       weightKg: null,
       move: "repeat",
@@ -135,13 +199,25 @@ export function proposeNextSet(input: ProposeNextSetInput): NextSetProposal {
     };
   }
 
-  const step = input.stepKg && input.stepKg > 0 ? input.stepKg : null;
-  const min = input.targetReps?.min ?? null;
-  const max = input.targetReps?.max ?? null;
   const clamp = (w: number): number => {
     const capped = input.capKg !== null ? Math.min(w, input.capKg) : w;
     return round1(Math.max(step ?? 0.5, capped));
   };
+
+  // Time-saving pacing note if session is running past 80% of budget
+  let timePacing = "";
+  let myoRepsAdvisory = false;
+  if (
+    input.timeBudgetMin &&
+    input.sessionElapsedMin &&
+    input.sessionElapsedMin > input.timeBudgetMin * 0.80
+  ) {
+    timePacing =
+      input.lang === "en"
+        ? " · ⏱️ Time running tight: consider Myo-reps (1 heavy set + 3 micro-sets of 3 reps with 15s rest) to save 5 min."
+        : " · ⏱️ Tiempo ajustado: considera Myo-reps (1 serie + 3 micro-series de 3 reps con 15s descanso) para ahorrar tiempo.";
+    myoRepsAdvisory = true;
+  }
 
   // 2 — below the range: too heavy, whatever the badge says.
   if (reps !== null && min !== null && reps < min) {
@@ -153,7 +229,16 @@ export function proposeNextSet(input: ProposeNextSetInput): NextSetProposal {
         reps,
         min,
         w: round1(next),
-      }),
+      }) + timePacing,
+      ...(myoRepsAdvisory
+        ? {
+            adaptation: {
+              type: "myo_reps" as const,
+              label: "Myo-reps (Ahorro)",
+              description: "1 serie + 3 micro-series de 3 reps (15s descanso)",
+            },
+          }
+        : {}),
       evidence,
     };
   }
@@ -165,7 +250,16 @@ export function proposeNextSet(input: ProposeNextSetInput): NextSetProposal {
     return {
       weightKg: next,
       move: next < weight ? "decrease" : "repeat",
-      reason: tInterp("nextSet.backoffF", { w: round1(next), prev: round1(weight) }),
+      reason: tInterp("nextSet.backoffF", { w: round1(next), prev: round1(weight) }) + timePacing,
+      ...(myoRepsAdvisory
+        ? {
+            adaptation: {
+              type: "myo_reps" as const,
+              label: "Myo-reps (Ahorro)",
+              description: "1 serie + 3 micro-series de 3 reps (15s descanso)",
+            },
+          }
+        : {}),
       evidence,
     };
   }
@@ -175,7 +269,16 @@ export function proposeNextSet(input: ProposeNextSetInput): NextSetProposal {
     return {
       weightKg: weight,
       move: "repeat",
-      reason: marker === "F" ? t("nextSet.holdF") : t("nextSet.holdD"),
+      reason: (marker === "F" ? t("nextSet.holdF") : t("nextSet.holdD")) + timePacing,
+      ...(myoRepsAdvisory
+        ? {
+            adaptation: {
+              type: "myo_reps" as const,
+              label: "Myo-reps (Ahorro)",
+              description: "1 serie + 3 micro-series de 3 reps (15s descanso)",
+            },
+          }
+        : {}),
       evidence,
     };
   }
@@ -191,17 +294,14 @@ export function proposeNextSet(input: ProposeNextSetInput): NextSetProposal {
           reps,
           max,
           w: round1(next),
-        }),
+        }) + timePacing,
         evidence,
       };
     }
-    // At the gear's ceiling: the load cannot move, so the honest answer is the
-    // same number plus the reason it is stuck (progression across sessions
-    // owns the harder-variant lever, see lib/progression.ts).
     return {
       weightKg: weight,
       move: "repeat",
-      reason: tInterp("nextSet.capped", { cap: round1(input.capKg ?? weight) }),
+      reason: tInterp("nextSet.capped", { cap: round1(input.capKg ?? weight) }) + timePacing,
       evidence,
     };
   }
@@ -211,7 +311,7 @@ export function proposeNextSet(input: ProposeNextSetInput): NextSetProposal {
   return {
     weightKg: weight,
     move: "repeat",
-    reason: t("nextSet.unmarked"),
+    reason: t("nextSet.unmarked") + timePacing,
     evidence,
   };
 }

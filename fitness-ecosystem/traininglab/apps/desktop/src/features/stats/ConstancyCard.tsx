@@ -41,14 +41,14 @@ export function ConstancyCard({ days }: { days: 7 | 30 | 90 }) {
   const totalWorking = workingSets(sets).length;
 
   return (
-    <section className="tl-card">
-      <div className="tl-card-head">
+    <section className="card">
+      <div className="card-head">
         <h2>{t("progress.constancy.title")}</h2>
         <span className="text-[11px] text-[var(--tl-text-muted)]">
           {tInterp("progress.days", { n: days })}
         </span>
       </div>
-      <div className="tl-card-body">
+      <div className="card-body">
         <div className="tl-ring-row">
           <div className="tl-ring" style={{ "--pct": String(pct) } as CSSProperties}>
             <strong>{pct}%</strong>

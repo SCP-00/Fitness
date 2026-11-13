@@ -1,6 +1,7 @@
 # MCP tool surface — how every local model talks to the apps (design, 2026-10-09)
 
-Status: **implemented; 35 tools since 2026-10-20** (§10 added the five plan
+Status: **implemented; 36 tools since 2026-10-24** (§14 added `propose_session`, the write
+half of "MCP as the model"; §10 added the five plan
 actions the owner asked for, §11 the four the drag work introduced, and §12 the eight that
 close the parity list §11 left open — `undo`, the three routine actions, language, sound,
 the model reset and the week regeneration, plus §13's gear-profile switch; §9's sweep exercised the 17 that existed then,
@@ -219,7 +220,7 @@ list in Ajustes keys its "Deshacer" on it.
 - Idempotent multi-agent sessions: an agent claims a session (`start_session`) so two
   agents cannot log into the same slot.
 - Audit view in Ajustes: what did which agent change, with undo.
-- Read-only SQLite/CSV mirror for heavy analysis (pending work, `docs/REDESIGN_STORM.md` §7.5).
+- Read-only SQLite/CSV mirror for heavy analysis (pending work; see `docs/DESIGN_DECISIONS_2026-11-07.md` and `docs/AGENT_HANDOFF.md`).
 
 ## 8. Decisions — settled 2026-10-09, and what each one unblocks
 
@@ -340,7 +341,7 @@ part is *how* they were built:
 
 The UI still has one gap this round exposed: the app's "Añadir ejercicio" button sends
 the user to the library, which has no "add to today" affordance (screen 02 of
-`docs/REDESIGN_STORM.md` owns that). The capability now exists in the store
+`docs/DESIGN_DECISIONS_2026-11-07.md` owns that). The capability now exists in the store
 (`addExerciseToToday`), so wiring that button is a small, separate change.
 
 ## 11. 2026-10-19 — the surface reaches the drags
@@ -415,7 +416,7 @@ replayed inside the same batch (`undo_token_unknown`), an `apply_routine` adds i
 Verified in the root suite: `tests/training/test_mcp_actions.test.ts` (the parity block:
 own-token guard, HISTORY guard, double-undo in one batch, routine bounds/duplicates,
 apply/undo of a routine, language/sound patches, model reset, seed restore) and
-`tests/training/test_mcp_server.test.ts` (35 tools, names and schemas).
+`tests/training/test_mcp_server.test.ts` (36 tools, names and schemas).
 
 ## 13. 2026-10-20 — the gear shelf, for an agent (`set_gear_profile`)
 
@@ -450,3 +451,42 @@ so the agent can say out loud which room it is planning for. Verified in
 `rowOrder` untouched, the three refusals, context advancing inside one batch) and
 `tests/training/test_gear_profiles.test.ts` (20 cases: the shelf invariant, round trip,
 no-op on the active id, nothing lost when creating or switching).
+
+## 14. 2026-10-24 — the model answers a session (`propose_session`)
+
+The surface could read everything a coach needs (`read_current_state`,
+`propose_training_session`, `read_progression`, `read_recovery`) and could not accept the one
+thing a coach actually produces: **a session**. The app had a validator for it since the local
+model existed; what was missing was a door.
+
+| Tool | Interface action it mirrors | Why it is safe |
+|---|---|---|
+| `propose_session` | the local model's answer, and the brief/page `#/coach` | the app validates the proposal with `validateProposal` — gear legality, the time budget, **one primary family**, the recovery window — before a single row changes; the accepted session becomes today's plan *in memory*, and undo is `plan_override` (drop it, the deterministic plan is back); a closed day refuses (`already_finished`) |
+
+Three details worth writing down, because each one was a decision and not an accident:
+
+- **`slots: []` is a valid answer.** "With this context I cannot propose an honest session" is
+  a real coaching answer, and the app records it while keeping the deterministic plan
+  (`proposal_empty`). A call that *omits* `slots` is refused in the server
+  (`slots_required`), so a forgotten key never looks like a refusal.
+- **One shape, three transports.** The brief in `#/coach`, the local model's tool loop and
+  this action all end in `applyCoachProposal` in `app/store.tsx`; the JSON an agent pastes and
+  the JSON this tool sends are the same object, so the three cannot drift into three rule sets.
+- **Nothing is written to the log.** A proposal changes the *plan* for today; sets are logged
+  one by one by the human (or by `log_training_set`). That is why the undo is a one-line
+  `plan_override` instead of a restore of deleted rows.
+
+**One slot, two spellings (2026-10-29).** The brief on `#/coach` prints the app's own
+contract — `exerciseId`, `repsMin`, `repsMax`, `restSec` — and the tool's schema advertises
+snake_case (`exercise_id`, `reps_min`, …). An agent that answered the brief verbatim had every
+slot mapped to `exerciseId: ""` and then refused as *"not available with the current
+equipment"*: a trap made of two names for one field. The server now reads both spellings at
+the boundary (`slot.exercise_id ?? slot.exerciseId`), the rules still judge the content, and
+the brief names the **tool** (`propose_session`) instead of the internal action id
+(`propose_plan`) — an agent told to call `propose_plan` finds no such tool.
+
+Verified in `tests/training/test_mcp_server.test.ts` (the tool is in the registry, refuses a
+missing `slots`, and maps both spellings into one queued action — read back from a sandbox
+`APPDATA`, never the real inbox) and `tests/training/test_mcp_actions.test.ts` (the action's own
+rules: `proposal_empty`, `already_finished`, and the accepted case whose rows come from the
+app's usable list).

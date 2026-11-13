@@ -31,6 +31,7 @@ import {
 import { localDayKey } from "../../lib/day";
 import { t, tInterp, getLanguage } from "../../lib/i18n";
 import { parseNumberInput } from "../../lib/parse-num";
+import { uid } from "../../lib/uid";
 import {
   HEALTH_KINDS,
   SharedError,
@@ -152,7 +153,7 @@ export function SharedPanel({
     if (parsed === null) return;
     const spec = HEALTH_KINDS.find((k) => k.id === kind);
     onAddHealth({
-      id: crypto.randomUUID(),
+      id: uid(),
       kind,
       value: parsed,
       unit: spec?.unit ?? null,

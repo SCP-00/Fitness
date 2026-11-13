@@ -12,7 +12,26 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
 - CI/release/Pages workflows live in **`.github/workflows/` at the repository root** (GitHub never reads a subdirectory's `.github/`). Each job runs from `fitness-ecosystem`, and step-level `working-directory:` overrides must spell out `fitness-ecosystem/...`.
 - TrainingLab (own app): `cd traininglab/apps/desktop && pnpm dev` (→ http://localhost:5174) / `npx tsc -b` / `npx vite build`. Its root-suite tests live in `fitness-ecosystem/tests/training/` and import the app modules by relative path.
 - **Phone navigation (2026-10-19):** below 900 px the rail is replaced by a fixed bottom bar of four destinations (Hoy · Entrenamiento · Historial · Progreso) plus a «Más» sheet (Ejercicios · Semana · Rutinas · Configuración). Only the active tab prints its name; the fifth control shows the active secondary destination. The decision and the measurements behind it are in `fitness-ecosystem/docs/DECISIONS_2026-10-19.md`; the partition lives in `app/nav.ts` and is pinned by `tests/training/test_mobile_nav.test.ts`.
-- **Drag (2026-10-19):** Entrenamiento's queue and Semana's days are reorderable by dragging an explicit grip (`ui/pointer-drag.ts`, Pointer Events — not HTML5 DnD, which does not fire on iOS). The queue previews locally and writes one `rowOrder` on release; Semana swaps the effective days through `lib/week-swap.ts` and `weekOverrides`. Keyboard: arrows on the focused grip. Root tests: `tests/training/test_drag_reorder.test.ts`.- **MCP surface (2026-10-20): 35 tools.** The drag round added
+- **Drag (2026-10-19):** Entrenamiento's queue and Semana's days are reorderable by dragging an explicit grip (`ui/pointer-drag.ts`, Pointer Events — not HTML5 DnD, which does not fire on iOS). The queue previews locally and writes one `rowOrder` on release; Semana swaps the effective days through `lib/week-swap.ts` and `weekOverrides`. Keyboard: arrows on the focused grip. Root tests: `tests/training/test_drag_reorder.test.ts`.- **Local coach, two phases (2026-10-30 b):** `lib/coach-run.ts` runs a bounded
+  **exploration** with read-only tools (where `propose_session` cannot reach the executor at
+  all) and then a **fresh, narrow commit request** whose only tool is `propose_session`, with
+  `usable_exercises(id:family)`, `vetoed_patterns` and the phase-1 notes; a rejection names the
+  colliding ids and is retried (3 rounds). This is not stylistic: measured on the owner's
+  Qwen3.5-4B, a single conversation never proposed anything (explore loop → `finish_reason:
+  length`), `tool_choice:{type:"function"}` was ignored, and llama.cpp does not validate the
+  emitted tool name against the offered list. `lib/llm.ts` sends
+  `chat_template_kwargs:{enable_thinking:false}` (thinking alone cost 300–500 tokens and made
+  the model explore instead of answer) and retries once without it on 400. `validateProposal`
+  takes `vetoedPatterns`/`patternOf`: the day vetoed pressing on sore shoulders while an agent
+  proposal walked through — the vetoes are derived from the request with
+  `evaluateBiomechanicsAndFatigue`, and the model's own report can only add. Tests:
+  `tests/training/test_coach_run.test.ts` (7 cases), live harness `.tmp-verify/qwen-live.ts`.
+- **MCP surface (2026-10-24): 36 tools.** `propose_session` is the write half of
+  «MCP as the model»: an agent sends today's session and the app validates it with the same
+  `validateProposal` the local coach uses (gear, time budget, one primary family, recovery
+  window) before it becomes the day's plan — reversibly, and `slots: []` is an accepted
+  refusal. The page `#/coach` is the human side of the same contract (copy the brief, paste
+  the answer). Earlier round, **2026-10-20: 35 tools** The drag round added
   `reorder_today`, `set_exercise_state`, `reset_today_order` and `swap_week_days`; the
   parity round then added `undo_action` (an agent undoes **its own** applied actions —
   never `finish_session`/`delete_session`), `save_routine`/`apply_routine`/
@@ -35,7 +54,36 @@ Detailed version: `knowledge.md` (repo root). Source of truth for architecture: 
 ## Architecture
 
 - Two apps, one shared data contract: **BodyLab** (built: anthropometry, 2D body map, exercise, progress) and **TrainingLab** (`traininglab/apps/desktop` — time-budgeted session, readiness, gear inventory, keyboard-first logging, rest timer, optional local LLM coach; own i18n/db; Tauri shell present).
-- **TrainingLab is modular since 2026-09-29 (c), redesign complete 2026-09-29 (e)**: `src/app/` (App shell + `router.ts` hash routes + `nav.ts` destinations + `store.tsx` holding the state), `src/ui/` (design-system primitives + `icons.tsx`, screen-agnostic), `src/screens/` (one file per destination: Inicio · Ejercicios · Entrenamiento · Progreso · Ajustes), `src/features/<domain>/` (pure logic + its components), `src/lib/` (engine glue). Five destinations, one list in `app/nav.ts`, rendered as a **245 px collapsible rail (78 px compact, persisted in localStorage)** ≥1024px or a **bottom tab bar below** it. The Progreso body map recolours the owner's PNG line art through a **region field** (`traininglab-body-map-regions.png`: R = family 1–13, G = rim, B = anti-aliased coverage) built by `scripts/build-body-map-regions.mjs` from `scripts/body-map-seeds/` — ink partition (Otsu + connected components), compartment naming from the seed votes plus a reviewed anatomy/veto table, signed-distance scale-space smoothing, then paint extended 2 px under the drawn line. Rebuild with `node scripts/build-body-map-regions.mjs`; `tests/training/test_body_map_regions.test.ts` fails if the committed assets differ from a fresh build, if a family disappears, or if a mirrored compartment carries a different family than its twin. **Owner direction (2026-09-30): its primary heatmap is strength relative to an externally published, evidence-backed ideal/reference; a second tag/lens may switch to logged training exposure/volume.** Do not treat stimulus as the default strength score, compare absolute kilos across muscle groups, invent an ideal, or silently repurpose the existing anthropometric-goal lens. The standard's support for sex, age, body weight and especially height must be verified against its source; where a variable is not supported, disclose the gap and ask before deriving a substitute. See `docs/REDESIGN_STORM.md` §4 (PÁGINA 7 · Progreso) and `docs/AGENT_HANDOFF.md`. Rep ranges are user-overridable per exercise (`settings.repOverrides` → `lib/settings.ts`). Root-suite tests import `src/lib/*` by relative path, so **never move `lib/` without updating `tests/`**.
+- **TrainingLab is modular since 2026-09-29 (c), redesign complete 2026-09-29 (e)**: `src/app/` (App shell + `router.ts` hash routes + `nav.ts` destinations + `store.tsx` holding the state), `src/ui/` (design-system primitives + `icons.tsx`, screen-agnostic), `src/screens/` (one file per destination: Inicio · Entrenamiento · Historial · Progreso · Ejercicios · Semana · Rutinas · Ajustes), `src/features/<domain>/` (pure logic + its components), `src/lib/` (engine glue). Eight destinations, one list in `app/nav.ts`, rendered as a **245 px collapsible rail (78 px compact, persisted in localStorage)** ≥1024px or a **bottom tab bar below** it. The Progreso body map recolours the owner's PNG line art through a **region field** (`traininglab-body-map-regions.png`: R = family 1–13, G = rim, B = anti-aliased coverage) built by `scripts/build-body-map-regions.mjs` from `scripts/body-map-seeds/` — ink partition (Otsu + connected components), compartment naming from the seed votes plus a reviewed anatomy/veto table, signed-distance scale-space smoothing, then paint extended 2 px under the drawn line. Rebuild with `node scripts/build-body-map-regions.mjs`; `tests/training/test_body_map_regions.test.ts` fails if the committed assets differ from a fresh build, if a family disappears, or if a mirrored compartment carries a different family than its twin. **Owner direction (2026-09-30): its primary heatmap is strength relative to an externally published, evidence-backed ideal/reference; a second tag/lens may switch to logged training exposure/volume.** Do not treat stimulus as the default strength score, compare absolute kilos across muscle groups, invent an ideal, or silently repurpose the existing anthropometric-goal lens. The standard's support for sex, age, body weight and especially height must be verified against its source; where a variable is not supported, disclose the gap and ask before deriving a substitute. See `docs/DESIGN_DECISIONS_2026-11-07.md` (Progreso) and `docs/AGENT_HANDOFF.md`. Rep ranges are user-overridable per exercise (`settings.repOverrides` → `lib/settings.ts`). Root-suite tests import `src/lib/*` by relative path, so **never move `lib/` without updating `tests/`**.
+- **Routine continuity (2026-10-30):** a routine never stores a weight. `lib/routine-continuity.ts`
+  derives, per exercise, the last day worked and the load that closed it from the log, and
+  `suggestedRoutines()` builds the split the owner already repeats (two sessions minimum,
+  prescription from the most recent one) — that is the «Desde mi historial» button. A template
+  carrying its own `targetWeightKg` would be a second source of truth and would drift from
+  `lib/progression.ts`, which stays the only verdict. Minutes use the engine's constant
+  (45 s per set) in `routineTotals` **and** in `addExerciseToToday`: a flat `+4` made the
+  card and the day header quote two different clocks.
+- **Biomechanical Substitutes & SFR (2026-11-13):** `lib/exercise-substitutes.ts` calculates
+  Stimulus-to-Fatigue Ratio (`sfrScore = (hypertrophy * 2.5) / (jointStress + spineLoad)`) and
+  identifies stretch-mediated hypertrophy benefits (Maeo et al. 2021, 2022: seated vs lying leg
+  curls, overhead vs neutral triceps extensions, incline curls, deficit variations), spine-friendly
+  and joint-friendly alternatives (chest-supported rows vs bent-over barbell rows, dumbbell/machine
+  presses vs flat barbell), and anatomical adaptations (front squats, goblet squats, hack squats,
+  and leg press for lifters with long femurs). In-workout swap drawer in `ZenSession.tsx` and
+  `TrainingScreen.tsx` surfaces SFR badges and scientific notes. Root tests:
+  `tests/training/test_exercise_substitutes.test.ts`.
+- **Cross-Exercise Load Transfer (2026-11-13):** `lib/cross-progression.ts` infers working weight
+  for exercises performed for the first time by scanning user history for brother movements in the
+  same pattern and applying verified biomechanical transfer ratios (`DIRECT_TRANSFER_RATIOS`, e.g.
+  barbell bench to incline DB press 0.32x, squat to leg press 1.65x, squat to front squat 0.80x,
+  deadlift to RDL 0.72x). Transparent bilingual reason in `suggestLoadFor`. Root tests:
+  `tests/training/test_cross_progression.test.ts`.
+- **Intra-Session Set Adaptations (2026-11-13):** `lib/set-proposal.ts` extends next-set logic for
+  bodyweight / calisthenics when reps drop below hypertrophy range (e.g. pull-ups < 6 reps -> suggests
+  slow eccentric negatives 4-5s or band assistance -10 to -15 kg; reps > max -> suggests added lastre
+  or stretch pause). Time-budget pacing triggers Myo-reps advice (1 heavy set + 3 micro-sets of 3 reps
+  with 15s rest) when elapsed time exceeds 80% of budget. Root tests:
+  `tests/training/test_set_proposal.test.ts`.
 - **Gear profiles (2026-10-20):** `settings.inventory` is still *the* live inventory every
   consumer reads; a profile is a name for it plus the other setups parked in
   `settings.gearProfiles` (`lib/gear-profiles.ts`). Switching parks the current items and
@@ -102,7 +150,7 @@ Verified 2026-10-05 (g): **los cuatro jobs de `.github/workflows/ci.yml` reprodu
 
 **Consolidated 2026-09-29 (c):** seven superseded documents were deleted (`3D_MODELING_PLAN`, `ENGINE_RESEARCH`, `ACCEPTANCE_CRITERIA`, `REQUIREMENTS`, `V1_RELEASE_GATE`, `PERFORMANCE`, `TRAININGLAB_PLAN`) and every live reference fixed. `CHANGELOG.md` keeps its historical mentions on purpose — a changelog is a log, not an index.
 
-**Design purge 2026-10-09 (m), by owner order («todos los diseños, planes deben ser eliminados»):** six docs were deleted — `UI_DESIGN.md`, `TRAININGLAB_UI_PLAN.md`, `plan_evaluacion_qa_ui_ux.md`, `plan_optimizacion_ecosistema.md`, `PLAN_CSV_SQLITE_CLI.md` and `plan_ejecucion_llm_coach_qwen.md`. **The live design authority is now `fitness-ecosystem/docs/REDESIGN_STORM.md`** (8 personas · 10 interface invariants · 8 screens · the 8 mockup prompts · carried-over pending work · the deletion table). Knowledge docs were kept on purpose (research, anthropometry protocol, abdominal-hypertrophy plan, the LAYAS decision-model report). Anything a deleted plan still owed lives in `REDESIGN_STORM.md` §7 and `docs/AGENT_HANDOFF.md`. BodyLab stays frozen: no code, palette or doc of it was touched.
+**Design consolidation 2026-11-07 (owner order).** Seven design/interface documents were retired: `UI_DESIGN.md`, `TRAININGLAB_UI_PLAN.md`, `plan_evaluacion_qa_ui_ux.md`, `REDESIGN_STORM.md`, `INTERFACE_REPORT_2026-10-16.md`, `FRONTEND_UX_PLAN_2026-11-06.md` and `REPORTE.md` (root). (The earlier 2026-10-09 note claimed some of these were already deleted; they were still in the tree, so this round actually removed them.) **The live design authority is now `fitness-ecosystem/docs/DESIGN_DECISIONS_2026-11-07.md`**: competitive analysis, current diagnosis, 12 interface invariants, screen decisions, P0/P1/P2, acceptance criteria and the open owner gates. Research, architecture, product, testing, MCP, decisions, handoffs, screenshots and `docs/reference/` were kept on purpose; `plan_optimizacion_ecosistema.md`, `PLAN_CSV_SQLITE_CLI.md` and `plan_ejecucion_llm_coach_qwen.md` are technical plans, not UI specs. BodyLab stays frozen.
 
 ## Agent session handoff (required)
 
@@ -115,7 +163,7 @@ Verified 2026-10-05 (g): **los cuatro jobs de `.github/workflows/ci.yml` reprodu
 
 ## Reference material & audits (2026-09-29 c)
 
-- **`fitness-ecosystem/docs/reference/` is gitignored on purpose**: it holds screenshots and exports of _other_ training apps, kept locally to study interface patterns. Never commit, ship or redistribute anything in it — the conclusions are what ships, as prose in `docs/REDESIGN_STORM.md` and `docs/EXERCISE_DATA_AUDIT.md`.
+- **`fitness-ecosystem/docs/reference/` is gitignored on purpose**: it holds screenshots and exports of _other_ training apps, kept locally to study interface patterns. Never commit, ship or redistribute anything in it — the conclusions are what ships, as prose in `docs/DESIGN_DECISIONS_2026-11-07.md` and `docs/EXERCISE_DATA_AUDIT.md`.
 - **`docs/ieee/` holds the two professional technical reports** (`bodylab.tex`, `traininglab.tex`), written in IEEE conference format in Spanish with English identifiers, and their committed PDFs. Rebuild with **`node scripts/build-ieee-docs.mjs [--check]`**: the engine is _tectonic_, a portable executable looked up in the gitignored `.tools/tectonic/` first (no install, no admin rights, packages fetched on demand). The build reports `Overfull \hbox` counts — a non-zero count is a cosmetic regression, zero is the expected state.
 - **`node scripts/audit-exercise-coverage.mjs [sheet.xlsx] [--json]`** is the zero-dependency audit that reads a third-party `.xlsx` (its own zip reader, no new deps) and compares it with the **real** catalog loaded through the web app's Vite (so the `@fitness/*` aliases resolve exactly like in the app). It reports catalog health, per-muscle coverage and the exercises we lack; re-run it whenever the sheet changes. It is the guard for "no exercise without a primary muscle / no orphan media manifest entry".
 - **`pnpm audit:css`** (`scripts/css-class-audit.mjs` + `css-class-audit-lib.mjs`) compares the classes the components ask for with the ones TrainingLab's stylesheet defines, in **four** directions — used but undefined (always a defect, no allowlist), defined but unused (`UNUSED_ALLOWLIST`, each entry with its reason, and `staleAllowlistEntries()` fails the day one comes back to life), named only inside a `:has(…)`/`:not(…)` argument, and stale allowlist entries. Exit 1 on any finding; `tests/training/test_css_class_audit.test.ts` runs the CLI over the real app inside the root suite, so CI already gates it. Nothing else can catch this: TypeScript cannot see a stylesheet, the linter does not read class strings, and no test mounts these screens.

@@ -43,6 +43,9 @@ import {
 } from "@fitness/bodylab-training";
 import { isV2Payload, type ImportPayload } from "../lib/adapter";
 import { localDayKey, todayKey } from "../lib/day";
+import { uid } from "../lib/uid";
+import { unassignedTodaySets } from "../lib/session-identity";
+import { alignWeekToToday } from "../lib/week-today";
 import {
   SET_UNDO_MS,
   setEditDiff,
@@ -66,15 +69,14 @@ import {
 } from "../lib/plan";
 import type { ProgressionAdvice } from "../lib/progression";
 import { progressionVerdictTool } from "../lib/coach-tools";
+import { buildCoachBrief } from "../lib/coach-brief";
 import {
   TOOL_SPECS,
-  buildSystemPrompt,
-  buildUserRequest,
-  chatWithTools,
   validateProposal,
   evaluateBiomechanicsAndFatigue,
-  type ChatMessage,
+  painVetoesFor,
 } from "../lib/llm";
+import { runCoach } from "../lib/coach-run";
 import {
   deleteSession,
   deleteSessionsMany,
@@ -226,6 +228,22 @@ interface Celebration {
   detail: string;
 }
 
+/**
+ * What happened to a proposal, whatever transport carried it (local model, an
+ * agent's `propose_plan` action, or a pasted answer).
+ */
+export interface CoachApplyResult {
+  ok: boolean;
+  /** Readable rejections, straight from `validateProposal`. */
+  errors: string[];
+  /** Slots the rules accepted (0 when it was refused). */
+  slots: number;
+  /** What the builder's own model estimates, rest included. */
+  minutes: number;
+  /** Set when the plan was applied: who to credit in the banner. */
+  source?: "local" | "agent" | "paste";
+}
+
 const NEUTRAL: Readiness = { energy: 3, motivation: 3, soreness: 3 };
 
 /** A finite number out of an untyped MCP payload, else `null`. */
@@ -275,6 +293,14 @@ export interface TrainingLabStore {
   coachResult: CoachResult | null;
   coachBusy: boolean;
   coachRows: PlannedRow[] | null;
+  /**
+   * The request the owner hands to an agent (Freebuff over MCP, or any chat).
+   * Built from the same context the local coach receives, so both transports
+   * ask the same question (2026-10-24).
+   */
+  coachBrief: string;
+  /** Validate + apply a proposal. The single path every transport shares. */
+  applyCoachProposal: (raw: unknown) => CoachApplyResult;
   syncing: boolean;
   sharedError: string | null;
   loadError: string | null;
@@ -720,7 +746,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const celebrate = useCallback(
     (cue: CueKind, title: string, detail: string) => {
       playCue(cue);
-      setCelebration({ id: crypto.randomUUID(), cue, title, detail });
+      setCelebration({ id: uid(), cue, title, detail });
     },
     [],
   );
@@ -1227,10 +1253,14 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   // drives the planner unless he explicitly picks another focus in the bar
   // (a non-empty `dayFocus` always wins — his live choice beats his weekly one).
   const weekOverrides = settings?.weekOverrides;
+  const todayIndex = (new Date().getDay() + 6) % 7;
   const customFocus: MuscleFamily[] = useMemo(() => {
-    const o = weekOverrides?.[(new Date().getDay() + 6) % 7];
+    const o = weekOverrides?.[todayIndex];
     return o && o.kind === "train" ? o.families : [];
-  }, [weekOverrides]);
+  }, [weekOverrides, todayIndex]);
+  // An authored rest day is a real decision: Hoy must not offer a session that
+  // Semana says does not exist.
+  const todayIsRest = weekOverrides?.[todayIndex]?.kind === "rest";
 
   const plan: TodayPlan | null = useMemo(() => {
     if (!settings) return null;
@@ -1267,8 +1297,6 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    */
   const weekPlan: WeekPlan | null = useMemo(() => {
     if (!settings) return null;
-    const jsDay = new Date().getDay();
-    const todayIndex = (jsDay + 6) % 7;
     const auto = buildWeekPlan({
       inventory: settings.inventory,
       readiness,
@@ -1291,12 +1319,6 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     // weekSeed only forces a recompute; it is not read inside on purpose.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings, readiness, logStats, payload, weekSeed]);
-
-  /** Estimated stress of the merged week (auto rows + his authored days). */
-  const weekStress: WeekStress | null = useMemo(
-    () => (weekPlan ? computeWeekStress(weekPlan.rows) : null),
-    [weekPlan],
-  );
 
   /**
    * Deterministic rows with the user's swaps, the coach's plan, the rep
@@ -1340,6 +1362,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       return aside(ordered(withAdded(applyRepOverrides(settings!, coachRows))));
     }
     if (!plan || !settings) return [];
+    if (todayIsRest) return [];
     const swapped: PlannedRow[] = plan.rows.map((row) => {
       const to = overrides[row.exerciseId];
       if (!to) return row;
@@ -1360,7 +1383,25 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       };
     });
     return aside(ordered(withAdded(applyRepOverrides(settings, swapped))));
-  }, [plan, overrides, coachRows, settings, todayPrefix, addedRows]);
+  }, [plan, overrides, coachRows, settings, todayPrefix, addedRows, todayIsRest]);
+
+  /**
+   * Semana's current day is a projection of Hoy, not a second opinion. The
+   * other six days remain the weekly generator's plan.
+   */
+  const weekPlanToday: WeekPlan | null = useMemo(
+    () =>
+      weekPlan && settings
+        ? alignWeekToToday(weekPlan, rows, settings.language)
+        : weekPlan,
+    [weekPlan, rows, settings],
+  );
+
+  /** Estimated stress of the merged week (auto rows + his authored days). */
+  const weekStress: WeekStress | null = useMemo(
+    () => (weekPlanToday ? computeWeekStress(weekPlanToday.rows) : null),
+    [weekPlanToday],
+  );
 
   /**
    * What the user set aside today (mockup 03's *Saltar* / *Posponer*): ids only,
@@ -1531,7 +1572,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       },
     ): TLSet => {
       const set: TLSet = {
-        id: crypto.randomUUID(),
+        id: uid(),
         exerciseId: row.exerciseId,
         dayId: `day-${todayPrefix}`,
         timestamp: opts?.occurredAt ?? new Date().toISOString(),
@@ -1753,11 +1794,20 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    */
   const finishSession = useCallback(
     (extra: readonly TLSet[] = []): TLSession | null => {
-      const logged = extra.length > 0 ? [...todaySets, ...extra] : todaySets;
+      // A set belongs to exactly one session. After a close, today's log still
+      // holds the sets (the next session continues the day), but they are
+      // already owned by a session and must not be enclosed a second time.
+      const logged = unassignedTodaySets(
+        todaySets,
+        sessions,
+        todayPrefix,
+        extra,
+      );
+      setRest(null);
       if (rows.length === 0 || logged.length === 0) return null;
       const todaySetIds = logged.map((s) => s.id);
       const session: TLSession = {
-        id: crypto.randomUUID(),
+        id: uid(),
         dayId: `day-${todayPrefix}`,
         startedAt: logged[0]!.timestamp,
         completedAt: new Date().toISOString(),
@@ -1769,9 +1819,10 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       setSessions((prev) => [...prev, session]);
       setFinished(session);
 
-      const volume =
-        todayVolume +
-        extra.reduce((acc, s) => acc + (s.weight ?? 0) * (s.reps ?? 0), 0);
+      const volume = logged.reduce(
+        (acc, s) => acc + (s.weight ?? 0) * (s.reps ?? 0),
+        0,
+      );
 
       // The bell closes the session — the one cue that also fires when the user
       // muted nothing else, because "you are done" is the whole point.
@@ -1825,7 +1876,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     [
       rows,
       todaySets,
-      todayVolume,
+      sessions,
       todayPrefix,
       readiness,
       settings,
@@ -1922,7 +1973,14 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         repsMax,
         rir,
         restSec,
-        minutes: entry.traits.setupMin + 4,
+        /*
+         * The planner's own cost formula (45 s of work per set + its rest, plus
+         * setup). A flat `+4` under-reported every row with more than one set,
+         * so a routine poured into today said ~30 min on its card and ~12 in the
+         * day header — the exact kind of two-answers-for-one-workout the owner
+         * called out. Same numbers as `core/training/src/session.ts`.
+         */
+        minutes: entry.traits.setupMin + sets * (0.75 + restSec / 60),
         reasons: [],
         jointStress: entry.traits.jointStress,
         spineLoad: entry.traits.spineLoad,
@@ -2194,7 +2252,10 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearCoach = useCallback(() => {
+    // The receipt goes with the rows: a banner claiming the agent's session is
+    // on screen after it was dropped would be the same lie in reverse.
     setCoachRows(null);
+    setCoachResult(null);
     setOverrides({});
   }, []);
 
@@ -2335,6 +2396,12 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
           // `regenerate_week`'s undo: the same seed draws the same week.
           setWeekSeed(undo.before);
           break;
+        case "plan_override":
+          // `propose_plan`'s undo: the agent's session was never written to
+          // disk, so dropping it *is* the restore — the deterministic plan the
+          // store derives comes back on its own.
+          clearCoach();
+          break;
       }
     },
     [
@@ -2348,7 +2415,116 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       setDayFocus,
       restoreSession,
       setSetTime,
+      clearCoach,
     ],
+  );
+
+  /**
+   * Validate and apply a proposed session — **the one path every transport
+   * shares** (2026-10-24).
+   *
+   * Before this, only the local model could reach `validateProposal`; an agent
+   * answering over MCP and a human pasting a JSON had no door. Factoring it out
+   * is what keeps the three from drifting: same rules, same rejection reasons,
+   * same rows. The rules themselves stay in `lib/llm.ts` — this function only
+   * supplies the app's live facts and maps an accepted slot to a plan row.
+   */
+  const applyCoachProposal = useCallback(
+    (
+      raw: unknown,
+      /**
+       * Patterns today's pain report forbids. Only the local coach has one —
+       * the model reported them itself in `report_fatigue_and_query_safe` — so
+       * a pasted or MCP answer keeps the plain rule set (2026-10-30).
+       */
+      vetoedPatterns: string[] = [],
+    ): CoachApplyResult => {
+      if (!settings || !plan) {
+        return { ok: false, errors: [], slots: 0, minutes: 0 };
+      }
+      const check = validateProposal(raw, {
+        usableIds: new Set(plan.usable.map((u) => u.exercise.id)),
+        timeBudgetMin: settings.timeBudgetMin,
+        primaryFamilyOf: (id) =>
+          plan.usable.find((u) => u.exercise.id === id)?.primary ?? id,
+        setupMinOf: (id) =>
+          plan.usable.find((u) => u.exercise.id === id)?.traits.setupMin ?? 0,
+        familiesOf: (id) =>
+          plan.usable.find((u) => u.exercise.id === id)?.families ?? [],
+        fatiguedFamilies: [
+          ...new Set([...plan.fatigue?.fatigued ?? [], ...soreFamilies]),
+        ],
+        vetoedPatterns,
+        patternOf: (id) =>
+          plan.usable.find((u) => u.exercise.id === id)?.traits.pattern ?? "",
+        /*
+         * The day's focus may take two exercises of the same family (2026-10-30).
+         * The same expression the planner uses, so the coach and the engine
+         * agree on which day this is.
+         */
+        focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
+      });
+
+      if (!check.ok) {
+        setCoachResult({
+          ok: false,
+          content: "",
+          toolCalls: [],
+          errors: check.errors,
+        });
+        return {
+          ok: false,
+          errors: check.errors,
+          slots: 0,
+          minutes: check.estimatedMinutes,
+        };
+      }
+
+      const summary =
+        typeof (raw as { summary?: unknown } | null)?.summary === "string"
+          ? String((raw as { summary?: string }).summary)
+          : "";
+      const proposed: PlannedRow[] = check.slots.map((slot) => {
+        const entry = plan.usable.find((u) => u.exercise.id === slot.exerciseId)!;
+        return {
+          exerciseId: entry.exercise.id,
+          name: entry.exercise.name,
+          pattern: entry.traits.pattern,
+          families: entry.families,
+          progression: entry.traits.progression,
+          loadType: entry.traits.loadType,
+          unilateral: entry.traits.unilateral,
+          sets: slot.sets,
+          repsMin: slot.repsMin,
+          repsMax: slot.repsMax,
+          rir: 2,
+          restSec: slot.restSec,
+          minutes:
+            Math.round(
+              (entry.traits.setupMin + (slot.sets * (45 + slot.restSec)) / 60) *
+                10,
+            ) / 10,
+          reasons: [{ code: "coach", note: slot.note ?? summary }],
+          jointStress: entry.traits.jointStress,
+          spineLoad: entry.traits.spineLoad,
+        };
+      });
+      setCoachRows(proposed);
+      setCoachResult({
+        ok: true,
+        content: summary,
+        toolCalls: [],
+        applied: { summary, slots: proposed.length },
+        errors: [],
+      });
+      return {
+        ok: true,
+        errors: [],
+        slots: proposed.length,
+        minutes: check.estimatedMinutes,
+      };
+    },
+    [settings, plan, soreFamilies, dayFocus, customFocus],
   );
 
   /** Take the pending batch, apply what validates, answer with receipts. */
@@ -2387,6 +2563,17 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         })),
         model,
         weekSeed,
+        // `propose_plan` draws from the same usable list the planner used, and
+        // must respect the same recovery window / sore flags.
+        usable: (plan?.usable ?? []).map((entry) => ({
+          id: entry.exercise.id,
+          primary: entry.primary,
+          families: entry.families,
+          setupMin: entry.traits.setupMin,
+        })),
+        fatiguedFamilies: [
+          ...new Set([...(plan?.fatigue?.fatigued ?? []), ...soreFamilies]),
+        ],
       };
       /** Settings written by this batch: N actions collapse into ONE write. */
       let settingsNext: TLSettingsData | null = null;
@@ -2434,6 +2621,33 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
               mcpLedgerRef.current = marked;
               setMcpLedger(marked);
               void saveMcpLedger(marked);
+              return { ok: true };
+            }
+
+            case "propose_plan": {
+              const proposal = validation.proposal;
+              if (!proposal) {
+                return {
+                  ok: false,
+                  rule: "proposal_empty",
+                  detail: {
+                    en: "The proposal did not survive the rules.",
+                    es: "La propuesta no pasó las reglas.",
+                  },
+                };
+              }
+              // Same function the local model and a pasted answer call.
+              const applied = applyCoachProposal(proposal);
+              if (!applied.ok) {
+                return {
+                  ok: false,
+                  rule: "proposal_rejected",
+                  detail: {
+                    en: `The plan changed between validation and apply: ${applied.errors.join(" ")}`,
+                    es: `El plan cambió entre validar y aplicar: ${applied.errors.join(" ")}`,
+                  },
+                };
+              }
               return { ok: true };
             }
 
@@ -2731,6 +2945,11 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     applyRoutineToday,
     resetModel,
     regenerateWeek,
+    // `propose_plan` applies through the coach's own path, so a new plan or a
+    // new gear list must re-arm this callback (2026-10-24).
+    applyCoachProposal,
+    plan,
+    soreFamilies,
   ]);
 
   // The poller always sees the latest callbacks without re-arming its timer on
@@ -2828,12 +3047,46 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     ].join("\n");
   }, [plan, settings, rows, logStats, sets, readiness]);
 
+  /**
+   * The request an agent has to answer. Built from the *same* CSV the local
+   * coach gets, plus the contract the app accepts — so "copy the brief, paste
+   * the answer" and "ask the local model" are the same question about the same
+   * numbers (2026-10-24).
+   */
+  const coachBrief = useMemo(() => {
+    if (!plan || !settings) return "";
+    return buildCoachBrief({
+      contextCsv,
+      slots: rows.map((row) => ({
+        exerciseId: row.exerciseId,
+        sets: row.sets,
+        repsMin: row.repsMin,
+        repsMax: row.repsMax,
+        restSec: row.restSec,
+      })),
+      usableIds: plan.usable.map((u) => u.exercise.id),
+      timeBudgetMin: settings.timeBudgetMin,
+      language: getLanguage(),
+      // The MCP channel is a desktop file bridge; in a browser there is no host
+      // to write the inbox, so the brief does not promise it.
+      mcpReachable: isDesktopHost(),
+    });
+  }, [plan, settings, contextCsv, rows]);
+
   const askCoach = useCallback(
     async (request: string) => {
       if (!settings || !plan) return;
       setCoachBusy(true);
       setCoachResult(null);
-      const usableIds = new Set(plan.usable.map((u) => u.exercise.id));
+      /**
+       * Patterns this run's own pain report vetoed. Held per call, not in
+       * state: the veto belongs to the question being answered, and a stale
+       * one from yesterday's sore shoulder must not silently shrink today's
+       * session (2026-10-30).
+       */
+      // From the request's own words, and only when it reports trouble: merely
+      // naming the muscle you want to train is not a pain report (2026-10-30).
+      let runVetoes: string[] = painVetoesFor(request);
       const executor = async (name: string, args: Record<string, unknown>) => {
         switch (name) {
           case "get_context":
@@ -2926,6 +3179,12 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
               ? (rawFocus as string[]).map((f) => f.toLowerCase())
               : [];
             const constraint = evaluateBiomechanicsAndFatigue(painAreas);
+            // The report can only ADD vetoes, never clear the ones the request
+            // already implied (`evaluateBiomechanicsAndFatigue` returns an empty
+            // list for "no specific pair" — that must not undo the request).
+            runVetoes = [
+              ...new Set([...runVetoes, ...constraint.contraindicatedPatterns]),
+            ];
             const safe = plan.usable.filter((u) => {
               if (
                 constraint.contraindicatedPatterns.includes(u.traits.pattern)
@@ -2992,102 +3251,51 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
             };
           }
           case "propose_session": {
-            const check = validateProposal(args, {
-              usableIds,
-              timeBudgetMin: settings.timeBudgetMin,
-              primaryFamilyOf: (id) =>
-                plan.usable.find((u) => u.exercise.id === id)?.primary ?? id,
-              setupMinOf: (id) =>
-                plan.usable.find((u) => u.exercise.id === id)?.traits
-                  .setupMin ?? 0,
-              familiesOf: (id) =>
-                plan.usable.find((u) => u.exercise.id === id)?.families ?? [],
-              fatiguedFamilies: [
-                ...new Set([
-                  ...(plan.fatigue?.fatigued ?? []),
-                  ...soreFamilies,
-                ]),
-              ],
-            });
-            if (!check.ok) {
-              setCoachResult({
-                ok: false,
-                content: "",
-                toolCalls: [],
-                errors: check.errors,
-              });
-              return { accepted: false, errors: check.errors };
-            }
-            const summary =
-              typeof (args as { summary?: unknown }).summary === "string"
-                ? String((args as { summary?: unknown }).summary)
-                : "";
-            const proposed: PlannedRow[] = check.slots.map((slot) => {
-              const entry = plan.usable.find(
-                (u) => u.exercise.id === slot.exerciseId,
-              )!;
-              return {
-                exerciseId: entry.exercise.id,
-                name: entry.exercise.name,
-                pattern: entry.traits.pattern,
-                families: entry.families,
-                progression: entry.traits.progression,
-                loadType: entry.traits.loadType,
-                unilateral: entry.traits.unilateral,
-                sets: slot.sets,
-                repsMin: slot.repsMin,
-                repsMax: slot.repsMax,
-                rir: 2,
-                restSec: slot.restSec,
-                minutes:
-                  Math.round(
-                    (entry.traits.setupMin +
-                      (slot.sets * (45 + slot.restSec)) / 60) *
-                      10,
-                  ) / 10,
-                reasons: [{ code: "coach", note: slot.note ?? summary }],
-                jointStress: entry.traits.jointStress,
-                spineLoad: entry.traits.spineLoad,
-              };
-            });
-            setCoachRows(proposed);
-            setCoachResult({
-              ok: true,
-              content: summary,
-              toolCalls: [],
-              applied: { summary, slots: proposed.length },
-              errors: [],
-            });
-            return {
-              accepted: true,
-              slots: proposed.length,
-              estimatedMinutes: check.estimatedMinutes,
-            };
+            // Same function the MCP path and a pasted answer call: one rule set,
+            // one set of rows, one rejection message (2026-10-24) — plus the
+            // pain vetoes this very run reported (2026-10-30).
+            const applied = applyCoachProposal(args, runVetoes);
+            return applied.ok
+              ? {
+                  accepted: true,
+                  slots: applied.slots,
+                  estimatedMinutes: applied.minutes,
+                }
+              : { accepted: false, errors: applied.errors };
           }
           default:
             return { error: `unknown tool ${name}` };
         }
       };
 
-      const messages: ChatMessage[] = [
-        { role: "system" as const, content: buildSystemPrompt() },
-        {
-          role: "user" as const,
-          content: buildUserRequest(request, contextCsv),
-        },
-      ];
-      const result = await chatWithTools({
+      /*
+       * Two phases, one contract (2026-10-30): exploration with read-only
+       * tools, then a narrow commit that can only end in `propose_session`.
+       * A single conversation made the local model loop forever without ever
+       * proposing anything — see `lib/coach-run.ts` for the measurement.
+       */
+      const result = await runCoach({
         settings: settings.llm,
-        messages,
+        request,
+        contextCsv,
         tools: TOOL_SPECS,
         execute: executor,
+        usable: plan.usable.map((u) => ({
+          id: u.exercise.id,
+          family: u.families[0] ?? "unknown",
+          pattern: u.traits.pattern,
+        })),
+        vetoedPatterns: runVetoes,
+        focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
       });
       setCoachResult((prev) => ({
         ok: result.ok,
         content: result.content || prev?.content || "",
         toolCalls: result.toolCalls,
-        applied: prev?.applied,
-        errors: result.error ? [result.error] : (prev?.errors ?? []),
+        applied: result.applied
+          ? { summary: result.applied.summary || result.content, slots: result.applied.slots }
+          : prev?.applied,
+        errors: result.errors,
       }));
       setCoachBusy(false);
     },
@@ -3100,6 +3308,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       sets,
       contextCsv,
       progressionFor,
+      dayFocus,
+      customFocus,
     ],
   );
 
@@ -3123,7 +3333,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     dayFocus,
     loading: !settings || !plan,
     plan,
-    weekPlan,
+    weekPlan: weekPlanToday,
     weekStress,
     rows,
     todaySets,
@@ -3134,6 +3344,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     coachResult,
     coachBusy,
     coachRows,
+    coachBrief,
+    applyCoachProposal,
     syncing,
     sharedError,
     loadError,

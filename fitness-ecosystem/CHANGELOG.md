@@ -5,7 +5,162 @@ All notable changes to BodyLab will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-13 — Sustitutos biomecánicos, hipertrofia científica (SFR), inferencia de carga y adaptaciones dinámicas
+
+### Added — motor de sustitutos biomecánicos y ratio estímulo-fatiga (SFR)
+- **`lib/exercise-substitutes.ts`:** Cálculo del ratio estímulo-fatiga `SFR = (hipertrofia * 2.5) / (jointStress + spineLoad)`.
+- **Anotaciones científicas (`BIOMECHANICAL_ANNOTATIONS`):** Identificación de hipertrofia mediada por estiramiento (Maeo et al. 2021, 2022: curl femoral sentado sobre tumbado, extensiones de tríceps sobre la cabeza, curls inclinados, déficit), variantes protectoras de espalda baja y articulaciones (remo con apoyo de pecho, presses con mancuernas), y soluciones anatómicas personalizadas (sentadilla frontal, goblet, hack y prensa para personas con fémures largos).
+- **Insignias e información en la sesión en vivo:** El cajón de sustitución en `ZenSession.tsx` muestra insignias de SFR, "Estiramiento óptimo", "Protege lumbar" y notas anatómicas directas.
+
+### Added — inferencia de carga cruzada (Cross-Exercise Load Transfer)
+- **`lib/cross-progression.ts`:** Detección de 1RM previo en ejercicios hermanos y proyección biomecánica de carga inicial para ejercicios que el usuario realiza por primera vez (`DIRECT_TRANSFER_RATIOS`: banca a press inclinado mancuernas 0.32x, sentadilla a prensa 1.65x, etc.).
+- **Integración en `suggestLoadFor`:** En lugar de devolver campo vacío o 0 kg, genera una sugerencia con peso ajustado al incremento del equipo y explicación bilingüe transparente.
+
+### Added — adaptaciones dinámicas intra-sesión
+- **`lib/set-proposal.ts`:** Soporte dinámico para calistenia y peso corporal cuando las repeticiones caen por debajo del rango de hipertrofia (sugerencia de excéntricas lentas 4-5s o asistencia con banda elástica).
+- **Ritmo de sesión y Myo-reps:** Detección de tiempo de sesión transcurrido (> 80% del presupuesto de tiempo) con recomendación automática de Myo-reps para ahorrar tiempo preservando el estímulo hipertrófico.
+
+## [Unreleased] - 2026-10-30 (c) — Día enfocado y servidor que se encuentra solo
+
+### Changed — dos ejercicios de la familia enfocada
+
+- `validateProposal` acepta **dos** ranuras de la familia del día (una para el resto) y sigue
+  aplicando la ventana de recuperación. El **patrón** sigue siendo uno por sesión, con una
+  excepción medida: el segundo ejercicio de la familia enfocada puede repetirlo, porque **15 de
+  los 16 ejercicios de pecho del catálogo son `horizontal_push`** y sin ella un día de pecho era
+  imposible. Tres ya no pasan.
+- El mensaje de rechazo nombra los ids que chocan y el tope (`keep at most 2`), traducido al
+  español en `lib/coach-errors.ts`.
+
+### Fixed — «hoy quiero entrenar pecho» vetaba el pecho
+
+- Los vetos se derivaban del texto de la petición y cualquier mención de «pecho» o «hombro» se
+  leía como dolor, así que el coach rechazaba exactamente el día pedido. `painVetoesFor()` exige
+  ahora una palabra de molestia y descarta «descansado».
+
+### Added — el servidor local se encuentra solo
+
+- `detectLocalServer()` sondea **seis puertos en paralelo** (8080, 9931, 1234, 11434, 1337,
+  8000) y rellena URL y modelo. El panel del coach lo lanza al abrirse cuando el modelo sigue en
+  el marcador `local-model`, y ofrece «Buscar mi servidor» para repetirlo (2 007 ms medidos).
+- El digest de la petición de cierre se recorta (32 ids priorizados, notas de 500 caracteres):
+  «hoy pecho» pasó de **242 s y timeout** a **63,6 s** con el mismo modelo.
+
+## [Unreleased] - 2026-10-30 (b) — El coach local, en dos fases
+
+### Changed — el LLM local ya puede cerrar una sesión
+
+- **Medido sobre Qwen3.5-4B (llama.cpp, :9931), no supuesto:** con una sola conversación el
+  modelo explora sin parar (`get_context` → `get_deterministic_plan` →
+  `report_fatigue_and_query_safe` → `list_available_exercises` ×2) y muere por
+  `finish_reason: length` sin proponer nada.
+- **`lib/coach-run.ts` (nuevo):** exploración acotada con herramientas de solo lectura —donde
+  `propose_session` **no puede** tocar el plan— y después una petición nueva cuya única
+  herramienta es `propose_session`, con `usable_exercises(id:family)`, `vetoed_patterns` y las
+  notas de la fase 1. Un rechazo se devuelve nombrando los ids que chocan y se reintenta.
+- **`lib/llm.ts`:** `chat_template_kwargs: {enable_thinking:false}` (con reintento sin el campo
+  si el servidor responde 400), `finalTool`/`finalAfter`, rechazo de una herramienta fuera de
+  alcance en vez de ejecutarla, y «contestó en prosa» como fallo con motivo — nunca como éxito
+  sin filas.
+- **Discrepancia cerrada:** `validateProposal` acepta `vetoedPatterns`/`patternOf`, y el día
+  vetaba empujes por hombro cansado mientras una propuesta de agente los metía igual. Los vetos
+  se derivan de la propia petición con `evaluateBiomechanicsAndFatigue`; el reporte del modelo
+  solo puede añadir.
+- **En la app:** «piernas y core, 40 min» → plan de Hoy reemplazado en 22,9 s, 0 errores de
+  página y consola (Playwright contra el servidor real).
+
+## [Unreleased] - 2026-10-30 (TrainingLab: rutinas desde el historial + continuidad de carga)
+
+### Added — «Desde mi historial»: el split que ya entrenas, con su continuidad
+
+- **`lib/routine-continuity.ts`** (nuevo, puro): `suggestedRoutines(sets, sessions)` agrupa
+  las sesiones registradas por su conjunto de ejercicios y se queda con los grupos
+  **repetidos al menos dos veces** —una sesión es un día, dos son una forma—, tomando la
+  prescripción de la sesión **más reciente** del grupo (series y rango de repeticiones tal
+  como los hizo). `routineContinuity(routine, sets)` devuelve, por ejercicio, el último día
+  trabajado, los días transcurridos y la carga que lo cerró (`67,5 kg × 10`).
+- El peso **no se guarda en la rutina**: se lee del registro en cada render. Una plantilla
+  con su propio `targetWeightKg` sería una segunda fuente de verdad y mentiría el día que
+  subieras de carga o cambiaras de equipamiento.
+- Pantalla Rutinas: botón *Desde mi historial* (en el estado vacío y sobre la rejilla), línea
+  de continuidad en cada tarjeta (`Última vez hace 1 d · 6 de 6 con historial`) y, en la
+  ficha, la última vez de **cada** ejercicio con su carga. Con el registro real del dueño
+  (562 series, 30 sesiones) sale su split: Dorsales · Bíceps, Cuádriceps · Glúteos,
+  Hombros · Tríceps.
+- `tests/training/test_routine_continuity.test.ts` (11 tests): la carga citada es la que se
+  levantó, el rampa de calentamiento no cuenta, un ejercicio desconocido no se propone y una
+  sesión única no genera rutina.
+
+### Fixed — dos relojes para el mismo entrenamiento
+
+- La fila añadida a mano costaba `setup + 4` minutos fijos, así que volcar una rutina decía
+  ~50 min en su tarjeta y ~30 en la cabecera del día. Ahora usa la fórmula del motor
+  (`setup + series × (45 s + descanso)`), la misma de `core/training/src/session.ts`, y
+  `routineTotals` usa esa misma constante en vez de 30 s por serie.
+
+### Changed — el archivo de BodyLab → TrainingLab, a la vista
+
+- Ajustes abre la sección *Datos: BodyLab* **si aún no hay export cargado** y nombra los
+  pasos exactos (`BodyLab → Datos → Exportar → TrainingLab Link`, archivo
+  `bodylab-traininglab-AAAA-MM-DD.json`, carpeta de Descargas). BodyLab, en su tarjeta de
+  exportación, dice dónde se carga.
+
 ## [Unreleased] - 2026-10-24 (TrainingLab: weekly templates + text-overflow audit at 13 widths)
+
+### Added — the coach page (`#/coach`): one contract, three transports
+
+- **`screens/CoachScreen.tsx`** is the place where the *same* question can be asked of a
+  different brain. It owns no rules: **1 · ask** prints the brief, **2 · answer** takes the
+  JSON back, and the two side cards say what the agent would be replacing (today's
+  deterministic plan) and where the other two transports live. Reachable from Hoy's
+  *Coach* button; `#/coach`, `#/entrenador` and `#/plan` all resolve to it.
+- **`lib/coach-brief.ts`** (`buildCoachBrief` + `parseCoachAnswer`) writes the request an
+  agent has to answer — the **same `contextCsv` the local model gets**, the app's hard rules
+  in the order the validation checks them, the exact `slots` contract, the usable ids and
+  today's plan — and reads the reply back. The parser is tolerant about *packaging* (a
+  fence, a sentence before the JSON, a `{proposal:{…}}` envelope) and strict about
+  *content*: it returns the object untouched, so `validateProposal` stays the only judge.
+- **`propose_session` over MCP** (tool 36, `docs/MCP_TOOL_SURFACE.md` §14): the write half
+  of "MCP as the model". An agent reaches the same door as the local model and the pasted
+  answer — `applyCoachProposal` in `app/store.tsx` — which validates gear legality, the time
+  budget, **one primary family** and the recovery window before a row changes, and whose
+  undo is `plan_override` (drop it; the deterministic plan is back). `slots: []` is a legal
+  answer (the model declining) and is recorded, not applied.
+- The brief only promises MCP where an inbox exists: the browser build has no host file, so
+  it does not tell an agent to "send `propose_plan`" there.
+- `tests/training/test_coach_brief.test.ts` (23 tests): the budget the brief prints is the
+  budget the validator enforces, the contract keys, the ids, the CSV, the MCP paragraph on
+  and off, ES/EN, and the seam — a parsed answer handed to `validateProposal` is accepted
+  when legal, refused when it invents an exercise, and treated as a refusal when empty.
+
+### Fixed — one slot, two spellings (the brief's `exerciseId` vs the tool's `exercise_id`)
+
+- The brief on `#/coach` prints the app's own contract (`exerciseId`, `repsMin`, …) while the
+  MCP schema advertises snake_case, so an agent that answered the brief verbatim had every
+  slot mapped to `exerciseId: ""` and refused as *"not available with the current
+  equipment"*. `propose_session` now reads both spellings at the boundary; the rules still
+  judge the content. Pinned by two tests that queue an action in a sandbox `APPDATA` and read
+  back what the app would have received.
+- **The brief named a tool that does not exist.** It said to answer with the `propose_plan`
+  action — the store's internal action id — while the tool an agent actually has is
+  `propose_session`. The brief and the page's MCP card now name the tool.
+
+### Fixed — the coach page's own polish
+
+- **`parseCoachAnswer` reported the wrong failure for a truncated answer.** A cut-off paste
+  has an opening brace and no closer, and the parser called it `no_json` — sending the owner
+  to look for a JSON that was right in front of them. The tail is now handed to
+  `JSON.parse`, so it reports broken JSON, and the whole text is parsed before the
+  first-object fallback, so `[1,2]` says "not an object" instead of "no JSON".
+- **The coach page printed a stored fact as UI copy** (`2026-10-29`); it now prints `jue, 29
+  oct`, the same label Hoy's date pill uses.
+- **The rejection was in English.** A refused proposal printed `"x" is not available with the
+  current equipment` in a Spanish UI. `lib/coach-errors.ts` translates the validator's rules at
+  the view boundary — keeping the id, the family and both time numbers, showing an unknown rule
+  untouched rather than swallowing it, and leaving English alone so the two languages cannot
+  drift. The messages stay English in `lib/llm.ts`, where a local model reads them.
+- `tests/training/test_coach_errors.test.ts` (9 tests) pins every rule, the numbers, the unknown
+  case and the fact that `en` is a pass-through.
 
 ### Added — weekly templates (PPL · Upper/Lower · Full body)
 

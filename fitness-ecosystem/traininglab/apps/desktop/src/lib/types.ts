@@ -103,6 +103,12 @@ export interface LlmSettings {
   apiKey: string;
   /** Seconds before giving up on a local server. */
   timeoutSec: number;
+  /**
+   * Token ceiling per answer (2026-10-30). Optional on purpose: every stored
+   * setting from before this field exists simply gets the lib's default, and a
+   * hand-edited backup cannot break the request.
+   */
+  maxTokens?: number;
 }
 
 export const DEFAULT_LLM: LlmSettings = {
@@ -111,6 +117,7 @@ export const DEFAULT_LLM: LlmSettings = {
   model: "local-model",
   apiKey: "",
   timeoutSec: 60,
+  maxTokens: 1024,
 };
 
 export interface TlSoundSettings {

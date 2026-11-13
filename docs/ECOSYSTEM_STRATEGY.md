@@ -3,7 +3,7 @@
 > Documento vivo de dirección de producto. Nace **2026-09-28**, revisado el
 > **2026-09-28** tras la primera sesión de construcción real de TrainingLab.
 > Complementa (no reemplaza) `ROADMAP.md` (ejecución) y
-> `fitness-ecosystem/docs/REDESIGN_STORM.md` (contrato de interfaz de TrainingLab).
+> `fitness-ecosystem/docs/DESIGN_DECISIONS_2026-11-07.md` (contrato de interfaz de TrainingLab).
 > Idioma: español; identificadores de código en inglés.
 
 ---
@@ -306,4 +306,4 @@ premium tech aesthetic, no text.
 ---
 
 _Última actualización: 2026-09-29. Vinculado a `ROADMAP.md` (ejecución) y
-`fitness-ecosystem/docs/REDESIGN_STORM.md` (contrato de interfaz)._
+`fitness-ecosystem/docs/DESIGN_DECISIONS_2026-11-07.md` (contrato de interfaz)._

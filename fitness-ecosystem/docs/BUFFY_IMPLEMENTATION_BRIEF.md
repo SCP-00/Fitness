@@ -61,7 +61,7 @@ Una marca en press, sentadilla o peso muerto mide desempeño de esa tarea; no mi
 
 Antes de implementar:
 
-1. Lee `AGENTS.md`, `knowledge.md`, `ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/PRODUCT_SPEC.md`, `docs/UI_DESIGN.md`, `docs/TRAININGLAB_UI_PLAN.md`, `docs/TESTING.md`, `docs/RESEARCH_IDEALS_BY_SPORT.md` y el final de `docs/AGENT_HANDOFF.md`.
+1. Lee `AGENTS.md`, `knowledge.md`, `ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/PRODUCT_SPEC.md`, `docs/DESIGN_DECISIONS_2026-11-07.md`, `docs/TESTING.md`, `docs/RESEARCH_IDEALS_BY_SPORT.md` y el final de `docs/AGENT_HANDOFF.md`.
 2. Ejecuta `git status --short`, `git diff --stat` y examina los diffs de todo archivo que planeas tocar. Conserva cambios ajenos; no uses reset/checkout para “limpiar”. No crees commit ni push salvo pedido explícito.
 3. Recorre la aplicación actual en los flujos Inicio → iniciar/continuar sesión → registrar → descanso → terminar → Progreso; comprueba Ajustes, biblioteca y persistencia. Registra hallazgos reproducibles con pantalla, tamaño, pasos y resultado esperado/observado.
 4. Obtén una línea base fresca con las pruebas apropiadas. Separa fallo preexistente de regresión; si no puedes correr una suite, di cuál y por qué.
@@ -177,13 +177,13 @@ Haz QA transversal después de cada entrega y arregla los hallazgos reales:
 - Táctil y fatigado: botones principales separados de borrar/salir, etiquetas verbales (“Guardar serie”, “Iniciar descanso”), estados de pulsación y prevención de doble envío. Color siempre duplicado con texto/icono/patrón.
 - A11y: foco visible, orden lógico, nombre accesible, `aria-expanded`/`aria-pressed`/live announcements correctos, contraste AA para texto, modo movimiento reducido y gráficos con tabla/resumen equivalente. El mapa nunca es la única forma de llegar a un dato.
 - Estado de interfaz: carga, guardado, éxito, error, vacío, desconectado, perfil parcial, fuente no compatible. Acciones con feedback inmediato; errores en contexto con recuperación; confirmación para pérdida de datos.
-- Diseño: usa tokens y componentes de `docs/UI_DESIGN.md`; toda cadena nueva pasa por `i18n.ts` (ES/EN), no inventes una paleta, no uses texto diminuto para provenance.
+- Diseño: usa tokens y componentes de `docs/DESIGN_DECISIONS_2026-11-07.md`; toda cadena nueva pasa por `i18n.ts` (ES/EN), no inventes una paleta, no uses texto diminuto para provenance.
 
 No informes “usable probado con usuarios” a partir de tus propias capturas. Distingue auditoría heurística, automatización y prueba con personas; si no hubo usuarios, dilo.
 
 ### Fase 5 — Cierre y versión candidata
 
-1. Actualiza `ROADMAP.md` marcando únicamente lo efectivamente terminado y `docs/TRAININGLAB_UI_PLAN.md`/`docs/UI_DESIGN.md` cuando cambie el contrato o el comportamiento. Mantén `AGENT_HANDOFF.md` append-only.
+1. Actualiza `ROADMAP.md` marcando únicamente lo efectivamente terminado y `docs/DESIGN_DECISIONS_2026-11-07.md` cuando cambie el contrato o el comportamiento. Mantén `AGENT_HANDOFF.md` append-only.
 2. Para mapas, filtros, formularios y errores, añade tests de dominio/componente; para registrar/editar/borrar, importar y persistencia, usa E2E Playwright. Reutiliza la infraestructura del repo; no metas una dependencia nueva sin explicar por qué.
 3. Ejecuta las pruebas focales durante la iteración; antes de entregar, corre los gates relevantes según `docs/TESTING.md` y reporta salida real. Como base: desde `fitness-ecosystem/`, `pnpm test`, `pnpm check`, `pnpm lint`; para app TrainingLab, `cd traininglab/apps/desktop && pnpm build`. No afirmes que el instalador Tauri está probado si no corriste su build/smoke.
 4. Captura y abre imágenes reales del build/código final. Compara los tamaños de PC y móvil, y corrige cualquier overflow, texto cortado, foco tapado o panel estático antes de marcar QA visual.

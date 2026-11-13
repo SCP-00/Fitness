@@ -55,14 +55,12 @@ import { familyLabel, formatReason } from "../lib/format";
 import { getLanguage, t, tInterp } from "../lib/i18n";
 import { exerciseName, type PlannedRow } from "../lib/plan";
 import { ExerciseThumb } from "../features/exercises/ExerciseThumb";
+import { ExercisePicker } from "../features/exercises/ExercisePicker";
 import { MIcons } from "../ui/mockup-icons";
 import { usePointerReorder } from "../ui/pointer-drag";
 
 /** The three projections of the same list (mockup 02's segmented control). */
 type OrderView = "mine" | "gear" | "muscle";
-
-/** How many candidates the "añadir varios" picker shows before the search. */
-const PAGE_SIZE = 24;
 
 /** The page's own prescription presets, in the order the mockup lists them. */
 const REP_PRESETS = [
@@ -98,8 +96,7 @@ export default function TrainingScreen() {
 
   const [view, setView] = useState<OrderView>("mine");
   const [swapFor, setSwapFor] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [search, setSearch] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [rx, setRx] = useState({ sets: 3, reps: 1, rest: 90 });
   const [applied, setApplied] = useState<number | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -152,20 +149,12 @@ export default function TrainingScreen() {
     return out.slice(0, 6);
   }, [rows]);
 
-  /** Candidates for "añadir varios": usable, not already today, matching search. */
+  /** Candidates for "añadir varios": usable and not already in today. */
   const addable = useMemo(() => {
     if (!plan) return [];
     const inPlan = new Set(rows.map((row) => row.exerciseId));
-    const query = search.trim().toLocaleLowerCase();
-    return plan.usable
-      .filter((entry) => !inPlan.has(entry.exercise.id))
-      .filter((entry) => {
-        if (!query) return true;
-        return exerciseName(entry.exercise.id, getLanguage())
-          .toLocaleLowerCase()
-          .includes(query);
-      });
-  }, [plan, rows, search]);
+    return plan.usable.filter((entry) => !inPlan.has(entry.exercise.id));
+  }, [plan, rows]);
 
   if (loading || !settings || !plan) {
     return <div className="tl-loading">{t("common.loading")}</div>;
@@ -179,25 +168,10 @@ export default function TrainingScreen() {
   const hint = startElsewhere(rows, settings.inventory);
   const fatigue = plan.fatigue;
 
-  const visible = addable.slice(0, PAGE_SIZE);
-  const allVisibleSelected =
-    visible.length > 0 &&
-    visible.every((entry) => selected.includes(entry.exercise.id));
-
-  const toggleSelected = (id: string) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
-    );
-
-  const toggleAllVisible = () =>
-    setSelected(
-      allVisibleSelected ? [] : visible.map((entry) => entry.exercise.id),
-    );
-
-  const applyBulk = () => {
+  const applyBulk = (ids: string[]) => {
     const reps = REP_PRESETS[rx.reps] ?? REP_PRESETS[0];
     let added = 0;
-    for (const id of selected) {
+    for (const id of ids) {
       const ok = addExerciseToToday(id, {
         sets: rx.sets,
         repsMin: reps.min,
@@ -207,7 +181,7 @@ export default function TrainingScreen() {
       if (ok) added += 1;
     }
     setApplied(added);
-    setSelected([]);
+    setPickerOpen(false);
   };
 
   const removeOrSkip = (row: PlannedRow) => {
@@ -425,9 +399,9 @@ export default function TrainingScreen() {
               </div>
             )}
 
-            {/* ══ Añadir varios — the page's own drawer, as a section ══════ */}
-            <details className="card" id="ent-add">
-              <summary className="card-head" style={{ cursor: "pointer" }}>
+            {/* ══ Añadir varios — the shared ExercisePicker (D9) ══════════ */}
+            <section className="card card-pad" id="ent-add">
+              <div className="row" style={{ gap: 8 }}>
                 <span className="card-title">
                   <MIcons.plus />
                   {t("ent.add.title")}
@@ -436,189 +410,99 @@ export default function TrainingScreen() {
                 <span className="badge badge-plain">
                   {tInterp("ent.add.available", { n: addable.length })}
                 </span>
-              </summary>
-              <div className="card-body" style={{ paddingTop: 0 }}>
-                <p className="tiny muted" style={{ margin: "0 0 10px" }}>
-                  {t("ent.add.hint")}
-                </p>
-
-                <div
-                  className="field"
-                  style={{ display: "flex", gap: 8, alignItems: "center" }}
-                >
-                  <MIcons.search />
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder={t("ent.add.search")}
-                    aria-label={t("ent.add.search")}
-                    className="grow"
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      color: "var(--tl-text)",
-                      // 16 px, not 14: below that iOS Safari zooms the page when
-                      // the field takes focus (audited 2026-10-18).
-                      fontSize: 16,
-                      minWidth: 0,
-                    }}
-                  />
-                </div>
-
-                {visible.length === 0 ? (
-                  <p className="small muted" style={{ margin: "12px 0 0" }}>
-                    {t("ent.add.empty")}
-                  </p>
-                ) : (
-                  <div style={{ marginTop: 10 }}>
-                    <button
-                      type="button"
-                      className="row tl-focusable"
-                      style={{ gap: 9, padding: "8px 0", width: "100%" }}
-                      onClick={toggleAllVisible}
-                    >
-                      <span
-                        className={`checkbox ${allVisibleSelected ? "is-on" : ""}`}
-                      >
-                        <MIcons.check />
-                      </span>
-                      <span className="small bold">
-                        {tInterp("ent.add.selectAll", { n: visible.length })}
-                      </span>
-                    </button>
-                    {visible.map((entry) => {
-                      const on = selected.includes(entry.exercise.id);
-                      return (
-                        <button
-                          key={entry.exercise.id}
-                          type="button"
-                          className="ent-add tl-focusable"
-                          aria-pressed={on}
-                          onClick={() => toggleSelected(entry.exercise.id)}
-                        >
-                          <span className={`checkbox ${on ? "is-on" : ""}`}>
-                            <MIcons.check />
-                          </span>
-                          <ExerciseThumb
-                            exerciseId={entry.exercise.id}
-                            size={40}
-                          />
-                          <span>
-                            <span className="ent-name">
-                              {exerciseName(entry.exercise.id, getLanguage())}
-                            </span>
-                            <span className="ent-rx">
-                              {entry.families
-                                .slice(0, 3)
-                                .map(familyLabel)
-                                .join(" · ")}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                    {addable.length > visible.length && (
-                      <p className="tiny muted" style={{ margin: "8px 0 0" }}>
-                        {tInterp("ent.add.showing", {
-                          shown: visible.length,
-                          total: addable.length,
-                        })}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div className="divider" style={{ margin: "14px 0" }} />
-
-                <p className="small bold" style={{ margin: "0 0 8px" }}>
-                  {tInterp("ent.add.applyTo", { n: selected.length })}
-                </p>
-                <div className="ent-fields">
-                  <div className="field">
-                    <div className="field-label">{t("ent.fields.sets")}</div>
-                    <select
-                      className="stepper-input"
-                      style={{ fontSize: 18, textAlign: "left" }}
-                      value={rx.sets}
-                      onChange={(event) =>
-                        setRx((prev) => ({
-                          ...prev,
-                          sets: Number(event.target.value),
-                        }))
-                      }
-                    >
-                      {[2, 3, 4, 5].map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <div className="field-label">{t("ent.fields.reps")}</div>
-                    <select
-                      className="stepper-input"
-                      style={{ fontSize: 18, textAlign: "left" }}
-                      value={rx.reps}
-                      onChange={(event) =>
-                        setRx((prev) => ({
-                          ...prev,
-                          reps: Number(event.target.value),
-                        }))
-                      }
-                    >
-                      {REP_PRESETS.map((preset, index) => (
-                        <option
-                          key={`${preset.min}-${preset.max}`}
-                          value={index}
-                        >
-                          {preset.min}–{preset.max}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <div className="field-label">{t("ent.fields.rest")}</div>
-                    <select
-                      className="stepper-input"
-                      style={{ fontSize: 18, textAlign: "left" }}
-                      value={rx.rest}
-                      onChange={(event) =>
-                        setRx((prev) => ({
-                          ...prev,
-                          rest: Number(event.target.value),
-                        }))
-                      }
-                    >
-                      {REST_PRESETS.map((seconds) => (
-                        <option key={seconds} value={seconds}>
-                          {seconds} s
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn btn-primary btn-xl tl-focusable"
-                  style={{ marginTop: 14, width: "100%" }}
-                  disabled={selected.length === 0}
-                  onClick={applyBulk}
-                >
-                  <MIcons.check />
-                  {tInterp("ent.add.apply", { n: selected.length })}
-                </button>
-                {applied !== null && (
-                  <p className="small muted" style={{ margin: "8px 0 0" }}>
-                    {applied > 0
-                      ? tInterp("ent.add.applied", { n: applied })
-                      : t("ent.add.none")}
-                  </p>
-                )}
               </div>
-            </details>
+              <p className="tiny muted" style={{ margin: "8px 0 10px" }}>
+                {t("ent.add.hint")}
+              </p>
+
+              <div className="ent-fields">
+                <div className="field">
+                  <div className="field-label">{t("ent.fields.sets")}</div>
+                  <select
+                    className="stepper-input"
+                    style={{ fontSize: 18, textAlign: "left" }}
+                    value={rx.sets}
+                    onChange={(event) =>
+                      setRx((prev) => ({
+                        ...prev,
+                        sets: Number(event.target.value),
+                      }))
+                    }
+                  >
+                    {[2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <div className="field-label">{t("ent.fields.reps")}</div>
+                  <select
+                    className="stepper-input"
+                    style={{ fontSize: 18, textAlign: "left" }}
+                    value={rx.reps}
+                    onChange={(event) =>
+                      setRx((prev) => ({
+                        ...prev,
+                        reps: Number(event.target.value),
+                      }))
+                    }
+                  >
+                    {REP_PRESETS.map((preset, index) => (
+                      <option key={preset.min + "-" + preset.max} value={index}>
+                        {preset.min}–{preset.max}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <div className="field-label">{t("ent.fields.rest")}</div>
+                  <select
+                    className="stepper-input"
+                    style={{ fontSize: 18, textAlign: "left" }}
+                    value={rx.rest}
+                    onChange={(event) =>
+                      setRx((prev) => ({
+                        ...prev,
+                        rest: Number(event.target.value),
+                      }))
+                    }
+                  >
+                    {REST_PRESETS.map((seconds) => (
+                      <option key={seconds} value={seconds}>
+                        {seconds} s
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-primary btn-xl tl-focusable"
+                style={{ marginTop: 14, width: "100%" }}
+                disabled={addable.length === 0}
+                onClick={() => setPickerOpen(true)}
+                data-testid="ent-add-open"
+              >
+                <MIcons.plus />
+                {t("ent.add.choose")}
+              </button>
+              {addable.length === 0 ? (
+                <p className="small muted" style={{ margin: "8px 0 0" }}>
+                  {t("ent.add.empty")}
+                </p>
+              ) : applied !== null ? (
+                <p className="small muted" style={{ margin: "8px 0 0" }}>
+                  {applied > 0
+                    ? applied === 1
+                      ? t("ent.add.appliedOne")
+                      : tInterp("ent.add.applied", { n: applied })
+                    : t("ent.add.none")}
+                </p>
+              ) : null}
+            </section>
           </div>
 
           {/* ══ The why, and what to grab first ══════════════════════════ */}
@@ -753,6 +637,15 @@ export default function TrainingScreen() {
           </div>
         </div>
       </div>
+      {pickerOpen && (
+        <ExercisePicker
+          title={t("ent.add.title")}
+          multiple
+          inUse={rows.map((row) => row.exerciseId)}
+          onClose={() => setPickerOpen(false)}
+          onConfirm={(ids) => applyBulk(ids)}
+        />
+      )}
     </>
   );
 }

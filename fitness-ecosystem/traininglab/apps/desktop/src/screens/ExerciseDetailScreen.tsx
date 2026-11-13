@@ -14,7 +14,7 @@
  *                    and excluded from volume. Real data or an honest empty
  *                    state — never a placeholder.
  *   * **Rango**    ← nothing yet. It is disabled with the reason written on it
- *                    rather than hidden or faked (`TRAININGLAB_UI_PLAN.md` §9).
+ *                    rather than hidden or faked (`DESIGN_DECISIONS_2026-11-07.md`, Ejercicios).
  *
  * @module screens/ExerciseDetailScreen
  */
@@ -39,7 +39,8 @@ import {
   type EffortMarker,
 } from "../lib/effort";
 import { categoryLabel, familyLabel, muscleLabel } from "../lib/format";
-import { parseNumberInput } from "../lib/parse-num";
+import { routineItemFor, type Routine } from "../lib/routines";
+import { setEditPatch } from "../lib/set-edit";
 import { ExerciseThumbLarge } from "../features/exercises/ExerciseThumb";
 import {
   Badge,
@@ -49,7 +50,8 @@ import {
   SectionCard,
   TabStrip,
 } from "../ui/primitives";
-import { IconBack, IconInfo, IconLayers } from "../ui/icons";
+import { IconInfo, IconLayers } from "../ui/icons";
+import { MIcons } from "../ui/mockup-icons";
 import { navigate } from "../app/router";
 import { useStore } from "../app/store";
 
@@ -95,21 +97,29 @@ export default function ExerciseDetailScreen({
   );
   const traits = useMemo(() => getTraits(exerciseId), [exerciseId]);
   const lang = getLanguage();
+  const { addExerciseToToday, routines, saveRoutine } = useStore();
+  const [routineOpen, setRoutineOpen] = useState(false);
+  const [actionNote, setActionNote] = useState<string | null>(null);
 
   if (!exercise) {
     return (
-      <div className="mx-auto w-full max-w-3xl">
-        <EmptyState
-          icon={<IconInfo size={28} />}
-          title={t("ex.missing")}
-          body={t("ex.missingHint")}
-          action={
-            <Button variant="primary" onClick={() => navigate("exercises")}>
-              {t("ex.back")}
-            </Button>
-          }
-        />
-      </div>
+      <>
+        <DetailTopbar />
+        <div className="content">
+          <div className="mx-auto w-full max-w-3xl">
+            <EmptyState
+              icon={<IconInfo size={28} />}
+              title={t("ex.missing")}
+              body={t("ex.missingHint")}
+              action={
+                <Button variant="primary" onClick={() => navigate("exercises")}>
+                  {t("ex.back")}
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -118,89 +128,197 @@ export default function ExerciseDetailScreen({
     ...new Set(exercise.muscles.map((m) => muscleFamilyOf(m.muscle))),
   ];
 
+  const useToday = () => {
+    const added = addExerciseToToday(exercise.id);
+    setActionNote(added ? t("ex.useTodayDone") : t("ex.useTodayExists"));
+    setRoutineOpen(false);
+  };
+
+  const addToRoutine = (routine: Routine) => {
+    const item = routineItemFor(exercise.id);
+    if (!item) return;
+    if (routine.items.some((row) => row.exerciseId === exercise.id)) {
+      setActionNote(tInterp("ex.addRoutineHas", { name: routine.name }));
+      return;
+    }
+    const stored = saveRoutine({
+      id: routine.id,
+      name: routine.name,
+      notes: routine.notes,
+      items: [...routine.items, item],
+    });
+    setActionNote(
+      stored
+        ? tInterp("ex.addRoutineDone", { name: routine.name })
+        : t("ex.addRoutineError"),
+    );
+    setRoutineOpen(false);
+  };
+
   return (
-    <div className="mx-auto w-full max-w-3xl flex flex-col gap-4">
-      <button
-        type="button"
-        onClick={() => navigate("exercises")}
-        className="self-start inline-flex items-center gap-1.5 text-sm text-[var(--tl-text-secondary)] hover:text-[var(--tl-text)] tl-focusable rounded-lg px-1 py-1"
-      >
-        <IconBack size={16} />
-        {t("ex.back")}
-      </button>
+    <>
+      <DetailTopbar />
+      <div className="content">
+        <div className="mx-auto w-full max-w-3xl flex flex-col gap-4">
+          <ExerciseThumbLarge
+            exerciseId={exercise.id}
+            label={familyLabel(families[0] ?? "core")}
+            alt={exercise.name[lang] ?? exercise.name.en}
+          />
 
-      <ExerciseThumbLarge
-        exerciseId={exercise.id}
-        label={familyLabel(families[0] ?? "core")}
-        alt={exercise.name[lang] ?? exercise.name.en}
-      />
+          <div>
+            <h1 className="text-2xl font-bold leading-tight">
+              {exercise.name[lang] ?? exercise.name.en}
+            </h1>
+            <p className="text-sm text-[var(--tl-text-secondary)] mt-1">
+              {families.map((f) => familyLabel(f)).join(" · ")}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <Badge tone="neutral">{categoryLabel(exercise.category)}</Badge>
+              <Badge tone="neutral">
+                {exercise.equipment[lang] ?? exercise.equipment.en}
+              </Badge>
+              {technique && (
+                <Badge tone="accent">
+                  {t("ex.level")} {exercise.difficulty}/5
+                </Badge>
+              )}
+              {traits?.unilateral && (
+                <Badge tone="info">{t("ex.unilateral")}</Badge>
+              )}
+            </div>
+            <div className="row-wrap" style={{ marginTop: 12 }}>
+              <Button variant="primary" onClick={useToday}>
+                <MIcons.plus />
+                {t("ex.useToday")}
+              </Button>
+              <button
+                type="button"
+                className="tl-btn tl-focusable"
+                onClick={() => setRoutineOpen((open) => !open)}
+                aria-expanded={routineOpen}
+              >
+                <MIcons.list />
+                {t("ex.addRoutine")}
+              </button>
+            </div>
+            {actionNote && (
+              <p className="small muted" role="status" style={{ marginTop: 8 }}>
+                {actionNote}
+              </p>
+            )}
+            {routineOpen && (
+              <Card>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-sm">
+                    {t("ex.addRoutineTitle")}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-sm tl-focusable"
+                    onClick={() => setRoutineOpen(false)}
+                  >
+                    {t("common.cancel")}
+                  </button>
+                </div>
+                {routines.length === 0 ? (
+                  <p className="small muted" style={{ marginTop: 10 }}>
+                    {t("ex.addRoutineEmpty")}
+                  </p>
+                ) : (
+                  <div
+                    className="flex flex-col gap-2"
+                    style={{ marginTop: 10 }}
+                  >
+                    {routines.map((routine) => {
+                      const already = routine.items.some(
+                        (row) => row.exerciseId === exercise.id,
+                      );
+                      return (
+                        <button
+                          key={routine.id}
+                          type="button"
+                          className="btn tl-focusable"
+                          style={{ justifyContent: "space-between" }}
+                          disabled={already}
+                          onClick={() => addToRoutine(routine)}
+                        >
+                          <span className="ellipsis">{routine.name}</span>
+                          <span className="tiny muted">
+                            {already
+                              ? t("ex.addRoutineHasShort")
+                              : t("ex.addRoutineAdd")}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            )}
+          </div>
 
-      <div>
-        <h1 className="text-2xl font-bold leading-tight">
-          {exercise.name[lang] ?? exercise.name.en}
-        </h1>
-        <p className="text-sm text-[var(--tl-text-secondary)] mt-1">
-          {families.map((f) => familyLabel(f)).join(" · ")}
-        </p>
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          <Badge tone="neutral">{categoryLabel(exercise.category)}</Badge>
-          <Badge tone="neutral">
-            {exercise.equipment[lang] ?? exercise.equipment.en}
-          </Badge>
-          {technique && (
-            <Badge tone="accent">
-              {t("ex.level")} {exercise.difficulty}/5
-            </Badge>
+          <TabStrip
+            active={tab}
+            onChange={(id) => setTab(id as TabId)}
+            tabs={[
+              { id: "guide", label: t("ex.tab.guide") },
+              { id: "summary", label: t("ex.tab.summary") },
+              {
+                id: "rank",
+                label: t("ex.tab.rank"),
+                disabled: true,
+                title: t("ex.rankLockedWhy"),
+              },
+              { id: "history", label: t("ex.tab.history") },
+            ]}
+          />
+
+          {tab === "guide" && technique && (
+            <GuideTab exerciseId={exerciseId} technique={technique} cue={cue} />
           )}
-          {traits?.unilateral && (
-            <Badge tone="info">{t("ex.unilateral")}</Badge>
+
+          {tab === "summary" && (
+            <SummaryTab exerciseId={exerciseId} muscles={exercise.muscles} />
           )}
+
+          {tab === "rank" && (
+            <Card padded={false} className="p-5">
+              <div className="flex items-start gap-3">
+                <IconLayers
+                  size={20}
+                  className="text-[var(--tl-text-muted)] mt-0.5"
+                />
+                <div>
+                  <p className="font-semibold">{t("ex.rank.title")}</p>
+                  <p className="text-sm text-[var(--tl-text-secondary)] mt-1">
+                    {t("ex.rank.body")}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {tab === "history" && <HistoryTab exerciseId={exerciseId} />}
         </div>
       </div>
+    </>
+  );
+}
 
-      <TabStrip
-        active={tab}
-        onChange={(id) => setTab(id as TabId)}
-        tabs={[
-          { id: "guide", label: t("ex.tab.guide") },
-          { id: "summary", label: t("ex.tab.summary") },
-          {
-            id: "rank",
-            label: t("ex.tab.rank"),
-            disabled: true,
-            title: t("ex.rankLockedWhy"),
-          },
-          { id: "history", label: t("ex.tab.history") },
-        ]}
-      />
-
-      {tab === "guide" && technique && (
-        <GuideTab exerciseId={exerciseId} technique={technique} cue={cue} />
-      )}
-
-      {tab === "summary" && (
-        <SummaryTab exerciseId={exerciseId} muscles={exercise.muscles} />
-      )}
-
-      {tab === "rank" && (
-        <Card padded={false} className="p-5">
-          <div className="flex items-start gap-3">
-            <IconLayers
-              size={20}
-              className="text-[var(--tl-text-muted)] mt-0.5"
-            />
-            <div>
-              <p className="font-semibold">{t("ex.rank.title")}</p>
-              <p className="text-sm text-[var(--tl-text-secondary)] mt-1">
-                {t("ex.rank.body")}
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {tab === "history" && <HistoryTab exerciseId={exerciseId} />}
-    </div>
+function DetailTopbar() {
+  return (
+    <header className="topbar">
+      <a className="btn btn-sm tl-focusable" href="#/ejercicios">
+        <MIcons.chevronLeft />
+        {t("ex.back")}
+      </a>
+      <div className="spacer" />
+      <span className="pill">
+        <MIcons.dumbbell />
+        {t("ex.title")}
+      </span>
+    </header>
   );
 }
 
@@ -617,17 +735,17 @@ function HistoryDayCard({
   };
 
   const saveEdit = (set: HistoryDay["sets"][number]) => {
-    // `parseNumberInput` (project rule, `lib/parse-num`): `"62,5"` is the
-    // Spanish way to write 62.5 and a bare parseFloat would store 62. An empty
-    // field means "no load" / "no reps"; an unreadable one keeps the stored
-    // number instead of writing a NaN over the record.
-    const w = parseNumberInput(editWeight);
-    const r = parseNumberInput(editReps);
-    onEditSet(set.id, {
-      weight: editWeight.trim() === "" ? null : (w ?? set.weight),
-      reps: editReps.trim() === "" ? null : r === null ? set.reps : Math.round(r),
-      effort: editEffort,
-    });
+    // The shared rule in `lib/set-edit` keeps the Spanish decimal comma and
+    // distinguishes "clear" from "unreadable"; the History sheet calls the
+    // same function, so the two editors cannot drift.
+    onEditSet(
+      set.id,
+      setEditPatch(set, {
+        weight: editWeight,
+        reps: editReps,
+        effort: editEffort,
+      }),
+    );
     setEditingId(null);
   };
 

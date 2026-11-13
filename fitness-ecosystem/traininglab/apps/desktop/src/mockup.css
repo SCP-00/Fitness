@@ -18,7 +18,7 @@
 
   --tl-text: #f3f5f7;
   --tl-text-secondary: #9ba5af;
-  --tl-text-muted: #8b96a1;
+  --tl-text-muted: #94a0ab;
 
   --tl-accent: #ff7300;
   --tl-accent-strong: #ff9447;
@@ -268,15 +268,30 @@ svg {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.3px;
-}.nownext { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; white-space: nowrap; }
-.nownext b, .nownext span { white-space: nowrap; }
+}
+.nownext {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.nownext b,
+.nownext span {
+  white-space: nowrap;
+}
 /*
  * The exercise names are the only part that may truncate. Before this, at
  * 1024 px and on a phone the two names (385 px of text) pushed out of a
  * 268 px box, overlapped the session buttons and made the page 9 px wider
  * (audited 2026-10-18). The labels («Ahora:», «Siguiente:») keep their width.
  */
-.nownext b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.nownext b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .topbar-sub {
   color: var(--tl-text-muted);
   font-size: 12.5px;
@@ -390,6 +405,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
 }
 .card-sep {
   border-top: 1px solid var(--tl-border);
@@ -929,9 +945,15 @@ svg {
   place-items: center;
   color: var(--tl-text-secondary);
 }
+.stepper-btn {
+  min-width: 44px;
+}
 .stepper-btn:hover {
   border-color: var(--tl-accent-border);
   color: var(--tl-accent-strong);
+}
+[role="tab"] {
+  min-width: 44px;
 }
 .stepper-btn .icon {
   width: 18px;
@@ -1268,7 +1290,9 @@ svg {
 }
 .icon-btn {
   width: 32px;
+  min-width: 44px;
   height: 32px;
+  min-height: 44px;
   border-radius: 9px;
   display: grid;
   place-items: center;
@@ -1301,6 +1325,228 @@ svg {
   box-shadow: var(--shadow);
 }
 
+/*
+ * The single exercise picker (D9). Its own layer, above the routine editor:
+ * the editor stays open while the picker is choosing its next exercise, and
+ * reusing `.modal`'s z-index would put the picker behind it in some orders.
+ */
+.exercise-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 6, 8, 0.7);
+}
+.exercise-picker {
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 100%);
+  max-height: min(88dvh, 760px);
+  overflow: hidden;
+  background: var(--tl-surface);
+  border: 1px solid var(--tl-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.exercise-picker-head,
+.exercise-picker-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+}
+.exercise-picker-head {
+  border-bottom: 1px solid var(--tl-border);
+}
+.exercise-picker-foot {
+  border-top: 1px solid var(--tl-border);
+  background: var(--tl-surface);
+}
+.exercise-picker-foot .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.exercise-picker-head .card-title {
+  font-size: 15px;
+}
+.exercise-picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px 14px 10px;
+  overflow-y: auto;
+}
+.exercise-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--tl-border);
+  border-radius: var(--radius-sm);
+  background: var(--tl-surface-2);
+  flex: none;
+}
+.exercise-picker-search .icon {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  color: var(--tl-text-muted);
+}
+.exercise-picker-search input {
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--tl-text);
+  /* 16 px: below this iOS zooms the page when the field takes focus. */
+  font-size: 16px;
+}
+.exercise-picker-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  flex: none;
+  scrollbar-width: none;
+}
+.exercise-picker-filters::-webkit-scrollbar {
+  display: none;
+}
+.exercise-picker-filters .icon {
+  width: 12px;
+  height: 12px;
+}
+.exercise-picker-filter-divider {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--tl-border);
+}
+.exercise-picker-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.exercise-picker-list {
+  display: flex;
+  flex-direction: column;
+}
+.exercise-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 2px;
+  border: none;
+  border-bottom: 1px solid var(--tl-border);
+  background: transparent;
+  color: var(--tl-text);
+  text-align: left;
+  cursor: pointer;
+}
+.exercise-picker-row:hover,
+.exercise-picker-row.is-selected {
+  background: var(--tl-surface-2);
+}
+.exercise-picker-row.is-in-use {
+  cursor: default;
+  opacity: 0.62;
+}
+.exercise-picker-row > .checkbox {
+  flex: none;
+}
+.exercise-picker-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.exercise-picker-name {
+  overflow: hidden;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exercise-picker-meta {
+  overflow: hidden;
+  color: var(--tl-text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exercise-picker-star {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--tl-accent);
+}
+.exercise-picker-star .icon {
+  width: 14px;
+  height: 14px;
+}
+.exercise-picker-selectall {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 2px;
+  border: none;
+  border-bottom: 1px solid var(--tl-border);
+  background: transparent;
+  color: var(--tl-text);
+  text-align: left;
+}
+.exercise-picker-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 0;
+}
+
+@media (min-width: 641px) {
+  .exercise-picker-filters {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+@media (max-width: 640px) {
+  .exercise-picker-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .exercise-picker {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .exercise-picker-head,
+  .exercise-picker-foot {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .exercise-picker-body {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
+
 /* ── Charts ──────────────────────────────────────────────────────────────── */
 
 /* Wide tables scroll instead of overflowing the card they sit in. */
@@ -1309,6 +1555,241 @@ svg {
 }
 .table-wrap > .table {
   min-width: 560px;
+}
+
+/*
+ * The ZEN set log (2026-10-29). Its column widths are declared here, not inline,
+ * because a phone has to be able to tighten them: the old inline widths added up
+ * to 538 px inside a 360 px phone card, so the last two columns («Anterior» and
+ * the repeat button) lived outside the screen and the table had to be swiped
+ * sideways to see what was lifted last session.
+ *
+ * At 540 px and below the six columns are 30 + 84 + 58 + auto + 86 + 32, which
+ * fits a 320 px card and still shows `8 × 47.4` in «Anterior».
+ */
+.zen-sets th:nth-child(1) {
+  width: 64px;
+}
+.zen-sets th:nth-child(2) {
+  width: 130px;
+}
+.zen-sets th:nth-child(3) {
+  width: 110px;
+}
+.zen-sets th:nth-child(5) {
+  width: 190px;
+}
+.zen-sets th:nth-child(6) {
+  width: 44px;
+}
+
+@media (max-width: 540px) {
+  .table-wrap > .table.zen-sets {
+    min-width: 0;
+  }
+  .zen-sets th,
+  .zen-sets td {
+    padding-inline: 6px;
+  }
+  .zen-sets th:nth-child(1) {
+    width: 30px;
+  }
+  .zen-sets th:nth-child(2) {
+    width: 84px;
+  }
+  .zen-sets th:nth-child(3) {
+    width: 58px;
+  }
+  .zen-sets th:nth-child(5) {
+    width: 86px;
+  }
+  .zen-sets th:nth-child(6) {
+    width: 32px;
+  }
+  /* The weight and reps fields are the tap targets: 19 px type in a 30 px box
+     still needs the field's inner padding to stop eating the digits. */
+  .zen-sets .field {
+    padding: 3px 4px;
+  }
+  /* «8 × 47.4» is one datum and must not break across two lines. */
+  .zen-sets td:nth-child(5) {
+    white-space: nowrap;
+    font-size: 11px;
+  }
+}
+
+/*
+ * 320 px is the narrowest screen the owner can hand to a tester, and there the
+ * six columns only fit if the numbers give up a few pixels (2026-10-29): at 19 px
+ * the weight field showed «47» of «47.4», which is worse than a smaller digit.
+ */
+@media (max-width: 360px) {
+  .zen-sets th,
+  .zen-sets td {
+    padding-inline: 4px;
+  }
+  .zen-sets .stepper-input {
+    font-size: 15px;
+    height: 26px;
+    letter-spacing: 0;
+  }
+  /* The headers are labels, not data: 10 px buys the number columns the 8 px
+     that «Peso (kg)» and «Anterior» were taking. */
+  .zen-sets th {
+    font-size: 10px;
+    padding-inline: 4px;
+  }
+  .zen-sets th:nth-child(5) {
+    width: 74px;
+  }
+  .zen-sets td:nth-child(5) {
+    font-size: 10.5px;
+  }
+}
+
+/*
+ * ZEN — record first on a phone (2026-11-09).
+ *
+ * The set log and the live entry are the first two cards below 900 px; the
+ * media/technique card follows them, and the same technique is one tap away
+ * from the entry header. On desktop the approved order is unchanged: media,
+ * entry, log, sequence. CSS `order` is used instead of duplicating the cards,
+ * so there is one source of state and one `Registrar` button.
+ */
+.zen-mobile-tech {
+  display: none;
+}
+.zen-table-value {
+  display: none;
+}
+.zen-log-cta {
+  margin-top: 14px;
+}
+.zen-progress {
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+@media (min-width: 900px) {
+  .zen-main > .zen-media-card {
+    order: 1;
+  }
+  .zen-main > .zen-entry-card {
+    order: 2;
+  }
+  .zen-main > .zen-log-card {
+    order: 3;
+  }
+  .zen-main > .zen-sequence-card {
+    order: 4;
+  }
+}
+
+@media (max-width: 899px) {
+  .zen-main > .zen-log-card {
+    order: 1;
+  }
+  .zen-main > .zen-entry-card {
+    order: 2;
+  }
+  .zen-main > .zen-media-card {
+    order: 3;
+  }
+  .zen-main > .zen-sequence-card {
+    order: 4;
+  }
+
+  .zen-topbar {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .zen-topbar .nownext {
+    flex: 1 1 100%;
+  }
+  .zen-topbar .spacer {
+    display: none;
+  }
+  .zen-progress {
+    margin-left: auto;
+  }
+  .zen-topbar .zen-top-action {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+  .zen-topbar .zen-action-label {
+    display: none;
+  }
+  .zen-mobile-tech {
+    display: inline-flex;
+    min-height: 44px;
+    flex: none;
+  }
+  .zen-entry-hint {
+    display: none;
+  }
+
+  /*
+   * The primary action stays under the thumb even when the optional effort
+   * fields push the bottom of the entry card below the fold. It is the SAME
+   * button and the same `logCurrent` handler; only its position changes, so
+   * there is no second write path and no duplicate test id.
+   */
+  .zen-log-cta {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    z-index: 45;
+    width: auto;
+    margin-top: 0;
+    box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.9);
+  }
+  .zen-layout {
+    /* The fixed log CTA is 52 px tall and sits 76 px from the bottom edge.
+     * 58 px reserved less than the button itself, so the session's own
+     * "Terminar sesión" ended underneath it at 390×844. Reserve the whole
+     * occupied band plus a thumb's gap. */
+    padding-bottom: calc(148px + env(safe-area-inset-bottom));
+  }
+  /* The finish button is a sibling of `.zen-layout`, not inside it, so the
+   * layout padding above does not move it. Keep it clear of the same fixed
+   * CTA: at maximum scroll its bottom sat at 766 px, under the 716–768 px
+   * button. */
+  .zen-layout + .btn {
+    margin-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /*
+   * The log header has two pieces that need to stay on one line on a phone:
+   * the exercise name and the `0 / 4 series` badge. Without `min-width: 0`
+   * the flex title kept its intrinsic width, the badge was squeezed into three
+   * lines and the name wrapped to two (measured 2026-11-09 at 390 px).
+   */
+  .zen-log-card .card-title {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .zen-log-card .badge {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  /*
+   * The table is the log, not a second editor in the thumb's way: the current
+   * row mirrors the live fields as text and the entry below remains the only
+   * place that writes a set. On desktop the inline fields stay as they were.
+   */
+  .zen-sets .zen-table-edit {
+    display: none;
+  }
+  .zen-sets .zen-table-value {
+    display: inline;
+  }
 }
 
 .chart {
@@ -1914,23 +2395,6 @@ svg {
   font-weight: 500;
 }
 
-.ent-add {
-  display: grid;
-  grid-template-columns: 18px 40px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  width: 100%;
-  text-align: left;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(41, 49, 58, 0.55);
-}
-.ent-add:last-of-type {
-  border-bottom: none;
-}
-.ent-add:hover {
-  background: var(--tl-surface-2);
-}
-
 .ent-fields {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2320,13 +2784,6 @@ svg {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
-.ru-picker {
-  display: flex;
-  flex-direction: column;
-  margin-top: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-}
 .ru-actions {
   position: sticky;
   bottom: 0;
@@ -2339,33 +2796,6 @@ svg {
   background: var(--tl-surface);
   border-top: 1px solid var(--tl-border);
 }
-.ru-pick {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 8px 0;
-  border: none;
-  border-bottom: 1px solid var(--tl-border);
-  background: transparent;
-  color: var(--tl-text);
-  text-align: left;
-  cursor: pointer;
-}
-.ru-pick:hover {
-  color: var(--tl-accent);
-}
-.ru-pick > :first-child {
-  flex: none;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-.ru-pick > .icon {
-  width: 16px;
-  height: 16px;
-  color: var(--tl-text-muted);
-}
-
 .btn-danger {
   border-color: rgba(255, 79, 79, 0.35);
   color: var(--tl-danger);
@@ -2718,5 +3148,622 @@ body.tl-dragging {
   }
   .seg-item .icon {
     display: none;
+  }
+}
+
+/* The third Hoy block: a sheet for every secondary adjustment, so none of
+   them competes with the single primary action. On a phone the sheet also has
+   a shortcut in the topbar, because the session card can push the block far
+   below the fold; this is the same door, not a second action. */
+.today-adjust-top {
+  display: none;
+  flex: none;
+}
+@media (max-width: 900px) {
+  .today-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .today-topbar .spacer {
+    display: none;
+  }
+  .today-topbar > .pill {
+    justify-self: start;
+  }
+  .today-topbar .btn-primary {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .today-adjust-top {
+    display: inline-flex;
+  }
+}
+.today-adjust {
+  width: 100%;
+  min-height: 52px;
+  justify-content: flex-start;
+  gap: 10px;
+  text-align: left;
+}
+.today-adjust .icon:last-child {
+  margin-left: auto;
+  color: var(--tl-text-muted);
+}
+.today-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 6px;
+}
+.today-sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.today-sheet-actions .btn {
+  width: 100%;
+  min-height: 48px;
+  justify-content: flex-start;
+  text-align: left;
+}
+.today-sheet-actions .btn .icon:last-child {
+  margin-left: auto;
+  color: var(--tl-text-muted);
+}
+@media (min-width: 700px) {
+  .today-sheet {
+    max-width: 560px;
+    margin: 0 auto 18px;
+    border: 1px solid var(--tl-border);
+    border-radius: 16px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Session summary + in-progress session bar (2026-11-06)
+   ──────────────────────────────────────────────────────────────────────────
+   Page-local rules for the new close of the loop. The summary reuses the card
+   language (`card`, `badge`, `content`); only the KPI strip and the exercise
+   rows are new. The floating bar is fixed so it never reflows a screen the
+   user is reading; `.main.has-session-bar` reserves the space it occupies.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.summary-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.summary-kpi {
+  border: 1px solid var(--tl-border);
+  background: var(--tl-surface-2);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.summary-kpi b {
+  display: block;
+  font-size: 22px;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+}
+.summary-kpi span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tl-text-muted);
+}
+
+.summary-ex {
+  border-top: 1px solid var(--tl-border);
+}
+.summary-ex:first-child {
+  border-top: 0;
+}
+.summary-ex-head {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  color: inherit;
+  text-decoration: none;
+}
+.summary-ex-head:hover,
+.summary-ex-head:focus-visible {
+  background: var(--tl-surface-2);
+}
+.summary-ex-name {
+  display: block;
+  font-weight: 650;
+}
+.summary-ex-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--tl-text-muted);
+}
+.summary-ex-vol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.summary-ex-vol b {
+  display: block;
+}
+.summary-ex-vol span {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tl-text-muted);
+}
+
+/* Every logged set, under its exercise; the aggregate line above stays. */
+.summary-sets-wrap {
+  overflow-x: auto;
+  border-top: 1px solid var(--tl-border);
+}
+.summary-sets {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.summary-sets th,
+.summary-sets td {
+  padding: 7px 10px;
+  border-top: 1px solid var(--tl-border);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.summary-sets thead th {
+  background: var(--tl-surface-2);
+  color: var(--tl-text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.summary-sets thead th:first-child {
+  width: 52px;
+}
+.summary-sets tbody th {
+  width: 52px;
+  font-weight: 650;
+}
+.summary-set-number {
+  display: inline-flex;
+  min-width: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.summary-sets tr.is-warmup th,
+.summary-sets tr.is-warmup td {
+  background: var(--tl-surface-2);
+  color: var(--tl-text-muted);
+}
+.summary-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--tl-accent-wash);
+  color: var(--tl-accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+}
+.summary-sets thead th:last-child,
+.summary-sets tbody td:last-child {
+  width: 58px;
+  text-align: center;
+}
+.summary-set-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 1px solid var(--tl-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tl-text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+}
+.summary-set-edit:hover,
+.summary-set-edit:focus-visible {
+  border-color: var(--tl-accent-border);
+  color: var(--tl-accent);
+}
+/*
+ * ZEN's per-row edit trigger (2026-11-12). The last column is 32 px on a phone,
+ * so the button is an icon instead of History's word: the label stays in
+ * `aria-label`/`title`, and the 44 px height keeps the row tappable.
+ */
+.zen-set-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tl-text-muted);
+}
+.zen-set-edit:hover,
+.zen-set-edit:focus-visible {
+  border-color: var(--tl-accent-border);
+  color: var(--tl-accent);
+}
+.zen-sets td:nth-child(6) {
+  text-align: center;
+}
+@media (max-width: 540px) {
+  /* A 32 px column cannot afford 6 px of padding around a 32 px button. */
+  .zen-sets th:nth-child(6),
+  .zen-sets td:nth-child(6) {
+    padding-inline: 0;
+  }
+}
+.summary-set-editing td {
+  padding: 0;
+  background: var(--tl-surface-2);
+}
+.summary-set-edit-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+}
+.summary-set-edit-number {
+  min-width: 24px;
+  color: var(--tl-text-muted);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.summary-set-edit-input {
+  width: 72px;
+  min-height: 44px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.summary-set-edit-mark {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--tl-border);
+  border-radius: 8px;
+  background: var(--tl-surface);
+  color: var(--tl-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.summary-set-edit-mark.is-active {
+  border-color: transparent;
+  background: var(--tl-accent);
+  color: var(--tl-on-accent);
+}
+.summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/*
+ * The open session, on every destination that is not the session itself. The
+ * bar is a link back to ZEN, so it earns its space by removing a navigation,
+ * not by duplicating the log.
+ */
+.active-session-bar {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px 10px 16px;
+  background: var(--tl-surface);
+  border: 1px solid var(--tl-accent-border);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  color: var(--tl-text);
+  text-decoration: none;
+}
+.active-session-bar:hover,
+.active-session-bar:focus-visible {
+  border-color: var(--tl-accent);
+}
+.active-session-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tl-accent);
+  box-shadow: 0 0 0 4px var(--tl-accent-wash);
+}
+.main.has-session-bar {
+  padding-bottom: 88px;
+}
+
+@media (max-width: 900px) {
+  .active-session-bar {
+    left: 12px;
+    right: 12px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    min-width: 0;
+    max-width: none;
+  }
+  .main.has-session-bar {
+    padding-bottom: calc(156px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .summary-ex-head {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .summary-ex-vol {
+    grid-column: 2;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    text-align: left;
+  }
+  .summary-sets th,
+  .summary-sets td {
+    padding: 6px;
+    font-size: 12px;
+  }
+  .summary-sets thead th:first-child,
+  .summary-sets tbody th {
+    width: 40px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Historial — shell migration (2026-11-09)
+   ──────────────────────────────────────────────────────────────────────────
+   The record uses the same topbar/content/card language as the rest of the
+   ported screens. Only the filter row, the card composition and the detail
+   sheet are local: the set table is the summary's own `.summary-sets`, so a
+   set cannot be rendered differently here than on the close screen.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.history-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.history-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 2px 12px;
+}
+.history-search > .icon {
+  color: var(--tl-text-muted);
+}
+.history-search input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--tl-text);
+  font-size: 16px;
+}
+.history-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.history-kpis .summary-kpi {
+  padding: 10px;
+}
+.history-kpis .summary-kpi b {
+  font-size: 18px;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+}
+.history-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.history-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.history-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.history-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.history-card-marks {
+  justify-content: flex-end;
+  gap: 5px;
+}
+.history-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  color: var(--tl-text-muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.history-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 2px;
+}
+.history-card-actions .btn {
+  min-width: 160px;
+}
+
+.history-undo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.history-undo > .icon {
+  color: var(--tl-accent);
+}
+.history-undo > .row-wrap {
+  margin-left: auto;
+}
+
+.history-empty {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.history-empty > .icon {
+  color: var(--tl-accent);
+}
+.history-empty h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.history-empty p {
+  margin: 0;
+}
+.history-empty .btn {
+  margin-top: 6px;
+  min-height: 44px;
+}
+
+.history-sheet {
+  max-width: 860px;
+  margin: 0 auto;
+}
+.history-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 2px;
+}
+.history-detail-head h2 {
+  margin: 8px 0 4px;
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: -0.6px;
+}
+.history-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid var(--tl-border);
+  padding-top: 12px;
+}
+.history-detail-actions .btn {
+  min-height: 44px;
+}
+.history-danger {
+  color: var(--tl-danger);
+}
+.history-danger:hover {
+  border-color: rgba(255, 79, 79, 0.5);
+  color: var(--tl-danger);
+}
+.history-danger-btn {
+  background: var(--tl-danger);
+  border-color: var(--tl-danger);
+  color: #fff;
+  font-weight: 800;
+  min-height: 44px;
+}
+.history-delete {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 79, 79, 0.4);
+  border-radius: 12px;
+  background: rgba(255, 79, 79, 0.1);
+}
+.history-delete p {
+  margin: 0;
+}
+.history-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.history-edit .row-wrap {
+  margin-top: 4px;
+}
+.history-edit .btn {
+  min-height: 44px;
+}
+
+@media (min-width: 700px) {
+  .history-sheet {
+    margin-bottom: 18px;
+    border: 1px solid var(--tl-border);
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .history-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .history-tools .seg {
+    justify-self: start;
+  }
+  .history-card-actions .btn {
+    width: 100%;
+  }
+  .history-undo > .row-wrap {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  .history-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .history-kpis .summary-kpi:last-child {
+    grid-column: 1 / -1;
   }
 }

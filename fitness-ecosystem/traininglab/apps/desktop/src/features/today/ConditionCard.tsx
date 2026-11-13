@@ -90,8 +90,8 @@ export default function ConditionCard({
   const classified = axes.filter((a) => a.band != null).length;
 
   return (
-    <section className="tl-card">
-      <div className="tl-card-head">
+    <section className="card">
+      <div className="card-head">
         <div className="min-w-0">
           <h2>{t("condition.title")}</h2>
           <span>{t("condition.sub")}</span>
@@ -108,7 +108,7 @@ export default function ConditionCard({
       </div>
 
       {classified === 0 ? (
-        <div className="tl-card-body tl-condition-empty">
+        <div className="card-body tl-condition-empty">
           <p>{t("condition.empty.lead")}</p>
           <div className="tl-condition-needs">
             {axes.map((a) => (
@@ -128,7 +128,7 @@ export default function ConditionCard({
           <p className="tl-condition-route">{t("condition.empty.route")}</p>
         </div>
       ) : (
-        <div className="tl-card-body tl-condition-grid">
+        <div className="card-body tl-condition-grid">
           {axes.map((a) => (
             <div
               key={a.id}

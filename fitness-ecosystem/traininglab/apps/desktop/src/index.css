@@ -42,7 +42,7 @@
      colour carries 11px labels, and at that size the old value read poorly on a
      phone outside. Still dimmer than --tl-text-secondary (7.9:1), so hierarchy
      survives. Measured against --tl-bg, WCAG 2.x relative-luminance formula. */
-  --tl-text-muted: #8b96a1;
+  --tl-text-muted: #94a0ab;
 
   --tl-accent: #ff7300;
   --tl-accent-strong: #ff9447;
@@ -117,26 +117,6 @@ textarea {
 /* ══════════════════════════════════════════════════════════════════════════
    Page furniture
    ══════════════════════════════════════════════════════════════════════════ */
-
-.tl-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 22px;
-}
-
-.tl-welcome h1 {
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-.tl-welcome p {
-  color: var(--tl-text-secondary);
-  margin-top: 5px;
-}
 
 /* The sketch's pill: a soft chip for context (date, mode, clock). */
 .tl-pill {
@@ -363,7 +343,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 
@@ -485,7 +465,7 @@ textarea {
 
 .tl-chip {
   background: var(--tl-accent-wash);
-  color: var(--tl-accent);
+  color: var(--tl-accent-strong);
   font-weight: 600;
 }
 
@@ -583,6 +563,18 @@ textarea {
 }
 
 /*
+ * Below 420 px two-up stops being readable (audited 2026-10-29). At 320 px each
+ * tile carries ~66 px of content, so "11,445 kg" wrapped between the number and
+ * its unit and "En los últimos 30 días" took three lines: the figure broke in
+ * two, which is read as a rendering bug. One KPI per row is taller and honest.
+ */
+@media (max-width: 420px) {
+  .tl-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
  * The metric tile: icon on the left, three stacked lines on the right (label,
  * value, explanation + optional sparkline) — the layout the mockups use, and the
  * reason the four tiles read as one strip instead of four small cards.
@@ -628,7 +620,7 @@ textarea {
   justify-content: space-between;
   gap: 8px;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /*
@@ -681,7 +673,7 @@ textarea {
   padding-top: 12px;
   border-top: 1px solid var(--tl-border);
   color: var(--tl-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -734,11 +726,11 @@ textarea {
     width: 22px;
     height: 22px;
     margin-bottom: 5px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .tl-week .tl-day-name {
-    font-size: 11px;
+    font-size: 12px;
     margin-bottom: 0;
   }
 
@@ -766,7 +758,7 @@ textarea {
 
 .tl-day-name {
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   margin-bottom: 10px;
 }
 
@@ -790,7 +782,7 @@ textarea {
 }
 
 .tl-day-status {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 
@@ -798,20 +790,14 @@ textarea {
    Semana — one row per day of the plan
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* A page that is not the dashboard: one readable column, full width up to a
-   point, so a plan never stretches a sentence across 1600 px. */
-.tl-page {
-  width: 100%;
-  max-width: 900px;
-  margin-inline: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
+/*
+ * `minmax(min(260px, 100%), 1fr)` and not `minmax(260px, 1fr)`: on a 320 px phone
+ * the card's content box is 258 px, so a hard 260 px minimum made the seven day
+ * rows 2 px wider than the card they sit in (audited 2026-10-29).
+ */
 .tl-days {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 12px;
 }
 
@@ -859,7 +845,7 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 
@@ -976,7 +962,7 @@ textarea {
   justify-content: space-between;
   margin-top: 8px;
   color: var(--tl-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1018,7 +1004,7 @@ textarea {
 .tl-row-sub {
   display: block;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -1040,7 +1026,7 @@ textarea {
 .tl-fact-label {
   margin-top: 3px;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* A heading that stands on the page instead of inside a card ("Sesión de hoy"):
@@ -1052,19 +1038,6 @@ textarea {
   gap: 8px;
   font-size: 17px;
   font-weight: 700;
-}
-
-/* An advisory strip: enough surface to group the notes, not a card. */
-.tl-note {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid var(--tl-border);
-  border-radius: var(--radius-small);
-  background: rgba(12, 17, 21, 0.6);
-  color: var(--tl-text-secondary);
-  font-size: 13px;
 }
 
 .tl-badges {
@@ -1103,7 +1076,7 @@ textarea {
 }
 
 .tl-badge-desc {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--tl-text-muted);
   margin-top: 3px;
 }
@@ -1238,7 +1211,7 @@ textarea {
   content: attr(data-label);
   align-self: flex-start;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.12em;
 }
 
@@ -1313,7 +1286,7 @@ textarea {
 
 .tl-body-picker-label {
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -1332,7 +1305,7 @@ textarea {
   min-height: 1.1rem;
   margin-top: 3px;
   color: var(--tl-accent-strong);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-align: center;
 }
@@ -1369,7 +1342,7 @@ textarea {
   background: var(--tl-surface);
   color: var(--tl-text-secondary);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -1398,13 +1371,13 @@ textarea {
   border-radius: 8px;
   background: var(--tl-surface);
   color: var(--tl-text);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .tl-body-anatomy-note {
   margin: 0;
   color: var(--tl-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -1418,7 +1391,7 @@ textarea {
   border: 1px solid color-mix(in oklab, var(--tl-warning) 30%, transparent);
   background: color-mix(in oklab, var(--tl-warning) 8%, transparent);
   color: var(--tl-text-secondary);
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -1434,7 +1407,7 @@ textarea {
   align-items: center;
   gap: 8px;
   color: var(--tl-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .tl-legend-dot {
@@ -1473,7 +1446,7 @@ textarea {
   align-items: center;
   gap: 7px;
   color: var(--tl-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   font-weight: 700;
@@ -1491,7 +1464,7 @@ textarea {
 .tl-band {
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   text-transform: none;
@@ -1531,7 +1504,7 @@ textarea {
 }
 
 .tl-condition-meta {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--tl-text-muted);
   line-height: 1.45;
 }
@@ -1581,7 +1554,7 @@ textarea {
   align-items: baseline;
   gap: 7px;
   min-width: 0;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.5;
   color: var(--tl-text-muted);
 }
@@ -1605,7 +1578,7 @@ textarea {
 }
 
 .tl-condition-empty .tl-condition-route {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tl-text-muted);
 }
 
@@ -1628,7 +1601,7 @@ textarea {
 }
 
 .tl-muscle-score {
-  font-size: 11px;
+  font-size: 12px;
   text-align: right;
   color: var(--tl-text-secondary);
   font-variant-numeric: tabular-nums;
@@ -1756,27 +1729,21 @@ textarea {
     gap: 14px;
   }
 
-  .tl-topbar {
-    margin-bottom: 12px;
-  }
-
-  .tl-welcome h1 {
-    font-size: 25px;
-  }
-
-  /* Wrap, do not scroll (2026-10-23). Two chips are 381 px against 362 px of
-     phone width, so the second pill («60 min por día») was cut at the viewport
-     edge with no scrollbar to hint at it. These are 2–3 chips per screen; a
-     second line costs 34 px and loses nothing. */
-  .tl-topbar > div:last-child {
-    width: 100%;
-    flex-wrap: wrap;
-    overflow-x: visible;
-    row-gap: 6px;
-  }
-
   .tl-context-tags {
     margin-top: -4px;
+  }
+
+  /*
+   * On a phone the gear label takes its own row (audited 2026-10-29). The item
+   * row is a wrapping flex line: icon, editable name, setup minutes, max load and
+   * increment. With `min-width: 140px` the name field kept 140 px and the row
+   * wrapped around it, so "Barra de dominadas (pronación)" was readable only as
+   * "Barra de dominadas (pron…" — inside an input you can still scroll, but you
+   * cannot see what you are renaming. Full width, then the numbers below.
+   */
+  .gear-label-input {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   /* 2×2 grid, never a horizontal strip (2026-10-23): see the ≤540 px rule
@@ -1863,7 +1830,7 @@ textarea {
   gap: 6px;
   padding: 3px 9px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   background: var(--tl-surface-3);
@@ -2009,7 +1976,7 @@ textarea {
 
 .tl-daycol-head span {
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .tl-daycard {
@@ -2040,7 +2007,7 @@ textarea {
   align-items: center;
   gap: 6px;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .tl-daycard-meta svg {
@@ -2075,7 +2042,7 @@ textarea {
   padding: 14px;
   text-align: center;
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
   display: grid;
   place-items: center;
   gap: 6px;
@@ -2136,7 +2103,7 @@ textarea {
   border-radius: 6px;
   background: rgba(8, 11, 14, 0.78);
   color: var(--tl-text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.3px;
   backdrop-filter: blur(4px);
@@ -2160,7 +2127,7 @@ textarea {
 
 .tl-gcard-muscles {
   color: var(--tl-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
   margin-top: -6px;
 }
 
@@ -2182,7 +2149,7 @@ textarea {
   align-items: center;
   gap: 5px;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 5px 8px;
   border-radius: 7px;
@@ -2205,7 +2172,7 @@ textarea {
   place-items: center;
   height: 100%;
   color: var(--tl-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   gap: 4px;
   text-align: center;
   padding: 8px;
@@ -2303,5 +2270,21 @@ textarea {
     gap: 7px;
     flex: 0 0 100%;
     min-width: 0;
+  }
+}
+
+/*
+ * Motion is decoration here, never information: sheets, ZEN transitions and
+ * banners all switch off for anyone who asked the OS for less movement. The two
+ * targeted blocks above remain (canvas + celebration); this is the floor.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

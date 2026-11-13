@@ -8,9 +8,34 @@
 > Marcadores: `[ ]` pendiente · `[~]` en curso · `[x]` hecho (fecha) · `[!]` bloqueado (por qué) · `[?]` decisión abierta
 >
 > Dirección de producto (visión, IA, branding, plataforma): `docs/ECOSYSTEM_STRATEGY.md`.
-> Fases de TrainingLab: `fitness-ecosystem/docs/REDESIGN_STORM.md`.
+> Fases de TrainingLab: `fitness-ecosystem/docs/DESIGN_DECISIONS_2026-11-07.md`.
 >
-> Última actualización: **2026-10-13 (a)** (**auditoría CSS↔clases**: `pnpm audit:css` compara, en
+> Última actualización: **2026-11-12 (a)** (**P1 §10 cerrado: edición de serie
+> en ZEN** con el mismo `setEditPatch` y Deshacer de 20 s que Historial; peso,
+> reps y D/F por fila, foco devuelto y Escape que no sale de ZEN; **1447 tests**;
+> ambos instaladores reconstruidos y copiados — ver
+> `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-11-11 (a)** (**D9 cerrado: un único `ExercisePicker`** en Hoy,
+> Entrenamiento y Rutinas; **1447 tests**; ambos instaladores reconstruidos y
+> copiados — ver `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-11-10 (b)** (**Ejercicios y su ficha al shell único**,
+> acciones `Usar hoy`/`Añadir a rutina` y edición de serie en Historial con undo;
+> **1441 tests**; ambos instaladores reconstruidos y copiados — ver
+> `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-11-10 (a)** (**Historial al shell único**: tarjetas, filtros
+> de periodo/búsqueda y detalle de todas las series; **1436 tests**; ambos
+> instaladores reconstruidos y copiados — ver
+> `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-11-09 (c)** (**Hoy + resumen**: tres bloques con `Ajustar
+> hoy` —también desde la topbar móvil— y detalle de todas las series; **1431
+> tests**; ambos instaladores reconstruidos y copiados — ver
+> `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-11-09 (a)** (**P0 ZEN móvil implementado**: tabla y entrada
+> antes del GIF/técnica, CTA `Registrar` fijo sobre la barra inferior y verificación
+> exacta a 390×844; instaladores TrainingLab 0.2.0 y BodyLab 1.0.0-beta.8
+> reconstruidos y copiados — ver
+> `fitness-ecosystem/docs/AGENT_HANDOFF.md`).
+> Anterior: **2026-10-13 (a)** (**auditoría CSS↔clases**: `pnpm audit:css` compara, en
 > cuatro direcciones, las clases que piden los componentes con las que define la hoja de estilos
 > —usada y no definida, definida y sin uso con lista blanca motivada, nombrada sólo dentro de un
 > `:has()`/`:not()`, y nombres montados en runtime— y el test raíz la ejecuta sobre la app real, así que
@@ -291,6 +316,25 @@ deshabilitarlo. El visor (`BodyViewer3D`), el motor WASM, el pack OHPK, el atlas
       `parseNumberInput` (antes `parseFloat`, que rompía con la coma decimal agrupada).
       13 tests en `tests/training/test_set_undo.test.ts` y E2E
       `node .tmp-verify/set-undo.mjs` (editar/conservar/borrar → deshacer).
+- [x] **Historial de sesiones al shell único (2026-11-10)** — `HistoryScreen` usa
+      `topbar` + `content` + `card`, con filtros de periodo/búsqueda, detalle completo
+      de todas las series vía `summariseSession`, y el borrado/deshacer existente.
+      5 tests nuevos en `tests/training/test_history_filter.test.ts`; preview 390/1440.
+      **Editar una serie (2026-11-10 b):** peso/reps/marca por fila comparten
+      `lib/set-edit.ts` con la ficha; `editSet` conserva el Deshacer global y
+      guardar sin cambios no abre ventana.
+- [x] **Ejercicios y su ficha al shell único (2026-11-10)** — `ExercisesScreen`
+      usa `topbar` + `content`; la ficha conserva Guía/Resumen/Historial y añade
+      `Usar hoy`/`Añadir a rutina`.
+- [x] **D9: selector único de ejercicios (2026-11-11)** — `ExercisePicker`
+      compartido por Hoy, Entrenamiento y Rutinas; búsqueda, familia, favoritos,
+      «sólo mi equipo» y filtros removibles. Cada pantalla conserva su verbo de
+      datos; 6 tests del filtro puro en `test_exercise_picker.test.ts`.
+- [x] **P1 §10: edición de serie en ZEN (2026-11-12)** — cada fila registrada de
+      `.zen-sets` abre peso/reps/D-F en la tabla; guarda por `editSet` con
+      `setEditPatch`, conserva el Deshacer de 20 s y no abre undo si no cambia
+      nada. Escape cancela sin salir de ZEN y el foco vuelve al botón. No se tocó
+      el motor ni el esquema.
 - [x] **Editar/borrar una serie y una sesión completa + E2E** (2026-10-08, cerrado 2026-10-21):
       primitivas de base de datos (`deleteSession`, `updateSession`, `deleteSetsMany`) en `db.ts`
       y store (`removeSession`, `restoreSession`, `editSession`); edición de series en `SlotCard` y

@@ -52,6 +52,9 @@ import type {
 } from "@fitness/bodylab-training";
 import { localDayKey } from "./day";
 import { focusFamiliesOf, isMuscleFamily } from "./day-focus";
+// The coach's own rules, shared with the local model and with a pasted answer:
+// one validator, three transports (2026-10-24).
+import { validateProposal, type ProposedSlot } from "./llm";
 import { gearShelf, withGearProfileSwitch } from "./gear-profiles";
 import { plannerCatalog } from "./plan";
 import {
@@ -110,6 +113,8 @@ export const MCP_ACTION_TYPES = [
   "regenerate_week",
   /* 2026-10-20: the gear shelf — the human's «casa / gimnasio» chips. */
   "set_gear_profile",
+  /* 2026-10-24: the coach's session, pushed by an agent (MCP-as-model). */
+  "propose_plan",
 ] as const;
 
 export type McpActionType = (typeof MCP_ACTION_TYPES)[number];
@@ -149,7 +154,10 @@ export type McpUndoOp =
   /** Put the local decision model back (a reset is otherwise re-learned). */
   | { kind: "decision_model"; before: DecisionModel | null }
   /** Put the week seed back, so a regeneration is reversible. */
-  | { kind: "week_seed"; before: number };
+  | { kind: "week_seed"; before: number }
+  /* Added 2026-10-24, with `propose_plan`. */
+  /** Drop the plan an agent proposed; the deterministic one comes back. */
+  | { kind: "plan_override" };
 
 export interface McpText {
   en: string;
@@ -206,6 +214,22 @@ export interface McpContext {
   model: DecisionModel | null;
   /** The in-memory week seed: `regenerate_week`'s undo restores it. */
   weekSeed: number;
+  /**
+   * The catalogue the planner considers usable with today's gear
+   * (`plan.usable`): what a `propose_plan` may draw from, with the facts the
+   * shared validator needs to judge it (2026-10-24).
+   */
+  usable: readonly {
+    id: string;
+    /** Primary family — the once-per-family rule. */
+    primary: string;
+    /** Every direct family — the recovery rule needs the whole list. */
+    families: readonly string[];
+    /** Setup minutes, part of the time budget the proposal must respect. */
+    setupMin: number;
+  }[];
+  /** Families still recovering (log) or flagged sore (the owner). */
+  fatiguedFamilies: readonly string[];
 }
 
 export type McpValidation =
@@ -224,6 +248,13 @@ export type McpValidation =
       /** The focus a `set_day_focus` resolved to (`[]` = automatic), so the
        *  store applies exactly the list validation approved. */
       dayFocus?: MuscleFamily[];
+      /**
+       * The session a `propose_plan` was accepted for, already clamped and
+       * checked (2026-10-24). The store still runs its own validation with the
+       * live plan — the same belt-and-pair every other action has — but this is
+       * what the rules *approved*, so a re-validation can only tighten it.
+       */
+      proposal?: { slots: ProposedSlot[]; summary: string };
     }
   | { ok: false; rule: string; detail: McpText };
 
@@ -429,6 +460,72 @@ function validateOccurredAt(
  * and the undo operation (or `null` when the store fills it in after applying,
  * because the id only exists once the set is written).
  */
+/**
+ * `propose_plan`: an agent proposing today's session (2026-10-24).
+ *
+ * This is the write half of "MCP as the model". The read half already existed
+ * (`propose_training_session` in the MCP server returns gear-legal candidates);
+ * what was missing was a door for the *answer*. It is deliberately the same
+ * door the local coach uses: `validateProposal` judges equipment, the time
+ * budget, one-primary-family and the recovery window, and the app then applies
+ * the accepted slots as today's plan — reversibly.
+ *
+ * Two refusals are specific to this action:
+ *   * an empty `slots` array is a **refusal by the model**, not a session, and
+ *     the plan stays deterministic (it is reported, not applied);
+ *   * a closed day cannot receive a new plan — there would be nothing to train.
+ */
+function validateProposePlan(
+  action: McpAction,
+  ctx: McpContext,
+): McpValidation {
+  if (ctx.finishedToday) {
+    return failed("already_finished", {
+      en: "Today's session is closed; a proposed plan needs an open day.",
+      es: "La sesión de hoy está cerrada; un plan propuesto necesita un día abierto.",
+    });
+  }
+  const rawSlots = action.params.slots;
+  if (!Array.isArray(rawSlots) || rawSlots.length === 0) {
+    return failed("proposal_empty", {
+      en: "propose_plan needs a non-empty `slots` array ({ exerciseId, sets, repsMin, repsMax, restSec }).",
+      es: "propose_plan necesita un `slots` no vacío ({ exerciseId, sets, repsMin, repsMax, restSec }).",
+    });
+  }
+
+  const usable = new Map(ctx.usable.map((entry) => [entry.id, entry]));
+  const check = validateProposal(
+    { slots: rawSlots },
+    {
+      usableIds: new Set(usable.keys()),
+      timeBudgetMin: ctx.settings?.timeBudgetMin ?? 90,
+      primaryFamilyOf: (id) => usable.get(id)?.primary ?? id,
+      setupMinOf: (id) => usable.get(id)?.setupMin ?? 0,
+      familiesOf: (id) => [...(usable.get(id)?.families ?? [])],
+      fatiguedFamilies: [...ctx.fatiguedFamilies],
+    },
+  );
+
+  if (!check.ok) {
+    return failed("proposal_rejected", {
+      en: `The proposal breaks the rules: ${check.errors.join(" ")}`,
+      es: `La propuesta rompe las reglas: ${check.errors.join(" ")}`,
+    });
+  }
+
+  const summary = asString(action.params.summary) ?? "";
+  return {
+    ok: true,
+    detail: {
+      en: `Proposal accepted: ${check.slots.length} slot(s), ~${check.estimatedMinutes} min. It becomes today's plan until the owner clears it.`,
+      es: `Propuesta aceptada: ${check.slots.length} hueco(s), ~${check.estimatedMinutes} min. Pasa a ser el plan de hoy hasta que el dueño lo quite.`,
+    },
+    // In memory only, so the undo is "drop it": nothing on disk changed.
+    undo: { kind: "plan_override" },
+    proposal: { slots: check.slots, summary },
+  };
+}
+
 export function validateMcpAction(
   action: McpAction,
   ctx: McpContext,
@@ -593,6 +690,9 @@ export function validateMcpAction(
 
     case "apply_routine":
       return validateApplyRoutine(action, ctx);
+
+    case "propose_plan":
+      return validateProposePlan(action, ctx);
 
     case "delete_routine":
       return validateDeleteRoutine(action, ctx);

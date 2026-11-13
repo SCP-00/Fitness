@@ -295,7 +295,7 @@ body {
 /*
  * iOS Safari auto-zooms any input rendered below 16px on focus. 15px body
  * text is a deliberate density choice, so the floor applies to form controls
- * only — the same rule as TrainingLab (see docs/UI_DESIGN.md).
+ * only — the same rule as TrainingLab (see docs/DESIGN_DECISIONS_2026-11-07.md).
  */
 input,
 select,

@@ -42,6 +42,10 @@ const BUILD_STAMP = (() => {
  * servers are running.
  */
 export default defineConfig({
+  // Relative by default: the same `dist/` then works in the Tauri webview, in
+  // the LAN server's `/traininglab/` mount and in any static host. An absolute
+  // base baked into one build mode made the other paint a blank page.
+  base: './',
   plugins: [react(), tailwindcss()],
   define: {
     __TRAININGLAB_VERSION__: JSON.stringify(APP_VERSION),

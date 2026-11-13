@@ -52,6 +52,7 @@ export default function SessionScreen() {
     toggleRestPause,
     skipRest,
     addSet,
+    editSet,
     finishSession,
     setRepRange,
     moveRow,
@@ -141,6 +142,9 @@ export default function SessionScreen() {
           pr: prFor(exerciseId),
           inventory: settings.inventory,
           readiness,
+          allSets: sets,
+          exerciseId,
+          lang: settings.language,
         });
       }}
       onLogSet={(row, weightUnit, reps, opts) => {
@@ -153,9 +157,11 @@ export default function SessionScreen() {
               : weightUnit;
         addSet(row, kg, reps, opts);
       }}
+      onEditSet={editSet}
       onFinish={() => {
-        finishSession();
-        navigate("today");
+        // The bell lands on the numbers, not on Hoy (2026-11-06).
+        const closed = finishSession();
+        navigate(closed ? "summary" : "today");
       }}
       onExit={() => navigate("today")}
       repRangeFor={(exerciseId) => {

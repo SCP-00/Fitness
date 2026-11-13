@@ -16,8 +16,11 @@
  *      bounds the planner respects, so a hand-edited backup cannot write a
  *      99-rep, 0-second-rest row into a session.
  *   3. **The estimate is an estimate.** Minutes are derived with
- *      `setup + sets × (0.5 min of work + rest)`, labelled `~` wherever it is
- *      printed. It is not a measurement and it never claims to be one.
+ *      `setup + sets × (45 s of work + rest)`, labelled `~` wherever it is
+ *      printed. It is not a measurement and it never claims to be one — but it
+ *      is the *engine's* own formula (`WORK_SEC_PER_SET` in
+ *      `core/training/src/session.ts`), so the card and the day total cannot
+ *      quote two different numbers for the same workout.
  *
  * @module lib/routines
  */
@@ -266,7 +269,7 @@ export function duplicateRoutine(
 export interface RoutineTotals {
   exercises: number;
   sets: number;
-  /** Estimated minutes: setup + sets × (0.5 min work + the item's own rest). */
+  /** Estimated minutes: setup + sets × (45 s work + the item's own rest). */
   minutes: number;
   families: MuscleFamily[];
 }
@@ -291,8 +294,9 @@ export function routineTotals(routine: Routine): RoutineTotals {
       if (!families.includes(family)) families.push(family);
     }
     sets += item.sets;
-    minutes +=
-      traits.setupMin + item.sets * (0.5 + item.restSec / 60);
+    // 45 s of work per set is the planner's own constant. Anything else here
+    // makes a routine and the day it is poured into disagree on the clock.
+    minutes += traits.setupMin + item.sets * (0.75 + item.restSec / 60);
   }
 
   return {

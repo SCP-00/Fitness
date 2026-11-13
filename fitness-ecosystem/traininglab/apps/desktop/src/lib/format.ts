@@ -50,8 +50,10 @@ const COPY: Record<string, { en: string; es: string }> = {
     es: "cambiada por ti",
   },
   "reason.coach": {
-    en: "chosen by your local coach",
-    es: "elegida por tu coach local",
+    // Transport-neutral on purpose (2026-10-24): the same reason code covers the
+    // local model, an agent over MCP and a pasted answer.
+    en: "proposed by the coach",
+    es: "propuesta por el coach",
   },
   // Advisories
   "advisory.readiness_low": {

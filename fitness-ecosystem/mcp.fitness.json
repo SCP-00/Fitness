@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "fitness": {
+      "command": "node",
+      "args": [
+        "C:/Users/andyh/Documents/Projects/FreeBody/fitness-ecosystem/scripts/fitness-mcp-server.mjs"
+      ],
+      "env": {
+        "FITNESS_MCP_AGENT": "buffy",
+        "TL_MCP_WAIT_MS": "8000"
+      }
+    }
+  }
+}

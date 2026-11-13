@@ -208,6 +208,6 @@ work. Nothing from the tracked app's artwork is ever used.
 ## Where this feeds the product
 
 Data alone changes nothing; the second half of this work is *how a user sees it*.
-That is [TRAININGLAB_UI_PLAN.md](TRAININGLAB_UI_PLAN.md): navigation, the exercise
+That is [DESIGN_DECISIONS_2026-11-07.md](DESIGN_DECISIONS_2026-11-07.md): navigation, the exercise
 library and detail screens, the set logger, progress, and how plans are presented
 in a fully local environment.
