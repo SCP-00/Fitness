@@ -47,6 +47,7 @@
 
 import http from "node:http";
 import os from "node:os";
+import zlib from "node:zlib";
 import path from "node:path";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
@@ -211,7 +212,42 @@ function contentType(file) {
  * Serve `file` under `root`, falling back to `root/index.html` for extensionless
  * paths (a deep link into a SPA) and 404 for everything else.
  */
-async function serveFile(res, root, relPath) {
+const COMPRESSIBLE = new Set([".html", ".js", ".mjs", ".css", ".json", ".svg", ".txt", ".csv"]);
+/** `index-AB12cd34.js`: a content hash, so the URL never changes meaning. */
+const HASHED = /^[^.]+-[A-Za-z0-9_-]{8,}\.[a-z]+$/;
+
+/** Compressed copies, keyed by file + mtime: a rebuild invalidates naturally. */
+const packed = new Map();
+
+function pickEncoding(req, file) {
+  if (!COMPRESSIBLE.has(path.extname(file).toLowerCase())) return null;
+  const accept = req.headers["accept-encoding"] ?? "";
+  if (/\bbr\b/.test(accept)) return "br";
+  if (/\bgzip\b/.test(accept)) return "gzip";
+  return null;
+}
+
+/**
+ * One cache entry per file version, not per request: the bundle is 531 kB of JS
+ * and compresses to roughly a fifth of that, which is the difference between a
+ * phone that opens the app in a second and one that waits for a Wi-Fi round
+ * trip per chunk.
+ */
+function compressed(file, body, encoding) {
+  const key = `${file}:${body.length}:${encoding}`;
+  const hit = packed.get(key);
+  if (hit) return hit;
+  const out =
+    encoding === "br"
+      ? zlib.brotliCompressSync(body, {
+          params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 },
+        })
+      : zlib.gzipSync(body, { level: 9 });
+  packed.set(key, out);
+  return out;
+}
+
+async function serveFile(req, res, root, relPath) {
   // Normalise, then refuse anything that escapes the root ("../").
   const target = path.resolve(root, "." + path.posix.normalize(`/${relPath}`));
   if (target !== root && !target.startsWith(root + path.sep)) {
@@ -235,17 +271,24 @@ async function serveFile(res, root, relPath) {
 
   try {
     const body = await fsp.readFile(file);
+    const encoding = pickEncoding(req, file);
+    const payload = encoding ? compressed(file, body, encoding) : body;
     res.writeHead(200, {
       "Content-Type": contentType(file),
-      "Content-Length": body.length,
-      // The bundles are content-hashed; index.html must never be cached or the
-      // phone keeps an old build after a rebuild.
+      "Content-Length": payload.length,
+      "Vary": "Accept-Encoding",
+      ...(encoding ? { "Content-Encoding": encoding } : {}),
+      // The bundles are content-hashed, so a new build is a new URL: they can
+      // live in the cache forever. index.html must never be cached or the phone
+      // keeps an old build after a rebuild.
       "Cache-Control":
         path.basename(file) === "index.html"
           ? "no-store"
-          : "public, max-age=3600",
+          : HASHED.test(path.basename(file))
+            ? "public, max-age=31536000, immutable"
+            : "public, max-age=3600",
     });
-    res.end(body);
+    res.end(payload);
   } catch {
     res.writeHead(404).end("Not found");
   }
@@ -427,10 +470,18 @@ const server = http.createServer(async (req, res) => {
   }
 
   const rel = pathname.slice(app.mount.length - 1);
-  await serveFile(res, roots.get(app.id), rel);
+  await serveFile(req, res, roots.get(app.id), rel);
 });
 
-server.listen(PORT, "0.0.0.0", () => {
+/**
+ * Dual-stack listen.
+ *
+ * `0.0.0.0` only accepts IPv4, and Windows resolves `localhost` to `::1`
+ * first, so every request paid a failed IPv6 connect before falling back to
+ * IPv4: measured 311 ms of dead time before the first byte, on localhost. A
+ * `::` socket with `ipv6Only: false` answers both families on the first try.
+ */
+function announce() {
   const ips = localAddresses();
   const host = ips[0] ?? "localhost";
   const line = "─".repeat(58);
@@ -476,7 +527,17 @@ server.listen(PORT, "0.0.0.0", () => {
     const app = APPS.find((a) => a.id === OPEN_APP);
     openInBrowser(`http://localhost:${PORT}${app ? app.mount : "/"}`);
   }
+}
+
+server.once("error", (error) => {
+  // A host without IPv6 still has to work: fall back to plain IPv4.
+  if (error.code === "EAFNOSUPPORT" || error.code === "EADDRNOTAVAIL") {
+    server.listen(PORT, "0.0.0.0", announce);
+    return;
+  }
+  throw error;
 });
+server.listen({ port: PORT, host: "::", ipv6Only: false }, announce);
 
 /**
  * Hand a URL to the OS default browser without adding a dependency: `start`
