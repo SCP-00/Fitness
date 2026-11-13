@@ -115,12 +115,12 @@ export function GearPanel({
                   aria-label={t("gear.title")}
                 />
                 {item.setupMin > 0 && (
-                  <span className="text-[11px] text-[var(--tl-text-muted)]">
+                  <span className="text-[12px] text-[var(--tl-text-muted)]">
                     {tInterp("gear.setup", { n: item.setupMin })}
                   </span>
                 )}
                 {item.maxLoadKg !== null && (
-                  <label className="flex items-center gap-1 text-[11px] text-[var(--tl-text-muted)]">
+                  <label className="flex items-center gap-1 text-[12px] text-[var(--tl-text-muted)]">
                     {t("gear.maxLoad")}
                     <input
                       type="number"
@@ -135,7 +135,7 @@ export function GearPanel({
                   </label>
                 )}
                 {item.incrementKg !== null && (
-                  <label className="flex items-center gap-1 text-[11px] text-[var(--tl-text-muted)]">
+                  <label className="flex items-center gap-1 text-[12px] text-[var(--tl-text-muted)]">
                     {t("gear.increment")}
                     <input
                       type="number"

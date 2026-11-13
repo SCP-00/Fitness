@@ -242,16 +242,16 @@ export function SharedPanel({
         </div>
 
         {(formError || lastError) && (
-          <p className="text-[11px] text-red-400">{formError ?? lastError}</p>
+          <p className="text-[12px] text-red-400">{formError ?? lastError}</p>
         )}
 
-        <p className="text-[11px] text-[var(--tl-text-muted)] flex items-start gap-1.5">
+        <p className="text-[12px] text-[var(--tl-text-muted)] flex items-start gap-1.5">
           <CloudOff className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           {t("shared.notPrivate")}
         </p>
 
         {settings.lastSyncAt && (
-          <p className="text-[11px] text-[var(--tl-text-muted)]">
+          <p className="text-[12px] text-[var(--tl-text-muted)]">
             {tInterp("shared.lastSync", {
               when: new Date(settings.lastSyncAt).toLocaleString(
                 getLanguage() === "es" ? "es-ES" : "en-GB",
@@ -278,7 +278,7 @@ export function SharedPanel({
                   }`}
                 >
                   <span className="font-medium truncate">{row.name}</span>
-                  <span className="text-[11px] text-[var(--tl-text-muted)] text-right tabular-nums shrink-0">
+                  <span className="text-[12px] text-[var(--tl-text-muted)] text-right tabular-nums shrink-0">
                     {tInterp("shared.familyWeek", {
                       sets: row.setsLast7d,
                       vol: row.volumeLast7d,
@@ -296,7 +296,7 @@ export function SharedPanel({
             <HeartPulse className="w-3.5 h-3.5" />
             {t("shared.health")}
           </p>
-          <p className="text-[11px] text-[var(--tl-text-muted)] mb-3">{t("shared.healthHint")}</p>
+          <p className="text-[12px] text-[var(--tl-text-muted)] mb-3">{t("shared.healthHint")}</p>
 
           <div className="flex flex-wrap items-end gap-2">
             <select
@@ -351,7 +351,7 @@ export function SharedPanel({
                   <span className="font-medium tabular-nums">
                     {record.value} {record.unit ?? ""}
                   </span>
-                  <span className="text-[11px] text-[var(--tl-text-muted)] tabular-nums">
+                  <span className="text-[12px] text-[var(--tl-text-muted)] tabular-nums">
                     {localDayKey(record.timestamp)}
                   </span>
                   <button
@@ -367,7 +367,7 @@ export function SharedPanel({
           )}
 
           {health.length > 0 && (
-            <p className="text-[11px] text-[var(--tl-text-muted)] mt-2">
+            <p className="text-[12px] text-[var(--tl-text-muted)] mt-2">
               {tInterp("shared.healthLocal", { n: health.length })}
               {settings.enabled && settings.memberId
                 ? ` · ${t("shared.healthSynced")}`

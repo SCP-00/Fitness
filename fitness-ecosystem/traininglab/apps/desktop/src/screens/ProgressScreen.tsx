@@ -235,7 +235,7 @@ export default function ProgressScreen() {
             <div className="card-body">
               {mapMode === "goal" && (
                 <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+                  <span className="text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)]">
                     {t("progress.goal.source")}
                   </span>
                   <Chip
@@ -285,12 +285,12 @@ export default function ProgressScreen() {
                     </div>
                   )}
 
-                  <p className="text-[11px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
+                  <p className="text-[12px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
                     {mapMode === "goal"
                       ? t("progress.body.goalHint")
                       : t("progress.body.indexHint")}
                   </p>
-                  <p className="text-[11px] text-[var(--tl-text-muted)] mt-1.5 leading-relaxed">
+                  <p className="text-[12px] text-[var(--tl-text-muted)] mt-1.5 leading-relaxed">
                     {t("progress.body.schematic")}
                     {" "}
                     {figure.from === "bodylab"
@@ -343,7 +343,7 @@ export default function ProgressScreen() {
                     <h2>{t("progress.detail.title")}</h2>
                     <span>{t("progress.heat.hint")}</span>
                   </div>
-                  <span className="text-[11px] text-[var(--tl-text-muted)] text-right max-w-[10rem]">
+                  <span className="text-[12px] text-[var(--tl-text-muted)] text-right max-w-[10rem]">
                     {t("progress.heat.scale")}
                   </span>
                 </div>
@@ -372,7 +372,7 @@ export default function ProgressScreen() {
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 mt-4 text-[11px] text-[var(--tl-text-secondary)]">
+                  <div className="flex flex-wrap items-center gap-3 mt-4 text-[12px] text-[var(--tl-text-secondary)]">
                     <Legend tone="var(--tl-accent)">
                       {t("progress.heat.effective")}
                     </Legend>
@@ -511,7 +511,7 @@ function BalanceCard({ balance }: { balance: FamilyBalance[] }) {
             n: least.stimulus.toFixed(1),
           })}
         />
-        <p className="text-[11px] text-[var(--tl-text-muted)] leading-relaxed">
+        <p className="text-[12px] text-[var(--tl-text-muted)] leading-relaxed">
           {t("progress.balance.hint")}
         </p>
       </div>
@@ -538,7 +538,7 @@ function BalanceLine({
         aria-hidden
       />
       <span className="min-w-0 flex-1">
-        <span className="block text-[11px] text-[var(--tl-text-muted)]">
+        <span className="block text-[12px] text-[var(--tl-text-muted)]">
           {label}
         </span>
         <span className="block text-sm font-semibold truncate">{family}</span>
@@ -610,7 +610,7 @@ function AssistantCard() {
             })}
           </ul>
         )}
-        <p className="text-[11px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
+        <p className="text-[12px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
           {payload
             ? t("progress.assistant.withBodyLab")
             : t("progress.assistant.withoutBodyLab")}

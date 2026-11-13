@@ -339,7 +339,7 @@ function GuideTab({
     <>
       {/* The three lines people actually read while standing at the rack. */}
       <Card>
-        <p className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)] mb-2">
+        <p className="text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)] mb-2">
           {t("ex.guide.quick")}
         </p>
         <ol className="space-y-2">
@@ -424,7 +424,7 @@ function GuideTab({
         )}
       </Card>
 
-      <p className="text-[11px] text-[var(--tl-text-muted)] text-center">
+      <p className="text-[12px] text-[var(--tl-text-muted)] text-center">
         {t("ex.guide.provenance")} · {exerciseId} · {technique.pattern}
       </p>
     </>
@@ -471,7 +471,7 @@ function SummaryTab({
   return (
     <>
       <Card>
-        <p className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)] mb-3">
+        <p className="text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)] mb-3">
           {t("ex.summary.muscles")}
         </p>
         <ul className="space-y-2">
@@ -534,7 +534,7 @@ function SummaryTab({
         </div>
         {traits && traits.progression.length > 0 && (
           <div className="mt-3">
-            <p className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+            <p className="text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)]">
               {t("ex.summary.progression")}
             </p>
             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -558,7 +558,7 @@ function SummaryTab({
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+      <div className="text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)]">
         {label}
       </div>
       <div className="text-sm font-semibold mt-0.5">{value}</div>

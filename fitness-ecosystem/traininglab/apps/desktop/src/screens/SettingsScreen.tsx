@@ -865,7 +865,7 @@ export default function SettingsScreen() {
                       {entry.detail[settings.language]}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[var(--tl-text-muted)] mt-1">
+                  <p className="text-[12px] text-[var(--tl-text-muted)] mt-1">
                     {tInterp("settings.mcp.requestedBy", { o: entry.origin })}
                     {entry.appliedAt
                       ? ` · ${new Date(entry.appliedAt).toLocaleString()}`
@@ -928,7 +928,7 @@ export default function SettingsScreen() {
         </div>
       </SectionCard>
 
-          <p className="text-[11px] text-[var(--tl-text-muted)] text-center flex items-center justify-center gap-1.5">
+          <p className="text-[12px] text-[var(--tl-text-muted)] text-center flex items-center justify-center gap-1.5">
             <Info size={12} />
             {t("settings.about.offline")}
           </p>

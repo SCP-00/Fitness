@@ -103,7 +103,7 @@ export function WeekCard({
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-          <p className="text-[11px] text-[var(--tl-text-muted)]">
+          <p className="text-[12px] text-[var(--tl-text-muted)]">
             {weekPlan.uncovered.length > 0
               ? tInterp("week.uncovered", {
                   fams: weekPlan.uncovered.map((u) => u.family).join(", "),
@@ -119,7 +119,7 @@ export function WeekCard({
             {t("week.regenerate")}
           </button>
         </div>
-        <p className="text-[11px] text-[var(--tl-text-muted)] mt-2">
+        <p className="text-[12px] text-[var(--tl-text-muted)] mt-2">
           {t("week.editHint")}
         </p>
       </div>

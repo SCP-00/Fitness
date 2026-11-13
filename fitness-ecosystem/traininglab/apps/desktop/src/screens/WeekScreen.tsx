@@ -193,7 +193,7 @@ export default function WeekScreen() {
               </Badge>
             </div>
             <div className="card-body">
-              <p className="text-[11px] text-[var(--tl-text-muted)] mb-2">
+              <p className="text-[12px] text-[var(--tl-text-muted)] mb-2">
                 {t("week.dragHint")}
               </p>
               <div className="tl-days">
@@ -265,11 +265,11 @@ export default function WeekScreen() {
 
                       {!row.isRest && (
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] text-[var(--tl-text-muted)]">
+                          <span className="text-[12px] text-[var(--tl-text-muted)]">
                             {t("week.stress.day")}
                           </span>
                           <span
-                            className="tabular-nums text-[11px] font-semibold"
+                            className="tabular-nums text-[12px] font-semibold"
                             style={{ color: BAND_COLOR[dayBand] }}
                           >
                             {row.assigned.length === 0
@@ -337,7 +337,7 @@ export default function WeekScreen() {
                       {/* ── Authoring: his day, his action, his save ───── */}
                       {isEditing && (
                         <div className="mt-1 p-3 rounded-xl bg-[var(--tl-bg)] border border-[var(--tl-border)] flex flex-col gap-2">
-                          <p className="text-[11px] text-[var(--tl-text-muted)] leading-relaxed">
+                          <p className="text-[12px] text-[var(--tl-text-muted)] leading-relaxed">
                             {t("week.editHint")}
                           </p>
                           <div className="flex gap-2">
@@ -367,7 +367,7 @@ export default function WeekScreen() {
 
                           {kind === "train" && (
                             <>
-                              <span className="text-[11px] text-[var(--tl-text-secondary)]">
+                              <span className="text-[12px] text-[var(--tl-text-secondary)]">
                                 {t("week.pickFamilies")}
                               </span>
                               <div className="flex flex-wrap gap-1.5">
@@ -395,7 +395,7 @@ export default function WeekScreen() {
                                 })}
                               </div>
                               {selected.length > 0 && (
-                                <span className="text-[11px] tabular-nums text-[var(--tl-text-muted)]">
+                                <span className="text-[12px] tabular-nums text-[var(--tl-text-muted)]">
                                   {tInterp("week.estimated", {
                                     sets:
                                       selected.length * SETS_PER_FAMILY_DAY,
@@ -516,7 +516,7 @@ export default function WeekScreen() {
                 </p>
               )}
 
-              <p className="text-[11px] text-[var(--tl-text-muted)] leading-relaxed">
+              <p className="text-[12px] text-[var(--tl-text-muted)] leading-relaxed">
                 {plan
                   ? tInterp("week.gear", {
                       usable: plan.gearNote.usable,
@@ -536,7 +536,7 @@ export default function WeekScreen() {
             </div>
           </section>
 
-          <p className="text-[11px] text-[var(--tl-text-muted)] text-center">
+          <p className="text-[12px] text-[var(--tl-text-muted)] text-center">
             {tInterp("week.todayIndexNote", { i: todayIndex + 1 })}
           </p>
         </>

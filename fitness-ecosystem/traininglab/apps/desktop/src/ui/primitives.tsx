@@ -274,7 +274,7 @@ export function StatCard({
 }) {
   return (
     <div className="tl-card p-4">
-      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+      <div className="flex items-center gap-2 text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)]">
         {icon}
         <span>{label}</span>
       </div>
@@ -312,7 +312,7 @@ export function Badge({
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-medium ${tones[tone]}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[12px] font-medium ${tones[tone]}`}
     >
       {children}
     </span>
@@ -332,7 +332,7 @@ export function Chip({
   title?: string;
 }) {
   const base =
-    "px-2.5 py-1 rounded-lg text-[11px] border tl-focusable whitespace-nowrap transition-colors";
+    "px-2.5 py-1 rounded-lg text-[12px] border tl-focusable whitespace-nowrap transition-colors";
   const look = active
     ? "bg-[var(--tl-accent)] text-[var(--tl-on-accent)] border-transparent font-semibold"
     : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)] hover:border-[var(--tl-border-strong)]";
@@ -532,7 +532,7 @@ export function ScaleInput({
         className="w-full mt-2 accent-[var(--tl-accent)]"
       />
       {(lowHint || highHint) && (
-        <div className="flex justify-between text-[10px] text-[var(--tl-text-muted)] mt-1">
+        <div className="flex justify-between text-[12px] text-[var(--tl-text-muted)] mt-1">
           <span>{lowHint}</span>
           <span>{highHint}</span>
         </div>

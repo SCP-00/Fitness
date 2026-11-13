@@ -2913,9 +2913,12 @@ svg {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 9.5px;
+  /* 11 px, not the 12 px floor: five tabs share the width, and the active
+     label ("Entrenamiento") already truncates. It is the one place where the
+     tab grid caps the type; the icon still carries the identity. */
+  font-size: 11px;
   font-weight: 600;
-  line-height: 11px;
+  line-height: 13px;
   letter-spacing: -0.1px;
   opacity: 0;
   transition: opacity 120ms;

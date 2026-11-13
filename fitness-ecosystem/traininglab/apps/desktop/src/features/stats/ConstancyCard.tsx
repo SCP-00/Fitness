@@ -44,7 +44,7 @@ export function ConstancyCard({ days }: { days: 7 | 30 | 90 }) {
     <section className="card">
       <div className="card-head">
         <h2>{t("progress.constancy.title")}</h2>
-        <span className="text-[11px] text-[var(--tl-text-muted)]">
+        <span className="text-[12px] text-[var(--tl-text-muted)]">
           {tInterp("progress.days", { n: days })}
         </span>
       </div>
@@ -66,7 +66,7 @@ export function ConstancyCard({ days }: { days: 7 | 30 | 90 }) {
                 />
               ))}
             </div>
-            <p className="text-[11px] text-[var(--tl-text-secondary)] mt-2 tabular-nums">
+            <p className="text-[12px] text-[var(--tl-text-secondary)] mt-2 tabular-nums">
               {tInterp("progress.constancy.sets", {
                 done: logged,
                 target,
@@ -82,7 +82,7 @@ export function ConstancyCard({ days }: { days: 7 | 30 | 90 }) {
             : t("progress.constancy.noteNone")}
         </p>
         {totalWorking === 0 && (
-          <p className="text-[11px] text-[var(--tl-text-muted)] mt-2">
+          <p className="text-[12px] text-[var(--tl-text-muted)] mt-2">
             {t("progress.emptyHint")}
           </p>
         )}

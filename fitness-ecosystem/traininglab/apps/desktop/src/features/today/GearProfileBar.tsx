@@ -150,7 +150,7 @@ export function GearProfileBar({
             type="button"
             onClick={() => open({ kind: "name" }, defaultName)}
             disabled={!hasItems}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] hover:border-[var(--tl-border-strong)] tl-focusable disabled:opacity-40"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] hover:border-[var(--tl-border-strong)] tl-focusable disabled:opacity-40"
           >
             <Plus className="w-3 h-3" />
             {t("gear.profiles.save")}
@@ -159,7 +159,7 @@ export function GearProfileBar({
           <button
             type="button"
             onClick={() => open({ kind: "new" }, defaultName)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] hover:border-[var(--tl-border-strong)] tl-focusable"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] hover:border-[var(--tl-border-strong)] tl-focusable"
           >
             <Plus className="w-3 h-3" />
             {t("gear.profiles.new")}

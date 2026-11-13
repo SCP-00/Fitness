@@ -84,7 +84,7 @@ export function VolumeTargetCard() {
                 })}
               </strong>
               {summary.below > 0 && (
-                <span className="text-[11px] text-[var(--tl-warning)] font-medium tabular-nums">
+                <span className="text-[12px] text-[var(--tl-warning)] font-medium tabular-nums">
                   {tInterp("progress.volumeTarget.belowCount", {
                     n: summary.below,
                   })}
@@ -109,7 +109,7 @@ export function VolumeTargetCard() {
                     <span className="block text-[13px] font-medium truncate">
                       {familyLabel(row.family)}
                     </span>
-                    <span className="block text-[11px] text-[var(--tl-text-muted)]">
+                    <span className="block text-[12px] text-[var(--tl-text-muted)]">
                       {row.status === "below"
                         ? tInterp("progress.volumeTarget.missing", {
                             n: row.missing,
@@ -149,7 +149,7 @@ export function VolumeTargetCard() {
                     style={{ color: STATUS_TONE[row.status] }}
                   >
                     {row.directSets}
-                    <span className="text-[11px] font-normal text-[var(--tl-text-muted)]">
+                    <span className="text-[12px] font-normal text-[var(--tl-text-muted)]">
                       {" "}
                       /{row.min}–{row.max}
                     </span>
@@ -158,15 +158,15 @@ export function VolumeTargetCard() {
               ))}
             </div>
 
-            <p className="text-[11px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
+            <p className="text-[12px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
               {t("progress.volumeTarget.source")}
             </p>
             {summary.rows.some((r) => WIDER_BAND_FAMILIES.includes(r.family)) && (
-              <p className="text-[11px] text-[var(--tl-text-muted)] mt-1 leading-relaxed">
+              <p className="text-[12px] text-[var(--tl-text-muted)] mt-1 leading-relaxed">
                 {t("progress.volumeTarget.widerBand")}
               </p>
             )}
-            <p className="text-[11px] text-[var(--tl-text-muted)] mt-1 leading-relaxed">
+            <p className="text-[12px] text-[var(--tl-text-muted)] mt-1 leading-relaxed">
               {t("progress.volumeTarget.caveat")}
             </p>
           </>

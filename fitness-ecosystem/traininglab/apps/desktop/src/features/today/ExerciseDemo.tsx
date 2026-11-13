@@ -667,7 +667,7 @@ export function ExerciseDemoModal({
             name={name}
           />
           {stillMode && (
-            <p className="text-[11px] text-[var(--tl-text-muted)] text-center mt-1 flex items-center justify-center gap-1">
+            <p className="text-[12px] text-[var(--tl-text-muted)] text-center mt-1 flex items-center justify-center gap-1">
               <ImageIcon className="w-3 h-3" />
               {stillMode === "pair"
                 ? t("tech.stillPair")
@@ -675,7 +675,7 @@ export function ExerciseDemoModal({
             </p>
           )}
           {demo && (
-            <p className="text-[11px] text-[var(--tl-text-muted)] text-center mt-1">
+            <p className="text-[12px] text-[var(--tl-text-muted)] text-center mt-1">
               {t("tech.watchOut")}:{" "}
               {demo.watch.map((j) => t(`tech.joint.${j}`)).join(" · ")}
             </p>
@@ -684,13 +684,13 @@ export function ExerciseDemoModal({
         {tech && (
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex flex-wrap gap-1.5">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium bg-[var(--tl-accent)]/10 text-[var(--tl-accent)] border-transparent">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md border text-[12px] font-medium bg-[var(--tl-accent)]/10 text-[var(--tl-accent)] border-transparent">
                 {t("tech.level")} {tech.techniqueLevel}/5
               </span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] border-[var(--tl-border)]">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md border text-[12px] font-medium bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] border-[var(--tl-border)]">
                 {t("tech.effort")}: RIR {tech.effort.rir}
               </span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] border-[var(--tl-border)]">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md border text-[12px] font-medium bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] border-[var(--tl-border)]">
                 {t("tech.joint")} {tech.jointStress}/3
               </span>
             </div>

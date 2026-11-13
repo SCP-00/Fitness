@@ -174,12 +174,12 @@ export function CoachPanel({
               }
               className="tl-input w-full mt-1 px-3 py-2 text-sm"
             />
-            <span className="text-[11px] block mt-1">
+            <span className="text-[12px] block mt-1">
               {t("coach.maxTokensHint")}
             </span>
           </label>
           <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] text-[var(--tl-text-muted)] flex items-center gap-1">
+            <span className="text-[12px] text-[var(--tl-text-muted)] flex items-center gap-1">
               <Settings2 className="w-3 h-3" />
               {t("settings.llmPresets")}
             </span>
@@ -190,7 +190,7 @@ export function CoachPanel({
                   setProbe(null);
                   onLlmChange({ ...llm, baseUrl: p.baseUrl });
                 }}
-                className={`px-2.5 py-1 rounded-lg text-[11px] border tl-focusable ${
+                className={`px-2.5 py-1 rounded-lg text-[12px] border tl-focusable ${
                   llm.baseUrl === p.baseUrl
                     ? "tl-chip border-transparent"
                     : "bg-[var(--tl-surface-2)] border-[var(--tl-border)] text-[var(--tl-text-secondary)]"
@@ -202,7 +202,7 @@ export function CoachPanel({
             <button
               onClick={() => void runDetect()}
               disabled={detecting}
-              className="px-2.5 py-1 rounded-lg text-[11px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] tl-focusable disabled:opacity-40 inline-flex items-center gap-1"
+              className="px-2.5 py-1 rounded-lg text-[12px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] tl-focusable disabled:opacity-40 inline-flex items-center gap-1"
             >
               <Radar className="w-3 h-3" />
               {detecting ? t("coach.detecting") : t("coach.detect")}
@@ -210,14 +210,14 @@ export function CoachPanel({
             <button
               onClick={() => void runProbe()}
               disabled={probing}
-              className="px-2.5 py-1 rounded-lg text-[11px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] tl-focusable disabled:opacity-40"
+              className="px-2.5 py-1 rounded-lg text-[12px] border border-[var(--tl-border)] bg-[var(--tl-surface-2)] text-[var(--tl-text-secondary)] tl-focusable disabled:opacity-40"
             >
               {probing ? t("coach.probing") : t("coach.probe")}
             </button>
           </div>
           {detection && (
             <p
-              className={`sm:col-span-2 text-[11px] ${detection.ok ? "text-emerald-400" : "text-[var(--tl-text-muted)]"}`}
+              className={`sm:col-span-2 text-[12px] ${detection.ok ? "text-emerald-400" : "text-[var(--tl-text-muted)]"}`}
             >
               {detection.ok && detection.baseUrl
                 ? detection.model
@@ -236,7 +236,7 @@ export function CoachPanel({
           )}
           {probe && (
             <p
-              className={`sm:col-span-2 text-[11px] ${probe.ok ? "text-emerald-400" : "text-amber-400"}`}
+              className={`sm:col-span-2 text-[12px] ${probe.ok ? "text-emerald-400" : "text-amber-400"}`}
             >
               {probe.ok
                 ? probe.models.length > 0
@@ -324,7 +324,7 @@ export function CoachResultView({
         <p className="text-sm whitespace-pre-wrap">{result.content}</p>
       )}
       {result.toolCalls.length > 0 && (
-        <div className="text-[11px] text-[var(--tl-text-muted)]">
+        <div className="text-[12px] text-[var(--tl-text-muted)]">
           <button
             onClick={onOpenTools}
             className="underline decoration-dotted tl-focusable"

@@ -80,7 +80,7 @@ export function WeeklyVolumeCard() {
                 title={trendTitle}
               >
                 {arrow(volume.trend)}{" "}
-                <span className="text-[11px] text-[var(--tl-text-secondary)] font-normal">
+                <span className="text-[12px] text-[var(--tl-text-secondary)] font-normal">
                   {t("progress.weekly.vsPrevious")}
                 </span>
               </span>
@@ -139,7 +139,7 @@ export function WeeklyVolumeCard() {
               </>
             )}
 
-            <p className="text-[11px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
+            <p className="text-[12px] text-[var(--tl-text-muted)] mt-3 leading-relaxed">
               {t("progress.weekly.disclaimer")}
             </p>
           </>

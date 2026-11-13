@@ -123,7 +123,7 @@ export function GoalsPanel({
 
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+          <span className="text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)]">
             {t("settings.goals.waist")}
           </span>
           <input
@@ -159,11 +159,11 @@ export function GoalsPanel({
           >
             ✦ {t("settings.goals.applyGolden")}
           </button>
-          <p className="text-[11px] leading-relaxed text-[var(--tl-text-muted)]">
+          <p className="text-[12px] leading-relaxed text-[var(--tl-text-muted)]">
             {t("settings.goals.applyGoldenHint")}
           </p>
           {goldenMsg && (
-            <p className="text-[11px] font-medium text-[var(--tl-success)]">
+            <p className="text-[12px] font-medium text-[var(--tl-success)]">
               {goldenMsg}
             </p>
           )}
@@ -172,7 +172,7 @@ export function GoalsPanel({
         <div className="flex flex-col gap-4">
           {GROUPS.map((group) => (
             <div key={group.labelKey} className="flex flex-col gap-2">
-              <span className="text-[11px] uppercase tracking-wide text-[var(--tl-text-muted)]">
+              <span className="text-[12px] uppercase tracking-wide text-[var(--tl-text-muted)]">
                 {t(group.labelKey)}
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -193,7 +193,7 @@ export function GoalsPanel({
                       <span className="text-sm min-w-0 flex flex-wrap items-baseline gap-1.5">
                         {familyLabel(family)}
                         {ratioText && (
-                          <span className="text-[10px] text-[var(--tl-text-muted)] tabular-nums">
+                          <span className="text-[12px] text-[var(--tl-text-muted)] tabular-nums">
                             {tInterp("settings.goals.ratioOf", { r: ratioText })}
                           </span>
                         )}

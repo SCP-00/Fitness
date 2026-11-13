@@ -63,7 +63,7 @@ export function NumbersCard() {
           ))}
         </div>
         {records > 0 && (
-          <p className="text-[11px] text-[var(--tl-text-muted)] mt-3">
+          <p className="text-[12px] text-[var(--tl-text-muted)] mt-3">
             {tInterp("progress.numbers.records", { n: records })}
           </p>
         )}

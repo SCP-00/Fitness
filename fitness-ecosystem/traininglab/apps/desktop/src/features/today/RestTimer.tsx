@@ -166,7 +166,7 @@ export default function RestTimer({
       {/* The rest belongs to an exercise: naming it is what makes the alert
           per-exercise instead of an anonymous countdown. */}
       {nextExercise && (
-        <p className="-mt-1 mb-1.5 text-[11px] text-[var(--tl-text-muted)] truncate text-center">
+        <p className="-mt-1 mb-1.5 text-[12px] text-[var(--tl-text-muted)] truncate text-center">
           {nextExercise}
         </p>
       )}

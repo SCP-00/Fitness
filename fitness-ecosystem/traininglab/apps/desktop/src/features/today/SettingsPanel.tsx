@@ -215,7 +215,7 @@ export function SettingsPanel({
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-[var(--tl-text-muted)] mt-1">
+          <p className="text-[12px] text-[var(--tl-text-muted)] mt-1">
             {t("settings.daysPerWeekHint")}
           </p>
         </div>
@@ -241,7 +241,7 @@ export function SettingsPanel({
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-[var(--tl-text-muted)] mt-1">
+          <p className="text-[12px] text-[var(--tl-text-muted)] mt-1">
             {t("settings.unitHint")}
           </p>
         </div>
@@ -265,7 +265,7 @@ export function SettingsPanel({
             </label>
             <button
               onClick={onResetModel}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg tl-btn-ghost text-[11px]"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg tl-btn-ghost text-[12px]"
             >
               <RefreshCw className="w-3 h-3" />
               {t("settings.modelReset")}
@@ -280,7 +280,7 @@ export function SettingsPanel({
             <BellRing className="w-3.5 h-3.5" />
             {t("settings.sounds")}
           </p>
-          <p className="text-[11px] text-[var(--tl-text-muted)] mb-3">
+          <p className="text-[12px] text-[var(--tl-text-muted)] mb-3">
             {t("settings.soundsHint")}
           </p>
 
@@ -321,7 +321,7 @@ export function SettingsPanel({
                     key={cue}
                     onClick={() => void preview(cue)}
                     disabled={!sound.enabled || busyCue !== null}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg tl-btn-ghost text-[11px] disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg tl-btn-ghost text-[12px] disabled:opacity-40"
                   >
                     {busyCue === cue ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -333,13 +333,13 @@ export function SettingsPanel({
                 ))}
               </div>
               {blocked && (
-                <p className="text-[11px] text-amber-400 mt-2">
+                <p className="text-[12px] text-amber-400 mt-2">
                   {t("settings.soundsBlocked")}
                 </p>
               )}
             </>
           ) : (
-            <p className="text-[11px] text-amber-400 mt-2">
+            <p className="text-[12px] text-amber-400 mt-2">
               {t("settings.soundsUnsupported")}
             </p>
           )}
@@ -352,12 +352,12 @@ export function SettingsPanel({
             <BellDot className="w-3.5 h-3.5" />
             {t("settings.notifications")}
           </p>
-          <p className="text-[11px] text-[var(--tl-text-muted)] mb-3">
+          <p className="text-[12px] text-[var(--tl-text-muted)] mb-3">
             {t("settings.notificationsHint")}
           </p>
 
           {!supported ? (
-            <p className="text-[11px] text-amber-400">
+            <p className="text-[12px] text-amber-400">
               {t("settings.notificationsUnsupported")}
             </p>
           ) : (
@@ -391,13 +391,13 @@ export function SettingsPanel({
                   {t("settings.notificationsGranted")}
                 </Badge>
               ) : permission === "denied" ? (
-                <span className="text-[11px] text-amber-400">
+                <span className="text-[12px] text-amber-400">
                   {t("settings.notificationsDenied")}
                 </span>
               ) : (
                 <button
                   onClick={() => void askPermission()}
-                  className="px-2.5 py-1.5 rounded-lg tl-btn-ghost text-[11px]"
+                  className="px-2.5 py-1.5 rounded-lg tl-btn-ghost text-[12px]"
                 >
                   {t("settings.notificationsAsk")}
                 </button>

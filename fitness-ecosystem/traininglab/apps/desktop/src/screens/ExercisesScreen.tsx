@@ -309,10 +309,10 @@ export default function ExercisesScreen({
             {grouped.map(([label, groupRows]) => (
               <section key={label}>
                 <div className="sticky top-0 z-10 flex items-baseline justify-between gap-2 px-4 py-2 bg-[var(--tl-surface-2)] border-b border-[var(--tl-border)]">
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--tl-text-muted)]">
+                  <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[var(--tl-text-muted)]">
                     {label}
                   </h3>
-                  <span className="text-[11px] tabular-nums text-[var(--tl-text-muted)]">
+                  <span className="text-[12px] tabular-nums text-[var(--tl-text-muted)]">
                     {groupRows.length} {t("ex.exercises")}
                   </span>
                 </div>

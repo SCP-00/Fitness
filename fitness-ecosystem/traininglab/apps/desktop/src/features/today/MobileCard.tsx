@@ -123,7 +123,7 @@ export function MobileCard() {
           </a>
         )}
 
-        <p className="text-[11px] text-[var(--tl-text-muted)]">
+        <p className="text-[12px] text-[var(--tl-text-muted)]">
           {t("mobile.privacy")}
         </p>
       </div>
