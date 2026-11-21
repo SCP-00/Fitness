@@ -103,6 +103,7 @@ export default function SettingsScreen() {
     patch,
     handleFile,
     askCoach,
+    cancelCoach,
     resetModel,
     addHealthRecord,
     removeHealthRecord,
@@ -474,6 +475,7 @@ export default function SettingsScreen() {
           llm={settings.llm}
           onLlmChange={(llm) => patch({ llm })}
           onAsk={askCoach}
+          onCancel={cancelCoach}
           busy={coachBusy}
         />
         {/*

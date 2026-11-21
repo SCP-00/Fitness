@@ -811,6 +811,8 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "No local server on the usual ports ({ports}). Start your model and try again.",
     es: "Ningún servidor local en los puertos habituales ({ports}). Arranca el modelo y vuelve a intentarlo.",
   },
+  "coach.cancel": { en: "Cancel request", es: "Cancelar consulta" },
+  "coach.cancelled": { en: "Request cancelled. Your plan is still available.", es: "Consulta cancelada. Tu plan sigue disponible." },
   "coach.thinking": { en: "Thinking locally…", es: "Pensando en local…" },
   "coach.applied": {
     en: "Coach plan applied ({n} slots)",

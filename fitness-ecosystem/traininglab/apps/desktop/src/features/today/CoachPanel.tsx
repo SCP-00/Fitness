@@ -16,7 +16,7 @@ import {
   Radar,
   Send,
   Settings2,
-  Sparkles,
+  X,
 } from "lucide-react";
 import { getLanguage, t, tInterp } from "../../lib/i18n";
 import { translateCoachError } from "../../lib/coach-errors";
@@ -32,6 +32,7 @@ import { SectionCard, Badge } from "./ui";
 
 export interface CoachResult {
   ok: boolean;
+  cancelled?: boolean;
   content: string;
   toolCalls: { name: string; args: Record<string, unknown> }[];
   /** Present when a proposal survived the hard rules. */
@@ -55,11 +56,13 @@ export function CoachPanel({
   llm,
   onLlmChange,
   onAsk,
+  onCancel,
   busy,
 }: {
   llm: LlmSettings;
   onLlmChange: (next: LlmSettings) => void;
   onAsk: (request: string) => void;
+  onCancel: () => void;
   busy: boolean;
 }) {
   const [request, setRequest] = useState("");
@@ -259,7 +262,7 @@ export function CoachPanel({
           value={request}
           onChange={(e) => setRequest(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && llm.enabled && request.trim()) {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing && llm.enabled && !busy && request.trim()) {
               e.preventDefault();
               onAsk(request.trim());
             }
@@ -270,17 +273,15 @@ export function CoachPanel({
           className="tl-input w-full sm:w-auto sm:flex-1 min-w-0 px-3 py-2 text-sm"
         />
         <button
-          onClick={() => request.trim() && onAsk(request.trim())}
-          disabled={!llm.enabled || busy || request.trim().length === 0}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl tl-btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          type="button"
+          onClick={() => busy ? onCancel() : onAsk(request.trim())}
+          disabled={!busy && (!llm.enabled || request.trim().length === 0)}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed ${busy ? "btn tl-focusable" : "tl-btn-primary"}`}
         >
-          {busy ? (
-            <Sparkles className="w-4 h-4 animate-pulse" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-          {busy ? t("coach.thinking") : t("coach.ask")}
+          {busy ? <X className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+          {t(busy ? "coach.cancel" : "coach.ask")}
         </button>
+        {busy && <p className="text-sm self-center" role="status">{t("coach.thinking")}</p>}
       </div>
     </SectionCard>
   );
@@ -294,6 +295,9 @@ export function CoachResultView({
   result: CoachResult;
   onOpenTools?: () => void;
 }) {
+  if (result.cancelled) {
+    return <p className="text-sm mt-3" role="status">{t("coach.cancelled")}</p>;
+  }
   return (
     <div className="tl-card p-4 mt-3 space-y-2">
       {result.applied && (

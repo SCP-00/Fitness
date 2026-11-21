@@ -476,6 +476,7 @@ export interface TrainingLabStore {
    */
   swapWeekDays: (from: number, to: number) => boolean;
   askCoach: (request: string) => Promise<void>;
+  cancelCoach: () => void;
   runSharedSync: (opts?: { report?: boolean }) => Promise<void>;
   prFor: (
     exerciseId: string,
@@ -625,6 +626,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
+  const activeCoachRun = useRef<AbortController | null>(null);
+  useEffect(() => () => activeCoachRun.current?.abort(), []);
   const [coachRows, setCoachRows] = useState<PlannedRow[] | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   /** Last reversible change to one set (delete or rewrite), 2026-10-21. */
@@ -3081,9 +3084,13 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     });
   }, [plan, settings, contextCsv, rows]);
 
+  const cancelCoach = useCallback(() => activeCoachRun.current?.abort(), []);
+
   const askCoach = useCallback(
     async (request: string) => {
-      if (!settings || !plan) return;
+      if (!settings?.llm.enabled || !plan || activeCoachRun.current) return;
+      const controller = new AbortController();
+      activeCoachRun.current = controller;
       setCoachBusy(true);
       setCoachResult(null);
       /**
@@ -3282,30 +3289,36 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
        * A single conversation made the local model loop forever without ever
        * proposing anything — see `lib/coach-run.ts` for the measurement.
        */
-      const result = await runCoach({
-        settings: settings.llm,
-        request,
-        contextCsv,
-        tools: TOOL_SPECS,
-        execute: executor,
-        usable: plan.usable.map((u) => ({
-          id: u.exercise.id,
-          family: u.families[0] ?? "unknown",
-          pattern: u.traits.pattern,
-        })),
-        vetoedPatterns: runVetoes,
-        focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
-      });
-      setCoachResult((prev) => ({
-        ok: result.ok,
-        content: result.content || prev?.content || "",
-        toolCalls: result.toolCalls,
-        applied: result.applied
-          ? { summary: result.applied.summary || result.content, slots: result.applied.slots }
-          : prev?.applied,
-        errors: result.errors,
-      }));
-      setCoachBusy(false);
+      try {
+        const result = await runCoach({
+          signal: controller.signal,
+          settings: settings.llm,
+          request,
+          contextCsv,
+          tools: TOOL_SPECS,
+          execute: executor,
+          usable: plan.usable.map((u) => ({
+            id: u.exercise.id,
+            family: u.families[0] ?? "unknown",
+            pattern: u.traits.pattern,
+          })),
+          vetoedPatterns: runVetoes,
+          focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
+        });
+        setCoachResult((prev) => ({
+          ok: result.ok,
+          cancelled: result.cancelled,
+          content: result.content || prev?.content || "",
+          toolCalls: result.toolCalls,
+          applied: result.applied
+            ? { summary: result.applied.summary || result.content, slots: result.applied.slots }
+            : prev?.applied,
+          errors: result.errors,
+        }));
+      } finally {
+        activeCoachRun.current = null;
+        setCoachBusy(false);
+      }
     },
     [
       settings,
@@ -3398,6 +3411,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     setWeekOverride,
     swapWeekDays,
     askCoach,
+    cancelCoach,
     runSharedSync,
     prFor,
     marksFor,
