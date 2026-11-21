@@ -31,6 +31,7 @@
 import {
   buildSystemPrompt,
   buildUserRequest,
+  CANCELLED_ERROR,
   chatWithTools,
   type ChatMessage,
   type ChatWithToolsResult,
@@ -80,6 +81,12 @@ export interface CoachRunInput {
   commitRounds?: number;
   /** Injectable for tests. */
   fetchImpl?: typeof fetch;
+  /**
+   * Caller-owned cancellation (the screen's «parar» control). Aborting it ends
+   * the run at the next boundary — before the commit request, between rounds,
+   * or before a tool result could be applied — and never applies a proposal.
+   */
+  signal?: AbortSignal;
 }
 
 export interface CoachRunResult {
@@ -90,6 +97,12 @@ export interface CoachRunResult {
   errors: string[];
   /** Present only when a proposal survived the hard rules. */
   applied: { slots: number; minutes: number; summary: string } | null;
+  /**
+   * True when `signal` ended the run. `applied` is null and `errors` holds the
+   * single `CANCELLED_ERROR`, so the view says "cancelado" instead of showing
+   * a rule rejection; the deterministic plan was never touched.
+   */
+  cancelled: boolean;
   /**
    * Where the wall-clock went. Measured because a 4B model on a laptop can
    * spend minutes in prompt processing: with the whole 74-exercise list in the
@@ -134,9 +147,28 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
       toolCalls: [],
       errors: [`the app is missing its ${FINAL_TOOL} tool`],
       applied: null,
+      cancelled: false,
       timings: { exploreMs: 0, commitMs: 0 },
     };
   }
+
+  const signal = input.signal;
+  const stopped = (
+    toolCalls: { name: string; args: Record<string, unknown> }[],
+    content: string,
+    timings: { exploreMs: number; commitMs: number },
+  ): CoachRunResult => ({
+    ok: false,
+    content,
+    toolCalls,
+    errors: [CANCELLED_ERROR],
+    applied: null,
+    cancelled: true,
+    timings,
+  });
+
+  /* Cancelled before the first request: nothing is sent and nothing applies. */
+  if (signal?.aborted) return stopped([], "", { exploreMs: 0, commitMs: 0 });
 
   const readOnly = input.tools.filter((t) => t.function.name !== FINAL_TOOL);
   const messages: ChatMessage[] = [
@@ -160,12 +192,21 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
     },
     maxSteps: Math.max(0, input.exploreSteps ?? 3),
     fetchImpl: input.fetchImpl,
+    signal,
   });
 
   const exploreMs = Date.now() - startedExplore;
   const toolCalls: { name: string; args: Record<string, unknown> }[] = [
     ...explore.toolCalls,
   ];
+  /*
+   * A cancelled exploration is not a failed one: phase 2 is never attempted,
+   * because committing a session after the owner pressed stop would be the
+   * exact thing the stop meant to prevent.
+   */
+  if (explore.cancelled) {
+    return stopped(toolCalls, explore.content, { exploreMs, commitMs: 0 });
+  }
 
   /*
    * A step-cap ending is fine: phase 1 gathered what it could and phase 2 asks
@@ -179,6 +220,7 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
       toolCalls,
       errors: [explore.error],
       applied: null,
+      cancelled: false,
       timings: { exploreMs, commitMs: 0 },
     };
   }
@@ -198,12 +240,29 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
   const commitMsOf = () => Date.now() - startedCommit;
 
   for (let round = 0; round < Math.max(1, input.commitRounds ?? 3); round++) {
+    /* No second attempt, no third: a cancelled run stops asking. */
+    if (signal?.aborted) {
+      return stopped(toolCalls, lastContent, {
+        exploreMs,
+        commitMs: commitMsOf(),
+      });
+    }
     let verdict: ProposalVerdict | null = null;
     const commit = await chatWithTools({
       settings: input.settings,
       messages: commitMessages(input.request, digest, [...hints, ...rejection]),
       tools: [terminal],
       execute: async (name, args) => {
+        /*
+         * The last line of defence, and the one the screen depends on: a
+         * response that was already generating when the owner pressed stop can
+         * still arrive with a perfect `propose_session`. It is read (so the
+         * model is not lied to) but it is NOT applied — the store's executor is
+         * what writes the plan, so refusing to call it is refusing the change.
+         */
+        if (signal?.aborted) {
+          return { error: CANCELLED_ERROR, cancelled: true };
+        }
         const out = await input.execute(name, args);
         if (name === FINAL_TOOL) verdict = out as ProposalVerdict;
         return out;
@@ -212,9 +271,16 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
       finalTool: FINAL_TOOL,
       finalAfter: 0,
       fetchImpl: input.fetchImpl,
+      signal,
     });
     toolCalls.push(...commit.toolCalls);
     lastContent = commit.content || lastContent;
+    if (commit.cancelled) {
+      return stopped(toolCalls, lastContent, {
+        exploreMs,
+        commitMs: commitMsOf(),
+      });
+    }
 
     const proposed = commit.toolCalls.some((c) => c.name === FINAL_TOOL);
     if (!proposed) {
@@ -224,6 +290,7 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
         toolCalls,
         errors: [commit.error ?? `the model answered without calling ${FINAL_TOOL}`],
         applied: null,
+        cancelled: false,
         timings: { exploreMs, commitMs: commitMsOf() },
       };
     }
@@ -240,6 +307,7 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
         toolCalls,
         errors: [],
         applied: { slots: v.slots ?? 0, minutes: v.minutes ?? 0, summary },
+        cancelled: false,
         timings: { exploreMs, commitMs: commitMsOf() },
       };
     }
@@ -264,6 +332,7 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
     toolCalls,
     errors: rejection,
     applied: null,
+    cancelled: false,
     timings: { exploreMs, commitMs: commitMsOf() },
   };
 }
