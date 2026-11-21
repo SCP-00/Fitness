@@ -253,7 +253,7 @@ No sustituye a la línea base de T00 —esa exige el ejecutable instalado— per
 | T01.2 y T03 | Codex | Conectar lectores en Ajustes, conservar el enlace v1 tras recarga, integrar ZEN y verificar instaladores. | Lectores locales de Buffy ya disponibles. |
 | QA visual y funcional | Antigravity con Gemini Flash | Revisar el diff de ZEN y las capturas de Chromium a 1440 × 900 y 390 × 844. Verificar peso/reps, teclado, CTA, descanso y cierre. Entregar hasta cinco hallazgos reproducibles en modo lectura. | Empieza con las capturas de la revisión candidata. |
 | T04.2 · Recorrido vertical | Codex | Conectar la fixture de Buffy con el flujo de Ajustes, comprobar sesión y Progreso tras recarga. | Cerrada con la prueba de Buffy en `4a157ca` y los textos integrados en `74441d1`. |
-| T07 · Modelo local | Buffy y Codex | T07.1 cerrada en motor e interfaz. T07.2 prepara el resumen determinista. | La revisión de cancelación puede correr en paralelo. |
+| T07 · Modelo local | Buffy y Codex | T07.1 cerrada en motor e interfaz. T07.2 cerrada en Semana. T07.3 prepara la evaluación del modelo. | La revisión de cancelación puede correr en paralelo. |
 
 Para cada encargo entregar el ID de tarea, SHA de partida, rutas permitidas, caso de aceptación y comando de verificación. El constructor devuelve el SHA local, pruebas y alcance. Codex revisa y coordina la integración. OpenCode queda disponible para una comprobación aislada cuando la revisión paralela tenga un caso reproducible.
 
@@ -270,3 +270,11 @@ T07.1 queda integrada en `9beab06`, sobre los commits de Buffy `43a6070`, `0b8b0
 Buffy parte de `9beab06`. Entregar una función pura en `traininglab/apps/desktop/src/lib/coach-weekly-summary.ts` y sus pruebas en `tests/training/test_coach_weekly_summary.test.ts`. Recibe series, sesiones y un intervalo inclusivo de días locales. Devuelve fechas, número de sesiones cerradas y número de series de trabajo, más referencias a los IDs de origen para que Codex pueda presentar los hechos. Reutiliza las reglas de historial y fecha existentes. Prueba periodo vacío, límites en días locales, calentamientos y sesiones sin cerrar. El resultado se obtiene con datos sintéticos, incluso con el modelo apagado. Entregar resultado de `pnpm exec vitest run tests/training/test_coach_weekly_summary.test.ts`, typecheck de TrainingLab y SHA local.
 
 **QA de Antigravity.** Desde `9beab06`, verificar en modo lectura que el botón de cancelar funciona durante una consulta activa a 1440 × 900 y 390 × 844. Usar un endpoint simulado y datos sintéticos. Comprobar confirmación accesible, que se pueda volver a consultar y que el plan de Hoy permanezca disponible cuando el servidor esté apagado.
+
+T07.2 integrada en `fbc0ba5` sobre `07f6efa`. La tarjeta «Actividad semanal» navega de lunes a domingo y usa el registro local. Las copias antiguas con una sesión cerrada sin IDs aportan la sesión y cero series vinculadas. El recorrido de ocho semanas verifica los recuentos al retroceder y volver a la semana actual.
+
+### T07.3 · Evaluación reproducible del coach
+
+Buffy parte de `fbc0ba5`. Reutilizar `runCoach`, las reglas de validación y los casos sintéticos existentes para preparar un comando de evaluación con salida JSON. Archivos de alcance: `scripts/benchmark-coach.mjs`, una fixture sintética si hace falta y una entrada en el plan de ejecución del coach. Cubrir historial vacío, equipo y tiempo limitados, veto de movimiento, petición en español y respuesta inválida. Registrar duración, propuestas válidas/rechazadas y motivo por caso. El modo simulado debe funcionar sin modelo. El modo real debe apuntar a un servidor loopback indicado explícitamente y reportar si está apagado. Una propuesta se evalúa sin escribir el log. Entregar comando reproductible, prueba del modo simulado y SHA local.
+
+Antigravity puede revisar «Actividad semanal» en paralelo desde `fbc0ba5` a 1440 × 900 y 390 × 844. Usar los datos de ejemplo con reloj fijo en lunes 16/11/2026. Verificar semana actual, anterior, regreso, exclusión de sesiones abiertas y ausencia de peticiones al modelo. Entregar incidencias reproducibles en modo lectura.

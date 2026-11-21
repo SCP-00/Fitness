@@ -4231,3 +4231,13 @@ El árbol de trabajo contiene cambios sin commitear de otra sesión (archivado d
 - **Instalador local.** C:\Users\andyh\Desktop\TrainingLab-unificado-9beab06-setup.exe · 17672422 bytes · 2026-11-21T13:39:19.7831786-05:00 · SHA-256 7265339C768DB84AB9D49FB7AB9C0DEEAD50F3B104181098F9D3526783CBAA8D.
 - **Instalador local.** C:\Users\andyh\Desktop\BodyLab-transicion-9beab06-setup.exe · 17088815 bytes · 2026-11-21T13:39:28.9729083-05:00 · SHA-256 3F1F5BED4632A3C6F4DB1C194A941229F3B2866A842D6324F7B04C8577294FD3.
 - **Empaquetado.** Ambos NSIS desde 9beab06, con textos comprobados en dist/assets. TrainingLab exit 0. BodyLab produjo el NSIS antes de terminar exit 1 por falta de la clave privada del actualizador.
+
+## 2026-11-21 (g) — Actividad semanal desde el historial
+
+- **Resultado.** T07.2 integrada en `fbc0ba5` sobre el motor de Buffy `07f6efa`. Semana permite navegar entre intervalos locales de lunes a domingo y muestra sesiones cerradas y series de trabajo. El plan semanal sigue visible. Se conserva el recuento de la sesión histórica si carece de IDs de series.
+- **Verificación.** Desde `fitness-ecosystem`, `pnpm test` 116 archivos / 1.526 pruebas, `pnpm --filter web test:e2e:traininglab -- --timeout 30000` 16/16, typecheck TrainingLab, lint y auditoría CSS correctos. La prueba de ocho semanas verifica ida y vuelta y sus recuentos. Chromium a 1440 × 900 y 390 × 844 sin desborde, con capturas en `.tmp-verify/traininglab-shell/semana-fbc0ba5-1440x900.png` y `semana-fbc0ba5-390x844.png`. Antigravity confirmó la cancelación del coach y la continuidad offline en ambas resoluciones con servidor simulado en `9beab06`.
+- **Pendiente y relevo.** T07.3 para Buffy, evaluación reproducible, y revisión de Semana para Antigravity, en paralelo. Ningún servidor escucha en los puertos locales habituales del modelo. Pendiente benchmark real y Safari en iPhone físico.
+- **Git.** Rama local `codex/traininglab-unificado`. Se preservaron `Modelo2D_Woman.png`, `Symmetry_Corregido.xlsx` y `fitness-ecosystem/bun.lock`.
+- **Instalador local.** C:\Users\andyh\Desktop\BodyLab-transicion-fbc0ba5-setup.exe · 17088134 bytes · 2026-11-21T13:49:00.0279988-05:00 · SHA-256 76E533127FC2344C08CE7CBE8AC0B90B65A4CFE3994A1A1B56C3DFA3530447E4.
+- **Instalador local.** C:\Users\andyh\Desktop\TrainingLab-unificado-fbc0ba5-setup.exe · 17672737 bytes · 2026-11-21T13:48:50.5537972-05:00 · SHA-256 82DB40B53F1FE3CB8B86417527E798C363829441B56E3010FBAC3E083CFA2491.
+- **Empaquetado.** Ambos NSIS se construyeron desde fbc0ba5, con textos comprobados en dist/assets. TrainingLab exit 0. BodyLab generó el NSIS antes de terminar exit 1 por falta de la clave privada del actualizador.
