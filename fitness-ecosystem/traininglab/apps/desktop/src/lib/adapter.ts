@@ -97,6 +97,87 @@ export function isV2Payload(p: unknown): p is ImportPayload {
   return true;
 }
 
+const LINK_FORMAT = "bodylab-traininglab-link";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function objectRows(value: unknown): Record<string, unknown>[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.every(isRecord) ? (value as Record<string, unknown>[]) : null;
+}
+
+/**
+ * Read a link file of any version the app has ever emitted.
+ *
+ * v1 is the same envelope without the `conditioning` map: BodyLab added it in
+ * v2 without changing the rest, so a v1 file is a v2 file with that field
+ * absent. The normaliser fills the optional fields with `null` ("not present in
+ * the file") and never computes them, and refuses a version it has not seen.
+ *
+ * `isV2Payload` remains the strict guard for the plan/generator path; this
+ * reader is for the file the user picks, where an older export must still
+ * load.
+ */
+export function normalizeLinkPayload(value: unknown): ImportPayload | null {
+  if (!isRecord(value)) return null;
+  if (value["format"] !== LINK_FORMAT) return null;
+  const version = value["version"];
+  if (version !== 1 && version !== 2) return null;
+
+  const measurements = objectRows(value["measurements"]);
+  const muscleScores = objectRows(value["muscleScores"]);
+  const muscleLoad = objectRows(value["muscleLoad"]);
+  const exerciseCatalog = objectRows(value["exerciseCatalog"]);
+  if (!measurements || !muscleScores || !muscleLoad || !exerciseCatalog)
+    return null;
+  if (exerciseCatalog.length === 0) return null;
+
+  const rawProfile = value["profile"];
+  if (rawProfile !== null && !isRecord(rawProfile)) return null;
+
+  const payload: ImportPayload = {
+    format: LINK_FORMAT,
+    version,
+    profile: rawProfile as ImportProfile | null,
+    measurements: measurements as unknown as ImportPayload["measurements"],
+    muscleScores: muscleScores as unknown as ImportPayload["muscleScores"],
+    muscleLoad: muscleLoad as unknown as ImportPayload["muscleLoad"],
+    exerciseCatalog: exerciseCatalog as unknown as ImportExercise[],
+    // Present only in v2; absent stays absent.
+    conditioning: isRecord(value["conditioning"])
+      ? (value["conditioning"] as unknown as ImportConditioning)
+      : null,
+    indicators: isRecord(value["indicators"])
+      ? (value["indicators"] as { whtr: number | null; adonis: number | null })
+      : null,
+  };
+
+  const records = value["personalRecords"];
+  if (Array.isArray(records)) {
+    payload.personalRecords = records.filter(isRecord) as unknown as ImportRecord[];
+  }
+  const log = value["trainingLog"];
+  if (Array.isArray(log)) {
+    payload.trainingLog = log.filter(isRecord) as unknown as NonNullable<
+      ImportPayload["trainingLog"]
+    >;
+  }
+  return payload;
+}
+
+/** Parse the JSON text of a link file; `null` for anything unreadable. */
+export function readLinkPayload(text: string): ImportPayload | null {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  return normalizeLinkPayload(raw);
+}
+
 // ── Weakness: two independent signals, fused conservatively ────────────────
 
 /** Anthrometric segment → a representative granular muscle (validator vocabulary). */

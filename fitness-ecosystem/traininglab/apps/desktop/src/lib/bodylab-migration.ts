@@ -11,6 +11,16 @@ export {
   type BodyLabArchive,
 } from "../../../../../bodylab/packages/contracts/bodylab-migration";
 
+// Historic formats (the released `.bodylab` and legacy JSON exports) convert
+// into this same archive, so the receipt/preview path above is reused as-is.
+export {
+  archiveFromLegacyBodyLab,
+  type LegacyArchive,
+  type LegacyBodyLabRead,
+  type LegacyBodyLabSource,
+} from "../../../../../bodylab/packages/contracts/bodylab-legacy";
+export { readBodyLabZip } from "../../../../../bodylab/packages/contracts/bodylab-zip";
+
 interface CollectionReceipt {
   added: number;
   unchanged: number;

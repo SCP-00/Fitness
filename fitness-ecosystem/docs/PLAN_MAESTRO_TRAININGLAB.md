@@ -186,7 +186,7 @@ Probar ambas versiones con cinco practicantes, alternando el orden. Registrar si
 El tablero anterior tenía trabajo empezado. **Las casillas de la sección 2 empiezan en blanco a propósito** (así lo pide el plan), pero quien retome esto debe saber qué existe, para no rehacerlo ni duplicarlo:
 
 - **T00.1 · matriz de conservación (hecha).** Revisada en `bodylab/apps/web/src/lib/db.ts`, `bodylab/apps/web/src/pages/ExportImport.tsx`, `bodylab/apps/web/src/lib/traininglab-export.ts`, `traininglab/apps/desktop/src/lib/db.ts` y `traininglab/apps/desktop/src/lib/backup.ts`. Falta el ensayo con perfiles sintéticos y la línea base de contraste, tiempos e instaladores.
-- **T01 (parcial).** El archivo de transición de BodyLab se puede revisar e importar como archivo privado; la copia manual de TrainingLab incluye ese archivo y las medidas de cintura. Faltan la incorporación a las funciones activas, los lectores históricos y el recibo de restauración unificada.
+- **T01 (parcial).** El archivo de transición de BodyLab se puede revisar e importar como archivo privado; la copia manual de TrainingLab incluye ese archivo y las medidas de cintura. Faltan la incorporación a las funciones activas y el recibo de restauración unificada. **Avance 2026-11-21 (carril de datos):** los lectores históricos ya existen y comparten el mismo archivo canónico y el mismo recibo: `bodylab/packages/contracts/bodylab-legacy.ts` convierte el JSON antiguo (`{format:"bodylab", data}`) y el envoltorio `bodylab-backup`, `bodylab-zip.ts` lee el `.bodylab` real (ZIP stored y DEFLATE, sin dependencias nuevas) y `readLinkPayload`/`normalizeLinkPayload` aceptan el enlace v1 (sin el mapa `conditioning`, que queda `null`). Gate `tests/training/test_legacy_import.test.ts` (12 casos). Lo que un formato no trae se declara en `omitted`; no se inventan filas. Pendiente la conexión al selector de archivo (tarjeta T01.2, carril frontend).
 - **T02/T04 (parcial).** Progreso registra cintura por fecha y sitio anatómico, conserva historial al corregir y compara el mismo punto dentro del periodo. Las medidas de cintura importadas exigen elegir su punto anatómico; las series compatibles se incorporan tras vista previa y conservan procedencia. Existe copia automática privada independiente con recuperación explícita. Faltan otras medidas, conflictos, el recorrido completo de ocho semanas y la prueba del ejecutable instalado.
 - **T03 (parcial).** La navegación puede plegarse y usa superficies translúcidas con alternativas opacas de accesibilidad. Quedan la disposición final de ZEN (ver la maqueta de la sección 4) y la revisión en dispositivos.
 - **T06 (parcial).** [Piloto editorial](exercise-media-pilot/README.md) con los tres candidatos y la hoja base; pendiente de revisión técnica y de techo de gasto para la siguiente tanda.
@@ -222,6 +222,19 @@ El tablero anterior tenía trabajo empezado. **Las casillas de la sección 2 emp
 | Copias, CLI y MCP | Contratos existentes más adaptadores cuando proceda | Ejecutar fixtures de ida y vuelta y contrastar exposición de datos con permisos efectivos. |
 
 Ensayo pendiente: sembrar dos perfiles de prueba con elementos exclusivos, dos registros iguales, un ID en conflicto y una sesión posiblemente solapada con IDs distintos, con UUID fijos y fechas explícitas. Comparar por registro, campo y vínculo además de contar filas. Los conjuntos personales del repositorio quedan fuera de las fixtures.
+
+### [ ] T01.2 — Elegir también `.bodylab` y enlace v1 desde Ajustes
+- Responsable / revisor: **Codex / Astra 6.2** (frontend) · datos ya entregados por Buffy.
+- Estado: pendiente
+- Depende de: T01 (lectores, hechos).
+- Leer primero: `bodylab/packages/contracts/bodylab-legacy.ts`, `bodylab/packages/contracts/bodylab-zip.ts`, `traininglab/apps/desktop/src/lib/bodylab-migration.ts` (re-exports) y `traininglab/apps/desktop/src/lib/adapter.ts` (`readLinkPayload`).
+- Archivos que puede modificar: `traininglab/apps/desktop/src/features/today/BodyLabMigration.tsx` y `traininglab/apps/desktop/src/app/store.tsx`.
+- Entrada de ejemplo → salida esperada: el usuario elige `bodylab-backup-2026-03-01.bodylab` → vista previa con las colecciones y `omitted` («este archivo no trae series ni esfuerzos máximos»); al guardar, el mismo recibo de siempre. Elegir un `bodylab-traininglab-AAAA-MM-DD.json` v1 → carga y planifica con `conditioning: null`.
+- Gancho mínimo: en `read(file)`, si el nombre acaba en `.bodylab`, `const read = await readBodyLabZip(new Uint8Array(await file.arrayBuffer()))`; si no, `const parsed = JSON.parse(await file.text())` y `parseBodyLabArchive(parsed) ?? archiveFromLegacyBodyLab(parsed)?.archive`. En ambos casos el resultado es un `BodyLabArchive | null` y sigue el `reconcileBodyLabArchive` actual. En `handleFile` de la tienda, sustituir `isV2Payload(parsed)` por `normalizeLinkPayload(parsed)` y conservar `isV2Payload` donde se revalida el plan ya guardado. Añadir `.bodylab` al `accept` del input.
+- Criterio de aceptación y comando: `pnpm --filter traininglab-desktop typecheck` 0 y `pnpm --filter web test:e2e:traininglab` verde, más una prueba de que un archivo v1 llega al plan.
+- Presupuesto de tiempo, tokens o imágenes: una tarjeta pequeña, sin dependencias nuevas.
+- Resultado, commit y evidencia: (pendiente)
+- Bloqueo o punto exacto de reanudación: los lectores están cubiertos por `tests/training/test_legacy_import.test.ts`; no hace falta tocar contratos.
 
 ### Línea base técnica ya medida (2026-11-13 y 2026-11-21)
 
