@@ -1,5 +1,7 @@
 # ROADMAP vivo — BodyLab + TrainingLab
 
+> **2026-11-20.** La unificación ya tiene una primera entrega local: exportación de transición, archivo privado de BodyLab, registro de cintura y navegación actualizada. El [tablero maestro](fitness-ecosystem/docs/PLAN_MAESTRO_TRAININGLAB.md) controla el resto de la transición. El [relevo](fitness-ecosystem/docs/AGENT_HANDOFF.md) documenta pruebas, instaladores y alcance pendiente.
+
 > **Cómo usar este archivo (regla operativa):** es la memoria de trabajo entre
 > sesiones. Toda sesión nueva lo **lee al empezar** y lo **actualiza al
 > terminar** (marcar hecho con fecha, añadir lo descubierto, reordenar).
