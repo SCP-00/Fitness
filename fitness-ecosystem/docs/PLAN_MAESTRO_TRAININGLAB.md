@@ -223,9 +223,9 @@ El tablero anterior tenía trabajo empezado. **Las casillas de la sección 2 emp
 
 Ensayo pendiente: sembrar dos perfiles de prueba con elementos exclusivos, dos registros iguales, un ID en conflicto y una sesión posiblemente solapada con IDs distintos, con UUID fijos y fechas explícitas. Comparar por registro, campo y vínculo además de contar filas. Los conjuntos personales del repositorio quedan fuera de las fixtures.
 
-### [ ] T01.2 — Elegir también `.bodylab` y enlace v1 desde Ajustes
+### [x] T01.2 — Elegir también `.bodylab` y enlace v1 desde Ajustes
 - Responsable / revisor: **Codex / Astra 6.2** (frontend) · datos ya entregados por Buffy.
-- Estado: pendiente
+- Estado: implementada y verificada en Chromium
 - Depende de: T01 (lectores, hechos).
 - Leer primero: `bodylab/packages/contracts/bodylab-legacy.ts`, `bodylab/packages/contracts/bodylab-zip.ts`, `traininglab/apps/desktop/src/lib/bodylab-migration.ts` (re-exports) y `traininglab/apps/desktop/src/lib/adapter.ts` (`readLinkPayload`).
 - Archivos que puede modificar: `traininglab/apps/desktop/src/features/today/BodyLabMigration.tsx` y `traininglab/apps/desktop/src/app/store.tsx`.
@@ -233,7 +233,7 @@ Ensayo pendiente: sembrar dos perfiles de prueba con elementos exclusivos, dos r
 - Gancho mínimo: en `read(file)`, si el nombre acaba en `.bodylab`, `const read = await readBodyLabZip(new Uint8Array(await file.arrayBuffer()))`; si no, `const parsed = JSON.parse(await file.text())` y `parseBodyLabArchive(parsed) ?? archiveFromLegacyBodyLab(parsed)?.archive`. En ambos casos el resultado es un `BodyLabArchive | null` y sigue el `reconcileBodyLabArchive` actual. En `handleFile` de la tienda, sustituir `isV2Payload(parsed)` por `normalizeLinkPayload(parsed)` y conservar `isV2Payload` donde se revalida el plan ya guardado. Añadir `.bodylab` al `accept` del input.
 - Criterio de aceptación y comando: `pnpm --filter traininglab-desktop typecheck` 0 y `pnpm --filter web test:e2e:traininglab` verde, más una prueba de que un archivo v1 llega al plan.
 - Presupuesto de tiempo, tokens o imágenes: una tarjeta pequeña, sin dependencias nuevas.
-- Resultado, commit y evidencia: (pendiente)
+- Resultado, commit y evidencia: `1ed98a0`. Prueba E2E `legacy-migration.spec.ts` con ZIP DEFLATE, JSON, reimportación y enlace v1 tras recarga.
 - Bloqueo o punto exacto de reanudación: los lectores están cubiertos por `tests/training/test_legacy_import.test.ts`; no hace falta tocar contratos.
 
 ### Línea base técnica ya medida (2026-11-13 y 2026-11-21)
@@ -256,3 +256,5 @@ No sustituye a la línea base de T00 —esa exige el ejecutable instalado— per
 | T07 · Modelo local | Buffy | Preparar la tarjeta con entradas, resultados observables y pruebas antes de tocar el coach. | Espera el contrato de T04.2. |
 
 Para cada encargo entregar el ID de tarea, SHA de partida, rutas permitidas, caso de aceptación y comando de verificación. El constructor devuelve el SHA local, pruebas y alcance. Codex revisa y coordina la integración. OpenCode queda disponible para una comprobación aislada cuando la revisión paralela tenga un caso reproducible.
+
+**Orden de QA para Antigravity.** Desde `1ed98a0`, abre las capturas `.tmp-verify/traininglab-shell/zen-1ed98a0-1440x900.png` y `.tmp-verify/traininglab-shell/zen-1ed98a0-390x844.png`. Usa la maqueta `docs/traininglab-zen-concepts/B-panel-flotante.png` como referencia. Comprueba edición de carga y repeticiones, Enter, orden de foco, botón fijo, descanso y cierre. Confirma específicamente cuánto tiempo el aviso de récord se superpone al botón móvil. Devuelve hasta cinco hallazgos con resolución, pasos y captura. Trabaja en lectura y usa solo datos sintéticos.
