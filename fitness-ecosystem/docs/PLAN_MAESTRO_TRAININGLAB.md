@@ -249,12 +249,16 @@ No sustituye a la línea base de T00 —esa exige el ejecutable instalado— per
 
 | Carril | Responsable | Archivos y entrega | Dependencia |
 | --- | --- | --- | --- |
-| T04.1 · Datos de demostración | Buffy | `traininglab/apps/desktop/src/lib/demo.ts` y `tests/training/test_demo_data.test.ts`. Debe generar ocho semanas por defecto, con reloj fijo en la prueba, IDs estables y una sesión para hoy. Debe conservar el parámetro `weeks` y reportar el cambio de texto necesario en Ajustes para que lo aplique Codex. | Puede empezar desde `3c1ffe4`. |
+| T04.1 · Datos de demostración | Buffy | `traininglab/apps/desktop/src/lib/demo.ts` y `tests/training/test_demo_data.test.ts`. Debe generar ocho semanas por defecto, con reloj fijo en la prueba, IDs estables y una sesión para hoy. Debe conservar el parámetro `weeks` y reportar el cambio de texto necesario en Ajustes para que lo aplique Codex. | Cerrada en `6c23777`. |
 | T01.2 y T03 | Codex | Conectar lectores en Ajustes, conservar el enlace v1 tras recarga, integrar ZEN y verificar instaladores. | Lectores locales de Buffy ya disponibles. |
 | QA visual y funcional | Antigravity con Gemini Flash | Revisar el diff de ZEN y las capturas de Chromium a 1440 × 900 y 390 × 844. Verificar peso/reps, teclado, CTA, descanso y cierre. Entregar hasta cinco hallazgos reproducibles en modo lectura. | Empieza con las capturas de la revisión candidata. |
-| T04.2 · Recorrido vertical | Codex | Conectar la fixture de Buffy con el flujo de Ajustes, comprobar sesión y Progreso tras recarga. | Espera T04.1 y ZEN. |
-| T07 · Modelo local | Buffy | Preparar la tarjeta con entradas, resultados observables y pruebas antes de tocar el coach. | Espera el contrato de T04.2. |
+| T04.2 · Recorrido vertical | Codex | Conectar la fixture de Buffy con el flujo de Ajustes, comprobar sesión y Progreso tras recarga. | Cerrada con la prueba de Buffy en `4a157ca` y los textos integrados en `74441d1`. |
+| T07 · Modelo local | Buffy | T07.1 implementa cancelación del coach en el motor. Codex integra el control cuando esté listo el contrato. | T04.2 ya verificada. |
 
 Para cada encargo entregar el ID de tarea, SHA de partida, rutas permitidas, caso de aceptación y comando de verificación. El constructor devuelve el SHA local, pruebas y alcance. Codex revisa y coordina la integración. OpenCode queda disponible para una comprobación aislada cuando la revisión paralela tenga un caso reproducible.
 
 **Orden de QA para Antigravity.** Desde `1ed98a0`, abre las capturas `.tmp-verify/traininglab-shell/zen-1ed98a0-1440x900.png` y `.tmp-verify/traininglab-shell/zen-1ed98a0-390x844.png`. Usa la maqueta `docs/traininglab-zen-concepts/B-panel-flotante.png` como referencia. Comprueba edición de carga y repeticiones, Enter, orden de foco, botón fijo, descanso y cierre. Confirma específicamente cuánto tiempo el aviso de récord se superpone al botón móvil. Devuelve hasta cinco hallazgos con resolución, pasos y captura. Trabaja en lectura y usa solo datos sintéticos.
+
+### T07.1 · Cancelación del coach local
+
+Buffy parte de `74441d1`. Puede editar `traininglab/apps/desktop/src/lib/llm.ts`, `traininglab/apps/desktop/src/lib/coach-run.ts` y sus pruebas en `tests/training/`. Añadir un `AbortSignal` opcional que cancele la petición en curso y frene intentos y llamadas a herramientas posteriores. La cancelación se distingue de un timeout en el resultado. Probar señal ya abortada, abortar durante la exploración y cancelar antes de confirmar una propuesta tardía. El plan determinista sigue disponible. Entregar SHA local, resultados de las pruebas del coach y de typecheck, y contrato para Codex. Antigravity repite los cuatro casos de ZEN en paralelo y trabaja con datos sintéticos.

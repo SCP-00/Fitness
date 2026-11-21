@@ -4211,3 +4211,13 @@ El árbol de trabajo contiene cambios sin commitear de otra sesión (archivado d
 - **Instalador local.** C:\Users\andyh\Desktop\TrainingLab-unificado-1ed98a0-setup.exe · 17670424 bytes · 2026-11-21T13:00:12.8082789-05:00 · SHA-256 E28D11810C277FD47CA37B619EB5B048C469507458993D814B8B7C18E026324C.
 - **Instalador local.** C:\Users\andyh\Desktop\BodyLab-transicion-1ed98a0-setup.exe · 17087979 bytes · 2026-11-21T13:00:20.9463833-05:00 · SHA-256 FD0F37232E88A22128ED26425805899BB9B94EB7C0F935811B9636EB7BA47A0A.
 - **Empaquetado.** Ambos NSIS contienen el bundle de 1ed98a0. TrainingLab exit 0. BodyLab exit 1 al firmar el actualizador, después de producir el NSIS.
+
+## 2026-11-21 (e) — Recorrido de ocho semanas y QA de ZEN
+
+- **Resultado.** T04.1 y T04.2 integradas en la rama local con los commits de Buffy `6c23777` y `4a157ca`. `74441d1` actualiza el texto ES/EN de Ajustes y corrige los cuatro hallazgos de Antigravity: Enter enfoca las repeticiones de la siguiente fila, el aviso deja libre «Registrar serie», el cierre se encuentra en cabecera y el descanso informa «En pausa».
+- **Pruebas.** Desde `fitness-ecosystem`, `pnpm test` 113 archivos / 1.509 pruebas, `pnpm --filter web test` 13 / 135, `pnpm --filter web test:e2e:traininglab -- --timeout 30000` 15/15, typecheck TrainingLab, lint y auditoría CSS correctos. Chromium comprobó registro, cierre y ausencia de desborde a 1440 × 900, 390 × 844 y 320 × 640. Capturas en `.tmp-verify/traininglab-shell/zen-74441d1-1440x900.png`, `zen-74441d1-390x844.png` y `zen-74441d1-320x640.png`.
+- **Orquestación.** T07.1 asignada para relevo a Buffy en el plan maestro, con señal opcional y cancelación de aceptación tardía. Antigravity puede revalidar en paralelo. Pendiente Safari de iPhone físico.
+- **Git.** Rama local `codex/traininglab-unificado`. Se preservan los archivos sin seguimiento del dueño.
+- **Instalador local.** C:\Users\andyh\Desktop\TrainingLab-unificado-74441d1-setup.exe · 17671157 bytes · 2026-11-21T13:19:59.8153951-05:00 · SHA-256 5CEDDF74DB36F84A69B9135BEC43D713DC06F646A37DA4511F895E3D62248F65.
+- **Instalador local.** C:\Users\andyh\Desktop\BodyLab-transicion-74441d1-setup.exe · 17088697 bytes · 2026-11-21T13:20:08.1956632-05:00 · SHA-256 663E3E391DEBB80227EEC702C8376CE886DBB898CD6A9E3090D1D12BF09A4A5F.
+- **Empaquetado.** Ambos NSIS construidos desde 74441d1, con textos esperados en dist/assets. TrainingLab exit 0. BodyLab generó el NSIS y terminó exit 1 durante la firma del actualizador. Copias verificadas por SHA-256 en el escritorio especial de Windows.
