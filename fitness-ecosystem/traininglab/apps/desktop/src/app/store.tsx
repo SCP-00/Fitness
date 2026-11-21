@@ -3434,7 +3434,11 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 pointer-events-none"
+          className={`fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 pointer-events-none ${
+            route.id === "session"
+              ? "max-[899px]:bottom-[calc(148px+env(safe-area-inset-bottom))]"
+              : ""
+          }`}
         >
           <div
             key={celebration.id}

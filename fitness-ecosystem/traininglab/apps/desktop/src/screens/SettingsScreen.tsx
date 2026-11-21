@@ -261,7 +261,7 @@ export default function SettingsScreen() {
   };
 
   /**
-   * Load (or remove) the six weeks of sample history.
+   * Load (or remove) the eight weeks of sample history.
    *
    * Both halves report through one line, because the interesting part of either
    * answer is how many series moved — and because "I pressed it and nothing
@@ -765,7 +765,7 @@ export default function SettingsScreen() {
        * Placed right after the data section, because that is what it is: a way
        * to put data in, and its exact inverse. It is not a hidden developer
        * switch — the app is a beta used by one person, and being able to see the
-       * redesigned screens with six weeks in them is worth a visible button, as
+       * redesigned screens with eight weeks in them is worth a visible button, as
        * long as it says what it does and can be undone in one tap.
        */}
       <SectionCard

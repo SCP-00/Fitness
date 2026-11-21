@@ -1705,11 +1705,7 @@ svg {
   .zen-entry-card .zen-reps-field .stepper { display: none; }
   .zen-entry-card .stepper-row { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .zen-reps-field .stepper-unit { margin-top: 10px; }
-  .zen-finish-bottom { display: none; }
 }
-
-.zen-finish-desktop { display: none; }
-@media (min-width: 900px) { .zen-finish-desktop { display: inline-flex; } }
 
 .zen-previous-value {
   margin: 10px 0 2px;
@@ -1755,6 +1751,12 @@ svg {
   .zen-topbar .zen-action-label {
     display: none;
   }
+  .zen-topbar .zen-finish {
+    min-height: 44px;
+    min-width: 44px;
+    padding-inline: 8px;
+  }
+  .zen-finish > svg { display: none; }
   .zen-mobile-tech {
     display: inline-flex;
     min-height: 44px;
@@ -1781,18 +1783,8 @@ svg {
     box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.9);
   }
   .zen-layout {
-    /* The fixed log CTA is 52 px tall and sits 76 px from the bottom edge.
-     * 58 px reserved less than the button itself, so the session's own
-     * "Terminar sesión" ended underneath it at 390×844. Reserve the whole
-     * occupied band plus a thumb's gap. */
+    /* Keep the last card clear of the fixed register button and bottom bar. */
     padding-bottom: calc(148px + env(safe-area-inset-bottom));
-  }
-  /* The finish button is a sibling of `.zen-layout`, not inside it, so the
-   * layout padding above does not move it. Keep it clear of the same fixed
-   * CTA: at maximum scroll its bottom sat at 766 px, under the 716–768 px
-   * button. */
-  .zen-layout + .btn {
-    margin-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
   /*

@@ -41,7 +41,7 @@
  * @module features/today/ZenSession
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   getExerciseTechnique,
   type MovementPattern,
@@ -345,6 +345,14 @@ export function ZenSession({
   const todaySets = loggedToday(row.exerciseId);
   const done = todaySets.length;
   const complete = done >= row.sets;
+  const focusAfterLog = useRef(false);
+  const activeRepsInput = useRef<HTMLInputElement>(null);
+  const nextExerciseButton = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    if (!focusAfterLog.current) return;
+    focusAfterLog.current = false;
+    (activeRepsInput.current ?? nextExerciseButton.current)?.focus();
+  }, [done]);
   const totalWorkSets = rows.reduce((a, r) => a + r.sets, 0);
   const plannedMinutes = rows.reduce((a, r) => a + r.minutes, 0);
   const doneWorkSets = rows.reduce(
@@ -463,7 +471,7 @@ export function ZenSession({
    * write is one action with three pieces of data instead of a gesture that
    * cannot be corrected before it lands.
    */
-  const logCurrent = () => {
+  const logCurrent = (restoreKeyboardFocus = false) => {
     if (phase === "warmup" && warmup.length > 0) {
       const step = warmup[warmupStep]!;
       onLogSet(row, step.weightKg, step.reps, { warmup: true });
@@ -477,6 +485,7 @@ export function ZenSession({
     const r = parseNumberInput(reps);
     if (r === null || r <= 0) return;
     const kg = currentWeightKg();
+    focusAfterLog.current = restoreKeyboardFocus;
     onLogSet(row, kg, r, {
       ...(fatigue !== null ? { rpe: fatigue } : {}),
       ...(mark ? { effort: mark } : {}),
@@ -502,6 +511,12 @@ export function ZenSession({
       );
     }
   };
+
+  function logFromActiveRow(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter" || event.repeat || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    logCurrent(true);
+  }
 
   /**
    * *Saltar* / *Posponer* (page 03), the two escape hatches of the top bar.
@@ -685,9 +700,15 @@ export function ZenSession({
           {doneWorkSets}/{totalWorkSets}
         </span>
         <div className="spacer" />
-        <button type="button" onClick={onFinish} className="btn zen-finish-desktop tl-focusable">
+        <button
+          type="button"
+          onClick={onFinish}
+          className="btn zen-finish tl-focusable"
+          aria-label={t("zen.finish")}
+          title={t("zen.finish")}
+        >
           <MIcons.check />
-          {t("zen.finish")}
+          <span>{t("zen.finish")}</span>
         </button>
         {/*
          * The page's two escape hatches, and they are toggles: the same button
@@ -904,11 +925,7 @@ export function ZenSession({
                                         setWeight(e.target.value)
                                       }
                                       inputMode="decimal"
-                                      onKeyDown={(event) => {
-                                        if (event.key !== "Enter" || event.repeat) return;
-                                        event.preventDefault();
-                                        logCurrent();
-                                      }}
+                                      onKeyDown={logFromActiveRow}
                                       aria-label={tInterp("zen.rowWeight", {
                                         n: i + 1,
                                       })}
@@ -939,11 +956,8 @@ export function ZenSession({
                                       value={reps}
                                       onChange={(e) => setReps(e.target.value)}
                                       inputMode="numeric"
-                                      onKeyDown={(event) => {
-                                        if (event.key !== "Enter" || event.repeat) return;
-                                        event.preventDefault();
-                                        logCurrent();
-                                      }}
+                                      onKeyDown={logFromActiveRow}
+                                      ref={activeRepsInput}
                                       aria-label={tInterp("zen.rowReps", {
                                         n: i + 1,
                                       })}
@@ -1106,7 +1120,7 @@ export function ZenSession({
                     </div>
                     <button
                       type="button"
-                      onClick={logCurrent}
+                      onClick={() => logCurrent()}
                       className="btn btn-primary btn-xl tl-focusable"
                       style={{ marginTop: 14 }}
                     >
@@ -1380,7 +1394,7 @@ export function ZenSession({
 
                     <button
                       type="button"
-                      onClick={logCurrent}
+                      onClick={() => logCurrent()}
                       disabled={complete}
                       data-testid="log-set"
                       className="btn btn-primary btn-xl tl-focusable zen-log-cta"
@@ -1392,6 +1406,7 @@ export function ZenSession({
                     {complete && (
                       <button
                         type="button"
+                        ref={nextExerciseButton}
                         onClick={goNext}
                         className="btn btn-xl tl-focusable"
                         style={{ marginTop: 8 }}
@@ -1899,16 +1914,6 @@ export function ZenSession({
           </div>
         </div>
 
-        {/* The only way out that does not go through the rail: ending the day. */}
-        <button
-          type="button"
-          onClick={onFinish}
-          className="btn btn-lg zen-finish-bottom tl-focusable"
-          style={{ alignSelf: "center" }}
-        >
-          <MIcons.check />
-          {t("zen.finish")}
-        </button>
       </div>
 
       {demoOpen && (
