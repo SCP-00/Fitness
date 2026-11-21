@@ -1704,6 +1704,15 @@ const DICT: Record<string, { en: string; es: string }> = {
   "week.history.next": { en: "Next week", es: "Semana siguiente" },
   "week.history.sessions": { en: "Closed sessions", es: "Sesiones cerradas" },
   "week.history.sets": { en: "Working sets", es: "Series de trabajo" },
+  "week.history.summary.generate": { en: "Summarize with local coach", es: "Resumir con el coach local" },
+  "week.history.summary.cancel": { en: "Cancel summary", es: "Cancelar resumen" },
+  "week.history.summary.pending": { en: "Preparing summary…", es: "Preparando resumen…" },
+  "week.history.summary.label": { en: "Local coach summary", es: "Resumen del coach local" },
+  "week.history.summary.cancelled": { en: "Summary cancelled.", es: "Resumen cancelado." },
+  "week.history.summary.unavailable": {
+    en: "The coach summary is unavailable. Your weekly totals are still shown.",
+    es: "El resumen del coach no está disponible. Puedes consultar tus cifras de la semana.",
+  },
   "week.history.hint": {
     en: "Counts working sets from closed sessions. Warm-ups are excluded.",
     es: "Cuenta series de sesiones cerradas. Excluye los calentamientos.",

@@ -105,6 +105,23 @@ function run(
 }
 
 describe("coach weekly summary run: the request", () => {
+  it("keeps the weekly counts on loopback and blocks redirects", async () => {
+    let calls = 0;
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      calls++;
+      expect(init?.redirect).toBe("error");
+      return jsonResponse({ content: "Cerraste tres sesiones." });
+    };
+    const rejected = await run({
+      settings: { ...SETTINGS, baseUrl: "https://example.com/v1" },
+      fetchImpl,
+    });
+    expect(rejected.fallback).toBe(true);
+    expect(calls).toBe(0);
+    expect((await run({ fetchImpl })).status).toBe("ready");
+    expect(calls).toBe(1);
+  });
+
   it("asks once, with no tools, and returns the model's sentence", async () => {
     const calls: Call[] = [];
     const result = await run({

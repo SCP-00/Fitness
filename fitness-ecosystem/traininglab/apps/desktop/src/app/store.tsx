@@ -82,6 +82,11 @@ import {
 } from "../lib/llm";
 import { runCoach, type CoachRunResult } from "../lib/coach-run";
 import {
+  runCoachSummary,
+  type CoachSummaryCounts,
+  type CoachSummaryResult,
+} from "../lib/coach-summary-run";
+import {
   createCoachInferenceQueue,
   type InferenceTask,
 } from "../lib/coach-inference-queue";
@@ -480,6 +485,7 @@ export interface TrainingLabStore {
    */
   swapWeekDays: (from: number, to: number) => boolean;
   askCoach: (request: string) => Promise<void>;
+  requestWeeklySummary: (counts: CoachSummaryCounts) => InferenceTask<CoachSummaryResult> | null;
   cancelCoach: () => void;
   runSharedSync: (opts?: { report?: boolean }) => Promise<void>;
   prFor: (
@@ -631,6 +637,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
   const [coachQueue] = useState(() => createCoachInferenceQueue());
+  const weeklySummarySequence = useRef(0);
   const activeCoachRun = useRef<InferenceTask<CoachRunResult> | null>(null);
   useEffect(() => {
     return () => {
@@ -3097,6 +3104,29 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   }, [plan, settings, contextCsv, rows]);
 
   const cancelCoach = useCallback(() => activeCoachRun.current?.cancel(), []);
+  const llmSettings = settings?.llm;
+  const requestWeeklySummary = useCallback(
+    (counts: CoachSummaryCounts) => {
+      if (!llmSettings?.enabled) return null;
+      const language = getLanguage();
+      return coachQueue.submit({
+        id: `weekly-summary-${++weeklySummarySequence.current}`,
+        kind: "summary",
+        revision: coachQueue.revision,
+        run: (signal) =>
+          runCoachSummary({
+            counts,
+            language,
+            settings: {
+              ...llmSettings,
+              timeoutSec: Math.min(llmSettings.timeoutSec || 15, 15),
+            },
+            signal,
+          }),
+      });
+    },
+    [coachQueue, llmSettings],
+  );
 
   const askCoach = useCallback(
     async (request: string) => {
@@ -3443,6 +3473,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     setWeekOverride,
     swapWeekDays,
     askCoach,
+    requestWeeklySummary,
     cancelCoach,
     runSharedSync,
     prFor,

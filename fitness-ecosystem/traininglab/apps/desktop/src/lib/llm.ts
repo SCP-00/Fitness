@@ -85,6 +85,7 @@ export interface ChatWithToolsInput {
  * the view and the tests cannot drift apart about what a cancellation reads.
  */
 export const CANCELLED_ERROR = "cancelled by the user";
+export const TIMEOUT_ERROR = "local model timed out";
 
 export interface ChatWithToolsResult {
   ok: boolean;
@@ -266,7 +267,7 @@ export async function chatWithTools(
         ok: false,
         content: "",
         toolCalls,
-        error: scope.didTimeout() ? "local model timed out" : message,
+        error: scope.didTimeout() ? TIMEOUT_ERROR : message,
       };
     } finally {
       scope.cleanup();

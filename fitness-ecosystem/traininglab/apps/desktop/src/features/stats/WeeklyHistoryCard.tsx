@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useStore } from "../../app/store";
+import type { InferenceTask } from "../../lib/coach-inference-queue";
+import type { CoachSummaryResult } from "../../lib/coach-summary-run";
 import { coachWeeklySummary } from "../../lib/coach-weekly-summary";
 import { localDayKey } from "../../lib/day";
 import { getLanguage, t } from "../../lib/i18n";
@@ -12,6 +15,7 @@ export function WeeklyHistoryCard({
   sets: readonly TLSet[];
   sessions: readonly TLSession[];
 }) {
+  const { settings, requestWeeklySummary } = useStore();
   const [weeksBack, setWeeksBack] = useState(0);
   const monday = new Date();
   monday.setDate(
@@ -25,7 +29,47 @@ export function WeeklyHistoryCard({
     () => coachWeeklySummary({ sets, sessions, from, to }),
     [sets, sessions, from, to],
   );
-  const dateLabel = new Intl.DateTimeFormat(getLanguage(), {
+  const language = getLanguage();
+  const context = useMemo(
+    () => ({ summary, language, requestWeeklySummary }),
+    [summary, language, requestWeeklySummary],
+  );
+  const pending = useRef<InferenceTask<CoachSummaryResult> | null>(null);
+  const [note, setNote] = useState<{
+    context: typeof context;
+    status: "pending" | "ready" | "cancelled" | "unavailable";
+    text?: string;
+  } | null>(null);
+  const visibleNote = note?.context === context ? note : null;
+  useLayoutEffect(() => {
+    return () => {
+      pending.current?.cancel();
+      pending.current = null;
+    };
+  }, [context]);
+
+  async function generateSummary() {
+    if (pending.current) return;
+    const task = requestWeeklySummary(summary);
+    if (!task) return;
+    pending.current = task;
+    setNote({ context, status: "pending" });
+    const result = await task.promise;
+    if (pending.current !== task) return;
+    pending.current = null;
+    if (result.status === "completed" && result.value.status === "ready") {
+      setNote({ context, status: "ready", text: result.value.text });
+    } else if (result.status === "stale") {
+      setNote(null);
+    } else {
+      setNote({
+        context,
+        status: result.status === "cancelled" ? "cancelled" : "unavailable",
+      });
+    }
+  }
+
+  const dateLabel = new Intl.DateTimeFormat(language, {
     dateStyle: "medium",
   });
 
@@ -76,6 +120,31 @@ export function WeeklyHistoryCard({
           </dl>
         </div>
         <p className="small muted mt-2">{t("week.history.hint")}</p>
+        {settings?.llm.enabled && (
+          <div className="mt-3">
+            <button
+              type="button"
+              className="btn tl-focusable min-h-11"
+              onClick={visibleNote?.status === "pending"
+                ? () => pending.current?.cancel()
+                : generateSummary}
+            >
+              {t(visibleNote?.status === "pending"
+                ? "week.history.summary.cancel"
+                : "week.history.summary.generate")}
+            </button>
+            <div role="status" className="small muted mt-2">
+              {visibleNote?.status === "ready" ? (
+                <p>
+                  <strong>{t("week.history.summary.label")}</strong>{" "}
+                  {visibleNote.text}
+                </p>
+              ) : visibleNote ? (
+                t(`week.history.summary.${visibleNote.status}`)
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

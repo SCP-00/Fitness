@@ -31,7 +31,7 @@
  * @module lib/coach-summary-run
  */
 
-import { chatWithTools } from "./llm";
+import { chatWithTools, TIMEOUT_ERROR } from "./llm";
 import type { LlmSettings } from "./types";
 
 /**
@@ -107,12 +107,18 @@ const MAX_SUMMARY_CHARS = 480;
 /** Don't cut a "sentence" shorter than this; fall back to a word boundary. */
 const MIN_SENTENCE_CHARS = 120;
 
-/**
- * The transport's own words for a timeout, from `lib/llm.ts`. Duplicated
- * because that module is outside this card's file scope; if the wording there
- * changes, a timeout degrades to `failed`, which still keeps the card.
- */
-const TIMEOUT_ERROR = "local model timed out";
+function isLoopbackEndpoint(baseUrl: string): boolean {
+  try {
+    const url = new URL(baseUrl);
+    return (
+      ["http:", "https:"].includes(url.protocol) &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) &&
+      !url.username && !url.password && !url.search && !url.hash
+    );
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Ask the local model for the optional weekly sentence.
@@ -139,6 +145,11 @@ export async function runCoachSummary(
 
   /* A stop that already happened sends nothing — same rule as the coach. */
   if (input.signal?.aborted) return result("cancelled");
+  if (!isLoopbackEndpoint(input.settings.baseUrl)) {
+    return result("failed", "", "weekly summary requires a loopback server");
+  }
+  const fetchImpl = input.fetchImpl ?? globalThis.fetch;
+  if (typeof fetchImpl !== "function") return result("failed");
 
   const reply = await chatWithTools({
     settings: input.settings,
@@ -148,7 +159,7 @@ export async function runCoachSummary(
     tools: [],
     execute: () => ({ error: "this request has no tools" }),
     maxSteps: 0,
-    fetchImpl: input.fetchImpl,
+    fetchImpl: (url, init) => fetchImpl(url, { ...init, redirect: "error" }),
     signal: input.signal,
   });
 
