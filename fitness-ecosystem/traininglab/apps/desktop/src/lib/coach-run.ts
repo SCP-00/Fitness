@@ -116,6 +116,12 @@ interface ProposalVerdict {
   accepted?: boolean;
   errors?: string[];
   slots?: number;
+  /**
+   * The store returns `estimatedMinutes` (the validator's name); `minutes` is
+   * kept for callers that already shorten it. Reading only `minutes` made every
+   * accepted proposal report 0 min, which the benchmark surfaced (2026-11-21).
+   */
+  estimatedMinutes?: number;
   minutes?: number;
 }
 
@@ -306,7 +312,11 @@ export async function runCoach(input: CoachRunInput): Promise<CoachRunResult> {
         content: lastContent,
         toolCalls,
         errors: [],
-        applied: { slots: v.slots ?? 0, minutes: v.minutes ?? 0, summary },
+        applied: {
+          slots: v.slots ?? 0,
+          minutes: v.estimatedMinutes ?? v.minutes ?? 0,
+          summary,
+        },
         cancelled: false,
         timings: { exploreMs, commitMs: commitMsOf() },
       };

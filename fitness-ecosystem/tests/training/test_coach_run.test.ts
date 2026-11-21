@@ -117,8 +117,14 @@ function executor(vetoes: string[] = [], focus: string[] = []) {
       patternOf: (id) => PATTERN[id] ?? "",
       focusFamilies: focus,
     });
+    // The store returns the validator's own field name (`estimatedMinutes`);
+    // `runCoach` must read it, or every accepted proposal reports 0 min.
     return check.ok
-      ? { accepted: true, slots: check.slots.length, minutes: check.estimatedMinutes }
+      ? {
+          accepted: true,
+          slots: check.slots.length,
+          estimatedMinutes: check.estimatedMinutes,
+        }
       : { accepted: false, errors: check.errors };
   };
   return { run, seen };
@@ -153,6 +159,7 @@ describe("coach: phase 1 explores, phase 2 commits", () => {
 
     expect(result.ok).toBe(true);
     expect(result.applied?.slots).toBe(2);
+    expect(result.applied?.minutes).toBeGreaterThan(0);
     expect(result.applied?.summary).toBe("Core y piernas");
     // The exploration-time attempt never reached the executor at all: the
     // runner refuses it before the app can touch the plan.
