@@ -70,11 +70,31 @@ export interface ChatWithToolsInput {
   finalAfter?: number;
   /** Injectable for tests; defaults to global fetch. */
   fetchImpl?: typeof fetch;
+  /**
+   * Caller-owned cancellation (the screen's «parar» button). Aborting it ends
+   * the run **without** executing another tool, and is reported as
+   * `cancelled: true` — a timeout is a different fact and keeps its own
+   * message, because "your model is slow" and "you stopped it" need different
+   * words in front of the owner (2026-11-21).
+   */
+  signal?: AbortSignal;
 }
+
+/**
+ * The one sentence a cancelled run ends with. Exported so `lib/coach-run.ts`,
+ * the view and the tests cannot drift apart about what a cancellation reads.
+ */
+export const CANCELLED_ERROR = "cancelled by the user";
+export const TIMEOUT_ERROR = "local model timed out";
 
 export interface ChatWithToolsResult {
   ok: boolean;
   content: string;
+  /**
+   * True when the caller's `signal` ended the run. A cancelled result never
+   * carries a tool result produced after the abort.
+   */
+  cancelled?: boolean;
   /**
    * Every tool call the model made, for transparency in the UI — plus the
    * result it got, which is what the commit phase of the coach digest is built
@@ -124,7 +144,7 @@ const DEFAULT_MAX_TOKENS = 1024;
 export async function chatWithTools(
   input: ChatWithToolsInput,
 ): Promise<ChatWithToolsResult> {
-  const { settings, tools, execute } = input;
+  const { settings, tools, execute, signal } = input;
   const fetchImpl = input.fetchImpl ?? globalThis.fetch;
   const maxSteps = input.maxSteps ?? DEFAULT_MAX_STEPS;
   const messages: ChatMessage[] = [...input.messages];
@@ -146,10 +166,13 @@ export async function chatWithTools(
     };
   }
 
+  /* A signal that is already spent means the request never started: no fetch
+   * and no tool call, which is what "cancel before running" has to mean. */
+  if (signal?.aborted) return cancelledResult(toolCalls, "");
+
   for (let step = 0; step <= maxSteps; step++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
+    const scope = abortScope(
+      signal,
       (settings.timeoutSec || DEFAULT_TIMEOUT_SEC) * 1000,
     );
     /*
@@ -209,15 +232,18 @@ export async function chatWithTools(
         method: "POST",
         headers,
         body: JSON.stringify(body(true)),
-        signal: controller.signal,
+        signal: scope.signal,
       });
       if (!res.ok && res.status === 400) {
+        // A cancel that lands between the two requests is not a reason to send
+        // the second one: a stopped run stops.
+        if (signal?.aborted) return cancelledResult(toolCalls, "");
         // Unknown-field rejection is not fatal: the hint is an optimisation.
         res = await fetchImpl(chatEndpoint(settings.baseUrl), {
           method: "POST",
           headers,
           body: JSON.stringify(body(false)),
-          signal: controller.signal,
+          signal: scope.signal,
         });
       }
       if (!res.ok) {
@@ -231,15 +257,28 @@ export async function chatWithTools(
       payload = await res.json();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      /*
+       * Cancellation and timeout both surface as an abort, and they are not the
+       * same event: the first is the owner's decision, the second is the
+       * server being too slow. Only the caller's signal means cancelled.
+       */
+      if (signal?.aborted) return cancelledResult(toolCalls, "");
       return {
         ok: false,
         content: "",
         toolCalls,
-        error: controller.signal.aborted ? "local model timed out" : message,
+        error: scope.didTimeout() ? TIMEOUT_ERROR : message,
       };
     } finally {
-      clearTimeout(timeout);
+      scope.cleanup();
     }
+
+    /*
+     * A server that finishes generating after the owner cancelled still answers
+     * with a full body. Reading it and executing its tool would apply exactly
+     * the session the cancel button was pressed to stop.
+     */
+    if (signal?.aborted) return cancelledResult(toolCalls, "");
 
     const message = extractMessage(payload);
     if (!message) {
@@ -292,6 +331,7 @@ export async function chatWithTools(
       tool_calls: calls,
     });
     for (const call of calls) {
+      if (signal?.aborted) return cancelledResult(toolCalls, "");
       /*
        * llama.cpp does not validate the emitted tool name against the offered
        * list, so a model can keep calling a tool that is no longer in scope
@@ -350,6 +390,46 @@ export async function chatWithTools(
     content: "",
     toolCalls,
     error: `the model exceeded ${maxSteps} tool steps without answering`,
+  };
+}
+
+/** A run the caller stopped: never ok, never a proposal, and marked as such. */
+function cancelledResult(
+  toolCalls: ChatWithToolsResult["toolCalls"],
+  content: string,
+): ChatWithToolsResult {
+  return {
+    ok: false,
+    content,
+    toolCalls,
+    cancelled: true,
+    error: CANCELLED_ERROR,
+  };
+}
+
+/**
+ * One request's abort plumbing: the caller's signal and the timeout share a
+ * controller, while `didTimeout()` keeps them tellable apart afterwards.
+ */
+function abortScope(signal: AbortSignal | undefined, timeoutMs: number) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const onExternal = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", onExternal, { once: true });
+  }
+  return {
+    signal: controller.signal,
+    didTimeout: () => timedOut,
+    cleanup: () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onExternal);
+    },
   };
 }
 

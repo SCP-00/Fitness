@@ -66,7 +66,7 @@ describe("demo history", () => {
     ).toBe(true);
   });
 
-  it("gives six weeks of history with a training day for today", () => {
+  it("gives eight weeks of history with a training day for today", () => {
     const backup = buildDemoBackup({ now: NOW });
     const days = new Set(backup.sets.map((s) => s.timestamp.slice(0, 10)));
     expect(days.size).toBeGreaterThan(15);
@@ -76,6 +76,51 @@ describe("demo history", () => {
     // Today is a session in progress, not a rest day: the screen that shows it
     // is the one being reviewed, so a rest day every seventh date would hide it.
     expect(today.length).toBeGreaterThan(0);
+
+    /*
+     * Eight weeks, measured as a span rather than as a count of calendar days:
+     * the cycle has five training days in seven, so eight full blocks are forty
+     * sessions, and the oldest one is 54 days back (the block's last training
+     * day; day 55 is the rest day that closes it). A week is 7 days, and a DST
+     * shift moves the oldest stamp by an hour, hence the loose bounds.
+     */
+    expect(backup.sessions).toHaveLength(40);
+    const oldest = backup.sets.reduce(
+      (min, set) => Math.min(min, new Date(set.timestamp).getTime()),
+      Number.POSITIVE_INFINITY,
+    );
+    const weeksBack = (NOW.getTime() - oldest) / (7 * 24 * 60 * 60 * 1000);
+    expect(weeksBack).toBeGreaterThan(7.6);
+    expect(weeksBack).toBeLessThan(8.1);
+  });
+
+  it("honours the weeks option instead of fixing the block length", () => {
+    const short = buildDemoBackup({ now: NOW, weeks: 2 });
+    expect(short.sessions).toHaveLength(10);
+    // Same clock, same ids: the merge key does not depend on how much was built.
+    expect(short.sets.map((s) => s.id)).toEqual(
+      buildDemoBackup({ now: NOW, weeks: 2 }).sets.map((s) => s.id),
+    );
+    expect(buildDemoBackup({ now: NOW }).sessions.length).toBeGreaterThan(
+      short.sessions.length,
+    );
+  });
+
+  it("holds the load in the last two weeks instead of inventing a longer climb", () => {
+    /*
+     * The two extra weeks exist to widen the trend, not to invent a heavier
+     * lifter: the ladder has six rungs (`PROGRESSION_WEEKS`), so eight weeks of
+     * bench press show six distinct loads and the last two weeks repeat the
+     * sixth. This is also what keeps today's weights identical to the six-week
+     * demo the screens were reviewed with.
+     */
+    const backup = buildDemoBackup({ now: NOW });
+    const bench = backup.sets
+      .filter((s) => s.exerciseId === "barbell-bench-press" && !s.warmup)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    expect(bench.length).toBeGreaterThan(0);
+    expect(new Set(bench.map((s) => s.weight)).size).toBe(6);
+    expect(bench.at(-1)!.weight).toBe(75);
   });
 
   it("keeps every logged weight on a half-kilo step", () => {

@@ -57,6 +57,9 @@ import { SettingsPanel } from "../features/today/SettingsPanel";
 import { CoachPanel, CoachResultView } from "../features/today/CoachPanel";
 import { SharedPanel } from "../features/today/SharedPanel";
 import { MobileCard } from "../features/today/MobileCard";
+import { BodyLabSetsImport } from "../features/today/BodyLabSetsImport";
+import { BodyLabMigration } from "../features/today/BodyLabMigration";
+import { PrivateBackupRecovery } from "../features/today/PrivateBackupRecovery";
 
 /**
  * Shown in "Acerca de". Kept in sync by hand with `src-tauri/tauri.conf.json`:
@@ -90,6 +93,7 @@ export default function SettingsScreen() {
     payload,
     model,
     sets,
+    sessions,
     coachResult,
     coachBusy,
     health,
@@ -99,6 +103,7 @@ export default function SettingsScreen() {
     patch,
     handleFile,
     askCoach,
+    cancelCoach,
     resetModel,
     addHealthRecord,
     removeHealthRecord,
@@ -203,15 +208,22 @@ export default function SettingsScreen() {
   };
 
   /** Full JSON backup: series, sessions, health, settings and the local model. */
-  const downloadBackup = () => {
-    const url = URL.createObjectURL(
-      new Blob([exportBackup()], { type: "application/json" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `traininglab-backup-${stampForFile()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const downloadBackup = async () => {
+    try {
+      const url = URL.createObjectURL(
+        new Blob([await exportBackup()], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `traininglab-backup-${stampForFile()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setBackupNote(null);
+    } catch {
+      setBackupNote(settings.language === "es"
+        ? "No se pudo descargar la copia."
+        : "Could not download the backup.");
+    }
   };
 
   const restoreBackup = async (file: File) => {
@@ -250,7 +262,7 @@ export default function SettingsScreen() {
   };
 
   /**
-   * Load (or remove) the six weeks of sample history.
+   * Load (or remove) the eight weeks of sample history.
    *
    * Both halves report through one line, because the interesting part of either
    * answer is how many series moved — and because "I pressed it and nothing
@@ -463,6 +475,7 @@ export default function SettingsScreen() {
           llm={settings.llm}
           onLlmChange={(llm) => patch({ llm })}
           onAsk={askCoach}
+          onCancel={cancelCoach}
           busy={coachBusy}
         />
         {/*
@@ -549,7 +562,9 @@ export default function SettingsScreen() {
         <p className="text-xs text-[var(--tl-text-muted)] mt-1">
           {t("settings.importHint")}
         </p>
-        {/* closes the BodyLab section below */}
+        <BodyLabMigration language={settings.language} />
+        <PrivateBackupRecovery language={settings.language} />
+        <BodyLabSetsImport language={settings.language} sets={sets} sessions={sessions} importBackup={importBackup} />
       </SectionCard>
 
       {/* ── Mis datos: CSV (Excel + LLM) y copia completa (restaurar) ─────── */}
@@ -752,7 +767,7 @@ export default function SettingsScreen() {
        * Placed right after the data section, because that is what it is: a way
        * to put data in, and its exact inverse. It is not a hidden developer
        * switch — the app is a beta used by one person, and being able to see the
-       * redesigned screens with six weeks in them is worth a visible button, as
+       * redesigned screens with eight weeks in them is worth a visible button, as
        * long as it says what it does and can be undone in one tap.
        */}
       <SectionCard

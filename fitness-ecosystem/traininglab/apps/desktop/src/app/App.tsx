@@ -9,12 +9,8 @@
  *
  * What changed and why:
  *
- *   * **One rail, not two navigations.** The old shell drew a collapsible rail
- *     *and* a phone tab bar from the same list. The mockup draws a single
- *     `.rail`: a 245 px column from 900 px up, and below that the stylesheet
- *     turns it into a horizontal, scrollable bar across the top. So there is no
- *     toggle to persist and no second navigation that could disagree with the
- *     first — the mockup's own responsive pattern is the contract.
+ *   * **Responsive navigation.** The rail collapses to icons on desktop.
+ *     At 900 px and below, the phone tabs use the same destinations.
  *   * **The markup is the mockup's** (`.app`, `.rail`, `.rail-brand`,
  *     `.rail-logo`, `.rail-name`, `.rail-nav`, `.rail-item`, `.rail-quote`),
  *     so `src/mockup.css` — the ported stylesheet — styles it as designed.
@@ -214,8 +210,27 @@ function Screen({ route }: { route: Route }) {
    ══════════════════════════════════════════════════════════════════════════ */
 
 function Rail({ active }: { active: RouteId }) {
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("traininglab-rail-collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const label = t(collapsed ? "nav.expandRail" : "nav.collapseRail");
+
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      localStorage.setItem("traininglab-rail-collapsed", String(next));
+    } catch {
+      // The rail is still usable for this session when storage is unavailable.
+    }
+  };
+
   return (
-    <aside className="rail">
+    <aside className="rail" data-collapsed={collapsed}>
       <div className="rail-brand">
         <div className="rail-logo">
           <MIcons.dumbbell />
@@ -225,7 +240,11 @@ function Rail({ active }: { active: RouteId }) {
         </div>
       </div>
 
-      <nav className="rail-nav" aria-label={t("nav.label")}>
+      <nav
+        id="rail-navigation"
+        className="rail-nav"
+        aria-label={t("nav.label")}
+      >
         {DESTINATIONS.map((dest) => {
           const Icon = dest.icon;
           const on = dest.id === active;
@@ -233,8 +252,9 @@ function Rail({ active }: { active: RouteId }) {
             <a
               key={dest.id}
               href={`#/${SEGMENT[dest.id]}`}
+              aria-label={t(dest.labelKey)}
               aria-current={on ? "page" : undefined}
-              className={`rail-item ${on ? "is-active" : ""}`}
+              className={`rail-item tl-focusable ${on ? "is-active" : ""}`}
               title={t(dest.labelKey)}
             >
               <Icon />
@@ -244,8 +264,18 @@ function Rail({ active }: { active: RouteId }) {
         })}
       </nav>
 
-      <div className="rail-quote">
-        <b>{t("nav.motto")}</b>
+      <div className="rail-controls">
+        <button
+          type="button"
+          className="icon-btn tl-focusable"
+          aria-controls="rail-navigation"
+          aria-expanded={!collapsed}
+          aria-label={label}
+          title={label}
+          onClick={toggle}
+        >
+          <MIcons.menu />
+        </button>
       </div>
     </aside>
   );
@@ -266,13 +296,17 @@ function Rail({ active }: { active: RouteId }) {
  */
 function MobileTabBar({ active }: { active: RouteId }) {
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreButton = useRef<HTMLButtonElement>(null);
   const secondary = MOBILE_SECONDARY.includes(active)
     ? destinationFor(active)
     : null;
 
   useEffect(() => setMoreOpen(false), [active]);
 
-  const close = useCallback(() => setMoreOpen(false), []);
+  const close = useCallback(() => {
+    setMoreOpen(false);
+    moreButton.current?.focus();
+  }, []);
 
   return (
     <>
@@ -285,9 +319,10 @@ function MobileTabBar({ active }: { active: RouteId }) {
           />
         ))}
         <button
+          ref={moreButton}
           type="button"
           data-testid="tab-more"
-          className={`mobile-tab ${secondary || moreOpen ? "is-active" : ""}`}
+          className={`mobile-tab tl-focusable ${secondary || moreOpen ? "is-active" : ""}`}
           aria-label={
             secondary
               ? tInterp("nav.moreCurrent", { name: t(secondary.labelKey) })
@@ -316,7 +351,7 @@ function MobileTab({ dest, active }: { dest: Destination; active: boolean }) {
       data-testid={`tab-${dest.id}`}
       aria-current={active ? "page" : undefined}
       aria-label={t(dest.labelKey)}
-      className={`mobile-tab ${active ? "is-active" : ""}`}
+      className={`mobile-tab tl-focusable ${active ? "is-active" : ""}`}
     >
       <Icon />
       <span className="mobile-tab-label" aria-hidden="true">
@@ -413,7 +448,7 @@ function MoreSheet({
                 key={id}
                 href={`#/${SEGMENT[id]}`}
                 data-testid={`sheet-${id}`}
-                className={`mobile-sheet-item ${on ? "is-active" : ""}`}
+                className={`mobile-sheet-item tl-focusable ${on ? "is-active" : ""}`}
                 aria-current={on ? "page" : undefined}
                 onClick={onClose}
               >

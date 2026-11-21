@@ -55,6 +55,7 @@ export default defineConfig({
     alias: {
       '@fitness/bodylab-training': path.resolve(__dirname, '../../../bodylab/core/training/src'),
       '@fitness/bodylab-exercises': path.resolve(__dirname, '../../../bodylab/core/exercises/src'),
+      '@fitness/bodylab-measurements': path.resolve(__dirname, '../../../bodylab/core/measurements/src'),
       '@fitness/bodylab-conditioning': path.resolve(__dirname, '../../../bodylab/core/conditioning/src'),
     },
   },

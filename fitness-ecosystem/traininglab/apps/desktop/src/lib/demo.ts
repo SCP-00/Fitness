@@ -5,8 +5,9 @@
  * four series; the app has to be judged with *weeks*. A fresh profile shows an
  * empty Hoy, an empty Semana and a Progreso with nothing to chart, so there is
  * no way to tell a layout that works from one that merely happens to look tidy
- * when it is empty. This module builds six weeks of believable history so every
- * screen can be read the way it will be read in use.
+ * when it is empty. This module builds eight weeks of believable history so every
+ * screen can be read the way it will be read in use — long enough for a trend,
+ * and long enough that a lift can rise and then hold.
  *
  * Three deliberate properties:
  *
@@ -44,8 +45,15 @@ export function isDemoId(id: string): boolean {
   return id.startsWith(DEMO_PREFIX);
 }
 
-/** Sets a demo generation is worth: six weeks is long enough for a trend. */
-export const DEMO_WEEKS = 6;
+/**
+ * Sets a demo generation is worth.
+ *
+ * Eight weeks covers two months of Progreso: a trend can be read, a body-weight
+ * trend has nine or ten points, and the block is long enough for the last two
+ * weeks to stall (see `PROGRESSION_WEEKS`) instead of every week being a new
+ * best — the shape a real intermediate log has.
+ */
+export const DEMO_WEEKS = 8;
 
 interface DemoTemplateSlot {
   exerciseId: string;
@@ -205,8 +213,25 @@ function repsFor(slot: DemoTemplateSlot, setIndex: number): number {
   return slot.repsMax - drift;
 }
 
+/**
+ * How many weeks of the block keep adding load. Beyond this the demo stalls.
+ *
+ * Extending the history from six to eight weeks by letting `stepKg` run would
+ * have added 17.5 kg to the bench and 15 kg to the squat — a novice's first two
+ * months, not the intermediate lifter this log describes — and would have moved
+ * every weight the screens were already reviewed with. So the last two weeks
+ * repeat the sixth week's load: the history gets longer without inventing a
+ * block nobody trained, and Progreso is reviewed with a lift that rises and then
+ * holds, which is the case the demo exists to make visible.
+ *
+ * The top of the ladder is therefore unchanged: today's weights are exactly the
+ * ones the six-week demo produced.
+ */
+const PROGRESSION_WEEKS = 6;
+
 function weightFor(slot: DemoTemplateSlot, weekIdx: number): number {
-  const raw = slot.baseKg + slot.stepKg * weekIdx;
+  const progressed = Math.min(weekIdx, PROGRESSION_WEEKS - 1);
+  const raw = slot.baseKg + slot.stepKg * progressed;
   // Half-kilo steps are the smallest plate pair most home setups have; rounding
   // here keeps every logged weight loadable instead of inventing 27.3 kg.
   return Math.round(raw * 2) / 2;

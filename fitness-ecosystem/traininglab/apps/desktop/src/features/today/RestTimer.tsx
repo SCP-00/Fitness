@@ -111,7 +111,7 @@ export default function RestTimer({
           className="ring progress-ring-lg"
           style={ringStyle(pct)}
           role="img"
-          aria-label={`${clock(remaining)} · ${t("timer.rest")}`}
+          aria-label={`${clock(remaining)} · ${t(paused ? "timer.paused" : "timer.rest")}`}
         >
           <div>
             <div className="ring-value">
@@ -143,6 +143,11 @@ export default function RestTimer({
           >
             {t("timer.plus15")}
           </button>
+          {paused && (
+            <p className="tiny muted text-center" role="status">
+              {t("timer.paused")}
+            </p>
+          )}
         </div>
       </div>
     );

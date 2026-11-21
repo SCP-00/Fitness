@@ -178,7 +178,7 @@ Spanish copy:
    `week-drag-<0..6>`, `routine-name`, `weekly-volume`, `history-set`, `exercise-history`,
    settings `export-csv` / `export-backup` / `restore-backup` / `load-demo` / `clear-demo`.
    When adding a control an agent or E2E should reach, add its testid in the same pass.
-2. **Demo loader** (`Ajustes → load-demo`, testid `load-demo`): seeds six weeks of realistic
+2. **Demo loader** (`Ajustes → load-demo`, testid `load-demo`): seeds eight weeks of realistic
    history through the app's own import path (`demo-` ids, removable with `clear-demo`). Use
    it instead of hand-logging sets; it also exercises migration/normalisation.
 3. **Generated screenshots, never hand-taken**: `node scripts/capture-screenshots.mjs`.

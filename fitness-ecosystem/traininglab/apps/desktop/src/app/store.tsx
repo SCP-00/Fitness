@@ -41,7 +41,11 @@ import {
   type MuscleFamily,
   type Readiness,
 } from "@fitness/bodylab-training";
-import { isV2Payload, type ImportPayload } from "../lib/adapter";
+import { isV2Payload, normalizeLinkPayload, readLinkPayload, type ImportPayload } from "../lib/adapter";
+import { loadBodyLabArchive } from "../lib/bodylab-migration-db";
+import { schedulePrivateAutobackup } from "../lib/private-autobackup";
+import { restoreTrainingLabBackup } from "../lib/backup-db";
+import { loadWaistMeasurements } from "../lib/waist-db";
 import { localDayKey, todayKey } from "../lib/day";
 import { uid } from "../lib/uid";
 import { unassignedTodaySets } from "../lib/session-identity";
@@ -76,7 +80,16 @@ import {
   evaluateBiomechanicsAndFatigue,
   painVetoesFor,
 } from "../lib/llm";
-import { runCoach } from "../lib/coach-run";
+import { runCoach, type CoachRunResult } from "../lib/coach-run";
+import {
+  runCoachSummary,
+  type CoachSummaryCounts,
+  type CoachSummaryResult,
+} from "../lib/coach-summary-run";
+import {
+  createCoachInferenceQueue,
+  type InferenceTask,
+} from "../lib/coach-inference-queue";
 import {
   deleteSession,
   deleteSessionsMany,
@@ -90,7 +103,6 @@ import {
   loadSessions,
   loadSettings,
   loadSets,
-  normalizeSettings,
   saveDecisionModel,
   saveHealthRecords,
   saveMcpLedger,
@@ -473,6 +485,8 @@ export interface TrainingLabStore {
    */
   swapWeekDays: (from: number, to: number) => boolean;
   askCoach: (request: string) => Promise<void>;
+  requestWeeklySummary: (counts: CoachSummaryCounts) => InferenceTask<CoachSummaryResult> | null;
+  cancelCoach: () => void;
   runSharedSync: (opts?: { report?: boolean }) => Promise<void>;
   prFor: (
     exerciseId: string,
@@ -515,7 +529,7 @@ export interface TrainingLabStore {
   /** Reverse one applied MCP action (Ajustes → auditoría de agentes). */
   undoMcpAction: (id: string) => Promise<void>;
   /** The complete JSON backup of this device's data, as text. */
-  exportBackup: () => string;
+  exportBackup: () => Promise<string>;
   /**
    * Restore a backup file: merge by id into IndexedDB (never a wipe), then
    * adopt it in memory. Reports a translated message for the settings screen.
@@ -622,6 +636,14 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
+  const [coachQueue] = useState(() => createCoachInferenceQueue());
+  const weeklySummarySequence = useRef(0);
+  const activeCoachRun = useRef<InferenceTask<CoachRunResult> | null>(null);
+  useEffect(() => {
+    return () => {
+      coachQueue.cancelAll();
+    };
+  }, [coachQueue]);
   const [coachRows, setCoachRows] = useState<PlannedRow[] | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   /** Last reversible change to one set (delete or rewrite), 2026-10-21. */
@@ -629,6 +651,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   /** Clears that entry when its window closes — one timer, never a queue. */
   const undoTimer = useRef<number | null>(null);
   const [sessions, setSessions] = useState<TLSession[]>([]);
+  useEffect(() => {
+    coachQueue.setRevision(coachQueue.revision + 1);
+  }, [coachQueue, sets, sessions]);
   const [health, setHealth] = useState<HealthRecord[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [sharedError, setSharedError] = useState<string | null>(null);
@@ -670,8 +695,10 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         loadMcpLedger(),
       ]);
       if (cancelled) return;
-      if (storedPayload && isV2Payload(storedPayload))
-        setPayload(storedPayload);
+      const restoredPayload = isV2Payload(storedPayload)
+        ? storedPayload
+        : normalizeLinkPayload(storedPayload);
+      if (restoredPayload) setPayload(restoredPayload);
       setSets(storedSets);
       setSessions(storedSessions);
       setModel(normalizeModel(storedModel));
@@ -896,12 +923,15 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    * fresh IndexedDB read.
    */
   const exportBackup = useCallback(
-    (): string =>
-      JSON.stringify(
-        buildBackup({ sets, sessions, health, settings, decisionModel: model }),
-        null,
-        2,
-      ),
+    async (): Promise<string> => {
+      const [waistMeasurements, bodyLabArchive] = await Promise.all([
+        loadWaistMeasurements(), loadBodyLabArchive(),
+      ]);
+      return JSON.stringify(buildBackup({
+        sets, sessions, health, settings, decisionModel: model, waistMeasurements,
+        ...(bodyLabArchive ? { bodyLabArchive } : {}),
+      }), null, 2);
+    },
     [sets, sessions, health, settings, model],
   );
 
@@ -919,22 +949,22 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         return { ok: false, message };
       }
 
-      const nextSets = mergeById(sets, parsed.backup.sets);
-      const nextSessions = mergeById(sessions, parsed.backup.sessions);
-      const nextHealth = mergeById(health, parsed.backup.health);
-      await saveSetsMany(nextSets);
-      await saveSessionsMany(nextSessions);
-      await saveHealthRecords(nextHealth);
-      setSets(nextSets);
-      setSessions(nextSessions);
-      setHealth(nextHealth);
-
-      if (parsed.backup.decisionModel) {
-        setModel(parsed.backup.decisionModel);
-        await saveDecisionModel(parsed.backup.decisionModel);
-      }
-      if (parsed.backup.settings) {
-        applySettings(normalizeSettings(parsed.backup.settings));
+      try {
+        const restored = await restoreTrainingLabBackup(parsed.backup);
+        setSets(restored.sets);
+        setSessions(restored.sessions);
+        setHealth(restored.health);
+        if (parsed.backup.waistMeasurements || parsed.backup.bodyLabArchive) void schedulePrivateAutobackup();
+        if (parsed.backup.decisionModel) setModel(parsed.backup.decisionModel);
+        if (restored.settings) {
+          setSettings(restored.settings);
+          setLanguage(restored.settings.language);
+        }
+      } catch {
+        return {
+          ok: false,
+          message: t("backup.error.write"),
+        };
       }
       return {
         ok: true,
@@ -943,7 +973,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         }),
       };
     },
-    [sets, sessions, health, applySettings],
+    [],
   );
 
   /**
@@ -1211,13 +1241,13 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     async (file: File) => {
       setLoadError(null);
       try {
-        const parsed: unknown = JSON.parse(await file.text());
-        if (!isV2Payload(parsed)) {
+        const parsed = readLinkPayload(await file.text());
+        if (!parsed) {
           setLoadError(t("setup.loadError"));
           return;
         }
-        setPayload(parsed);
         await savePayload(parsed);
+        setPayload(parsed);
         if (settings) applySettings({ ...settings, sourcePath: file.name });
       } catch {
         setLoadError(t("setup.loadError"));
@@ -2514,7 +2544,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         ok: true,
         content: summary,
         toolCalls: [],
-        applied: { summary, slots: proposed.length },
+        applied: { summary, slots: proposed.length, minutes: check.estimatedMinutes },
         errors: [],
       });
       return {
@@ -3073,9 +3103,34 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     });
   }, [plan, settings, contextCsv, rows]);
 
+  const cancelCoach = useCallback(() => activeCoachRun.current?.cancel(), []);
+  const llmSettings = settings?.llm;
+  const requestWeeklySummary = useCallback(
+    (counts: CoachSummaryCounts) => {
+      if (!llmSettings?.enabled) return null;
+      const language = getLanguage();
+      return coachQueue.submit({
+        id: `weekly-summary-${++weeklySummarySequence.current}`,
+        kind: "summary",
+        revision: coachQueue.revision,
+        run: (signal) =>
+          runCoachSummary({
+            counts,
+            language,
+            settings: {
+              ...llmSettings,
+              timeoutSec: Math.min(llmSettings.timeoutSec || 15, 15),
+            },
+            signal,
+          }),
+      });
+    },
+    [coachQueue, llmSettings],
+  );
+
   const askCoach = useCallback(
     async (request: string) => {
-      if (!settings || !plan) return;
+      if (!settings?.llm.enabled || !plan || activeCoachRun.current) return;
       setCoachBusy(true);
       setCoachResult(null);
       /**
@@ -3274,30 +3329,55 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
        * A single conversation made the local model loop forever without ever
        * proposing anything — see `lib/coach-run.ts` for the measurement.
        */
-      const result = await runCoach({
-        settings: settings.llm,
-        request,
-        contextCsv,
-        tools: TOOL_SPECS,
-        execute: executor,
-        usable: plan.usable.map((u) => ({
-          id: u.exercise.id,
-          family: u.families[0] ?? "unknown",
-          pattern: u.traits.pattern,
-        })),
-        vetoedPatterns: runVetoes,
-        focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
-      });
-      setCoachResult((prev) => ({
-        ok: result.ok,
-        content: result.content || prev?.content || "",
-        toolCalls: result.toolCalls,
-        applied: result.applied
-          ? { summary: result.applied.summary || result.content, slots: result.applied.slots }
-          : prev?.applied,
-        errors: result.errors,
-      }));
-      setCoachBusy(false);
+      try {
+        const task = coachQueue.submit({
+          id: "coach-ask",
+          kind: "interactive",
+          revision: coachQueue.revision,
+          run: (signal) =>
+            runCoach({
+              signal,
+              settings: settings.llm,
+              request,
+              contextCsv,
+              tools: TOOL_SPECS,
+              execute: executor,
+              usable: plan.usable.map((u) => ({
+                id: u.exercise.id,
+                family: u.families[0] ?? "unknown",
+                pattern: u.traits.pattern,
+              })),
+              vetoedPatterns: runVetoes,
+              focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
+            }),
+        });
+        activeCoachRun.current = task;
+        const outcome = await task.promise;
+        if (outcome.status !== "completed") {
+          setCoachResult({
+            ok: false,
+            cancelled: outcome.status === "cancelled",
+            content: "",
+            toolCalls: [],
+            errors: [],
+          });
+          return;
+        }
+        const result = outcome.value;
+        setCoachResult((prev) => ({
+          ok: result.ok,
+          cancelled: result.cancelled,
+          content: result.content || prev?.content || "",
+          toolCalls: result.toolCalls,
+          applied: result.applied
+            ? { ...result.applied, summary: result.applied.summary || result.content }
+            : prev?.applied,
+          errors: result.errors,
+        }));
+      } finally {
+        activeCoachRun.current = null;
+        setCoachBusy(false);
+      }
     },
     [
       settings,
@@ -3310,6 +3390,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       progressionFor,
       dayFocus,
       customFocus,
+      soreFamilies,
+      applyCoachProposal,
+      coachQueue,
     ],
   );
 
@@ -3390,6 +3473,8 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     setWeekOverride,
     swapWeekDays,
     askCoach,
+    requestWeeklySummary,
+    cancelCoach,
     runSharedSync,
     prFor,
     marksFor,
@@ -3426,7 +3511,11 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 pointer-events-none"
+          className={`fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 pointer-events-none ${
+            route.id === "session"
+              ? "max-[899px]:bottom-[calc(148px+env(safe-area-inset-bottom))]"
+              : ""
+          }`}
         >
           <div
             key={celebration.id}

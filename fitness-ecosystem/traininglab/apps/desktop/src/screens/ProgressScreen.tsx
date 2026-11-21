@@ -37,6 +37,8 @@ import { resolveBodyMapFigure } from "../lib/settings";
 import { Badge, Chip, EmptyState, MetricTile } from "../ui/primitives";
 import { IconLayers } from "../ui/icons";
 import { useStore } from "../app/store";
+import { ArchivedMeasurementsCard } from "../features/stats/ArchivedMeasurementsCard";
+import { WaistCard } from "../features/stats/WaistCard";
 import { BodyMap } from "../features/stats/BodyMap";
 import { ConstancyCard } from "../features/stats/ConstancyCard";
 import { NumbersCard } from "../features/stats/NumbersCard";
@@ -158,6 +160,8 @@ export default function ProgressScreen() {
       </header>
 
       <div className="content">
+        <WaistCard firstDay={buckets[0].date} />
+        <ArchivedMeasurementsCard firstDay={buckets[0].date} />
         {!hasData ? (
         <EmptyState
           icon={<Dumbbell size={28} />}

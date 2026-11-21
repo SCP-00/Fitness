@@ -56,6 +56,7 @@ import { IconCalendar } from "../ui/icons";
 import { MIcons } from "../ui/mockup-icons";
 import { usePointerDrop } from "../ui/pointer-drag";
 import { WeekCard } from "../features/today/WeekCard";
+import { WeeklyHistoryCard } from "../features/stats/WeeklyHistoryCard";
 
 const BAND_TONE: Record<WeekStressBand, "success" | "neutral" | "warning" | "danger"> = {
   low: "success",
@@ -86,6 +87,7 @@ export default function WeekScreen() {
     weekStress,
     plan,
     sets,
+    sessions,
     regenerateWeek,
     setWeekOverride,
     swapWeekDays,
@@ -158,6 +160,8 @@ export default function WeekScreen() {
             {tInterp("week.pageHint", { n: trainingDays })}
           </p>
         </div>
+
+      <WeeklyHistoryCard sets={sets} sessions={sessions} />
 
       {trainingDays === 0 && !hasDesign ? (
         <EmptyState

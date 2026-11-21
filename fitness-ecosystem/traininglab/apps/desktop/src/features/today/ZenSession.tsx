@@ -41,7 +41,7 @@
  * @module features/today/ZenSession
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   getExerciseTechnique,
   type MovementPattern,
@@ -345,6 +345,14 @@ export function ZenSession({
   const todaySets = loggedToday(row.exerciseId);
   const done = todaySets.length;
   const complete = done >= row.sets;
+  const focusAfterLog = useRef(false);
+  const activeRepsInput = useRef<HTMLInputElement>(null);
+  const nextExerciseButton = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    if (!focusAfterLog.current) return;
+    focusAfterLog.current = false;
+    (activeRepsInput.current ?? nextExerciseButton.current)?.focus();
+  }, [done]);
   const totalWorkSets = rows.reduce((a, r) => a + r.sets, 0);
   const plannedMinutes = rows.reduce((a, r) => a + r.minutes, 0);
   const doneWorkSets = rows.reduce(
@@ -399,6 +407,7 @@ export function ZenSession({
   }, [row.exerciseId, unit]);
 
   const previous = previousSetsFor(row.exerciseId);
+  const latestPrevious = previous[previous.length - 1];
   const technique = getExerciseTechnique(row.exerciseId);
   /*
    * The hero's pill (mockup 03) names the media the frame below is showing, so it
@@ -462,7 +471,7 @@ export function ZenSession({
    * write is one action with three pieces of data instead of a gesture that
    * cannot be corrected before it lands.
    */
-  const logCurrent = () => {
+  const logCurrent = (restoreKeyboardFocus = false) => {
     if (phase === "warmup" && warmup.length > 0) {
       const step = warmup[warmupStep]!;
       onLogSet(row, step.weightKg, step.reps, { warmup: true });
@@ -476,6 +485,7 @@ export function ZenSession({
     const r = parseNumberInput(reps);
     if (r === null || r <= 0) return;
     const kg = currentWeightKg();
+    focusAfterLog.current = restoreKeyboardFocus;
     onLogSet(row, kg, r, {
       ...(fatigue !== null ? { rpe: fatigue } : {}),
       ...(mark ? { effort: mark } : {}),
@@ -501,6 +511,12 @@ export function ZenSession({
       );
     }
   };
+
+  function logFromActiveRow(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter" || event.repeat || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    logCurrent(true);
+  }
 
   /**
    * *Saltar* / *Posponer* (page 03), the two escape hatches of the top bar.
@@ -684,6 +700,16 @@ export function ZenSession({
           {doneWorkSets}/{totalWorkSets}
         </span>
         <div className="spacer" />
+        <button
+          type="button"
+          onClick={onFinish}
+          className="btn zen-finish tl-focusable"
+          aria-label={t("zen.finish")}
+          title={t("zen.finish")}
+        >
+          <MIcons.check />
+          <span>{t("zen.finish")}</span>
+        </button>
         {/*
          * The page's two escape hatches, and they are toggles: the same button
          * takes the mark back, so a mis-tap costs one tap — never a trip to
@@ -741,90 +767,283 @@ export function ZenSession({
         <div className="cols-wide zen-layout">
           {/* ══ LEFT: the movement, the set in your hands, the log ══════════ */}
           <div className="stack zen-main">
-            {/* Media first: there is always a GIF, a still or an honest empty
-                state, and the technique sheet is one tap away from it.
-
-                `tl-zen-current` (2026-10-23): the card is what the orange marker
-                points at, and the queue's orange row was the only thing saying
-                which exercise you are on — while the card the set entry belongs
-                to had no marker at all. */}
-            <section className="card tl-zen-current zen-media-card">
-              <div className="card-head" style={{ paddingBottom: 8 }}>
-                <span className="card-title" style={{ fontSize: 22 }}>
-                  <MIcons.target />
-                  {row.name[lang]}
-                </span>
+            {/* Put the active row before the register controls in tab order. */}
+            <section className="card zen-log-card">
+              <div className="card-head">
+                <h2 className="card-title">
+                  {t("zen.logToday")}
+                  <span className="muted" style={{ fontWeight: 500 }}>
+                    · {row.name[lang]}
+                  </span>
+                </h2>
                 <div className="spacer" />
-                <span className="small muted">
-                  {row.families.slice(0, 3).map(familyLabel).join(" · ")}
+                <span className={`badge ${complete ? "badge-success" : ""}`}>
+                  <MIcons.circleCheck />
+                  {done} / {row.sets} {t("zen.summary.sets")}
                 </span>
-                <button
-                  type="button"
-                  className="icon-btn tl-focusable"
-                  onClick={() => setDemoOpen(true)}
-                  title={t("zen.seeFull")}
-                  aria-label={t("zen.seeFull")}
-                >
-                  <MIcons.external />
-                </button>
               </div>
-
-              <div className="card-body" style={{ paddingTop: 0 }}>
-                {/* `row-wrap`: at 320 px the two buttons plus the media pill are
-                    311 px against 290 px of card, and the pill used to push the
-                    page 38 px sideways (audited 2026-10-24). */}
-                <div
-                  className="row row-wrap"
-                  style={{ gap: 8, marginBottom: 12 }}
-                >
-                  <button
-                    type="button"
-                    className="btn tl-focusable"
-                    onClick={() => setDemoOpen(true)}
-                  >
-                    <MIcons.notebook />
-                    {t("zen.guide")}
-                  </button>
-                  <a
-                    className="btn tl-focusable"
-                    href={hashFor("exercises", [row.exerciseId])}
-                  >
-                    <MIcons.users />
-                    {t("zen.muscles")}
-                  </a>{" "}
-                  <div className="spacer" />
+              <div className="card-body" style={{ padding: "0 0 6px" }}>
+                <div className="table-wrap">
                   {/*
-                   * The page's pill names the media, not the exercise: it is the
-                   * caption of the frame below. The technique level is NOT lost —
-                   * the guide opened by *Técnica* prints it (`ExerciseDemo`), which
-                   * is where a number about the exercise belongs.
+                   * The column widths live in `mockup.css` under `.zen-sets` and
+                   * NOT inline (2026-10-29) for one reason: an inline width beats
+                   * a stylesheet rule, so a phone could not tighten them. At
+                   * 320–390 px the old 538 px table pushed «Anterior» and the
+                   * repeat button off-screen, and the only way to read last
+                   * session's weight was to swipe the table sideways — in the one
+                   * screen where both hands are busy.
                    */}
-                  {hasGif && (
-                    <span className="badge badge-accent">
-                      <MIcons.image />
-                      {t("zen.mediaPill")}
-                    </span>
-                  )}
-                </div>
-
-                {/* `.hero-media` keeps its frame rules; the page zeroes its own
-                    box out inline, and so does this port. */}
-                <div
-                  className="hero-media"
-                  style={{ padding: 0, border: "none", background: "none" }}
-                >
-                  <ExerciseMediaFrame
-                    exerciseId={row.exerciseId}
-                    pattern={row.pattern as MovementPattern}
-                    name={row.name[lang]}
-                    variant="stage"
-                  />
-                  <p
-                    className="tiny muted"
-                    style={{ margin: 0, textAlign: "center" }}
-                  >
-                    {t("zen.mediaNote")}
-                  </p>
+                  <table className="table zen-sets">
+                    <thead>
+                      <tr>
+                        <th>{t("zen.col.set")}</th>
+                        <th>{tInterp("zen.weightUnit", { u: unitLabel })}</th>
+                        <th>{t("log.reps")}</th>
+                        <th>{t("zen.col.mark")}</th>
+                        <th>{t("zen.col.previous")}</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: row.sets }, (_, i) => {
+                        const logged = todaySets[i];
+                        const before = previous[i];
+                        const isCurrent = i === done && !complete && !warmupSet;
+                        const loggedMark = logged ? markerOf(logged) : null;
+                        if (logged && editingSetId === logged.id) {
+                          return (
+                            <tr
+                              key={i}
+                              className="summary-set-editing"
+                              data-testid="zen-set-editing"
+                            >
+                              <td colSpan={6}>
+                                <div
+                                  className="summary-set-edit-form"
+                                  role="group"
+                                  aria-label={tInterp("zen.editSet", {
+                                    n: i + 1,
+                                  })}
+                                  onKeyDown={(event) => {
+                                    if (event.key !== "Escape") return;
+                                    event.preventDefault();
+                                    // ZEN's own Escape listener leaves the
+                                    // session; cancelling an edit must not.
+                                    event.stopPropagation();
+                                    stopSetEdit();
+                                  }}
+                                >
+                                  <span className="summary-set-edit-number">
+                                    {i + 1}
+                                  </span>
+                                  <input
+                                    autoFocus
+                                    className="tl-input summary-set-edit-input"
+                                    inputMode="decimal"
+                                    aria-label={t("summary.weight")}
+                                    value={editWeight}
+                                    onChange={(event) =>
+                                      setEditWeight(event.target.value)
+                                    }
+                                    placeholder={t("summary.weight")}
+                                  />
+                                  <span className="tiny muted">
+                                    {unitLabel}
+                                  </span>
+                                  <span className="tiny muted">×</span>
+                                  <input
+                                    className="tl-input summary-set-edit-input"
+                                    inputMode="numeric"
+                                    aria-label={t("summary.reps")}
+                                    value={editReps}
+                                    onChange={(event) =>
+                                      setEditReps(event.target.value)
+                                    }
+                                    placeholder={t("summary.reps")}
+                                  />
+                                  {EFFORT_MARKERS.map((m) => (
+                                    <button
+                                      key={m}
+                                      type="button"
+                                      value={m}
+                                      aria-pressed={editEffort === m}
+                                      aria-label={EFFORT_MEANING[m].label[lang]}
+                                      title={`${EFFORT_MEANING[m].label[lang]} · ${EFFORT_MEANING[m].detail[lang]}`}
+                                      onClick={() =>
+                                        setEditEffort((current) =>
+                                          current === m ? null : m,
+                                        )
+                                      }
+                                      className={`summary-set-edit-mark ${editEffort === m ? "is-active" : ""}`}
+                                    >
+                                      {m}
+                                    </button>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary btn-sm tl-focusable"
+                                    onClick={() => saveSetEdit(logged)}
+                                  >
+                                    {t("common.save")}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm tl-focusable"
+                                    onClick={stopSetEdit}
+                                  >
+                                    {t("common.cancel")}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        }
+                        return (
+                          <tr key={i} className={isCurrent ? "is-active" : ""}>
+                            <td className="bold">{i + 1}</td>
+                            <td>
+                              {logged ? (
+                                <span className="mono">
+                                  {logged.weight !== null
+                                    ? Math.round(
+                                        fromKg(logged.weight, unit) * 10,
+                                      ) / 10
+                                    : "—"}
+                                </span>
+                              ) : isCurrent && !isCardio ? (
+                                <>
+                                  <span className="mono zen-table-value">
+                                    {weight || "—"}
+                                  </span>
+                                  <div
+                                    className="field zen-table-edit"
+                                    style={{ padding: "4px 8px" }}
+                                  >
+                                    <input
+                                      value={weight}
+                                      onChange={(e) =>
+                                        setWeight(e.target.value)
+                                      }
+                                      inputMode="decimal"
+                                      onKeyDown={logFromActiveRow}
+                                      aria-label={tInterp("zen.rowWeight", {
+                                        n: i + 1,
+                                      })}
+                                      className="stepper-input"
+                                      style={{ fontSize: 19, height: 30 }}
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="muted">—</span>
+                              )}
+                            </td>
+                            <td>
+                              {logged ? (
+                                <span className="mono">
+                                  {logged.reps ?? "—"}
+                                </span>
+                              ) : isCurrent ? (
+                                <>
+                                  <span className="mono zen-table-value">
+                                    {reps || "—"}
+                                  </span>
+                                  <div
+                                    className="field zen-table-edit"
+                                    style={{ padding: "4px 8px" }}
+                                  >
+                                    <input
+                                      value={reps}
+                                      onChange={(e) => setReps(e.target.value)}
+                                      inputMode="numeric"
+                                      onKeyDown={logFromActiveRow}
+                                      ref={activeRepsInput}
+                                      aria-label={tInterp("zen.rowReps", {
+                                        n: i + 1,
+                                      })}
+                                      className="stepper-input"
+                                      style={{ fontSize: 19, height: 30 }}
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="muted">—</span>
+                              )}
+                            </td>
+                            <td>
+                              {loggedMark === "D" || loggedMark === "F" ? (
+                                <span
+                                  className={`badge ${
+                                    loggedMark === "F"
+                                      ? "badge-danger"
+                                      : "badge-warning"
+                                  }`}
+                                  title={
+                                    EFFORT_MEANING[loggedMark].detail[lang]
+                                  }
+                                >
+                                  {loggedMark}
+                                </span>
+                              ) : logged ? (
+                                <span
+                                  className="row"
+                                  style={{
+                                    gap: 6,
+                                    color: "var(--tl-success)",
+                                  }}
+                                >
+                                  <MIcons.circleCheck
+                                    style={{ width: 15, height: 15 }}
+                                  />
+                                  {t("zen.completed")}
+                                </span>
+                              ) : (
+                                <span className="muted">—</span>
+                              )}
+                            </td>
+                            <td className="muted mono">
+                              {before
+                                ? `${before.reps ?? "—"} × ${
+                                    before.weight !== null
+                                      ? Math.round(
+                                          fromKg(before.weight, unit) * 10,
+                                        ) / 10
+                                      : "—"
+                                  }`
+                                : "—"}
+                            </td>
+                            <td>
+                              {logged ? (
+                                <button
+                                  type="button"
+                                  onClick={() => startSetEdit(logged)}
+                                  title={tInterp("zen.editSet", { n: i + 1 })}
+                                  aria-label={tInterp("zen.editSet", {
+                                    n: i + 1,
+                                  })}
+                                  data-testid="zen-set-edit"
+                                  data-set-id={logged.id}
+                                  className="zen-set-edit tl-focusable"
+                                >
+                                  <MIcons.edit />
+                                </button>
+                              ) : isCurrent && before ? (
+                                <button
+                                  type="button"
+                                  onClick={() => copyPrevious(before)}
+                                  title={t("zen.repeatPrev")}
+                                  aria-label={t("zen.repeatPrev")}
+                                  className="icon-btn tl-focusable"
+                                >
+                                  <MIcons.rotate />
+                                </button>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </section>
@@ -901,7 +1120,7 @@ export function ZenSession({
                     </div>
                     <button
                       type="button"
-                      onClick={logCurrent}
+                      onClick={() => logCurrent()}
                       className="btn btn-primary btn-xl tl-focusable"
                       style={{ marginTop: 14 }}
                     >
@@ -913,7 +1132,7 @@ export function ZenSession({
                   <>
                     <div className="stepper-row">
                       {!isCardio && (
-                        <div className="field">
+                        <div className="field zen-weight-field">
                           <div className="field-label">
                             {tInterp("zen.weightUnit", { u: unitLabel })}
                           </div>
@@ -950,7 +1169,7 @@ export function ZenSession({
                         </div>
                       )}
 
-                      <div className="field">
+                      <div className="field zen-reps-field">
                         <div className="field-label">{t("log.reps")}</div>
                         <div className="stepper">
                           <button
@@ -1175,7 +1394,7 @@ export function ZenSession({
 
                     <button
                       type="button"
-                      onClick={logCurrent}
+                      onClick={() => logCurrent()}
                       disabled={complete}
                       data-testid="log-set"
                       className="btn btn-primary btn-xl tl-focusable zen-log-cta"
@@ -1187,6 +1406,7 @@ export function ZenSession({
                     {complete && (
                       <button
                         type="button"
+                        ref={nextExerciseButton}
                         onClick={goNext}
                         className="btn btn-xl tl-focusable"
                         style={{ marginTop: 8 }}
@@ -1198,285 +1418,6 @@ export function ZenSession({
                     )}
                   </>
                 )}
-              </div>
-            </section>
-
-            {/* The set log lives below the set in your hands, and it is big
-                enough to read. */}
-            <section className="card zen-log-card">
-              <div className="card-head">
-                <h2 className="card-title">
-                  {t("zen.logToday")}
-                  <span className="muted" style={{ fontWeight: 500 }}>
-                    · {row.name[lang]}
-                  </span>
-                </h2>
-                <div className="spacer" />
-                <span className={`badge ${complete ? "badge-success" : ""}`}>
-                  <MIcons.circleCheck />
-                  {done} / {row.sets} {t("zen.summary.sets")}
-                </span>
-              </div>
-              <div className="card-body" style={{ padding: "0 0 6px" }}>
-                <div className="table-wrap">
-                  {/*
-                   * The column widths live in `mockup.css` under `.zen-sets` and
-                   * NOT inline (2026-10-29) for one reason: an inline width beats
-                   * a stylesheet rule, so a phone could not tighten them. At
-                   * 320–390 px the old 538 px table pushed «Anterior» and the
-                   * repeat button off-screen, and the only way to read last
-                   * session's weight was to swipe the table sideways — in the one
-                   * screen where both hands are busy.
-                   */}
-                  <table className="table zen-sets">
-                    <thead>
-                      <tr>
-                        <th>{t("zen.col.set")}</th>
-                        <th>{tInterp("zen.weightUnit", { u: unitLabel })}</th>
-                        <th>{t("log.reps")}</th>
-                        <th>{t("zen.col.mark")}</th>
-                        <th>{t("zen.col.previous")}</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: row.sets }, (_, i) => {
-                        const logged = todaySets[i];
-                        const before = previous[i];
-                        const isCurrent = i === done && !complete;
-                        const loggedMark = logged ? markerOf(logged) : null;
-                        if (logged && editingSetId === logged.id) {
-                          return (
-                            <tr
-                              key={i}
-                              className="summary-set-editing"
-                              data-testid="zen-set-editing"
-                            >
-                              <td colSpan={6}>
-                                <div
-                                  className="summary-set-edit-form"
-                                  role="group"
-                                  aria-label={tInterp("zen.editSet", {
-                                    n: i + 1,
-                                  })}
-                                  onKeyDown={(event) => {
-                                    if (event.key !== "Escape") return;
-                                    event.preventDefault();
-                                    // ZEN's own Escape listener leaves the
-                                    // session; cancelling an edit must not.
-                                    event.stopPropagation();
-                                    stopSetEdit();
-                                  }}
-                                >
-                                  <span className="summary-set-edit-number">
-                                    {i + 1}
-                                  </span>
-                                  <input
-                                    autoFocus
-                                    className="tl-input summary-set-edit-input"
-                                    inputMode="decimal"
-                                    aria-label={t("summary.weight")}
-                                    value={editWeight}
-                                    onChange={(event) =>
-                                      setEditWeight(event.target.value)
-                                    }
-                                    placeholder={t("summary.weight")}
-                                  />
-                                  <span className="tiny muted">
-                                    {unitLabel}
-                                  </span>
-                                  <span className="tiny muted">×</span>
-                                  <input
-                                    className="tl-input summary-set-edit-input"
-                                    inputMode="numeric"
-                                    aria-label={t("summary.reps")}
-                                    value={editReps}
-                                    onChange={(event) =>
-                                      setEditReps(event.target.value)
-                                    }
-                                    placeholder={t("summary.reps")}
-                                  />
-                                  {EFFORT_MARKERS.map((m) => (
-                                    <button
-                                      key={m}
-                                      type="button"
-                                      value={m}
-                                      aria-pressed={editEffort === m}
-                                      aria-label={EFFORT_MEANING[m].label[lang]}
-                                      title={`${EFFORT_MEANING[m].label[lang]} · ${EFFORT_MEANING[m].detail[lang]}`}
-                                      onClick={() =>
-                                        setEditEffort((current) =>
-                                          current === m ? null : m,
-                                        )
-                                      }
-                                      className={`summary-set-edit-mark ${editEffort === m ? "is-active" : ""}`}
-                                    >
-                                      {m}
-                                    </button>
-                                  ))}
-                                  <button
-                                    type="button"
-                                    className="btn btn-primary btn-sm tl-focusable"
-                                    onClick={() => saveSetEdit(logged)}
-                                  >
-                                    {t("common.save")}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm tl-focusable"
-                                    onClick={stopSetEdit}
-                                  >
-                                    {t("common.cancel")}
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        }
-                        return (
-                          <tr key={i} className={isCurrent ? "is-active" : ""}>
-                            <td className="bold">{i + 1}</td>
-                            <td>
-                              {logged ? (
-                                <span className="mono">
-                                  {logged.weight !== null
-                                    ? Math.round(
-                                        fromKg(logged.weight, unit) * 10,
-                                      ) / 10
-                                    : "—"}
-                                </span>
-                              ) : isCurrent && !isCardio ? (
-                                <>
-                                  <span className="mono zen-table-value">
-                                    {weight || "—"}
-                                  </span>
-                                  <div
-                                    className="field zen-table-edit"
-                                    style={{ padding: "4px 8px" }}
-                                  >
-                                    <input
-                                      value={weight}
-                                      onChange={(e) =>
-                                        setWeight(e.target.value)
-                                      }
-                                      inputMode="decimal"
-                                      aria-label={tInterp("zen.rowWeight", {
-                                        n: i + 1,
-                                      })}
-                                      className="stepper-input"
-                                      style={{ fontSize: 19, height: 30 }}
-                                    />
-                                  </div>
-                                </>
-                              ) : (
-                                <span className="muted">—</span>
-                              )}
-                            </td>
-                            <td>
-                              {logged ? (
-                                <span className="mono">
-                                  {logged.reps ?? "—"}
-                                </span>
-                              ) : isCurrent ? (
-                                <>
-                                  <span className="mono zen-table-value">
-                                    {reps || "—"}
-                                  </span>
-                                  <div
-                                    className="field zen-table-edit"
-                                    style={{ padding: "4px 8px" }}
-                                  >
-                                    <input
-                                      value={reps}
-                                      onChange={(e) => setReps(e.target.value)}
-                                      inputMode="numeric"
-                                      aria-label={tInterp("zen.rowReps", {
-                                        n: i + 1,
-                                      })}
-                                      className="stepper-input"
-                                      style={{ fontSize: 19, height: 30 }}
-                                    />
-                                  </div>
-                                </>
-                              ) : (
-                                <span className="muted">—</span>
-                              )}
-                            </td>
-                            <td>
-                              {loggedMark === "D" || loggedMark === "F" ? (
-                                <span
-                                  className={`badge ${
-                                    loggedMark === "F"
-                                      ? "badge-danger"
-                                      : "badge-warning"
-                                  }`}
-                                  title={
-                                    EFFORT_MEANING[loggedMark].detail[lang]
-                                  }
-                                >
-                                  {loggedMark}
-                                </span>
-                              ) : logged ? (
-                                <span
-                                  className="row"
-                                  style={{
-                                    gap: 6,
-                                    color: "var(--tl-success)",
-                                  }}
-                                >
-                                  <MIcons.circleCheck
-                                    style={{ width: 15, height: 15 }}
-                                  />
-                                  {t("zen.completed")}
-                                </span>
-                              ) : (
-                                <span className="muted">—</span>
-                              )}
-                            </td>
-                            <td className="muted mono">
-                              {before
-                                ? `${before.reps ?? "—"} × ${
-                                    before.weight !== null
-                                      ? Math.round(
-                                          fromKg(before.weight, unit) * 10,
-                                        ) / 10
-                                      : "—"
-                                  }`
-                                : "—"}
-                            </td>
-                            <td>
-                              {logged ? (
-                                <button
-                                  type="button"
-                                  onClick={() => startSetEdit(logged)}
-                                  title={tInterp("zen.editSet", { n: i + 1 })}
-                                  aria-label={tInterp("zen.editSet", {
-                                    n: i + 1,
-                                  })}
-                                  data-testid="zen-set-edit"
-                                  data-set-id={logged.id}
-                                  className="zen-set-edit tl-focusable"
-                                >
-                                  <MIcons.edit />
-                                </button>
-                              ) : isCurrent && before ? (
-                                <button
-                                  type="button"
-                                  onClick={() => copyPrevious(before)}
-                                  title={t("zen.repeatPrev")}
-                                  aria-label={t("zen.repeatPrev")}
-                                  className="icon-btn tl-focusable"
-                                >
-                                  <MIcons.rotate />
-                                </button>
-                              ) : null}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
               </div>
             </section>
 
@@ -1677,6 +1618,114 @@ export function ZenSession({
 
           {/* ══ RIGHT: only recommendations and guidance ════════════════════ */}
           <div className="stack zen-side">
+            <section className="card card-pad zen-previous-card">
+              <h2 className="card-title">{lang === "es" ? "Serie anterior" : "Previous set"}</h2>
+              {latestPrevious ? (
+                <>
+                  <p className="zen-previous-value">
+                    {latestPrevious.weight !== null
+                      ? `${Math.round(fromKg(latestPrevious.weight!, unit) * 10) / 10} ${unitLabel}`
+                      : "—"}
+                    {" × "}
+                    {latestPrevious.reps ?? "—"} {t("log.reps")}
+                  </p>
+                  <p className="tiny muted">
+                    {new Date(latestPrevious.timestamp).toLocaleDateString(lang === "es" ? "es" : "en")}
+                  </p>
+                </>
+              ) : (
+                <p className="tiny muted">{lang === "es" ? "Aún no hay series anteriores." : "No previous sets yet."}</p>
+              )}
+            </section>
+            {/* Technique: there is always a GIF, a still or an honest empty
+                state, and the technique sheet is one tap away from it.
+
+                `tl-zen-current` (2026-10-23): the card is what the orange marker
+                points at, and the queue's orange row was the only thing saying
+                which exercise you are on — while the card the set entry belongs
+                to had no marker at all. */}
+            <section className="card tl-zen-current zen-media-card">
+              <div className="card-head" style={{ paddingBottom: 8 }}>
+                <span className="card-title" style={{ fontSize: 22 }}>
+                  <MIcons.target />
+                  {row.name[lang]}
+                </span>
+                <div className="spacer" />
+                <span className="small muted">
+                  {row.families.slice(0, 3).map(familyLabel).join(" · ")}
+                </span>
+                <button
+                  type="button"
+                  className="icon-btn tl-focusable"
+                  onClick={() => setDemoOpen(true)}
+                  title={t("zen.seeFull")}
+                  aria-label={t("zen.seeFull")}
+                >
+                  <MIcons.external />
+                </button>
+              </div>
+
+              <div className="card-body" style={{ paddingTop: 0 }}>
+                {/* `row-wrap`: at 320 px the two buttons plus the media pill are
+                    311 px against 290 px of card, and the pill used to push the
+                    page 38 px sideways (audited 2026-10-24). */}
+                <div
+                  className="row row-wrap"
+                  style={{ gap: 8, marginBottom: 12 }}
+                >
+                  <button
+                    type="button"
+                    className="btn tl-focusable"
+                    onClick={() => setDemoOpen(true)}
+                  >
+                    <MIcons.notebook />
+                    {t("zen.guide")}
+                  </button>
+                  <a
+                    className="btn tl-focusable"
+                    href={hashFor("exercises", [row.exerciseId])}
+                  >
+                    <MIcons.users />
+                    {t("zen.muscles")}
+                  </a>{" "}
+                  <div className="spacer" />
+                  {/*
+                   * The page's pill names the media, not the exercise: it is the
+                   * caption of the frame below. The technique level is NOT lost —
+                   * the guide opened by *Técnica* prints it (`ExerciseDemo`), which
+                   * is where a number about the exercise belongs.
+                   */}
+                  {hasGif && (
+                    <span className="badge badge-accent">
+                      <MIcons.image />
+                      {t("zen.mediaPill")}
+                    </span>
+                  )}
+                </div>
+
+                {/* `.hero-media` keeps its frame rules; the page zeroes its own
+                    box out inline, and so does this port. */}
+                <div
+                  className="hero-media"
+                  style={{ padding: 0, border: "none", background: "none" }}
+                >
+                  <ExerciseMediaFrame
+                    exerciseId={row.exerciseId}
+                    pattern={row.pattern as MovementPattern}
+                    name={row.name[lang]}
+                    variant="stage"
+                  />
+                  <p
+                    className="tiny muted"
+                    style={{ margin: 0, textAlign: "center" }}
+                  >
+                    {t("zen.mediaNote")}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+
             {/* Progresión recomendada — the number, and why it is that number. */}
             <section className="card card-pad zen-progression-card">
               <h2 className="card-title" style={{ marginBottom: 12 }}>
@@ -1865,16 +1914,6 @@ export function ZenSession({
           </div>
         </div>
 
-        {/* The only way out that does not go through the rail: ending the day. */}
-        <button
-          type="button"
-          onClick={onFinish}
-          className="btn btn-lg tl-focusable"
-          style={{ alignSelf: "center" }}
-        >
-          <MIcons.check />
-          {t("zen.finish")}
-        </button>
       </div>
 
       {demoOpen && (

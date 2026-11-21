@@ -119,29 +119,19 @@ test("a finished session cannot reuse its sets, and the mobile finish button is 
 
   await startSession(page);
   await logSet(page);
+  await expect(page.locator(".tl-celebration")).toBeVisible();
+  const notice = await page.locator(".tl-celebration").boundingBox();
+  const register = await page.getByTestId("log-set").boundingBox();
+  expect(notice).not.toBeNull();
+  expect(register).not.toBeNull();
+  expect(notice!.y + notice!.height).toBeLessThan(register!.y);
   await logSet(page);
   await logSet(page);
   await expect(page.getByText(/3 \/ \d+ series/).first()).toBeVisible();
 
-  // P1-1: at 390×844 the fixed ZEN CTA used to cover "Terminar sesión".
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  const clearance = await page.evaluate(() => {
-    const finish = Array.from(document.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Terminar sesión"),
-    );
-    const cta = document.querySelector('[data-testid="log-set"]');
-    if (!finish || !cta) return null;
-    const f = finish.getBoundingClientRect();
-    const c = cta.getBoundingClientRect();
-    return {
-      finishBottom: f.bottom,
-      ctaTop: c.top,
-      hit: document.elementFromPoint(f.left + f.width / 2, f.top + 6)?.textContent,
-    };
-  });
-  expect(clearance).not.toBeNull();
-  expect(clearance!.finishBottom).toBeLessThan(clearance!.ctaTop - 8);
-  expect(clearance!.hit).toContain("Terminar sesión");
+  await expect(
+    page.getByRole("button", { name: "Terminar sesión", exact: true }),
+  ).toBeInViewport();
 
   await page.getByRole("button", { name: "Terminar sesión" }).click();
   await expect(page).toHaveURL(/#\/resumen/);
@@ -152,9 +142,14 @@ test("a finished session cannot reuse its sets, and the mobile finish button is 
 
   // A second session may continue the day, but must not enclose the same sets.
   await page.goto("/#/sesion");
-  await expect(page.getByRole("button", { name: "Salir de ZEN" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Salir de ZEN" }),
+  ).toBeVisible();
   // The first exercise is already complete; move to the next one to log a set.
-  await page.getByRole("button", { name: /Remo bajo Mesa/ }).first().click();
+  await page
+    .getByRole("button", { name: /Remo bajo Mesa/ })
+    .first()
+    .click();
   await passWarmup(page);
   await logSet(page);
   await expect(page.getByText(/4 \/ \d+ series/).first()).toBeVisible();
@@ -169,6 +164,8 @@ test("a finished session cannot reuse its sets, and the mobile finish button is 
 test("Hoy, Entrenamiento, Semana and ZEN project the same session — and the same rest day", async ({
   page,
 }) => {
+  // Start on a default training day regardless of when the suite runs.
+  await page.clock.setFixedTime(new Date(2026, 10, 16, 12));
   await finishOnboarding(page);
 
   // Every destination draws the shared shell. `.tl-page` belonged to the old
@@ -259,4 +256,31 @@ test("Hoy, Entrenamiento, Semana and ZEN project the same session — and the sa
   await page.goto("/#/sesion");
   await expect(page.locator(".upnext-item")).toHaveCount(0);
   await expect(page.getByText(/No se pudo construir ninguna sesión/)).toBeVisible();
+});
+
+test("ZEN keeps keyboard focus after logging and labels a paused rest", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.clock.setFixedTime(new Date(2026, 10, 16, 12));
+  await finishOnboarding(page);
+  await startSession(page);
+
+  const firstReps = page.getByRole("textbox", { name: "Reps de la serie 1" });
+  await firstReps.fill("10");
+  await firstReps.press("Enter");
+  const nextReps = page.getByRole("textbox", { name: "Reps de la serie 2" });
+  await expect(nextReps).toBeFocused();
+  await expect(page.locator(".zen-progress")).toHaveAccessibleName(/^1 \/ /);
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".zen-progress")).toHaveAccessibleName(/^2 \/ /);
+  await expect(
+    page.getByRole("textbox", { name: "Reps de la serie 3" }),
+  ).toBeFocused();
+
+  const rest = page.locator(".zen-rest-card");
+  await rest.getByRole("button", { name: "Pausar" }).click();
+  await expect(rest.getByText("En pausa", { exact: true })).toBeVisible();
+  await rest.getByRole("button", { name: "Reanudar" }).click();
+  await expect(rest.getByText("En pausa", { exact: true })).toHaveCount(0);
 });

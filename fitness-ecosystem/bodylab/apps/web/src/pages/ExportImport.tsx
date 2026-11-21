@@ -44,6 +44,8 @@ export default function ExportImport() {
   const [importMessage, setImportMessage] = useState('');
   const [backupTime, setBackupTime] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [migrationExporting, setMigrationExporting] = useState(false);
+  const [migrationExportError, setMigrationExportError] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,6 +98,20 @@ export default function ExportImport() {
       setBackupTime(new Date().toLocaleTimeString());
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportForTrainingLab = async () => {
+    setMigrationExporting(true);
+    setMigrationExportError(false);
+    try {
+      const archive = await db.exportForTrainingLab();
+      const blob = new Blob([JSON.stringify(archive)], { type: 'application/json' });
+      downloadBlob(blob, `bodylab-migration-${archive.exportedAt.slice(0, 10)}.json`);
+    } catch {
+      setMigrationExportError(true);
+    } finally {
+      setMigrationExporting(false);
     }
   };
 
@@ -306,6 +322,28 @@ export default function ExportImport() {
         </p>
 
         <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={handleExportForTrainingLab}
+            disabled={migrationExporting}
+            className="flex items-center gap-3 p-4 border border-[var(--color-border)] rounded-xl hover:bg-[var(--color-surface-sunken)] transition-colors text-left col-span-2"
+          >
+            <Package className="w-5 h-5 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="block text-sm font-medium">
+                {lang === 'es' ? 'Exportar todo para TrainingLab' : 'Export everything for TrainingLab'}
+              </span>
+              <span className="block text-xs text-[var(--color-text-muted)]">
+                {lang === 'es'
+                  ? 'Incluye medidas, instantáneas, series, esfuerzos máximos y preferencias. Abre el archivo desde Ajustes → Datos de BodyLab en TrainingLab.'
+                  : 'Includes measurements, snapshots, sets, max efforts, and preferences. Open the file from Settings → BodyLab data in TrainingLab.'}
+              </span>
+            </span>
+          </button>
+          {migrationExportError && (
+            <p className="col-span-2 text-sm" role="alert">
+              {lang === 'es' ? 'No se pudo preparar la copia completa.' : 'Could not prepare the full archive.'}
+            </p>
+          )}
           <button
             onClick={() => downloadTraininglabExport({ profile: state.profile, measurements: state.measurements, assessment: state.assessment, whtrResult: state.whtrResult, adonisResult: state.adonisResult, exerciseSets: state.exerciseSets, maxEfforts: state.maxEfforts })}
             className="flex items-center gap-3 p-4 border border-[var(--color-border)] rounded-xl hover:bg-[var(--color-surface-sunken)] transition-colors text-left col-span-2"
