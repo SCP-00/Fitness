@@ -43,6 +43,7 @@ import {
 } from "@fitness/bodylab-training";
 import { isV2Payload, type ImportPayload } from "../lib/adapter";
 import { loadBodyLabArchive } from "../lib/bodylab-migration-db";
+import { schedulePrivateAutobackup } from "../lib/private-autobackup";
 import { restoreTrainingLabBackup } from "../lib/backup-db";
 import { loadWaistMeasurements } from "../lib/waist-db";
 import { localDayKey, todayKey } from "../lib/day";
@@ -929,6 +930,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         setSets(restored.sets);
         setSessions(restored.sessions);
         setHealth(restored.health);
+        if (parsed.backup.waistMeasurements || parsed.backup.bodyLabArchive) void schedulePrivateAutobackup();
         if (parsed.backup.decisionModel) setModel(parsed.backup.decisionModel);
         if (restored.settings) {
           setSettings(restored.settings);

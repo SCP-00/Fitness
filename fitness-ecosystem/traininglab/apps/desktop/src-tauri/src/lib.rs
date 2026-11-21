@@ -110,6 +110,68 @@ fn autobackup_dir(app: tauri::AppHandle) -> Result<String, String> {
     Ok(backup_dir(&app)?.to_string_lossy().into_owned())
 }
 
+/// A separate directory keeps body measurements out of the MCP log mirror.
+fn private_backup_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("private-backups");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("cannot create private backup directory: {e}"))?;
+    Ok(dir)
+}
+
+#[tauri::command]
+fn write_private_autobackup(app: tauri::AppHandle, contents: String) -> Result<(), String> {
+    let value: serde_json::Value = serde_json::from_str(&contents).map_err(|e| e.to_string())?;
+    if value.get("format").and_then(|v| v.as_str()) != Some("traininglab-private-backup") {
+        return Err("invalid private backup format".into());
+    }
+    let dir = private_backup_dir(&app)?;
+    // create_new avoids replacing an earlier snapshot if two requests arrive
+    // during the same millisecond. A failed write is never published as JSON.
+    for offset in 0..1000u128 {
+        let stem = format!("private-{:020}", epoch_millis() * 1000 + offset);
+        let temp = dir.join(format!("{stem}.tmp"));
+        match std::fs::OpenOptions::new().write(true).create_new(true).open(&temp) {
+            Ok(mut file) => {
+                use std::io::Write;
+                let result = file.write_all(contents.as_bytes())
+                    .and_then(|_| file.sync_all())
+                    .and_then(|_| std::fs::rename(&temp, dir.join(format!("{stem}.json"))));
+                if let Err(error) = result {
+                    let _ = std::fs::remove_file(&temp);
+                    return Err(format!("cannot write private backup: {error}"));
+                }
+                let mut snapshots: Vec<_> = std::fs::read_dir(&dir).map_err(|e| e.to_string())?
+                    .filter_map(Result::ok).map(|e| e.path())
+                    .filter(|path| path.file_name().and_then(|n| n.to_str())
+                        .is_some_and(|n| n.starts_with("private-") && n.ends_with(".json")))
+                    .collect();
+                snapshots.sort();
+                snapshots.reverse();
+                for stale in snapshots.into_iter().skip(KEEP_SNAPSHOTS) {
+                    let _ = std::fs::remove_file(stale);
+                }
+                return Ok(());
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+    Err("could not allocate private backup name".into())
+}
+
+/// Return newest first so the frontend can skip an invalid or truncated file.
+#[tauri::command]
+fn read_private_autobackups(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let dir = private_backup_dir(&app)?;
+    let mut paths: Vec<_> = std::fs::read_dir(dir).map_err(|e| e.to_string())?
+        .filter_map(Result::ok).map(|e| e.path())
+        .filter(|path| path.file_name().and_then(|n| n.to_str())
+            .is_some_and(|n| n.starts_with("private-") && n.ends_with(".json")))
+        .collect();
+    paths.sort();
+    paths.reverse();
+    Ok(paths.into_iter().take(KEEP_SNAPSHOTS)
+        .filter_map(|path| std::fs::read_to_string(path).ok()).collect())
+}
 // ── MCP action channel (in / out) ───────────────────────────────────────────
 //
 // The write side of the tool surface (docs/MCP_TOOL_SURFACE.md, decision D1):
@@ -226,6 +288,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
+            write_private_autobackup,
+            read_private_autobackups,
             write_autobackup,
             read_autobackup,
             autobackup_dir,

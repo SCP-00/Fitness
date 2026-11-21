@@ -47,3 +47,15 @@ export function saveWaistMeasurement(
     row,
   ]);
 }
+
+/** Rechecks the identity inside the write transaction to make retries safe. */
+export function importWaistMeasurement(
+  row: WaistMeasurement,
+): Promise<WaistMeasurement[]> {
+  if (!isWaistMeasurement(row)) {
+    return Promise.reject(new Error("Invalid waist measurement"));
+  }
+  return updateWaist((rows) =>
+    rows.some(({ id }) => id === row.id) ? rows : [...rows, row],
+  );
+}

@@ -57,7 +57,9 @@ import { SettingsPanel } from "../features/today/SettingsPanel";
 import { CoachPanel, CoachResultView } from "../features/today/CoachPanel";
 import { SharedPanel } from "../features/today/SharedPanel";
 import { MobileCard } from "../features/today/MobileCard";
+import { BodyLabSetsImport } from "../features/today/BodyLabSetsImport";
 import { BodyLabMigration } from "../features/today/BodyLabMigration";
+import { PrivateBackupRecovery } from "../features/today/PrivateBackupRecovery";
 
 /**
  * Shown in "Acerca de". Kept in sync by hand with `src-tauri/tauri.conf.json`:
@@ -91,6 +93,7 @@ export default function SettingsScreen() {
     payload,
     model,
     sets,
+    sessions,
     coachResult,
     coachBusy,
     health,
@@ -558,6 +561,8 @@ export default function SettingsScreen() {
           {t("settings.importHint")}
         </p>
         <BodyLabMigration language={settings.language} />
+        <PrivateBackupRecovery language={settings.language} />
+        <BodyLabSetsImport language={settings.language} sets={sets} sessions={sessions} importBackup={importBackup} />
       </SectionCard>
 
       {/* ── Mis datos: CSV (Excel + LLM) y copia completa (restaurar) ─────── */}

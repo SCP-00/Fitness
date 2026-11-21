@@ -52,7 +52,11 @@ describe("autobackup: only write when the log actually changed", () => {
 
   it("changes when a set is added", () => {
     const before = { sets: [set({ id: "a" })], sessions: [], health: [] };
-    const after = { sets: [set({ id: "a" }), set({ id: "b" })], sessions: [], health: [] };
+    const after = {
+      sets: [set({ id: "a" }), set({ id: "b" })],
+      sessions: [],
+      health: [],
+    };
     expect(logSignature(before)).not.toBe(logSignature(after));
   });
 
@@ -68,6 +72,43 @@ describe("autobackup: only write when the log actually changed", () => {
     expect(logSignature(before)).not.toBe(logSignature(after));
   });
 
+  it("detects a correction without changing the timestamp or count", () => {
+    const before = {
+      sets: [set({ id: "a", reps: 10 })],
+      sessions: [],
+      health: [],
+    };
+    const after = { ...before, sets: [set({ id: "a", reps: 12 })] };
+    expect(logSignature(before)).not.toBe(logSignature(after));
+  });
+
+  it("detects changed routines and health values", () => {
+    const before = {
+      sets: [],
+      sessions: [],
+      health: [
+        {
+          id: "h",
+          kind: "body_weight",
+          value: 75,
+          unit: "kg",
+          timestamp: "2026-10-05T10:00:00Z",
+        },
+      ],
+      settings: { routines: [{ id: "r", name: "A" }] } as never,
+    };
+    const after = {
+      ...before,
+      health: [{ ...before.health[0], value: 76 }],
+      settings: { routines: [{ id: "r", name: "B" }] } as never,
+    };
+    expect(logSignature(before)).not.toBe(
+      logSignature({ ...before, health: after.health }),
+    );
+    expect(logSignature(before)).not.toBe(
+      logSignature({ ...before, settings: after.settings }),
+    );
+  });
   it("changes when settings appear for the first time", () => {
     const base = { sets: [], sessions: [], health: [] };
     const withSettings = { ...base, settings: { language: "es" } as never };
@@ -235,7 +276,6 @@ describe("backup: the mirror travels with the copy, and never back in", () => {
     expect(parsed.backup.sets).toHaveLength(1);
     expect("mirror" in parsed.backup).toBe(false);
   });
-
 });
 
 describe("autobackup: only offer a recovery when the log is really empty", () => {
@@ -248,11 +288,15 @@ describe("autobackup: only offer a recovery when the log is really empty", () =>
   });
 
   it("offers itself when the device has nothing at all", () => {
-    expect(isWorthRecovering({ backup, localSets: 0, localSessions: 0 })).toBe(true);
+    expect(isWorthRecovering({ backup, localSets: 0, localSessions: 0 })).toBe(
+      true,
+    );
   });
 
   it("stays quiet when the log already has sets", () => {
-    expect(isWorthRecovering({ backup, localSets: 3, localSessions: 0 })).toBe(false);
+    expect(isWorthRecovering({ backup, localSets: 3, localSessions: 0 })).toBe(
+      false,
+    );
   });
 
   it("stays quiet when the copy itself is empty", () => {
@@ -263,7 +307,9 @@ describe("autobackup: only offer a recovery when the log is really empty", () =>
       settings: null,
       decisionModel: null,
     });
-    expect(isWorthRecovering({ backup: empty, localSets: 0, localSessions: 0 })).toBe(false);
+    expect(
+      isWorthRecovering({ backup: empty, localSets: 0, localSessions: 0 }),
+    ).toBe(false);
   });
 });
 
@@ -302,12 +348,18 @@ describe("logging a set: what an empty reps field means", () => {
   });
 
   it("treats zero and negatives as blank rather than as a value", () => {
-    const r = resolveReps({ typed: 0, sets: [set({ id: "a", reps: 11 })], prescribedMin: 8 });
+    const r = resolveReps({
+      typed: 0,
+      sets: [set({ id: "a", reps: 11 })],
+      prescribedMin: 8,
+    });
     expect(r.reps).toBe(11);
   });
 
   it("reads the most recent counted set, not the first", () => {
-    expect(inheritedReps([set({ id: "a", reps: 5 }), set({ id: "b", reps: 9 })])).toBe(9);
+    expect(
+      inheritedReps([set({ id: "a", reps: 5 }), set({ id: "b", reps: 9 })]),
+    ).toBe(9);
   });
 
   it("has nothing to inherit from an empty log", () => {
@@ -320,7 +372,12 @@ describe("logging a set: the weight is shown, not asked for", () => {
   });
 
   it("uses the most recent load, not the first", () => {
-    expect(inheritedWeight([set({ id: "a", weight: 50 }), set({ id: "b", weight: 65 })])).toBe(65);
+    expect(
+      inheritedWeight([
+        set({ id: "a", weight: 50 }),
+        set({ id: "b", weight: 65 }),
+      ]),
+    ).toBe(65);
   });
 
   it("falls back to the suggestion when nothing was logged", () => {
@@ -329,7 +386,12 @@ describe("logging a set: the weight is shown, not asked for", () => {
 
   it("ignores a trailing bodyweight set instead of poisoning the chain", () => {
     // A dip-bar set with no load must not make the next set bodyweight.
-    expect(inheritedWeight([set({ id: "a", weight: 60 }), set({ id: "b", weight: null })], 42)).toBe(60);
+    expect(
+      inheritedWeight(
+        [set({ id: "a", weight: 60 }), set({ id: "b", weight: null })],
+        42,
+      ),
+    ).toBe(60);
   });
 
   it("has no load at all with neither a set nor a suggestion", () => {
@@ -337,9 +399,9 @@ describe("logging a set: the weight is shown, not asked for", () => {
   });
 
   it("a typed weight wins over the proposal", () => {
-    expect(
-      resolveEntryWeight({ typed: 70, unit: "kg", proposalKg: 60 }),
-    ).toBe(70);
+    expect(resolveEntryWeight({ typed: 70, unit: "kg", proposalKg: 60 })).toBe(
+      70,
+    );
   });
 
   it("a typed weight is typed in the display unit, and stored in kg", () => {
@@ -357,12 +419,12 @@ describe("logging a set: the weight is shown, not asked for", () => {
   });
 
   it("treats a zero or negative typed load as blank", () => {
-    expect(
-      resolveEntryWeight({ typed: 0, unit: "kg", proposalKg: 60 }),
-    ).toBe(60);
-    expect(
-      resolveEntryWeight({ typed: -5, unit: "kg", proposalKg: 60 }),
-    ).toBe(60);
+    expect(resolveEntryWeight({ typed: 0, unit: "kg", proposalKg: 60 })).toBe(
+      60,
+    );
+    expect(resolveEntryWeight({ typed: -5, unit: "kg", proposalKg: 60 })).toBe(
+      60,
+    );
   });
 
   it("a blank weight repeats the previous set when the proposal says so", () => {
@@ -376,7 +438,11 @@ describe("logging a set: the weight is shown, not asked for", () => {
     });
     expect(proposal.move).toBe("repeat");
     expect(
-      resolveEntryWeight({ typed: null, unit: "kg", proposalKg: proposal.weightKg }),
+      resolveEntryWeight({
+        typed: null,
+        unit: "kg",
+        proposalKg: proposal.weightKg,
+      }),
     ).toBe(60);
   });
 
@@ -390,7 +456,11 @@ describe("logging a set: the weight is shown, not asked for", () => {
     });
     expect(proposal.move).toBe("first");
     expect(
-      resolveEntryWeight({ typed: null, unit: "kg", proposalKg: proposal.weightKg }),
+      resolveEntryWeight({
+        typed: null,
+        unit: "kg",
+        proposalKg: proposal.weightKg,
+      }),
     ).toBe(42);
   });
 });

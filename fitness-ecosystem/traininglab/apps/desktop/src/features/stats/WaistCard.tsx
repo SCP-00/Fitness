@@ -3,13 +3,18 @@ import { MEASUREMENT_RANGES } from "@fitness/bodylab-measurements";
 import { todayKey } from "../../lib/day";
 import { getLanguage } from "../../lib/i18n";
 import { parseNumberInput } from "../../lib/parse-num";
+import { schedulePrivateAutobackup } from "../../lib/private-autobackup";
 import { uid } from "../../lib/uid";
+import { loadBodyLabArchive } from "../../lib/bodylab-migration-db";
 import {
+  archivedWaistCandidates,
   comparableWaistHistory,
   isWaistMeasurement,
+  type ArchivedWaistCandidate,
   type WaistMeasurement,
 } from "../../lib/waist";
 import {
+  importWaistMeasurement,
   loadWaistMeasurements,
   saveWaistMeasurement,
 } from "../../lib/waist-db";
@@ -17,6 +22,9 @@ import {
 export function WaistCard({ firstDay }: { firstDay: string }) {
   const es = getLanguage() === "es";
   const [rows, setRows] = useState<WaistMeasurement[] | null>(null);
+  const [archived, setArchived] = useState<ArchivedWaistCandidate[]>([]);
+  const [sourceId, setSourceId] = useState("");
+  const [sourceLandmark, setSourceLandmark] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [landmark, setLandmark] =
     useState<WaistMeasurement["landmark"]>("navel");
@@ -36,9 +44,14 @@ export function WaistCard({ firstDay }: { firstDay: string }) {
 
   useEffect(() => {
     let active = true;
-    void loadWaistMeasurements().then(
-      (result) => {
-        if (active) setRows(result);
+    void Promise.all([loadWaistMeasurements(), loadBodyLabArchive()]).then(
+      ([result, archive]) => {
+        if (active) {
+          setRows(result);
+          setArchived(
+            archivedWaistCandidates(archive?.data.measurements ?? []),
+          );
+        }
       },
       () => {
         if (active)
@@ -59,6 +72,57 @@ export function WaistCard({ firstDay }: { firstDay: string }) {
     setInput("");
     setDay(today);
   }
+
+  async function importArchived() {
+    const source = archived.find((row) => row.id === sourceId);
+    if (
+      !source ||
+      (sourceLandmark !== "navel" && sourceLandmark !== "narrowest")
+    )
+      return;
+    setBusy(true);
+    setError("");
+    setStatus("");
+    try {
+      const next = await importWaistMeasurement({
+        id: source.id,
+        day: source.day,
+        cm: source.cm,
+        landmark: sourceLandmark,
+      });
+      setRows(next);
+      void schedulePrivateAutobackup();
+      const saved = next.find((row) => row.id === source.id);
+      const matches =
+        saved?.day === source.day &&
+        saved.cm === source.cm &&
+        saved.landmark === sourceLandmark;
+      if (matches) setLandmark(sourceLandmark);
+      setSourceId("");
+      setSourceLandmark("");
+      setStatus(
+        matches
+          ? es
+            ? "Medida de BodyLab incorporada."
+            : "BodyLab measurement added."
+          : es
+            ? "Ya existe una medida con este identificador; se conservó la anterior."
+            : "A measurement with this ID already exists; the saved value was kept.",
+      );
+    } catch {
+      setError(
+        es
+          ? "No se pudo incorporar la medida."
+          : "Could not add the measurement.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const available = archived.filter(
+    (item) => !rows?.some((row) => row.id === item.id),
+  );
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -82,6 +146,7 @@ export function WaistCard({ firstDay }: { firstDay: string }) {
     setBusy(true);
     try {
       setRows(await saveWaistMeasurement(row));
+      void schedulePrivateAutobackup();
       setStatus(es ? "Medida guardada." : "Measurement saved.");
       clearForm();
     } catch {
@@ -101,6 +166,71 @@ export function WaistCard({ firstDay }: { firstDay: string }) {
         <h2 id="waist-title">{es ? "Medir cintura" : "Measure waist"}</h2>
       </div>
       <div className="card-body flex flex-col gap-3">
+        {available.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <h3>{es ? "Medidas de BodyLab" : "BodyLab measurements"}</h3>
+            <p>
+              {es
+                ? "El archivo no indica el punto de medición. Elige cada registro y confirma dónde mediste la cintura."
+                : "The archive does not specify the landmark. Choose each record and confirm where you measured."}
+            </p>
+            <label className="field">
+              {es ? "Registro de BodyLab" : "BodyLab record"}
+              <select
+                value={sourceId}
+                disabled={busy}
+                onChange={(event) => {
+                  setSourceId(event.target.value);
+                  setSourceLandmark("");
+                }}
+              >
+                <option value="">
+                  {es ? "Selecciona una medida" : "Select a measurement"}
+                </option>
+                {available.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.day} · {format.format(row.originalValue)}{" "}
+                    {row.originalUnit} · {row.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {sourceId && (
+              <>
+                <label className="field">
+                  {es
+                    ? "¿Dónde tomaste esta medida?"
+                    : "Where was this measurement taken?"}
+                  <select
+                    value={sourceLandmark}
+                    disabled={busy}
+                    onChange={(event) => setSourceLandmark(event.target.value)}
+                  >
+                    <option value="">
+                      {es ? "Selecciona el punto" : "Select the landmark"}
+                    </option>
+                    <option value="navel">
+                      {es ? "A la altura del ombligo" : "At the navel"}
+                    </option>
+                    <option value="narrowest">
+                      {es
+                        ? "Punto más estrecho del torso"
+                        : "Narrowest point of the torso"}
+                    </option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={busy || !sourceLandmark}
+                  onClick={() => void importArchived()}
+                >
+                  {es ? "Incorporar medida" : "Add measurement"}
+                </button>
+              </>
+            )}
+          </div>
+        )}
         <p>
           {es
             ? "De pie, con el abdomen relajado, coloca una cinta no extensible en horizontal y al final de una exhalación normal. Ajusta sin comprimir. Usa el mismo punto al repetir."

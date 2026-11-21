@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { schedulePrivateAutobackup } from "../../lib/private-autobackup";
 import {
   bodyLabCollections,
   parseBodyLabArchive,
@@ -6,7 +7,10 @@ import {
   type BodyLabArchive,
   type BodyLabMergeReceipt,
 } from "../../lib/bodylab-migration";
-import { loadBodyLabArchive, mergeBodyLabArchive } from "../../lib/bodylab-migration-db";
+import {
+  loadBodyLabArchive,
+  mergeBodyLabArchive,
+} from "../../lib/bodylab-migration-db";
 import { Button } from "../../ui/primitives";
 
 const labels = {
@@ -18,12 +22,15 @@ const labels = {
     add: "Nuevos",
     same: "Ya guardados",
     conflict: "Conflictos",
-    conflictHint: "Se conserva la versión guardada. Mantén la copia de origen para revisar los conflictos.",
+    conflictHint:
+      "Se conserva la versión guardada. Mantén la copia de origen para revisar los conflictos.",
     apply: "Guardar copia privada",
     cancel: "Cancelar",
     done: "Copia privada guardada.",
-    invalid: "No se pudo leer la copia completa. Comprueba el formato y vuelve a elegir el archivo.",
-    failed: "No se guardó la copia. Vuelve a elegir el archivo para revisar los datos.",
+    invalid:
+      "No se pudo leer la copia completa. Comprueba el formato y vuelve a elegir el archivo.",
+    failed:
+      "No se guardó la copia. Vuelve a elegir el archivo para revisar los datos.",
     profiles: "Perfiles",
     measurements: "Medidas",
     snapshots: "Instantáneas",
@@ -40,12 +47,15 @@ const labels = {
     add: "New",
     same: "Already saved",
     conflict: "Conflicts",
-    conflictHint: "The saved version is kept. Retain the original file to review conflicts.",
+    conflictHint:
+      "The saved version is kept. Retain the original file to review conflicts.",
     apply: "Save private archive",
     cancel: "Cancel",
     done: "Private archive saved.",
-    invalid: "Could not read the full archive. Check the format and choose the file again.",
-    failed: "The archive was not saved. Choose the file again to review your data.",
+    invalid:
+      "Could not read the full archive. Check the format and choose the file again.",
+    failed:
+      "The archive was not saved. Choose the file again to review your data.",
     profiles: "Profiles",
     measurements: "Measurements",
     snapshots: "Snapshots",
@@ -73,7 +83,10 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
     try {
       const archive = parseBodyLabArchive(JSON.parse(await file.text()));
       if (!archive) throw new Error("Invalid BodyLab archive");
-      const { receipt } = reconcileBodyLabArchive(await loadBodyLabArchive(), archive);
+      const { receipt } = reconcileBodyLabArchive(
+        await loadBodyLabArchive(),
+        archive,
+      );
       setPreview({ archive, receipt });
     } catch {
       setMessage(copy.invalid);
@@ -87,6 +100,7 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
     setBusy(true);
     try {
       await mergeBodyLabArchive(preview.archive, preview.receipt);
+      void schedulePrivateAutobackup();
       setMessage(copy.done);
     } catch {
       setMessage(copy.failed);
@@ -117,7 +131,9 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
       {preview && (
         <>
           <table className="w-full text-xs text-left">
-            <caption className="text-left font-semibold mb-2">{copy.review}</caption>
+            <caption className="text-left font-semibold mb-2">
+              {copy.review}
+            </caption>
             <thead>
               <tr>
                 <th scope="col">{copy.collection}</th>
@@ -131,7 +147,9 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
                 const row = preview.receipt[key];
                 return (
                   <tr key={key}>
-                    <th scope="row" className="font-normal">{copy[key]}</th>
+                    <th scope="row" className="font-normal">
+                      {copy[key]}
+                    </th>
                     <td>{row.added}</td>
                     <td>{row.unchanged}</td>
                     <td>{row.conflicts.length}</td>
@@ -140,20 +158,33 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
               })}
             </tbody>
           </table>
-          {bodyLabCollections.some((key) => preview.receipt[key].conflicts.length > 0) && (
-            <p className="text-sm text-[var(--tl-text-muted)]">{copy.conflictHint}</p>
+          {bodyLabCollections.some(
+            (key) => preview.receipt[key].conflicts.length > 0,
+          ) && (
+            <p className="text-sm text-[var(--tl-text-muted)]">
+              {copy.conflictHint}
+            </p>
           )}
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => void save()} disabled={busy}>
               {copy.apply}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setPreview(null)} disabled={busy}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setPreview(null)}
+              disabled={busy}
+            >
               {copy.cancel}
             </Button>
           </div>
         </>
       )}
-      {message && <p className="text-sm" role="status">{message}</p>}
+      {message && (
+        <p className="text-sm" role="status">
+          {message}
+        </p>
+      )}
     </div>
   );
 }

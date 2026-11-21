@@ -26,53 +26,8 @@ import type { TrainingLabMirror } from "./backup";
 export const AUTOBACKUP_DEBOUNCE_MS = 2000;
 
 /**
- * The settings that change what the app *does*, and nothing else.
- *
- * A mere presence bit (`settings ? "s" : "-"`) used to be enough — and that was
- * a bug (2026-10-09): changing the goal, the budget, the level or the inventory
- * left the mirror stale, so a model that had just called `configure_training`
- * kept reading the values it had replaced. Writing the whole object into the
- * signature would rewrite the file for a change in a display-only field (unit,
- * language) that no plan depends on. This is the middle ground: the plan's own
- * inputs, serialised cheaply.
- */
-function settingsKey(settings: TLSettingsData | null): string {
-  if (!settings) return "-";
-  return [
-    settings.goal,
-    settings.level,
-    settings.timeBudgetMin,
-    settings.daysPerWeek,
-    settings.useDecisionModel ? "dm" : "-",
-    (settings.inventory ?? [])
-      .map((i) => `${i.presetId ?? i.label}:${i.maxLoadKg ?? "-"}:${i.incrementKg ?? "-"}`)
-      .join("+"),
-    Object.keys(settings.weekOverrides ?? {}).sort().join(","),
-    Object.entries(settings.repOverrides ?? {})
-      .map(([id, range]) => `${id}:${range.min}-${range.max}`)
-      .sort()
-      .join(","),
-  ].join("~");
-}
-
-/** Today's live state (self-report + the plan the app shows) as a fingerprint. */
-function mirrorKey(mirror: TrainingLabMirror | null | undefined): string {
-  if (!mirror) return "-";
-  return [
-    mirror.date,
-    mirror.readiness
-      ? `${mirror.readiness.energy}/${mirror.readiness.motivation}/${mirror.readiness.soreness}`
-      : "-",
-    (mirror.plan ?? [])
-      .map((r) => `${r.exerciseId}x${r.sets}x${r.repsMin}-${r.repsMax}@${r.restSec}`)
-      .join("+"),
-  ].join("~");
-}
-
-/**
- * Cheap fingerprint of everything the mirror carries. A snapshot is only worth
- * writing when something actually changed — otherwise merely opening the app
- * would rewrite the file and push the eight kept snapshots past anything useful.
+ * Fingerprint every field actually written to the snapshot. Editing an old
+ * set, routine, health record, or model can leave counts and dates unchanged.
  */
 export function logSignature(input: {
   sets: readonly TLSet[];
@@ -82,23 +37,15 @@ export function logSignature(input: {
   decisionModel?: DecisionModel | null;
   mirror?: TrainingLabMirror | null;
 }): string {
-  const latestSet = input.sets.reduce((max, s) => (s.timestamp > max ? s.timestamp : max), "");
-  const latestSession = input.sessions.reduce(
-    (max, s) => (s.startedAt > max ? s.startedAt : max),
-    "",
-  );
-  return [
-    input.sets.length,
-    input.sessions.length,
-    input.health?.length ?? 0,
-    latestSet,
-    latestSession,
-    settingsKey(input.settings),
-    input.decisionModel ? "d" : "-",
-    mirrorKey(input.mirror),
-  ].join("|");
+  return JSON.stringify({
+    sets: input.sets,
+    sessions: input.sessions,
+    health: input.health ?? [],
+    settings: input.settings ?? null,
+    decisionModel: input.decisionModel ?? null,
+    mirror: input.mirror ?? null,
+  });
 }
-
 /** The browser build has no filesystem: say so instead of failing silently. */
 export function isDesktopHost(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -106,6 +53,7 @@ export function isDesktopHost(): boolean {
 
 let pending: ReturnType<typeof setTimeout> | null = null;
 let lastSignature: string | null = null;
+let pendingResolve: ((path: string | null) => void) | null = null;
 
 export interface AutobackupSource {
   sets: readonly TLSet[];
@@ -128,18 +76,25 @@ export function scheduleAutobackup(
   if (!isDesktopHost()) return Promise.resolve(null);
 
   const signature = logSignature(source);
-  if (pending) clearTimeout(pending);
+  if (pending) {
+    clearTimeout(pending);
+    pendingResolve?.(null);
+  }
 
   return new Promise((resolve) => {
+    pendingResolve = resolve;
     pending = setTimeout(async () => {
       pending = null;
+      pendingResolve = null;
       if (signature === lastSignature) {
         resolve(null);
         return;
       }
       try {
         const json = JSON.stringify(buildBackup(source, now));
-        const path = await invoke<string>("write_autobackup", { contents: json });
+        const path = await invoke<string>("write_autobackup", {
+          contents: json,
+        });
         lastSignature = signature;
         resolve(path);
       } catch {
@@ -204,5 +159,7 @@ export function isWorthRecovering(input: {
 export function resetAutobackupState(): void {
   if (pending) clearTimeout(pending);
   pending = null;
+  pendingResolve?.(null);
+  pendingResolve = null;
   lastSignature = null;
 }
