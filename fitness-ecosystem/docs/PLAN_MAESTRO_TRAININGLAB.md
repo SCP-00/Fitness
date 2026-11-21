@@ -129,3 +129,7 @@ Probar la técnica de split squat mediante humanoide genérico con licencia de r
 - T02/T04. Progreso registra cintura por fecha y sitio anatómico. Conserva el historial al corregir y compara el mismo punto dentro del periodo. El recorrido conjunto con una rutina y el historial de ocho semanas queda pendiente.
 - T03. La navegación puede plegarse y usa superficies translúcidas con alternativas opacas de accesibilidad. Queda la disposición final de ZEN y la revisión en dispositivos.
 - T06. [Piloto editorial](exercise-media-pilot/README.md) con los tres candidatos y la hoja base. Pendiente de revisión técnica y techo de gasto para la siguiente tanda.
+
+### Avance 2026-11-20 — migración revisada
+
+Las medidas de cintura importadas requieren seleccionar su punto anatómico. Las series compatibles se incorporan tras una vista previa y conservan procedencia. Existe copia automática privada independiente, con recuperación explícita. Faltan otras medidas, conflictos, paridad y la prueba del ejecutable instalado.

@@ -50,6 +50,7 @@ describe("private snapshots", () => {
   beforeEach(async () => {
     vi.useRealTimers();
     invoke.mockReset();
+    if (typeof window === "undefined") vi.stubGlobal("window", {});
     Object.defineProperty(window, "__TAURI_INTERNALS__", {
       configurable: true,
       value: { invoke },
