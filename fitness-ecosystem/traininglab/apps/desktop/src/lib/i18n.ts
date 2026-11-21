@@ -1699,6 +1699,15 @@ const DICT: Record<string, { en: string; es: string }> = {
   },
 
   // ── Semana (the plan's own surface since 2026-09-30 f) ───────────────
+  "week.history.title": { en: "Weekly activity", es: "Actividad semanal" },
+  "week.history.previous": { en: "Previous week", es: "Semana anterior" },
+  "week.history.next": { en: "Next week", es: "Semana siguiente" },
+  "week.history.sessions": { en: "Closed sessions", es: "Sesiones cerradas" },
+  "week.history.sets": { en: "Working sets", es: "Series de trabajo" },
+  "week.history.hint": {
+    en: "Counts working sets from closed sessions. Warm-ups are excluded.",
+    es: "Cuenta series de sesiones cerradas. Excluye los calentamientos.",
+  },
   "week.pageTitle": { en: "The week", es: "La semana" },
   "week.pageHint": {
     en: "How {n} training days are distributed and why.",

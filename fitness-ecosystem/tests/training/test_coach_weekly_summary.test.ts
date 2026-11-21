@@ -197,3 +197,16 @@ describe("coachWeeklySummary: sessions and sets", () => {
     expect(summary.setIds).toEqual(["second", "first"]);
   });
 });
+
+it("keeps a legacy closed session without set ids and counts only linked rows", () => {
+  const { setIds: _old, ...legacy } = session("legacy", "2026-11-16T19:00:00", []);
+  const summary = coachWeeklySummary({
+    sets: [set("unlinked", "2026-11-16T18:00:00")],
+    sessions: [legacy as TLSession],
+    from: FROM,
+    to: TO,
+  });
+  expect(summary.closedSessions).toBe(1);
+  expect(summary.workingSets).toBe(0);
+  expect(summary.setIds).toEqual([]);
+});

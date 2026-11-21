@@ -141,6 +141,20 @@ test("el recorrido completo con las ocho semanas de ejemplo", async ({ page }) =
   await expect(page.getByTestId("history-card")).toHaveCount(40);
   await expect(page.getByTestId("history-card").first()).toContainText(/1 serie(?!s)/);
 
+  await page.goto("/#/semana");
+  const summary = page.getByRole("region", { name: "Actividad semanal" });
+  const sessions = summary.getByText("Sesiones cerradas", { exact: true }).locator("..").locator("dd");
+  const sets = summary.getByText("Series de trabajo", { exact: true }).locator("..").locator("dd");
+  await expect(sessions).toHaveText("1");
+  await expect(sets).toHaveText("1");
+  await expect(summary.getByRole("button", { name: "Semana siguiente" })).toBeDisabled();
+  await summary.getByRole("button", { name: "Semana anterior" }).click();
+  await expect(sessions).toHaveText("5");
+  await expect(sets).not.toHaveText("1");
+  await summary.getByRole("button", { name: "Semana siguiente" }).click();
+  await expect(sessions).toHaveText("1");
+  await expect(sets).toHaveText("1");
+
   /* ── 4. Progreso: a decimal-comma waist measurement survives a reload ── */
   await page.goto("/#/progreso");
   const waist = page.getByRole("region", { name: "Medir cintura" });

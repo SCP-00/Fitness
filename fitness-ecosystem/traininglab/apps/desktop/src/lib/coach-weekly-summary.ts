@@ -111,7 +111,8 @@ export function coachWeeklySummary(
   let warmupSets = 0;
 
   for (const session of closed) {
-    for (const id of session.setIds) {
+    const ids = Array.isArray(session.setIds) ? session.setIds : [];
+    for (const id of ids) {
       // One row, one count: the same id claimed twice is a data artefact, not
       // two sets. A missing row is skipped instead of being invented.
       if (seen.has(id)) continue;
