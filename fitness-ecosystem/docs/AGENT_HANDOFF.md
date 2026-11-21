@@ -4221,3 +4221,13 @@ El árbol de trabajo contiene cambios sin commitear de otra sesión (archivado d
 - **Instalador local.** C:\Users\andyh\Desktop\TrainingLab-unificado-74441d1-setup.exe · 17671157 bytes · 2026-11-21T13:19:59.8153951-05:00 · SHA-256 5CEDDF74DB36F84A69B9135BEC43D713DC06F646A37DA4511F895E3D62248F65.
 - **Instalador local.** C:\Users\andyh\Desktop\BodyLab-transicion-74441d1-setup.exe · 17088697 bytes · 2026-11-21T13:20:08.1956632-05:00 · SHA-256 663E3E391DEBB80227EEC702C8376CE886DBB898CD6A9E3090D1D12BF09A4A5F.
 - **Empaquetado.** Ambos NSIS construidos desde 74441d1, con textos esperados en dist/assets. TrainingLab exit 0. BodyLab generó el NSIS y terminó exit 1 durante la firma del actualizador. Copias verificadas por SHA-256 en el escritorio especial de Windows.
+
+## 2026-11-21 (f) — Cancelación del coach en Ajustes
+
+- **Resultado.** `9beab06` conecta el control «Cancelar consulta» con el motor entregado por Buffy en `43a6070`, `0b8b070` y `050384a`. Con una consulta activa se bloquea otro envío. Al cancelar, se recupera la acción de consultar y se muestra una confirmación accesible. El plan sigue disponible.
+- **Verificación.** Desde `fitness-ecosystem`, `pnpm test` 115 archivos / 1.518 pruebas, `pnpm --filter web test:e2e:traininglab -- --timeout 30000` 16/16, typecheck TrainingLab, lint y auditoría CSS correctos. La E2E usa Chromium a 390 × 844 y un servidor simulado que retiene la respuesta de la fase final. Verifica una respuesta tardía, la vigencia del plan de Hoy y que Enter no inicie otra consulta.
+- **QA externo.** Antigravity reportó cero regresiones reproducibles para los cuatro hallazgos de ZEN en `74441d1`. La cancelación de coach se validó con servidor simulado, pendiente de verificar con el servidor local real y Safari en iPhone físico.
+- **Relevo.** T07.2 para Buffy y QA de cancelación para Antigravity se pueden hacer en paralelo. Contratos y pruebas esperadas en el plan maestro. Rama local `codex/traininglab-unificado`. Se preservaron los tres archivos sin seguimiento existentes.
+- **Instalador local.** C:\Users\andyh\Desktop\TrainingLab-unificado-9beab06-setup.exe · 17672422 bytes · 2026-11-21T13:39:19.7831786-05:00 · SHA-256 7265339C768DB84AB9D49FB7AB9C0DEEAD50F3B104181098F9D3526783CBAA8D.
+- **Instalador local.** C:\Users\andyh\Desktop\BodyLab-transicion-9beab06-setup.exe · 17088815 bytes · 2026-11-21T13:39:28.9729083-05:00 · SHA-256 3F1F5BED4632A3C6F4DB1C194A941229F3B2866A842D6324F7B04C8577294FD3.
+- **Empaquetado.** Ambos NSIS desde 9beab06, con textos comprobados en dist/assets. TrainingLab exit 0. BodyLab produjo el NSIS antes de terminar exit 1 por falta de la clave privada del actualizador.

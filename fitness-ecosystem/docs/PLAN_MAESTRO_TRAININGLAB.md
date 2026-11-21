@@ -253,7 +253,7 @@ No sustituye a la línea base de T00 —esa exige el ejecutable instalado— per
 | T01.2 y T03 | Codex | Conectar lectores en Ajustes, conservar el enlace v1 tras recarga, integrar ZEN y verificar instaladores. | Lectores locales de Buffy ya disponibles. |
 | QA visual y funcional | Antigravity con Gemini Flash | Revisar el diff de ZEN y las capturas de Chromium a 1440 × 900 y 390 × 844. Verificar peso/reps, teclado, CTA, descanso y cierre. Entregar hasta cinco hallazgos reproducibles en modo lectura. | Empieza con las capturas de la revisión candidata. |
 | T04.2 · Recorrido vertical | Codex | Conectar la fixture de Buffy con el flujo de Ajustes, comprobar sesión y Progreso tras recarga. | Cerrada con la prueba de Buffy en `4a157ca` y los textos integrados en `74441d1`. |
-| T07 · Modelo local | Buffy | T07.1 implementa cancelación del coach en el motor. Codex integra el control cuando esté listo el contrato. | T04.2 ya verificada. |
+| T07 · Modelo local | Buffy y Codex | T07.1 cerrada en motor e interfaz. T07.2 prepara el resumen determinista. | La revisión de cancelación puede correr en paralelo. |
 
 Para cada encargo entregar el ID de tarea, SHA de partida, rutas permitidas, caso de aceptación y comando de verificación. El constructor devuelve el SHA local, pruebas y alcance. Codex revisa y coordina la integración. OpenCode queda disponible para una comprobación aislada cuando la revisión paralela tenga un caso reproducible.
 
@@ -262,3 +262,11 @@ Para cada encargo entregar el ID de tarea, SHA de partida, rutas permitidas, cas
 ### T07.1 · Cancelación del coach local
 
 Buffy parte de `74441d1`. Puede editar `traininglab/apps/desktop/src/lib/llm.ts`, `traininglab/apps/desktop/src/lib/coach-run.ts` y sus pruebas en `tests/training/`. Añadir un `AbortSignal` opcional que cancele la petición en curso y frene intentos y llamadas a herramientas posteriores. La cancelación se distingue de un timeout en el resultado. Probar señal ya abortada, abortar durante la exploración y cancelar antes de confirmar una propuesta tardía. El plan determinista sigue disponible. Entregar SHA local, resultados de las pruebas del coach y de typecheck, y contrato para Codex. Antigravity repite los cuatro casos de ZEN en paralelo y trabaja con datos sintéticos.
+
+T07.1 queda integrada en `9beab06`, sobre los commits de Buffy `43a6070`, `0b8b070` y `050384a`. Ajustes permite cancelar la consulta activa. El navegador confirmó que se recupera el control y el plan de Hoy conserva sus ejercicios ante una respuesta final tardía simulada.
+
+### T07.2 · Datos del resumen semanal sin modelo
+
+Buffy parte de `9beab06`. Entregar una función pura en `traininglab/apps/desktop/src/lib/coach-weekly-summary.ts` y sus pruebas en `tests/training/test_coach_weekly_summary.test.ts`. Recibe series, sesiones y un intervalo inclusivo de días locales. Devuelve fechas, número de sesiones cerradas y número de series de trabajo, más referencias a los IDs de origen para que Codex pueda presentar los hechos. Reutiliza las reglas de historial y fecha existentes. Prueba periodo vacío, límites en días locales, calentamientos y sesiones sin cerrar. El resultado se obtiene con datos sintéticos, incluso con el modelo apagado. Entregar resultado de `pnpm exec vitest run tests/training/test_coach_weekly_summary.test.ts`, typecheck de TrainingLab y SHA local.
+
+**QA de Antigravity.** Desde `9beab06`, verificar en modo lectura que el botón de cancelar funciona durante una consulta activa a 1440 × 900 y 390 × 844. Usar un endpoint simulado y datos sintéticos. Comprobar confirmación accesible, que se pueda volver a consultar y que el plan de Hoy permanezca disponible cuando el servidor esté apagado.
