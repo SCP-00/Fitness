@@ -244,3 +244,15 @@ No sustituye a la línea base de T00 —esa exige el ejecutable instalado— per
 - `pnpm test` 107 archivos / 1.471 tests; `web test` 129; `web test:e2e` 17/17; `test:e2e:traininglab` 7/7; dos `tauri build --no-bundle` en 0 desde `8b2f103`.
 - `scripts/audit-contrast.mjs`: 19 PASS / 0 FAIL. `build-exercise-media-manifest.mjs --check`: 115 entradas, sin cambios.
 - Sigue ausente lo que piden T00 y T08: arranque en frío del `.exe` instalado, tamaño real del instalador, WebView2 y Safari de iPhone físico.
+
+### Reparto operativo · 2026-11-21
+
+| Carril | Responsable | Archivos y entrega | Dependencia |
+| --- | --- | --- | --- |
+| T04.1 · Datos de demostración | Buffy | `traininglab/apps/desktop/src/lib/demo.ts` y `tests/training/test_demo_data.test.ts`. Debe generar ocho semanas por defecto, con reloj fijo en la prueba, IDs estables y una sesión para hoy. Debe conservar el parámetro `weeks` y reportar el cambio de texto necesario en Ajustes para que lo aplique Codex. | Puede empezar desde `3c1ffe4`. |
+| T01.2 y T03 | Codex | Conectar lectores en Ajustes, conservar el enlace v1 tras recarga, integrar ZEN y verificar instaladores. | Lectores locales de Buffy ya disponibles. |
+| QA visual y funcional | Antigravity con Gemini Flash | Revisar el diff de ZEN y las capturas de Chromium a 1440 × 900 y 390 × 844. Verificar peso/reps, teclado, CTA, descanso y cierre. Entregar hasta cinco hallazgos reproducibles en modo lectura. | Empieza con las capturas de la revisión candidata. |
+| T04.2 · Recorrido vertical | Codex | Conectar la fixture de Buffy con el flujo de Ajustes, comprobar sesión y Progreso tras recarga. | Espera T04.1 y ZEN. |
+| T07 · Modelo local | Buffy | Preparar la tarjeta con entradas, resultados observables y pruebas antes de tocar el coach. | Espera el contrato de T04.2. |
+
+Para cada encargo entregar el ID de tarea, SHA de partida, rutas permitidas, caso de aceptación y comando de verificación. El constructor devuelve el SHA local, pruebas y alcance. Codex revisa y coordina la integración. OpenCode queda disponible para una comprobación aislada cuando la revisión paralela tenga un caso reproducible.

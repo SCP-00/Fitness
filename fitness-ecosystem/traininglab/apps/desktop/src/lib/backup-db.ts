@@ -56,9 +56,10 @@ export async function restoreTrainingLabBackup(backup: TrainingLabBackup) {
     meta.put({ id: "health-records", value: health });
 
     if (backup.waistMeasurements?.length) {
-      const local = Array.isArray(waistRow?.value)
-        ? waistRow.value.filter(isWaistMeasurement)
-        : [];
+      const local: unknown = waistRow?.value ?? [];
+      if (!Array.isArray(local) || !local.every(isWaistMeasurement)) {
+        throw new Error("Invalid local waist data");
+      }
       meta.put({
         id: WAIST_MEASUREMENTS_KEY,
         value: mergeById(backup.waistMeasurements, local),

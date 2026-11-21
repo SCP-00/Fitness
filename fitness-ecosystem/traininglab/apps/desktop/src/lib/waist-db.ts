@@ -28,12 +28,22 @@ async function updateWaist(
     const store = transaction.objectStore("meta");
     const request = store.get(WAIST_MEASUREMENTS_KEY);
     let rows: WaistMeasurement[];
+    let failure: unknown;
     request.onsuccess = () => {
-      rows = update(readRows(request.result?.value));
-      store.put({ id: WAIST_MEASUREMENTS_KEY, value: rows });
+      try {
+        const value: unknown = request.result?.value ?? [];
+        if (!Array.isArray(value) || !value.every(isWaistMeasurement)) {
+          throw new Error("Invalid local waist data");
+        }
+        rows = update(value);
+        store.put({ id: WAIST_MEASUREMENTS_KEY, value: rows });
+      } catch (error) {
+        failure = error;
+        transaction.abort();
+      }
     };
     transaction.oncomplete = () => resolve(rows);
-    transaction.onabort = () => reject(transaction.error);
+    transaction.onabort = () => reject(failure ?? transaction.error);
   });
 }
 

@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
 import { schedulePrivateAutobackup } from "../../lib/private-autobackup";
 import {
+  archiveFromLegacyBodyLab,
   bodyLabCollections,
   parseBodyLabArchive,
+  readBodyLabZip,
   reconcileBodyLabArchive,
   type BodyLabArchive,
   type BodyLabMergeReceipt,
@@ -15,7 +17,8 @@ import { Button } from "../../ui/primitives";
 
 const labels = {
   es: {
-    choose: "Elegir copia completa de BodyLab",
+    choose: "Elegir copia de BodyLab",
+    omitted: "Esta copia no incluye",
     hint: "Conserva los registros originales en un archivo privado de TrainingLab.",
     review: "Revisión de la copia",
     collection: "Registros",
@@ -40,7 +43,8 @@ const labels = {
     localPreferences: "Preferencias locales",
   },
   en: {
-    choose: "Choose full BodyLab archive",
+    choose: "Choose BodyLab archive",
+    omitted: "This archive is missing",
     hint: "Keep your original records in a private TrainingLab archive.",
     review: "Archive review",
     collection: "Records",
@@ -74,6 +78,7 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
   const [preview, setPreview] = useState<{
     archive: BodyLabArchive;
     receipt: BodyLabMergeReceipt;
+    omitted: readonly (typeof bodyLabCollections)[number][];
   } | null>(null);
 
   async function read(file: File) {
@@ -81,13 +86,18 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
     setMessage("");
     setPreview(null);
     try {
-      const archive = parseBodyLabArchive(JSON.parse(await file.text()));
+      const isZip = file.name.toLowerCase().endsWith(".bodylab");
+      const json: unknown = isZip ? null : JSON.parse(await file.text());
+      const legacy = isZip
+        ? await readBodyLabZip(new Uint8Array(await file.arrayBuffer()))
+        : archiveFromLegacyBodyLab(json);
+      const archive = legacy?.archive ?? parseBodyLabArchive(json);
       if (!archive) throw new Error("Invalid BodyLab archive");
       const { receipt } = reconcileBodyLabArchive(
         await loadBodyLabArchive(),
         archive,
       );
-      setPreview({ archive, receipt });
+      setPreview({ archive, receipt, omitted: legacy?.omitted ?? [] });
     } catch {
       setMessage(copy.invalid);
     } finally {
@@ -118,7 +128,7 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
       <input
         ref={input}
         type="file"
-        accept="application/json,.json"
+        accept=".bodylab,.json,application/zip,application/json"
         hidden
         data-testid="bodylab-migration-file"
         onChange={(event) => {
@@ -130,6 +140,12 @@ export function BodyLabMigration({ language }: { language: "es" | "en" }) {
       <p className="text-sm text-[var(--tl-text-muted)]">{copy.hint}</p>
       {preview && (
         <>
+          {preview.omitted.length > 0 && (
+            <p>
+              {copy.omitted} ·{" "}
+              {preview.omitted.map((key) => copy[key]).join(", ")}
+            </p>
+          )}
           <table className="w-full text-xs text-left">
             <caption className="text-left font-semibold mb-2">
               {copy.review}

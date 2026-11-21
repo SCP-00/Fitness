@@ -41,7 +41,7 @@ import {
   type MuscleFamily,
   type Readiness,
 } from "@fitness/bodylab-training";
-import { isV2Payload, type ImportPayload } from "../lib/adapter";
+import { isV2Payload, normalizeLinkPayload, readLinkPayload, type ImportPayload } from "../lib/adapter";
 import { loadBodyLabArchive } from "../lib/bodylab-migration-db";
 import { schedulePrivateAutobackup } from "../lib/private-autobackup";
 import { restoreTrainingLabBackup } from "../lib/backup-db";
@@ -673,8 +673,10 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         loadMcpLedger(),
       ]);
       if (cancelled) return;
-      if (storedPayload && isV2Payload(storedPayload))
-        setPayload(storedPayload);
+      const restoredPayload = isV2Payload(storedPayload)
+        ? storedPayload
+        : normalizeLinkPayload(storedPayload);
+      if (restoredPayload) setPayload(restoredPayload);
       setSets(storedSets);
       setSessions(storedSessions);
       setModel(normalizeModel(storedModel));
@@ -1217,13 +1219,13 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     async (file: File) => {
       setLoadError(null);
       try {
-        const parsed: unknown = JSON.parse(await file.text());
-        if (!isV2Payload(parsed)) {
+        const parsed = readLinkPayload(await file.text());
+        if (!parsed) {
           setLoadError(t("setup.loadError"));
           return;
         }
-        setPayload(parsed);
         await savePayload(parsed);
+        setPayload(parsed);
         if (settings) applySettings({ ...settings, sourcePath: file.name });
       } catch {
         setLoadError(t("setup.loadError"));

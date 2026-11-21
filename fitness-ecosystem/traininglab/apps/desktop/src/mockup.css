@@ -1672,20 +1672,52 @@ svg {
   margin-left: auto;
 }
 
+/* The session keeps the live table and entry together, with context alongside. */
 @media (min-width: 900px) {
-  .zen-main > .zen-media-card {
-    order: 1;
+  .zen-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+    gap: 20px;
   }
-  .zen-main > .zen-entry-card {
-    order: 2;
+  .zen-main > .zen-log-card { order: 1; }
+  .zen-main > .zen-entry-card { order: 2; }
+  .zen-main > .zen-sequence-card { order: 3; }
+  .zen-side > .zen-previous-card { order: 1; }
+  .zen-side > .zen-rest-card { order: 2; }
+  .zen-side > .zen-media-card { order: 3; }
+  .zen-side > .zen-cues-card { order: 4; }
+  .zen-side > .zen-progression-card { order: 5; }
+  .zen-side > .zen-summary-card { order: 6; }
+  .zen-media-card .card-head { flex-wrap: wrap; }
+  .zen-media-card .card-head .card-title { font-size: 18px !important; }
+  .zen-media-card .hero-media .frame { min-height: 180px; }
+  .zen-main .zen-log-card,
+  .zen-main .zen-entry-card,
+  .zen-side > .card {
+    border-radius: 16px;
+    background-color: var(--tl-surface);
   }
-  .zen-main > .zen-log-card {
-    order: 3;
-  }
-  .zen-main > .zen-sequence-card {
-    order: 4;
-  }
+  .zen-log-card .card-head { padding-block: 18px; }
+  .zen-sets th, .zen-sets td { padding-block: 13px; }
+  .zen-sets td { font-variant-numeric: tabular-nums; }
+  .zen-log-cta { width: 100%; }
+  /* Inline fields in the highlighted row are the desktop entry point. */
+  .zen-entry-card .zen-weight-field,
+  .zen-entry-card .zen-reps-field .stepper { display: none; }
+  .zen-entry-card .stepper-row { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .zen-reps-field .stepper-unit { margin-top: 10px; }
+  .zen-finish-bottom { display: none; }
 }
+
+.zen-finish-desktop { display: none; }
+@media (min-width: 900px) { .zen-finish-desktop { display: inline-flex; } }
+
+.zen-previous-value {
+  margin: 10px 0 2px;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.zen-previous-card p:last-child { margin-bottom: 0; }
 
 @media (max-width: 899px) {
   .zen-main > .zen-log-card {
@@ -3804,4 +3836,13 @@ body.tl-dragging {
   .history-kpis .summary-kpi:last-child {
     grid-column: 1 / -1;
   }
+}
+
+@media (min-width: 900px) and (max-width: 1500px) {
+  .zen-topbar .zen-top-action {
+    width: 44px;
+    min-width: 44px;
+    padding-inline: 0;
+  }
+  .zen-topbar .zen-action-label { display: none; }
 }
