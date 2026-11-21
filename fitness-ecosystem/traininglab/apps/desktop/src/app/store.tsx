@@ -2525,7 +2525,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         ok: true,
         content: summary,
         toolCalls: [],
-        applied: { summary, slots: proposed.length },
+        applied: { summary, slots: proposed.length, minutes: check.estimatedMinutes },
         errors: [],
       });
       return {
@@ -3311,7 +3311,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
           content: result.content || prev?.content || "",
           toolCalls: result.toolCalls,
           applied: result.applied
-            ? { summary: result.applied.summary || result.content, slots: result.applied.slots }
+            ? { ...result.applied, summary: result.applied.summary || result.content }
             : prev?.applied,
           errors: result.errors,
         }));

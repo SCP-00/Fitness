@@ -36,7 +36,7 @@ export interface CoachResult {
   content: string;
   toolCalls: { name: string; args: Record<string, unknown> }[];
   /** Present when a proposal survived the hard rules. */
-  applied?: { summary: string; slots: number };
+  applied?: { summary: string; slots: number; minutes: number };
   errors: string[];
 }
 
@@ -304,6 +304,15 @@ export function CoachResultView({
         <p className="flex items-center gap-2 text-sm text-emerald-400">
           <CheckCircle2 className="w-4 h-4" />
           {tInterp("coach.applied", { n: result.applied.slots })}
+        </p>
+      )}
+      {result.applied && result.applied.minutes > 0 && (
+        <p className="text-sm text-[var(--tl-text-muted)]">
+          {tInterp("coach.answer.minutes", {
+            n: new Intl.NumberFormat(getLanguage(), {
+              maximumFractionDigits: 1,
+            }).format(result.applied.minutes),
+          })}
         </p>
       )}
       {result.errors.length > 0 && (

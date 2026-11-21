@@ -92,11 +92,34 @@ if (args.real && !args.url) {
   process.exit(2);
 }
 
+const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const endpoint = args.real ? URL.parse(args.url) : null;
+if (
+  args.real &&
+  (!endpoint ||
+    !["http:", "https:"].includes(endpoint.protocol) ||
+    !loopbackHosts.has(endpoint.hostname) ||
+    endpoint.username ||
+    endpoint.password ||
+    endpoint.search ||
+    endpoint.hash)
+) {
+  console.log(JSON.stringify({
+    mode: "real",
+    status: "invalid-endpoint",
+    reason: "Use an HTTP(S) loopback URL without credentials, query, or fragment.",
+  }, null, 2));
+  process.exit(2);
+}
+
+// An HTTP redirect must not forward the benchmark to a different host.
+const fetchLocal = (url, init) => globalThis.fetch(url, { ...init, redirect: "error" });
+
 /* ── Load the real modules through Vite, like the app resolves them ───────── */
 
 const server = await createServer({
   root: ROOT,
-  server: { middlewareMode: true },
+  server: { middlewareMode: true, ws: false },
   logLevel: "error",
   resolve: {
     alias: {
@@ -490,7 +513,7 @@ async function runCase(testCase, { real, settings, transport }) {
 function settingsFor(real) {
   return {
     enabled: true,
-    baseUrl: real ? args.url : "http://127.0.0.1:0/v1",
+    baseUrl: real ? endpoint.href : "http://127.0.0.1:0/v1",
     model: args.model,
     apiKey: "",
     timeoutSec: real ? Number(args.timeout) || 180 : 10,
@@ -503,7 +526,7 @@ const settings = settingsFor(real);
 
 let probe = null;
 if (real) {
-  probe = await probeServer(settings);
+  probe = await probeServer(settings, fetchLocal);
   if (!probe.ok) {
     console.log(
       JSON.stringify(
@@ -528,7 +551,7 @@ if (real) {
 const cases = [];
 for (const testCase of CASES) {
   const transport = real
-    ? { impl: globalThis.fetch, requests: () => null }
+    ? { impl: fetchLocal, requests: () => null }
     : simulatedFetch(testCase.simulated ?? []);
   cases.push(await runCase(testCase, { real, settings, transport }));
 }
