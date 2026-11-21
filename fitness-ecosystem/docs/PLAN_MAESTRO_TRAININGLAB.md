@@ -43,6 +43,17 @@ Cada fila comienza pendiente. La casilla se marca al adjuntar el resultado indic
 | [ ] | T09 | Distribución | T08 | TrainingLab pasa a ser la descarga principal. Se actualizan instalador, accesos directos, LAN, Pages, README y actualización. Queda publicada una vía para recuperar instalaciones antiguas. |
 | [ ] | X01 | Investigación visual | T06 | Evaluación opcional del 3D conforme a la sección 7. Independiente de la publicación de TrainingLab. |
 
+### Reparto de propiedad entre orquestadores (decisión del dueño, 2026-11-21)
+
+La unificación corre en la rama **`codex/traininglab-unificado`**, donde **Astra 6.2 orquesta con Codex**. Para que dos agentes no se pisen los archivos, la propiedad se parte así y **no se cruza sin avisar**:
+
+| Carril | Quién | Archivos y tareas |
+|---|---|---|
+| **Frontend** | **Codex / Astra 6.2** | Todo JSX y CSS de TrainingLab: `screens/`, `features/*/*.tsx`, `ui/`, `mockup.css`, `index.css`, tokens, rail, ZEN, Progreso, la maqueta de §4. Tareas T03, la parte de interfaz de T04/T05 y la revisión visual de T06. |
+| **Datos, motor y contratos** | **Buffy** (este carril) | `bodylab/core/**`, `bodylab/packages/contracts/**`, `traininglab/src/lib/**` puro (sin JSX), migración, copias, exportadores, catálogos, tests en `tests/**` y documentación en `docs/**`. T00, T01, T02, T07, X01. |
+
+Regla práctica: si un cambio necesita tocar un archivo del otro carril, **para y devuélvelo como tarjeta** en vez de editarlo. Un archivo compartido tiene un solo dueño por ronda. La evidencia de cada carril va al mismo `AGENT_HANDOFF.md`, con su rama y su commit.
+
 **Trabajo paralelo.** Tras T00 pueden avanzar datos, diseño, antropometría y biblioteca. El coordinador integra primero T01 y una sola medida de T02 con una sola pantalla de T03. Hasta demostrar ese recorrido, los demás agentes trabajan en componentes, pruebas o lotes aislados. Así se descubre pronto si la interfaz muestra un dato que el almacenamiento todavía no puede recuperar.
 
 ## 3. Unificación de datos, antropometría y progresión
@@ -179,6 +190,7 @@ El tablero anterior tenía trabajo empezado. **Las casillas de la sección 2 emp
 - **T02/T04 (parcial).** Progreso registra cintura por fecha y sitio anatómico, conserva historial al corregir y compara el mismo punto dentro del periodo. Las medidas de cintura importadas exigen elegir su punto anatómico; las series compatibles se incorporan tras vista previa y conservan procedencia. Existe copia automática privada independiente con recuperación explícita. Faltan otras medidas, conflictos, el recorrido completo de ocho semanas y la prueba del ejecutable instalado.
 - **T03 (parcial).** La navegación puede plegarse y usa superficies translúcidas con alternativas opacas de accesibilidad. Quedan la disposición final de ZEN (ver la maqueta de la sección 4) y la revisión en dispositivos.
 - **T06 (parcial).** [Piloto editorial](exercise-media-pilot/README.md) con los tres candidatos y la hoja base; pendiente de revisión técnica y de techo de gasto para la siguiente tanda.
+- **T02 (avance 2026-11-21, carril de datos).** El catálogo de protocolos dejó de vivir en la app web: ahora está en `bodylab/core/measurements/src/protocols.ts` (31 medidas con punto anatómico, orientación, postura, errores y cita F1/F3/F5) y `bodylab/apps/web/src/lib/measurement-protocols.ts` solo re-exporta, de modo que TrainingLab puede mostrar la misma guía sin copiarla. Se añadió `bodylab/core/measurements/src/facts.ts`: unidad canónica y límites por medida (medido / estimado / no sostenible) tomados literalmente del §6 del protocolo —incluido que el %grasa por pliegues **no** es una afirmación individual (F2) y que un volumen predicho puede errar hasta un 40 % (F6)—. Gate: `tests/training/test_measurement_protocols.test.ts` (10 casos) falla si una medida canónica nueva queda sin protocolo, si un dibujo se sale de la figura, si falta un idioma o si una cifra derivada se etiqueta como medida. **Falta de T02:** ejemplos de referencia reproducibles por cálculo y población aplicable medida a medida (ninguna fuente del repositorio la sostiene todavía; no se inventa).
 
 ### Matriz de conservación (T00.1)
 

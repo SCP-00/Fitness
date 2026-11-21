@@ -37,3 +37,24 @@ export {
 } from './session';
 export type { MeasurementSession, SessionCondition } from './session';
 export type { QueryMeasurementType } from './queries';
+
+// Measurement protocols (2026-11-21): where the tape goes, shared with TrainingLab.
+export {
+  MEASUREMENT_PROTOCOLS,
+  STANDARD_CONDITIONS,
+  FIGURE,
+  baseMeasurementId,
+  protocolFor,
+  sideOf,
+} from './protocols';
+export type {
+  Bilingual,
+  Point,
+  DiagramKind,
+  ProtocolDiagram,
+  MeasurementProtocol,
+} from './protocols';
+
+// What each measurement can and cannot claim (plan T02), from the protocol doc §6.
+export { MEASUREMENT_FACTS, NOT_A_SCAN } from './facts';
+export type { MeasurementFacts, MeasurementClaim, ClaimVerdict } from './facts';
