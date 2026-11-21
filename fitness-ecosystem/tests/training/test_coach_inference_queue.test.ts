@@ -131,6 +131,18 @@ describe("coach inference queue: one job at a time", () => {
 });
 
 describe("coach inference queue: data revisions", () => {
+  it("settles a summary submitted after its revision was superseded", async () => {
+    const queue = createCoachInferenceQueue(3);
+    const { started, job } = recorder();
+    const summary = queue.submit(
+      job("weekly", "summary", 2, Promise.resolve("old")),
+    );
+
+    await expect(summary.promise).resolves.toEqual({ status: "stale" });
+    expect(started).toEqual([]);
+    expect(queue.active).toBeNull();
+  });
+
   it("never starts a summary built from a superseded revision", async () => {
     const queue = createCoachInferenceQueue(0);
     const blocker = deferred<void>();

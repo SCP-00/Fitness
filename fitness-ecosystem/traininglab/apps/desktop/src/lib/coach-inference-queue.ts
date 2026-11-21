@@ -278,7 +278,6 @@ export function createCoachInferenceQueue(
        * dashboard is showing newer numbers than the answer would be about.
        */
       if (job.kind === "summary" && job.revision < revision) {
-        entry.state = "done";
         settle(entry, { status: "stale" });
         return taskFor(entry);
       }

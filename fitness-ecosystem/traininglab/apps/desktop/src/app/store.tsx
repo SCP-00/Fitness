@@ -80,7 +80,11 @@ import {
   evaluateBiomechanicsAndFatigue,
   painVetoesFor,
 } from "../lib/llm";
-import { runCoach } from "../lib/coach-run";
+import { runCoach, type CoachRunResult } from "../lib/coach-run";
+import {
+  createCoachInferenceQueue,
+  type InferenceTask,
+} from "../lib/coach-inference-queue";
 import {
   deleteSession,
   deleteSessionsMany,
@@ -626,8 +630,13 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [coachResult, setCoachResult] = useState<CoachResult | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
-  const activeCoachRun = useRef<AbortController | null>(null);
-  useEffect(() => () => activeCoachRun.current?.abort(), []);
+  const [coachQueue] = useState(() => createCoachInferenceQueue());
+  const activeCoachRun = useRef<InferenceTask<CoachRunResult> | null>(null);
+  useEffect(() => {
+    return () => {
+      coachQueue.cancelAll();
+    };
+  }, [coachQueue]);
   const [coachRows, setCoachRows] = useState<PlannedRow[] | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   /** Last reversible change to one set (delete or rewrite), 2026-10-21. */
@@ -635,6 +644,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
   /** Clears that entry when its window closes — one timer, never a queue. */
   const undoTimer = useRef<number | null>(null);
   const [sessions, setSessions] = useState<TLSession[]>([]);
+  useEffect(() => {
+    coachQueue.setRevision(coachQueue.revision + 1);
+  }, [coachQueue, sets, sessions]);
   const [health, setHealth] = useState<HealthRecord[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [sharedError, setSharedError] = useState<string | null>(null);
@@ -3084,13 +3096,11 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
     });
   }, [plan, settings, contextCsv, rows]);
 
-  const cancelCoach = useCallback(() => activeCoachRun.current?.abort(), []);
+  const cancelCoach = useCallback(() => activeCoachRun.current?.cancel(), []);
 
   const askCoach = useCallback(
     async (request: string) => {
       if (!settings?.llm.enabled || !plan || activeCoachRun.current) return;
-      const controller = new AbortController();
-      activeCoachRun.current = controller;
       setCoachBusy(true);
       setCoachResult(null);
       /**
@@ -3290,21 +3300,40 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
        * proposing anything — see `lib/coach-run.ts` for the measurement.
        */
       try {
-        const result = await runCoach({
-          signal: controller.signal,
-          settings: settings.llm,
-          request,
-          contextCsv,
-          tools: TOOL_SPECS,
-          execute: executor,
-          usable: plan.usable.map((u) => ({
-            id: u.exercise.id,
-            family: u.families[0] ?? "unknown",
-            pattern: u.traits.pattern,
-          })),
-          vetoedPatterns: runVetoes,
-          focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
+        const task = coachQueue.submit({
+          id: "coach-ask",
+          kind: "interactive",
+          revision: coachQueue.revision,
+          run: (signal) =>
+            runCoach({
+              signal,
+              settings: settings.llm,
+              request,
+              contextCsv,
+              tools: TOOL_SPECS,
+              execute: executor,
+              usable: plan.usable.map((u) => ({
+                id: u.exercise.id,
+                family: u.families[0] ?? "unknown",
+                pattern: u.traits.pattern,
+              })),
+              vetoedPatterns: runVetoes,
+              focusFamilies: dayFocus.length > 0 ? dayFocus : customFocus,
+            }),
         });
+        activeCoachRun.current = task;
+        const outcome = await task.promise;
+        if (outcome.status !== "completed") {
+          setCoachResult({
+            ok: false,
+            cancelled: outcome.status === "cancelled",
+            content: "",
+            toolCalls: [],
+            errors: [],
+          });
+          return;
+        }
+        const result = outcome.value;
         setCoachResult((prev) => ({
           ok: result.ok,
           cancelled: result.cancelled,
@@ -3331,6 +3360,9 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
       progressionFor,
       dayFocus,
       customFocus,
+      soreFamilies,
+      applyCoachProposal,
+      coachQueue,
     ],
   );
 
