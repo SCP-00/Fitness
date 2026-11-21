@@ -169,6 +169,8 @@ test("a finished session cannot reuse its sets, and the mobile finish button is 
 test("Hoy, Entrenamiento, Semana and ZEN project the same session — and the same rest day", async ({
   page,
 }) => {
+  // Start on a default training day regardless of when the suite runs.
+  await page.clock.setFixedTime(new Date(2026, 10, 16, 12));
   await finishOnboarding(page);
 
   // Every destination draws the shared shell. `.tl-page` belonged to the old

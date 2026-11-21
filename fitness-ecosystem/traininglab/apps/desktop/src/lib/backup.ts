@@ -20,6 +20,8 @@
  */
 
 import type { DecisionModel, Readiness } from "@fitness/bodylab-training";
+import { isWaistMeasurement, type WaistMeasurement } from "./waist";
+import { parseBodyLabArchive, type BodyLabArchive } from "./bodylab-migration";
 import type { HealthRecord } from "./shared";
 import type { TLSet, TLSession, TLSettingsData } from "./types";
 
@@ -73,6 +75,8 @@ export interface TrainingLabBackup {
   /** Today's live state. Absent on files written before 2026-10-09 and on the
    *  user's own exports — every consumer must treat it as optional. */
   mirror?: TrainingLabMirror | null;
+  waistMeasurements?: WaistMeasurement[];
+  bodyLabArchive?: BodyLabArchive;
 }
 
 export interface BackupSource {
@@ -82,6 +86,8 @@ export interface BackupSource {
   settings: TLSettingsData | null;
   decisionModel: DecisionModel | null;
   mirror?: TrainingLabMirror | null;
+  waistMeasurements?: WaistMeasurement[];
+  bodyLabArchive?: BodyLabArchive;
 }
 
 export function buildBackup(
@@ -97,6 +103,8 @@ export function buildBackup(
     health: [...source.health],
     settings: source.settings ?? null,
     decisionModel: source.decisionModel ?? null,
+    ...(source.waistMeasurements?.length ? { waistMeasurements: source.waistMeasurements } : {}),
+    ...(source.bodyLabArchive ? { bodyLabArchive: source.bodyLabArchive } : {}),
     ...(source.mirror ? { mirror: source.mirror } : {}),
   };
 }
@@ -174,6 +182,12 @@ export function parseBackup(text: string): BackupParseResult {
     return { ok: false, error: "missing-arrays" };
   }
 
+  const archive = raw.bodyLabArchive === undefined ? null : parseBodyLabArchive(raw.bodyLabArchive);
+  if (raw.bodyLabArchive !== undefined && !archive) return { ok: false, error: "not-object" };
+  const waist = raw.waistMeasurements;
+  if (waist !== undefined && (!Array.isArray(waist) || !waist.every(isWaistMeasurement))) {
+    return { ok: false, error: "not-object" };
+  }
   const sets = raw.sets.filter(isRestorableSet);
   return {
     ok: true,
@@ -183,6 +197,8 @@ export function parseBackup(text: string): BackupParseResult {
       version: raw.version,
       exportedAt: typeof raw.exportedAt === "string" ? raw.exportedAt : "",
       sets,
+      ...(waist ? { waistMeasurements: waist } : {}),
+      ...(archive ? { bodyLabArchive: archive } : {}),
       sessions: raw.sessions.filter(isRestorableSession),
       health: raw.health.filter(isRestorableHealth),
       settings: isObject(raw.settings)

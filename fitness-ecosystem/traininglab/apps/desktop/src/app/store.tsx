@@ -42,6 +42,9 @@ import {
   type Readiness,
 } from "@fitness/bodylab-training";
 import { isV2Payload, type ImportPayload } from "../lib/adapter";
+import { loadBodyLabArchive } from "../lib/bodylab-migration-db";
+import { restoreTrainingLabBackup } from "../lib/backup-db";
+import { loadWaistMeasurements } from "../lib/waist-db";
 import { localDayKey, todayKey } from "../lib/day";
 import { uid } from "../lib/uid";
 import { unassignedTodaySets } from "../lib/session-identity";
@@ -90,7 +93,6 @@ import {
   loadSessions,
   loadSettings,
   loadSets,
-  normalizeSettings,
   saveDecisionModel,
   saveHealthRecords,
   saveMcpLedger,
@@ -515,7 +517,7 @@ export interface TrainingLabStore {
   /** Reverse one applied MCP action (Ajustes → auditoría de agentes). */
   undoMcpAction: (id: string) => Promise<void>;
   /** The complete JSON backup of this device's data, as text. */
-  exportBackup: () => string;
+  exportBackup: () => Promise<string>;
   /**
    * Restore a backup file: merge by id into IndexedDB (never a wipe), then
    * adopt it in memory. Reports a translated message for the settings screen.
@@ -896,12 +898,15 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
    * fresh IndexedDB read.
    */
   const exportBackup = useCallback(
-    (): string =>
-      JSON.stringify(
-        buildBackup({ sets, sessions, health, settings, decisionModel: model }),
-        null,
-        2,
-      ),
+    async (): Promise<string> => {
+      const [waistMeasurements, bodyLabArchive] = await Promise.all([
+        loadWaistMeasurements(), loadBodyLabArchive(),
+      ]);
+      return JSON.stringify(buildBackup({
+        sets, sessions, health, settings, decisionModel: model, waistMeasurements,
+        ...(bodyLabArchive ? { bodyLabArchive } : {}),
+      }), null, 2);
+    },
     [sets, sessions, health, settings, model],
   );
 
@@ -919,22 +924,21 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         return { ok: false, message };
       }
 
-      const nextSets = mergeById(sets, parsed.backup.sets);
-      const nextSessions = mergeById(sessions, parsed.backup.sessions);
-      const nextHealth = mergeById(health, parsed.backup.health);
-      await saveSetsMany(nextSets);
-      await saveSessionsMany(nextSessions);
-      await saveHealthRecords(nextHealth);
-      setSets(nextSets);
-      setSessions(nextSessions);
-      setHealth(nextHealth);
-
-      if (parsed.backup.decisionModel) {
-        setModel(parsed.backup.decisionModel);
-        await saveDecisionModel(parsed.backup.decisionModel);
-      }
-      if (parsed.backup.settings) {
-        applySettings(normalizeSettings(parsed.backup.settings));
+      try {
+        const restored = await restoreTrainingLabBackup(parsed.backup);
+        setSets(restored.sets);
+        setSessions(restored.sessions);
+        setHealth(restored.health);
+        if (parsed.backup.decisionModel) setModel(parsed.backup.decisionModel);
+        if (restored.settings) {
+          setSettings(restored.settings);
+          setLanguage(restored.settings.language);
+        }
+      } catch {
+        return {
+          ok: false,
+          message: t("backup.error.write"),
+        };
       }
       return {
         ok: true,
@@ -943,7 +947,7 @@ export function TrainingLabProvider({ children }: { children: ReactNode }) {
         }),
       };
     },
-    [sets, sessions, health, applySettings],
+    [],
   );
 
   /**

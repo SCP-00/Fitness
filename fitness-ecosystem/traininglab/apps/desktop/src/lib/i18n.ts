@@ -346,6 +346,10 @@ const DICT: Record<string, { en: string; es: string }> = {
     en: "That backup was made by a newer version of the app.",
     es: "Esa copia la hizo una versión más nueva de la app.",
   },
+  "backup.error.write": {
+    en: "Could not restore the backup. The saved data was preserved.",
+    es: "No se pudo restaurar la copia. Se conservaron los datos guardados.",
+  },
   "backup.error.invalid": {
     en: "The backup file is not readable.",
     es: "La copia no se puede leer.",
@@ -1208,6 +1212,8 @@ const DICT: Record<string, { en: string; es: string }> = {
 
   // ── Shell / navigation ────────────────────────────────────────────────
   "nav.label": { en: "Main navigation", es: "Navegación principal" },
+  "nav.expandRail": { en: "Expand navigation", es: "Expandir navegación" },
+  "nav.collapseRail": { en: "Collapse navigation", es: "Plegar navegación" },
   "nav.today": { en: "Today", es: "Hoy" },
   "nav.training": { en: "Training", es: "Entrenamiento" },
   "nav.history": { en: "History", es: "Historial" },

@@ -23,6 +23,8 @@ import { parseNumberInput, normalizeDecimalInput } from '../lib/parse-num';
 import { buildTraininglabExport } from '../lib/traininglab-export';
 import { ALL_EXERCISES, getMusclesForExercise } from '../lib/exercises';
 import type { Measurement, Profile, BodySnapshot } from '../lib/types';
+import { parseBodyLabArchive, reconcileBodyLabArchive } from '../../../../../traininglab/apps/desktop/src/lib/bodylab-migration';
+import { loadBodyLabArchive, mergeBodyLabArchive } from '../../../../../traininglab/apps/desktop/src/lib/bodylab-migration-db';
 
 // The root vitest suite runs in plain node (no jsdom), where `localStorage`
 // does not exist. Install a minimal in-memory shim so the legacy-migration
@@ -224,6 +226,59 @@ describe('legacy localStorage migration', () => {
     expect(migrated).toBe(false);
     const after = await db.exportAllData();
     expect(after.profile).toBeNull();
+  });
+});
+
+describe('BodyLab complete transition archive', () => {
+  it('preserves every collection, skips duplicates, and rejects a stale preview', async () => {
+    globalThis.indexedDB = new IDBFactory();
+    db.resetDbForTests();
+    const profile = makeProfile();
+    const waist = makeMeasurement({ id: 'import-waist', type: 'waist', value: 83.5 });
+    const snapshot = makeSnapshot('import-snapshot', waist.timestamp);
+    const exerciseSet = { id: 'import-set', exerciseId: 'barbell-bench-press', timestamp: waist.timestamp, weight: 30, reps: 10 };
+    const effort = { exerciseId: exerciseSet.exerciseId, bestWeight: 30, achievedAt: waist.timestamp, setCount: 1 };
+    localStorage.clear();
+    localStorage.setItem('bodylab-theme', 'dark');
+    try {
+      await db.saveProfile(profile);
+      await db.saveMeasurements([waist]);
+      await db.saveSnapshots([snapshot]);
+      await db.saveExerciseSets([exerciseSet]);
+      await db.saveMaxEfforts([effort]);
+      await db.saveSetting('language', 'es');
+      await db.setMeta({ createdAt: waist.timestamp });
+
+      const archive = parseBodyLabArchive(JSON.parse(JSON.stringify(await db.exportForTrainingLab())));
+      expect(archive?.data).toMatchObject({
+        profiles: [profile],
+        measurements: [waist],
+        snapshots: [snapshot],
+        exerciseSets: [exerciseSet],
+        maxEfforts: [effort],
+        metadata: [{ id: 'app', createdAt: waist.timestamp }, { id: 'setting:language', value: 'es' }],
+        localPreferences: [{ id: 'bodylab-theme', value: 'dark' }],
+      });
+      if (!archive) throw new Error('Expected valid archive');
+      expect(await loadBodyLabArchive()).toBeNull();
+
+      const initial = reconcileBodyLabArchive(null, archive).receipt;
+      expect(initial.measurements.added).toBe(1);
+      await mergeBodyLabArchive(archive, initial);
+      expect(await loadBodyLabArchive()).toEqual(archive);
+      await expect(mergeBodyLabArchive(archive, initial)).rejects.toThrow('changed since preview');
+      expect((await mergeBodyLabArchive(archive)).measurements.unchanged).toBe(1);
+
+      const changed = structuredClone(archive);
+      changed.data.measurements[0].value = 99;
+      expect((await mergeBodyLabArchive(changed)).measurements.conflicts).toEqual([waist.id]);
+      expect((await loadBodyLabArchive())?.data.measurements).toEqual([waist]);
+
+      changed.data.measurements.push(waist);
+      expect(parseBodyLabArchive(changed)).toBeNull();
+    } finally {
+      localStorage.removeItem('bodylab-theme');
+    }
   });
 });
 

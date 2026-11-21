@@ -22,6 +22,11 @@ import type {
   MaxEffort,
 } from "./types";
 import { normalizeProfile } from "./age";
+import {
+  BODYLAB_MIGRATION_FORMAT,
+  BODYLAB_MIGRATION_VERSION,
+  type BodyLabArchive,
+} from "../../../../packages/contracts/bodylab-migration";
 
 // ============================================================================
 // Schema Version
@@ -385,6 +390,50 @@ export async function saveMaxEfforts(efforts: MaxEffort[]): Promise<void> {
 // ============================================================================
 // Backup / Export (for .bodylab format)
 // ============================================================================
+
+/** Read every persisted BodyLab collection at the same IndexedDB revision. */
+export async function exportForTrainingLab(): Promise<BodyLabArchive> {
+  const database = await openDB();
+  const preferenceKeys = [
+    "bodylab-onboarding-done",
+    "bodylab-draft-session",
+    "bodylab-theme",
+    "bodylab-profile",
+    "bodylab-measurements",
+    "bodylab-snapshots",
+    "bodylab-language",
+    "bodylab-reference",
+  ];
+  const localPreferences = preferenceKeys.flatMap((id) => {
+    const value = localStorage.getItem(id);
+    return value === null ? [] : [{ id, value }];
+  });
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(Object.values(STORES), "readonly");
+    const profiles = tx.objectStore(STORES.profile).getAll();
+    const measurements = tx.objectStore(STORES.measurements).getAll();
+    const snapshots = tx.objectStore(STORES.snapshots).getAll();
+    const exerciseSets = tx.objectStore(STORES.exerciseSets).getAll();
+    const maxEfforts = tx.objectStore(STORES.maxEfforts).getAll();
+    const metadata = tx.objectStore(STORES.meta).getAll();
+    tx.oncomplete = () => resolve({
+      format: BODYLAB_MIGRATION_FORMAT,
+      version: BODYLAB_MIGRATION_VERSION,
+      exportedAt: new Date().toISOString(),
+      data: {
+        profiles: profiles.result,
+        measurements: measurements.result,
+        snapshots: snapshots.result,
+        exerciseSets: exerciseSets.result,
+        maxEfforts: maxEfforts.result,
+        metadata: metadata.result,
+        localPreferences,
+      },
+    });
+    tx.onabort = () => reject(tx.error ?? new Error("BodyLab export aborted"));
+  });
+}
 
 export async function exportAllData(): Promise<{
   profile: Profile | null;

@@ -57,6 +57,7 @@ import { SettingsPanel } from "../features/today/SettingsPanel";
 import { CoachPanel, CoachResultView } from "../features/today/CoachPanel";
 import { SharedPanel } from "../features/today/SharedPanel";
 import { MobileCard } from "../features/today/MobileCard";
+import { BodyLabMigration } from "../features/today/BodyLabMigration";
 
 /**
  * Shown in "Acerca de". Kept in sync by hand with `src-tauri/tauri.conf.json`:
@@ -203,15 +204,22 @@ export default function SettingsScreen() {
   };
 
   /** Full JSON backup: series, sessions, health, settings and the local model. */
-  const downloadBackup = () => {
-    const url = URL.createObjectURL(
-      new Blob([exportBackup()], { type: "application/json" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `traininglab-backup-${stampForFile()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const downloadBackup = async () => {
+    try {
+      const url = URL.createObjectURL(
+        new Blob([await exportBackup()], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `traininglab-backup-${stampForFile()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setBackupNote(null);
+    } catch {
+      setBackupNote(settings.language === "es"
+        ? "No se pudo descargar la copia."
+        : "Could not download the backup.");
+    }
   };
 
   const restoreBackup = async (file: File) => {
@@ -549,7 +557,7 @@ export default function SettingsScreen() {
         <p className="text-xs text-[var(--tl-text-muted)] mt-1">
           {t("settings.importHint")}
         </p>
-        {/* closes the BodyLab section below */}
+        <BodyLabMigration language={settings.language} />
       </SectionCard>
 
       {/* ── Mis datos: CSV (Excel + LLM) y copia completa (restaurar) ─────── */}

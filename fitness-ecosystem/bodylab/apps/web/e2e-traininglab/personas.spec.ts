@@ -53,13 +53,56 @@ async function passWarmup(page: Page): Promise<void> {
 
 async function startSession(page: Page): Promise<void> {
   await page.goto("/#/sesion");
-  await expect(page.getByRole("button", { name: "Salir de ZEN" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Salir de ZEN" }),
+  ).toBeVisible();
   await passWarmup(page);
 }
 
 async function logSet(page: Page): Promise<void> {
   await page.locator('[data-testid="log-set"]').click();
 }
+
+test("navegación: conserva el rail plegado y devuelve el foco al cerrar Más", async ({
+  page,
+}) => {
+  watch(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await finishOnboarding(page);
+
+  const rail = page.getByRole("complementary").filter({
+    has: page.getByRole("button", { name: "Plegar navegación" }),
+  });
+  await expect(rail).toHaveCSS("width", "245px");
+  await page.getByRole("button", { name: "Plegar navegación" }).press("Enter");
+  await expect(page.locator(".rail")).toHaveCSS("width", "78px");
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Expandir navegación" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Progreso" })).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const more = page.getByTestId("tab-more");
+  await more.click();
+  const dialog = page.getByRole("dialog", { name: "Más" });
+  await expect(dialog.getByRole("button", { name: "Cerrar" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByTestId("sheet-settings")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(more).toBeFocused();
+
+  const tabs = page.locator(".mobile-tabs");
+  await expect(tabs).toHaveCSS("backdrop-filter", "blur(12px)");
+  await page.emulateMedia({ contrast: "more" });
+  await expect(tabs).toHaveCSS("backdrop-filter", "none");
+  await page.emulateMedia({
+    contrast: "no-preference",
+    forcedColors: "active",
+  });
+  await expect(tabs).toHaveCSS("backdrop-filter", "none");
+});
 
 test("estándar: registra la sesión del día, la cierra y la ve en Historial", async ({
   page,
@@ -94,7 +137,10 @@ test("máximo provecho: calentamiento, dos ejercicios y cierre completo", async 
   await logSet(page);
 
   // El primer ejercicio queda cerrado; sigue con el siguiente de la cola.
-  await page.getByRole("button", { name: /Remo bajo Mesa/ }).first().click();
+  await page
+    .getByRole("button", { name: /Remo bajo Mesa/ })
+    .first()
+    .click();
   await passWarmup(page);
   await logSet(page);
   await expect(page.getByText(/4 \/ \d+ series/).first()).toBeVisible();
@@ -140,7 +186,9 @@ test("curioso: recorre las once superficies sin registrar nada", async ({
 
   // Mirar no escribe: después de todo el recorrido sigue sin sesiones.
   await page.goto("/#/historial");
-  await expect(page.getByText(/0 sesi|sin sesiones|aún no/i).first()).toBeVisible();
+  await expect(
+    page.getByText(/0 sesi|sin sesiones|aún no/i).first(),
+  ).toBeVisible();
 });
 
 test("power user: reordena la semana con el teclado, no con el ratón", async ({
@@ -200,15 +248,18 @@ test("necesidades distintas: movimiento reducido, nombres accesibles e idioma", 
   expect(motion.animation).toBeLessThan(0.05);
 
   // Nada interactivo sin nombre para un lector de pantalla.
-  const unnamed = await page.evaluate(() =>
-    Array.from(document.querySelectorAll("button, a[href], [role=button]")).filter(
-      (element) =>
-        !(
-          element.getAttribute("aria-label") ||
-          element.getAttribute("title") ||
-          element.textContent?.trim()
-        ),
-    ).length,
+  const unnamed = await page.evaluate(
+    () =>
+      Array.from(
+        document.querySelectorAll("button, a[href], [role=button]"),
+      ).filter(
+        (element) =>
+          !(
+            element.getAttribute("aria-label") ||
+            element.getAttribute("title") ||
+            element.textContent?.trim()
+          ),
+      ).length,
   );
   expect(unnamed).toBe(0);
 
