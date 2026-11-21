@@ -4167,3 +4167,11 @@ leyéndose en vez de multiplicar su alpha por el id.
 - **Límites:** Sin prueba en iPhone físico ni restauración privada dentro del instalador. No se hizo nueva captura visual; E2E ejecutado en Chromium 390×844. Continúan pendientes paridad completa, resolución de conflictos, datos demostrativos de ocho semanas y retirada de BodyLab. La integración del mapa de fuerza mantiene su aprobación independiente.
 - **Git preservado:** `.cloud-attachments/`, `Modelo2D_Woman.png`, `Symmetry_Corregido.xlsx` y `fitness-ecosystem/bun.lock` siguen sin seguimiento.
 - **Siguiente paso seguro:** Probar recuperación privada en WebView2 aislado y extender la migración a las demás mediciones con su protocolo.
+
+## 2026-11-21 — Tablero maestro actualizado
+
+Se sustituyó `docs/PLAN_MAESTRO_TRAININGLAB.md` por la revisión del dueño: tablero con casillas, reparto por roles, criterios de salida y la cola editorial de 37 ejercicios. Se conservó la evidencia del tablero anterior en su anexo (matriz T00.1, avance de T01/T02/T03/T04/T06 y línea base técnica).
+
+Antes de guardarlo se recomprobaron sus cifras contra el repositorio: `--check` del manifiesto da 115 entradas, hay 36 GIF en `public/exercises/gifs/` y los 37 IDs de la cola no están en el manifiesto. La maqueta adjunta (Sesión a 1440 × 900) queda en `docs/screenshots/plan-sesion-1440.webp` como referencia visual de la sección 4.
+
+El árbol de trabajo contiene cambios sin commitear de otra sesión (archivado de medidas, backup atómico, ZEN). No se tocaron ni se incluyeron en este commit.
